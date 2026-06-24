@@ -254,23 +254,23 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     <div className="w-full max-w-6xl mx-auto px-4 py-8">
       {/* Header section */}
       <div className="text-center mb-12">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-4 uppercase tracking-wider">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-xs font-semibold bg-[var(--presek-mark-soft)] text-[var(--presek-mark)] border border-[var(--presek-mark-line)] mb-4 uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5" />
           {lang === 'mk' ? 'Самопослужен Маркетинг' : 'Samouslužni Marketing'}
         </span>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 via-indigo-200 to-indigo-100 bg-clip-text text-transparent mb-4 font-serif">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground mb-4 font-serif">
           {t.title}
         </h1>
-        <p className="text-slate-400 max-w-2xl mx-auto text-base md:text-lg">
+        <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg font-sans">
           {t.subtitle}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Form panel */}
-        <form onSubmit={handleSubmit} className="lg:col-span-8 bg-slate-950/20 border border-slate-900 rounded-none p-6 md:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="lg:col-span-8 bg-card border border-border rounded-none p-6 md:p-8 space-y-6">
           {errors.length > 0 && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 flex gap-3">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-none p-4 text-destructive flex gap-3 font-sans">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
                 <h5 className="font-bold text-sm mb-1">{lang === 'mk' ? 'Внимание' : 'Pažnja'}</h5>
@@ -282,39 +282,39 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
           )}
 
           {/* Step 1: Customer details */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-              <User className="w-5 h-5 text-indigo-400" />
+          <div className="space-y-4 font-sans">
+            <h3 className="text-lg font-bold text-foreground border-b border-border pb-2 flex items-center gap-2 font-serif">
+              <User className="w-5 h-5 text-[var(--presek-mark)]" />
               {lang === 'mk' ? '1. Контакт информации' : '1. Kontakt informacije'}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.name}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.name}</label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="text" 
                     required
                     value={buyerName}
                     onChange={(e) => setBuyerName(e.target.value)}
                     placeholder="e.g. Petar Petrovski" 
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.email}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.email}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="email" 
                     required
                     value={buyerEmail}
                     onChange={(e) => setBuyerEmail(e.target.value)}
                     placeholder="e.g. petar@example.com" 
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                   />
                 </div>
               </div>
@@ -322,9 +322,9 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
           </div>
 
           {/* Step 2: Slot Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-indigo-400" />
+          <div className="space-y-4 font-sans">
+            <h3 className="text-lg font-bold text-foreground border-b border-border pb-2 flex items-center gap-2 font-serif">
+              <ImageIcon className="w-5 h-5 text-[var(--presek-mark)]" />
               {lang === 'mk' ? '2. Избор на позиција' : '2. Izbor pozicije'}
             </h3>
 
@@ -341,20 +341,20 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     onClick={() => setSlotId(type)}
                     className={`flex flex-col text-left p-4 rounded-none border transition-all relative overflow-hidden group ${
                       active 
-                        ? 'bg-indigo-500/5 border-indigo-500' 
-                        : 'bg-slate-950/30 border-slate-800 hover:border-slate-700 hover:bg-slate-950/50'
+                        ? 'bg-[var(--presek-mark-soft)] border-[var(--presek-mark)]' 
+                        : 'bg-card border-border hover:border-[var(--presek-mark-line)] hover:bg-[var(--presek-mark-soft)]/20'
                     }`}
                   >
                     <div className="flex justify-between items-start w-full mb-1">
-                      <span className={`font-bold text-sm ${active ? 'text-indigo-400' : 'text-slate-300'}`}>
+                      <span className={`font-bold text-sm ${active ? 'text-[var(--presek-mark)]' : 'text-foreground'}`}>
                         {type.replace('_', ' ').toUpperCase()}
                       </span>
-                      <span className="text-xs font-extrabold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">
+                      <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-none">
                         €{price.toFixed(2)} CPM
                       </span>
                     </div>
-                    <span className="text-slate-500 text-xxs font-mono mb-2">{sizeStr}</span>
-                    <span className="text-slate-400 text-xs leading-relaxed shrink-0">
+                    <span className="text-muted-foreground/60 text-xxs font-mono mb-2">{sizeStr}</span>
+                    <span className="text-muted-foreground text-xs leading-relaxed shrink-0">
                       {t[`${type}_desc` as keyof typeof t]}
                     </span>
                   </button>
@@ -364,62 +364,62 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
           </div>
 
           {/* Step 3: Target Details */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-indigo-400" />
+          <div className="space-y-4 font-sans">
+            <h3 className="text-lg font-bold text-foreground border-b border-border pb-2 flex items-center gap-2 font-serif">
+              <Link2 className="w-5 h-5 text-[var(--presek-mark)]" />
               {lang === 'mk' ? '3. Детали за кампањата' : '3. Detalji kampanje'}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.url}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.url}</label>
                 <div className="relative">
-                  <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="url" 
                     required
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
                     placeholder="https://yourwebsite.com/landing" 
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.startDate}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.startDate}</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="date" 
                     required
                     min={todayStr}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors text-slate-200"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors text-foreground"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.endDate}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.endDate}</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="date" 
                     required
                     min={startDate}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors text-slate-200"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors text-foreground"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.impressions}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.impressions}</label>
                 <div className="relative">
-                  <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <input 
                     type="number" 
                     required
@@ -427,23 +427,23 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                     min={1000}
                     value={targetImpressions}
                     onChange={(e) => setTargetImpressions(Math.max(1000, Number(e.target.value)))}
-                    className="w-full bg-slate-950/40 border border-slate-800 rounded-none py-2.5 pl-10 pr-4 text-slate-200 text-sm focus:outline-none focus:border-indigo-500 focus:ring-0 transition-colors placeholder:text-slate-600"
+                    className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                   />
                 </div>
               </div>
 
               {/* Upload field */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t.file}</label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{t.file}</label>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-slate-950/40 border border-slate-800 border-dashed hover:border-slate-700 hover:bg-slate-950/60 rounded-none py-2.5 px-4 text-slate-400 text-sm focus:outline-none transition-colors flex items-center justify-between text-left"
+                  className="w-full bg-card border border-border border-dashed hover:border-[var(--presek-mark-line)] hover:bg-[var(--presek-mark-soft)]/10 rounded-none py-2.5 px-4 text-muted-foreground text-sm focus:outline-none transition-colors flex items-center justify-between text-left"
                 >
                   <span className="truncate max-w-[80%]">
                     {file ? file.name : (lang === 'mk' ? 'Изберете слика...' : 'Izaberite sliku...')}
                   </span>
-                  <FileImage className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <FileImage className="w-4 h-4 text-[var(--presek-mark)] shrink-0" />
                 </button>
                 <input 
                   type="file" 
@@ -458,54 +458,54 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
         </form>
 
         {/* Calculation Details and Checkout Panel */}
-        <div className="lg:col-span-4 bg-slate-950/20 border border-slate-900 rounded-none p-6 md:p-8 space-y-6 sticky top-8">
-          <h3 className="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-indigo-400" />
+        <div className="lg:col-span-4 bg-card border border-border rounded-none p-6 md:p-8 space-y-6 sticky top-8 font-sans">
+          <h3 className="text-lg font-bold text-foreground border-b border-border pb-2 flex items-center gap-2 font-serif">
+            <Calculator className="w-5 h-5 text-[var(--presek-mark)]" />
             {lang === 'mk' ? 'Калкулатор и Преглед' : 'Kalkulator i Pregled'}
           </h3>
 
           {filePreview && (
             <div className="space-y-2">
-              <span className="block text-xxs font-semibold text-slate-500 uppercase tracking-wider">
+              <span className="block text-xxs font-bold text-muted-foreground uppercase tracking-wider">
                 {lang === 'mk' ? 'Преглед на Банер' : 'Pregled Banera'}
               </span>
-              <div className="border border-slate-800 rounded-none bg-slate-950/40 p-2 flex items-center justify-center min-h-[100px]">
-                <img src={filePreview} alt="Preview" className="max-h-[150px] object-contain rounded" />
+              <div className="border border-border rounded-none bg-muted/30 p-2 flex items-center justify-center min-h-[100px]">
+                <img src={filePreview} alt="Preview" className="max-h-[150px] object-contain rounded-none" />
               </div>
             </div>
           )}
 
           <div className="space-y-3 font-mono text-sm">
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-muted-foreground">
               <span>{t.cpm}:</span>
-              <span className="text-slate-200 font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-slate-500 text-xxs font-normal">(~{LOCAL_CPM_RATES[slotId][lang]} {lang === 'mk' ? 'MKD' : 'RSD'})</span></span>
+              <span className="text-foreground font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-muted-foreground/60 text-xxs font-normal">(~{LOCAL_CPM_RATES[slotId][lang]} {lang === 'mk' ? 'MKD' : 'RSD'})</span></span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-muted-foreground">
               <span>{t.totalDays}:</span>
-              <span className="text-slate-200 font-bold">{numDays}</span>
+              <span className="text-foreground font-bold">{numDays}</span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-muted-foreground">
               <span>{t.dailyAverage}:</span>
-              <span className={`font-bold ${dailyAvg < 2000 ? 'text-amber-500' : 'text-slate-200'}`}>
+              <span className={`font-bold ${dailyAvg < 2000 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
                 {dailyAvg.toLocaleString()}
               </span>
             </div>
-            <div className="border-t border-slate-800 pt-3 flex justify-between text-base font-sans">
-              <span className="text-slate-300 font-semibold">{t.totalPrice}:</span>
-              <span className={`font-bold text-lg ${totalCost < MIN_CHECKOUT_EUR ? 'text-amber-500' : 'text-emerald-400'}`}>
-                €{totalCost.toFixed(2)} <span className="text-sm font-normal text-slate-500">(~{Math.round((targetImpressions / 1000) * LOCAL_CPM_RATES[slotId][lang]).toLocaleString()} {lang === 'mk' ? 'MKD' : 'RSD'})</span>
+            <div className="border-t border-border pt-3 flex justify-between text-base font-sans">
+              <span className="text-foreground font-semibold">{t.totalPrice}:</span>
+              <span className={`font-bold text-lg ${totalCost < MIN_CHECKOUT_EUR ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                €{totalCost.toFixed(2)} <span className="text-sm font-normal text-muted-foreground/60">(~{Math.round((targetImpressions / 1000) * LOCAL_CPM_RATES[slotId][lang]).toLocaleString()} {lang === 'mk' ? 'MKD' : 'RSD'})</span>
               </span>
             </div>
           </div>
 
           {/* Validation Warnings */}
           <div className="space-y-2 text-xxs leading-relaxed">
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-slate-950/40 border border-slate-800 text-slate-400">
-              <div className={`w-1.5 h-1.5 shrink-0 ${dailyAvg >= 2000 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-muted/40 border border-border text-muted-foreground">
+              <div className={`w-1.5 h-1.5 shrink-0 ${dailyAvg >= 2000 ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-amber-600 dark:bg-amber-400'}`} />
               <span>{lang === 'mk' ? 'Минимум 2,000 импресии/ден' : 'Minimum 2,000 impresija/dan'}</span>
             </div>
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-slate-950/40 border border-slate-800 text-slate-400">
-              <div className={`w-1.5 h-1.5 shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-muted/40 border border-border text-muted-foreground">
+              <div className={`w-1.5 h-1.5 shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-amber-600 dark:bg-amber-400'}`} />
               <span>{lang === 'mk' ? `Минимум €${MIN_CHECKOUT_EUR} плаќање` : `Minimum €${MIN_CHECKOUT_EUR} plaćanje`}</span>
             </div>
           </div>
@@ -514,7 +514,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-indigo-700 hover:bg-indigo-800 border border-indigo-600 text-white font-bold py-3 px-4 rounded-none active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+            className="w-full bg-[var(--presek-mark)] hover:bg-[var(--presek-mark)]/90 text-white font-bold py-3 px-4 rounded-none active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
           >
             {isSubmitting ? t.submitting : (
               <>
