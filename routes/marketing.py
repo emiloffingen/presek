@@ -1,4 +1,6 @@
 import os
+import re
+import io
 import uuid
 import logging
 import stripe
@@ -6,10 +8,15 @@ from datetime import datetime, date
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.responses import JSONResponse, RedirectResponse
+from urllib.parse import urlparse
+from PIL import Image
 from core.database import db_manager as db
+from core.limiter import custom_rate_limit
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
 # Configure Stripe
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
@@ -26,6 +33,7 @@ CPM_RATES_EUR = {
 }
 
 @router.post("/marketing/checkout")
+@custom_rate_limit("5/minute")
 async def create_ad_checkout(
     request: Request,
     buyer_name: str = Form(...),
@@ -39,6 +47,17 @@ async def create_ad_checkout(
 ):
     try:
         # 1. Validation
+        # Validate email format
+        if not EMAIL_REGEX.match(buyer_email):
+            raise HTTPException(status_code=400, detail="Invalid email address format")
+
+        # Validate target URL (prevent XSS / javascript protocols)
+        parsed_url = urlparse(target_url)
+        if parsed_url.scheme not in ("http", "https"):
+            raise HTTPException(status_code=400, detail="Target URL must start with http:// or https://")
+        if not parsed_url.netloc:
+            raise HTTPException(status_code=400, detail="Target URL must have a valid domain or host")
+
         if slot_id not in CPM_RATES_EUR:
             raise HTTPException(status_code=400, detail="Invalid slot selection")
 
@@ -63,6 +82,15 @@ async def create_ad_checkout(
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
             raise HTTPException(status_code=400, detail="Invalid file type. Only web images allowed")
+
+        # Verify actual image content using Pillow
+        try:
+            image = Image.open(io.BytesIO(content))
+            image.verify()
+            if image.format not in ("PNG", "JPEG", "GIF", "WEBP"):
+                raise HTTPException(status_code=400, detail="Invalid image content format")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
 
         # 2. File Upload Persistence
         campaign_id = str(uuid.uuid4())
@@ -117,6 +145,14 @@ async def create_ad_checkout(
                 log.error(f"[marketing] Stripe checkout session creation failed: {stripe_err}")
                 raise HTTPException(status_code=500, detail="Payment gateway session creation failed")
         else:
+            # Sandbox bypass is strictly forbidden in production to prevent fraud
+            if os.environ.get("ENV") == "production":
+                log.error("[marketing] Stripe API key missing in production environment!")
+                raise HTTPException(
+                    status_code=500,
+                    detail="Payment gateway is misconfigured. Please contact support."
+                )
+
             # Development/Testing Sandbox fallback
             log.info("[marketing] No Stripe API Key configured. Emulating booking checkout bypass.")
             session_id = f"mock_session_{campaign_id}"
@@ -233,7 +269,8 @@ async def get_active_ads():
         return {"status": "error", "ads": {}}
 
 @router.post("/marketing/ads/{ad_id}/click")
-async def track_ad_click(ad_id: str):
+@custom_rate_limit("20/minute")
+async def track_ad_click(request: Request, ad_id: str):
     try:
         sql = "UPDATE advertising_campaigns SET clicks = clicks + 1 WHERE id = %s"
         await db.async_execute(sql, (ad_id,), fetch=False)
@@ -243,7 +280,8 @@ async def track_ad_click(ad_id: str):
         return {"status": "error"}
 
 @router.post("/marketing/ads/{ad_id}/impression")
-async def track_ad_impression(ad_id: str):
+@custom_rate_limit("60/minute")
+async def track_ad_impression(request: Request, ad_id: str):
     try:
         sql = "UPDATE advertising_campaigns SET impressions_delivered = impressions_delivered + 1 WHERE id = %s"
         await db.async_execute(sql, (ad_id,), fetch=False)

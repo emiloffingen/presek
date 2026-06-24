@@ -76,26 +76,33 @@ def test_checkout_validation_large_file(client):
 
 def test_checkout_and_ad_lifecycle(client):
     from unittest.mock import patch
-    # Ensure tables are clean or we can query
-    file_data = io.BytesIO(b"valid image data")
+    from PIL import Image
+    
+    # Create a valid minimal PNG image in memory
+    img = Image.new("RGBA", (10, 10), (255, 0, 0, 0))
+    file_data = io.BytesIO()
+    img.save(file_data, "PNG")
+    file_data.seek(0)
+    
     today = date.today().isoformat()
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
     
     # 1. Success checkout flow (sandbox)
     with patch("routes.marketing.STRIPE_API_KEY", ""):
-        response = client.post(
-            "/api/marketing/checkout",
-            data={
-                "buyer_name": "Lifecycle Buyer",
-                "buyer_email": "lifecycle@example.com",
-                "slot_id": "top_banner",
-                "target_impressions": 10000,
-                "target_url": "https://lifecycle-test.com",
-                "start_date": today,
-                "end_date": tomorrow
-            },
-            files={"file": ("test.png", file_data, "image/png")}
-        )
+        with patch.dict("os.environ", {"ENV": "test"}):
+            response = client.post(
+                "/api/marketing/checkout",
+                data={
+                    "buyer_name": "Lifecycle Buyer",
+                    "buyer_email": "lifecycle@example.com",
+                    "slot_id": "top_banner",
+                    "target_impressions": 10000,
+                    "target_url": "https://lifecycle-test.com",
+                    "start_date": today,
+                    "end_date": tomorrow
+                },
+                files={"file": ("test.png", file_data, "image/png")}
+            )
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
@@ -247,4 +254,89 @@ def test_stripe_webhook_idempotence(client):
             
             # Clean up
             db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_campaign_id_idemp",))
+
+
+def test_checkout_validation_invalid_email(client):
+    file_data = io.BytesIO(b"dummy data")
+    response = client.post(
+        "/api/marketing/checkout",
+        data={
+            "buyer_name": "Test Buyer",
+            "buyer_email": "invalid_email_format",
+            "slot_id": "top_banner",
+            "target_impressions": 10000,
+            "target_url": "https://test.com",
+            "start_date": "2026-06-25",
+            "end_date": "2026-06-30"
+        },
+        files={"file": ("test.png", file_data, "image/png")}
+    )
+    assert response.status_code == 400
+    assert "Invalid email address format" in response.json()["detail"]
+
+
+def test_checkout_validation_invalid_url_scheme(client):
+    file_data = io.BytesIO(b"dummy data")
+    response = client.post(
+        "/api/marketing/checkout",
+        data={
+            "buyer_name": "Test Buyer",
+            "buyer_email": "buyer@example.com",
+            "slot_id": "top_banner",
+            "target_impressions": 10000,
+            "target_url": "javascript:alert(1)",
+            "start_date": "2026-06-25",
+            "end_date": "2026-06-30"
+        },
+        files={"file": ("test.png", file_data, "image/png")}
+    )
+    assert response.status_code == 400
+    assert "Target URL must start with http:// or https://" in response.json()["detail"]
+
+
+def test_checkout_validation_corrupted_image(client):
+    file_data = io.BytesIO(b"this is plain text not an image")
+    response = client.post(
+        "/api/marketing/checkout",
+        data={
+            "buyer_name": "Test Buyer",
+            "buyer_email": "buyer@example.com",
+            "slot_id": "top_banner",
+            "target_impressions": 10000,
+            "target_url": "https://test.com",
+            "start_date": "2026-06-25",
+            "end_date": "2026-06-30"
+        },
+        files={"file": ("test.png", file_data, "image/png")}
+    )
+    assert response.status_code == 400
+    assert "Uploaded file is not a valid image" in response.json()["detail"]
+
+
+def test_checkout_production_requires_stripe(client):
+    from PIL import Image
+    from unittest.mock import patch
+    
+    img = Image.new("RGBA", (10, 10), (255, 0, 0, 0))
+    file_data = io.BytesIO()
+    img.save(file_data, "PNG")
+    file_data.seek(0)
+    
+    with patch("routes.marketing.STRIPE_API_KEY", ""):
+        with patch.dict("os.environ", {"ENV": "production"}):
+            response = client.post(
+                "/api/marketing/checkout",
+                data={
+                    "buyer_name": "Prod Buyer",
+                    "buyer_email": "prod@example.com",
+                    "slot_id": "top_banner",
+                    "target_impressions": 10000,
+                    "target_url": "https://test.com",
+                    "start_date": "2026-06-25",
+                    "end_date": "2026-06-30"
+                },
+                files={"file": ("test.png", file_data, "image/png")}
+            )
+    assert response.status_code == 500
+    assert "Payment gateway is misconfigured" in response.json()["detail"]
 
