@@ -1,0 +1,26 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import NYTHeader from '../../components/NYTHeader.astro';
+import Footer from '../../components/Footer.astro';
+import CampaignDashboard from '../../components/marketing/CampaignDashboard.astro';
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+
+const campaignId = Astro.url.searchParams.get('id');
+---
+
+<Layout
+  title={lang === 'mk' ? 'Статус на кампања — Presek' : 'Status kampanje — Presek'}
+  description={lang === 'mk' ? 'Прегледајте ги метриките и статусот на вашата реклама во реално време.' : 'Pregledajte metrike i status vaše oglasne kampanje u realnom vremenu.'}
+>
+  <NYTHeader />
+  
+  <main class="site-layout broadsheet-layout py-[var(--page-py)]">
+    <CampaignDashboard campaignId={campaignId} lang={lang} />
+  </main>
+
+  <Footer />
+</Layout>

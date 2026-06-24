@@ -298,3 +298,89 @@ async def track_ad_impression(request: Request, ad_id: str):
     except Exception as e:
         log.error(f"[marketing] Impression tracking failed for {ad_id}: {e}")
         return {"status": "error"}
+
+@router.get("/marketing/campaign/{campaign_id}")
+async def get_campaign_status(campaign_id: str):
+    try:
+        sql = """
+            SELECT id, buyer_name, buyer_email, slot_id, target_impressions,
+                   impressions_delivered, clicks, start_date, end_date, status, image_url, target_url
+            FROM advertising_campaigns
+            WHERE id = %s
+        """
+        row = await db.async_execute_one(sql, (campaign_id,))
+        if not row:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+            
+        return {
+            "status": "success",
+            "campaign": {
+                "id": row["id"],
+                "buyer_name": row["buyer_name"],
+                "slot_id": row["slot_id"],
+                "target_impressions": row["target_impressions"],
+                "impressions_delivered": row["impressions_delivered"],
+                "clicks": row["clicks"],
+                "start_date": row["start_date"].isoformat(),
+                "end_date": row["end_date"].isoformat(),
+                "status": row["status"],
+                "image_url": row["image_url"],
+                "target_url": row["target_url"]
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[marketing] Get campaign status failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/marketing/request-access")
+@custom_rate_limit("3/minute")
+async def request_campaigns_access(request: Request, email: str = Form(...)):
+    try:
+        # Validate email
+        if not EMAIL_REGEX.match(email):
+            raise HTTPException(status_code=400, detail="Invalid email address format")
+            
+        # Find all campaigns for this email
+        sql = "SELECT id, slot_id, status FROM advertising_campaigns WHERE buyer_email = %s"
+        rows = await db.async_execute(sql, (email,))
+        if not rows:
+            # Return generic success to avoid email enumeration
+            return {"status": "success", "message": "If campaigns exist for this email, an access link has been sent."}
+            
+        # Build access link overview
+        host = request.headers.get("host") or "presek.live"
+        proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+        base_url = f"{proto}://{host}"
+        
+        email_content = f"<h2>Presek Marketing Access Link</h2>"
+        email_content += f"<p>Hello, you requested access links to your advertising campaigns on Presek.</p>"
+        email_content += f"<p>Below are your registered campaigns:</p><ul>"
+        
+        for row in rows:
+            camp_id = row["id"]
+            slot = row["slot_id"].replace('_', ' ').title()
+            status = row["status"].upper()
+            link = f"{base_url}/marketing/status?id={camp_id}"
+            email_content += f"<li><strong>{slot}</strong> (Status: {status}) - <a href='{link}'>{link}</a></li>"
+            
+        email_content += "</ul><br/><p>If you did not request this email, you can safely ignore it.</p>"
+        
+        smtp_user = os.environ.get("SMTP_USER", "")
+        smtp_pass = os.environ.get("SMTP_PASS", "")
+        
+        if smtp_user and smtp_pass:
+            from tasks.utils import send_email
+            subject = "Your Presek Ad Campaigns Access Links"
+            send_email(email_content, subject, smtp_user, smtp_pass, email)
+            log.info(f"[marketing] Sent access email successfully to {email}")
+        else:
+            log.warning("[marketing] SMTP credentials not set. Cannot send access email.")
+            
+        return {"status": "success", "message": "Access links have been sent to your email."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(f"[marketing] Request access failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

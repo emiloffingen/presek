@@ -340,3 +340,88 @@ def test_checkout_production_requires_stripe(client):
     assert response.status_code == 500
     assert "Payment gateway is misconfigured" in response.json()["detail"]
 
+
+def test_get_campaign_status_success(client):
+    # Ensure clean state
+    db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_campaign_status_id",))
+    
+    # Set up dummy paid campaign in DB
+    db.execute(
+        """INSERT INTO advertising_campaigns (
+            id, buyer_name, buyer_email, slot_id, target_impressions,
+            image_url, target_url, start_date, end_date, status, stripe_session_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+        (
+            "test_campaign_status_id",
+            "Status Buyer",
+            "status@example.com",
+            "top_banner",
+            10000,
+            "/static/ads/test.png",
+            "https://status.com",
+            date.today(),
+            date.today(),
+            "paid",
+            "cs_status_123"
+        )
+    )
+    
+    response = client.get("/api/marketing/campaign/test_campaign_status_id")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["campaign"]["buyer_name"] == "Status Buyer"
+    assert data["campaign"]["target_url"] == "https://status.com"
+    
+    # Clean up
+    db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_campaign_status_id",))
+
+
+def test_get_campaign_status_not_found(client):
+    response = client.get("/api/marketing/campaign/non_existent_id")
+    assert response.status_code == 404
+    assert "Campaign not found" in response.json()["detail"]
+
+
+def test_request_campaigns_access_success(client):
+    from unittest.mock import patch
+    
+    # Ensure clean state
+    db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_access_id",))
+    
+    # Insert a dummy campaign for email
+    db.execute(
+        """INSERT INTO advertising_campaigns (
+            id, buyer_name, buyer_email, slot_id, target_impressions,
+            image_url, target_url, start_date, end_date, status, stripe_session_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+        (
+            "test_access_id",
+            "Access Buyer",
+            "access@example.com",
+            "top_banner",
+            10000,
+            "/static/ads/test.png",
+            "https://access.com",
+            date.today(),
+            date.today(),
+            "paid",
+            "cs_access_123"
+        )
+    )
+    
+    with patch("tasks.utils.send_email", return_value=True) as mock_send:
+        with patch.dict("os.environ", {"SMTP_USER": "test_user", "SMTP_PASS": "test_pass"}):
+            response = client.post(
+                "/api/marketing/request-access",
+                data={"email": "access@example.com"}
+            )
+            assert response.status_code == 200
+            assert response.json()["status"] == "success"
+            assert "Access links have been sent" in response.json()["message"]
+            assert mock_send.called
+                
+    # Clean up
+    db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_access_id",))
+
+

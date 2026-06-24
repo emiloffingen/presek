@@ -1,0 +1,472 @@
+---
+import { apiBaseUrl } from '../../lib/apiBase';
+import { getLangFromUrl } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+  campaignId: string | null;
+  lang: 'sr' | 'mk';
+}
+
+const { campaignId, lang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const marketingUrl = localePath('/marketing', lang, hostHeader);
+
+const contentDict = {
+  sr: {
+    title: 'Izveštaj o kampanji',
+    subtitle: 'Statistika i metrike isporuke oglasa u realnom vremenu',
+    notFoundTitle: 'Kampanja nije pronađena',
+    notFoundDesc: 'Uneli ste nepostojeći ili nevažeći identifikator kampanje.',
+    noIdTitle: 'Nije unet identifikator',
+    noIdDesc: 'Molimo unesite ispravan ID kampanje preko stranice za marketing.',
+    backBtn: 'Nazad na marketing',
+    buyer: 'Kupac',
+    position: 'Pozicija banera',
+    targetUrl: 'Ciljni link (URL)',
+    dates: 'Period trajanja',
+    metricsTitle: 'Rezultati kampanje',
+    delivered: 'Isporučeno impresija',
+    target: 'Cilj impresija',
+    progress: 'Napredak isporuke',
+    clicks: 'Ukupno klikova',
+    ctr: 'Prosečan CTR',
+    status: 'Status kampanje',
+    previewTitle: 'Prikaz banera na portalu',
+    previewSub: 'Simulacija prikaza oglasa unutar dizajna stranice',
+    activeStatus: 'Aktivna (isporučuje se)',
+    completedStatus: 'Završena',
+    pendingStatus: 'Čeka uplatu',
+    unknownStatus: 'Nepoznato',
+  },
+  mk: {
+    title: 'Извештај за кампањата',
+    subtitle: 'Статистика и метрики за испорака на рекламата во реално време',
+    notFoundTitle: 'Кампањата не е пронајдена',
+    notFoundDesc: 'Внесовте непостоечки или невалиден идентификатор на кампањата.',
+    noIdTitle: 'Не е внесен идентификатор',
+    noIdDesc: 'Ве молиме внесете валиден ID на кампањата преку страницата за маркетинг.',
+    backBtn: 'Назад на маркетинг',
+    buyer: 'Купувач',
+    position: 'Позиција на банер',
+    targetUrl: 'Целна адреса (URL)',
+    dates: 'Период на траење',
+    metricsTitle: 'Резултати од кампањата',
+    delivered: 'Испорачани импресии',
+    target: 'Целни импресии',
+    progress: 'Напредок на испорака',
+    clicks: 'Вкупно кликови',
+    ctr: 'Просечен CTR',
+    status: 'Статус на кампањата',
+    previewTitle: 'Приказ на банерот на порталот',
+    previewSub: 'Симулација на приказ на рекламата во рамки на страницата',
+    activeStatus: 'Активна (се испорачува)',
+    completedStatus: 'Завршена',
+    pendingStatus: 'Чека плаќање',
+    unknownStatus: 'Непознато',
+  }
+};
+
+const labels = contentDict[lang];
+
+let campaign = null;
+let errorState = null;
+
+if (!campaignId) {
+  errorState = 'no_id';
+} else {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/marketing/campaign/${campaignId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success') {
+        campaign = data.campaign;
+      } else {
+        errorState = 'not_found';
+      }
+    } else {
+      errorState = 'not_found';
+    }
+  } catch (e) {
+    console.error('[CampaignDashboard] Fetch error:', e);
+    errorState = 'fetch_error';
+  }
+}
+
+// Calculate CTR and Progress
+const impressionsDelivered = campaign ? Number(campaign.impressions_delivered) : 0;
+const targetImpressions = campaign ? Number(campaign.target_impressions) : 0;
+const clicks = campaign ? Number(campaign.clicks) : 0;
+
+const ctr = impressionsDelivered > 0 ? (clicks / impressionsDelivered) * 100 : 0.0;
+const progressPercent = targetImpressions > 0 ? Math.min(100, Math.round((impressionsDelivered / targetImpressions) * 100)) : 0;
+
+const getStatusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'paid':
+      return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
+    case 'completed':
+      return 'bg-blue-500/10 text-blue-600 border border-blue-500/20';
+    case 'pending':
+      return 'bg-amber-500/10 text-amber-600 border border-amber-500/20';
+    default:
+      return 'bg-muted text-muted-foreground border border-border';
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'paid':
+      return labels.activeStatus;
+    case 'completed':
+      return labels.completedStatus;
+    case 'pending':
+      return labels.pendingStatus;
+    default:
+      return labels.unknownStatus;
+  }
+};
+
+const formatSlotId = (slotId: string) => {
+  return slotId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
+const formatDate = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch {
+    return dateStr;
+  }
+};
+---
+
+<div class="max-w-6xl mx-auto px-4 marketing-dashboard">
+  {errorState ? (
+    <div class="text-center py-16 bg-card border border-border rounded-none max-w-xl mx-auto my-8">
+      <div class="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold font-sans">!</div>
+      <h2 class="text-2xl font-serif font-black text-foreground mb-2">
+        {errorState === 'no_id' ? labels.noIdTitle : labels.notFoundTitle}
+      </h2>
+      <p class="text-muted-foreground text-sm max-w-sm mx-auto mb-8 font-sans leading-relaxed">
+        {errorState === 'no_id' ? labels.noIdDesc : labels.notFoundDesc}
+      </p>
+      <a
+        href={marketingUrl}
+        class="inline-flex items-center justify-center bg-[var(--presek-mark)] hover:bg-[var(--presek-mark)]/90 text-white font-bold py-2.5 px-6 rounded-none transition-all font-sans text-sm"
+      >
+        {labels.backBtn}
+      </a>
+    </div>
+  ) : (
+    <div>
+      {/* Editorial Header */}
+      <header class="border-b-4 border-double border-foreground pb-6 mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <span class="text-xxs font-extrabold text-[var(--presek-mark)] tracking-widest uppercase block mb-1 font-sans">
+            {labels.title}
+          </span>
+          <h1 class="text-3xl md:text-4xl font-serif font-black text-foreground tracking-tight">
+            {campaign.buyer_name}
+          </h1>
+          <p class="text-muted-foreground text-sm font-sans mt-1">
+            {labels.subtitle}
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1.5 font-mono text-xxs text-muted-foreground">
+          <span>ID: {campaign.id}</span>
+          <span class={`px-2 py-0.5 rounded-none font-bold font-sans uppercase tracking-wider text-xxs ${getStatusBadgeClass(campaign.status)}`}>
+            {getStatusLabel(campaign.status)}
+          </span>
+        </div>
+      </header>
+
+      {/* Main Grid */}
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-16">
+        {/* Left Column: Stats and Info */}
+        <div class="lg:col-span-7 space-y-8">
+          
+          {/* Progress Section */}
+          <div class="bg-card border border-border p-6 rounded-none">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-sans">
+                {labels.progress}
+              </span>
+              <span class="text-lg font-mono font-bold text-foreground">
+                {progressPercent}%
+              </span>
+            </div>
+            
+            {/* Custom Broadsheet Progress Bar */}
+            <div class="w-full bg-secondary border border-border h-4 rounded-none overflow-hidden p-0.5">
+              <div 
+                class="bg-[var(--presek-mark)] h-full transition-all duration-500 ease-out" 
+                style={`width: ${progressPercent}%`}
+              />
+            </div>
+            
+            <div class="flex justify-between items-center mt-3 font-mono text-xs text-muted-foreground">
+              <span>{impressionsDelivered.toLocaleString()}</span>
+              <span>/</span>
+              <span>{targetImpressions.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Metrics Grid */}
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-card border border-border p-5 rounded-none text-center">
+              <span class="block text-xxs font-bold text-muted-foreground uppercase tracking-widest mb-2 font-sans">
+                {labels.delivered}
+              </span>
+              <span class="text-3xl font-serif font-black text-foreground font-mono">
+                {impressionsDelivered.toLocaleString()}
+              </span>
+            </div>
+
+            <div class="bg-card border border-border p-5 rounded-none text-center">
+              <span class="block text-xxs font-bold text-muted-foreground uppercase tracking-widest mb-2 font-sans">
+                {labels.clicks}
+              </span>
+              <span class="text-3xl font-serif font-black text-foreground font-mono">
+                {clicks.toLocaleString()}
+              </span>
+            </div>
+
+            <div class="bg-card border border-border p-5 rounded-none text-center">
+              <span class="block text-xxs font-bold text-muted-foreground uppercase tracking-widest mb-2 font-sans">
+                {labels.ctr}
+              </span>
+              <span class="text-3xl font-serif font-black text-foreground font-mono">
+                {ctr.toFixed(2)}%
+              </span>
+            </div>
+          </div>
+
+          {/* Campaign Details Details Table */}
+          <div class="bg-card border border-border p-6 rounded-none space-y-4">
+            <h3 class="text-sm font-bold text-foreground border-b border-border pb-2 uppercase tracking-wider font-sans">
+              {lang === 'mk' ? 'Детали за резервација' : 'Detalji rezervacije'}
+            </h3>
+            
+            <div class="divide-y divide-border text-sm font-sans">
+              <div class="flex justify-between py-2.5">
+                <span class="text-muted-foreground">{labels.buyer}</span>
+                <span class="font-bold text-foreground">{campaign.buyer_name}</span>
+              </div>
+              <div class="flex justify-between py-2.5">
+                <span class="text-muted-foreground">{labels.position}</span>
+                <span class="font-mono text-xs font-bold text-foreground">{formatSlotId(campaign.slot_id)}</span>
+              </div>
+              <div class="flex justify-between py-2.5 items-center gap-4">
+                <span class="text-muted-foreground shrink-0">{labels.targetUrl}</span>
+                <a 
+                  href={campaign.target_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  class="font-mono text-xs font-semibold text-[var(--presek-mark)] hover:underline truncate max-w-[70%]"
+                >
+                  {campaign.target_url}
+                </a>
+              </div>
+              <div class="flex justify-between py-2.5">
+                <span class="text-muted-foreground">{labels.dates}</span>
+                <span class="font-semibold text-foreground">
+                  {formatDate(campaign.start_date)} — {formatDate(campaign.end_date)}
+                </span>
+              </div>
+              <div class="flex justify-between py-2.5">
+                <span class="text-muted-foreground">{labels.status}</span>
+                <span class="font-bold text-foreground uppercase tracking-wider text-xs">{campaign.status}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-start">
+            <a
+              href={marketingUrl}
+              class="inline-flex items-center gap-2 border border-border bg-card hover:bg-secondary text-foreground font-bold py-2 px-4 rounded-none transition-all font-sans text-xs"
+            >
+              ← {labels.backBtn}
+            </a>
+          </div>
+        </div>
+
+        {/* Right Column: Visual Device Mockup Preview */}
+        <div class="lg:col-span-5 space-y-6">
+          <div class="border-b border-border pb-2">
+            <h3 class="text-base font-serif font-black text-foreground">
+              {labels.previewTitle}
+            </h3>
+            <p class="text-muted-foreground text-xs font-sans">
+              {labels.previewSub}
+            </p>
+          </div>
+
+          {/* Browser Wrapper Mockup for top_banner */}
+          {campaign.slot_id === 'top_banner' && (
+            <div class="w-full bg-card border border-border shadow-md rounded-none overflow-hidden flex flex-col">
+              {/* Browser control bar */}
+              <div class="bg-secondary border-b border-border px-4 py-2.5 flex items-center gap-3">
+                <div class="flex gap-1.5 shrink-0">
+                  <div class="w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                  <div class="w-2.5 h-2.5 rounded-full bg-green-400" />
+                </div>
+                <div class="flex-1 bg-card border border-border rounded-none text-xxs text-muted-foreground py-0.5 px-3 truncate text-center select-none font-mono">
+                  https://presek.live
+                </div>
+              </div>
+              {/* Portal preview layout */}
+              <div class="p-4 bg-[var(--background)] flex flex-col items-center gap-4">
+                {/* Banner Space */}
+                <div class="w-full border border-dashed border-[var(--presek-mark-line)] bg-[var(--presek-mark-soft)]/20 p-1 relative group">
+                  <img 
+                    src={campaign.image_url} 
+                    alt="Top Banner Ad" 
+                    class="w-full object-contain mx-auto max-h-[80px]"
+                  />
+                  <div class="absolute top-1 left-1 bg-foreground/75 text-[var(--background)] text-[9px] font-sans px-1 select-none pointer-events-none">
+                    AD · 990x90
+                  </div>
+                </div>
+                {/* Logo and header simulator */}
+                <div class="w-full text-center border-y border-border py-2 mt-1">
+                  <span class="font-serif font-black text-xl tracking-tight leading-none text-foreground block">
+                    PRESEK
+                  </span>
+                  <div class="flex justify-center gap-3 mt-1.5 text-[9px] font-sans uppercase tracking-widest text-muted-foreground">
+                    <span>{lang === 'mk' ? 'Вести' : 'Vesti'}</span>
+                    <span>{lang === 'mk' ? 'Анализи' : 'Analize'}</span>
+                    <span>{lang === 'mk' ? 'Мислења' : 'Mišljenja'}</span>
+                  </div>
+                </div>
+                {/* Article simulator */}
+                <div class="w-full space-y-2 mt-2">
+                  <div class="h-3 bg-muted w-3/4 rounded-none" />
+                  <div class="space-y-1.5">
+                    <div class="h-2 bg-muted/60 w-full rounded-none" />
+                    <div class="h-2 bg-muted/60 w-full rounded-none" />
+                    <div class="h-2 bg-muted/60 w-5/6 rounded-none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sidebar Split Layout Mockup */}
+          {campaign.slot_id === 'sidebar' && (
+            <div class="w-full bg-card border border-border shadow-md rounded-none overflow-hidden flex flex-col">
+              {/* Browser control bar */}
+              <div class="bg-secondary border-b border-border px-4 py-2.5 flex items-center gap-3">
+                <div class="flex gap-1.5 shrink-0">
+                  <div class="w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                  <div class="w-2.5 h-2.5 rounded-full bg-green-400" />
+                </div>
+                <div class="flex-1 bg-card border border-border rounded-none text-xxs text-muted-foreground py-0.5 px-3 truncate text-center select-none font-mono">
+                  https://presek.live/article
+                </div>
+              </div>
+              {/* Portal preview layout */}
+              <div class="p-4 bg-[var(--background)] grid grid-cols-12 gap-4">
+                {/* Left side: Article body */}
+                <div class="col-span-8 space-y-3">
+                  <div class="w-12 h-3.5 bg-muted rounded-none" />
+                  <div class="h-5 bg-foreground/80 w-full rounded-none font-serif" />
+                  <div class="space-y-2 pt-2">
+                    <div class="h-2 bg-muted w-full rounded-none" />
+                    <div class="h-2 bg-muted w-full rounded-none" />
+                    <div class="h-2 bg-muted w-5/6 rounded-none" />
+                    <div class="h-2 bg-muted w-full rounded-none" />
+                    <div class="h-2 bg-muted w-4/5 rounded-none" />
+                  </div>
+                </div>
+                {/* Right side: Sidebar with ad */}
+                <div class="col-span-4 flex flex-col gap-2">
+                  <div class="text-[9px] font-sans text-muted-foreground uppercase tracking-widest text-right">
+                    REKLAMA
+                  </div>
+                  <div class="border border-dashed border-[var(--presek-mark-line)] bg-[var(--presek-mark-soft)]/20 p-1 relative">
+                    <img 
+                      src={campaign.image_url} 
+                      alt="Sidebar Ad" 
+                      class="w-full object-contain mx-auto"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Casing Mockup for mobile_content */}
+          {campaign.slot_id === 'mobile_content' && (
+            <div class="max-w-[280px] mx-auto w-full bg-card border-8 border-foreground rounded-[24px] shadow-lg overflow-hidden flex flex-col relative aspect-[9/16]">
+              {/* Phone speaker & camera */}
+              <div class="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                <div class="w-8 h-1 bg-muted rounded-full" />
+                <div class="w-1.5 h-1.5 rounded-full bg-muted" />
+              </div>
+              
+              {/* Browser Status Bar spacing */}
+              <div class="h-6 bg-secondary border-b border-border flex items-center justify-between px-4 pt-1 select-none">
+                <span class="text-[8px] font-bold font-sans">09:41</span>
+                <span class="text-[8px] font-bold font-sans">5G</span>
+              </div>
+              
+              {/* Screen Content */}
+              <div class="flex-1 bg-[var(--background)] p-4 overflow-y-auto space-y-4 hide-scrollbar">
+                {/* Logo */}
+                <div class="text-center font-serif font-black text-base border-b border-border pb-1">
+                  PRESEK
+                </div>
+                {/* Article Header */}
+                <div class="space-y-1">
+                  <div class="h-2 bg-muted w-1/4 rounded-none" />
+                  <div class="h-4 bg-foreground w-full rounded-none" />
+                  <div class="h-4 bg-foreground w-2/3 rounded-none" />
+                </div>
+                {/* Article text line */}
+                <div class="space-y-1.5">
+                  <div class="h-1.5 bg-muted/60 w-full rounded-none" />
+                  <div class="h-1.5 bg-muted/60 w-full rounded-none" />
+                </div>
+                {/* Inline Banner */}
+                <div class="border border-dashed border-[var(--presek-mark-line)] bg-[var(--presek-mark-soft)]/20 p-1 relative">
+                  <img 
+                    src={campaign.image_url} 
+                    alt="Mobile Content Ad" 
+                    class="w-full object-contain mx-auto"
+                  />
+                  <div class="absolute top-1 left-1 bg-foreground/75 text-[var(--background)] text-[7px] font-sans px-0.5 select-none pointer-events-none">
+                    AD
+                  </div>
+                </div>
+                {/* Remaining article text */}
+                <div class="space-y-1.5">
+                  <div class="h-1.5 bg-muted/60 w-full rounded-none" />
+                  <div class="h-1.5 bg-muted/60 w-full rounded-none" />
+                  <div class="h-1.5 bg-muted/60 w-4/5 rounded-none" />
+                </div>
+              </div>
+              {/* Home Indicator */}
+              <div class="h-4 bg-card flex justify-center items-center">
+                <div class="w-16 h-1 bg-foreground/30 rounded-full" />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
+<style>
+  .marketing-dashboard {
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+  }
+</style>
