@@ -37,6 +37,8 @@ const {
   cspNonce,
   gtagId,
 } = Astro.props;
+
+const ClientRouterAny = ClientRouter as any;
 ---
 
 <script async src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`} nonce={cspNonce}></script>
@@ -95,7 +97,7 @@ const {
 
 <title>{pageTitle}</title>
 
-<ClientRouter nonce={cspNonce} />
+<ClientRouterAny nonce={cspNonce} />
 
 {schema && (
   <script type="application/ld+json" is:inline set:html={safeJsonForScript(schema)} nonce={cspNonce} />

@@ -7,7 +7,7 @@ import { resolvePlaceholderTint } from '../lib/placeholderTheme';
 import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../lib/trustSignals';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { news } from '../i18n/namespaces/news';
-import { cluster } from '../i18n/namespaces/cluster';
+import { cluster as clusterNamespace } from '../i18n/namespaces/cluster';
 import { common } from '../i18n/namespaces/common';
 import type { NewsCluster, Article } from '../types';
 
@@ -25,7 +25,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   lang = 'sr'
 }) => {
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  const t = useClientTranslations(locale, news, cluster, common);
+  const t = useClientTranslations(locale, news, clusterNamespace, common);
   const translate = (key: string, params?: Record<string, string | number>) => t(key as any, params);
   const l = (path: string) => localePathForLang(path, locale);
 

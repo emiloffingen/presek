@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
-import { sources } from '../i18n/namespaces/sources';
+import { sources as sourcesNamespace } from '../i18n/namespaces/sources';
 import { briefing } from '../i18n/namespaces/briefing';
 import PresekAdRailSlot from './PresekAdRailSlot';
 import type { ui } from '../i18n/ui';
@@ -175,7 +175,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
-  const t = useClientTranslations(lang, sources, briefing);
+  const t = useClientTranslations(lang, sourcesNamespace, briefing);
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
