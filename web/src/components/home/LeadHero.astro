@@ -151,7 +151,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
     <MeshGradient color={tintColor} />
     {showHeroVisual && showLeadMedia && (
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-mobile" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
-        <div class="lead-media-frame shadow-editorial">
+        <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-proxy-fallback": leadVisual?.isWeak }]}>
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
 	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
@@ -329,7 +329,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 
     {showHeroVisual && showLeadMedia && (
     <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="lead-media lead-media-desktop" aria-hidden="true" tabindex="-1" data-testid="cluster-link">
-        <div class="lead-media-frame shadow-editorial">
+        <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-proxy-fallback": leadVisual?.isWeak }]}>
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
 	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>

@@ -586,7 +586,8 @@
 			z-index: 0;
 		}
 
-		.lead-media-frame.media-ready .lead-media-loading-shell {
+		.lead-media-frame.media-ready .lead-media-loading-shell,
+		.lead-media-frame.media-ready.lead-media-frame-proxy-fallback .lead-media-loading-shell {
 			opacity: 0;
 			pointer-events: none;
 		}
@@ -1037,7 +1038,7 @@
 			}
 
 			.lead-media-desktop .lead-media-overlay {
-				opacity: 0;
+				display: none !important;
 			}
 
 			.lead-hero-filtered {
