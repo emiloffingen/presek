@@ -142,10 +142,9 @@
 }
 
 .masthead-double-rule {
-  border-top: 1px solid color-mix(in srgb, var(--foreground) 80%, transparent);
-  border-bottom: 3px solid
-    color-mix(in srgb, var(--foreground) 80%, transparent);
-  height: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 15%, var(--border));
+  border-bottom: none;
+  height: auto;
   padding: 0;
   margin-bottom: 1.5rem;
   position: relative;
@@ -175,17 +174,11 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 15%, var(--border));
 }
 
 .section-heading-row.masthead-double-rule::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--foreground);
+  display: none;
 }
 
 .shadow-editorial {
