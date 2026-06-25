@@ -67,29 +67,22 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-60 animate-pulse">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-60">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
-                        <div className="h-3 w-32 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+                        <Activity size={18} className="text-muted-foreground/40 animate-spin" style={{ animationDuration: '3s' }} />
+                        <h3 className="font-black text-xs uppercase tracking-widest text-muted-foreground/40">
+                            {lang === 'sr' ? 'Nacionalni Puls' : 'Национален Пулс'}
+                        </h3>
                     </div>
                 </div>
-                <div className="space-y-8">
-                    <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full"></div>
-                    <div className="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                        <div className="space-y-2">
-                            <div className="h-2 w-16 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
-                            <div className="h-6 w-12 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
-                        </div>
-                        <div className="flex flex-col items-end space-y-2">
-                            <div className="h-2 w-20 bg-zinc-100 dark:bg-zinc-800 rounded"></div>
-                            <div className="flex gap-1.5 h-10 items-end">
-                                {[1,2,3,4,5].map(i => (
-                                    <div key={i} className="w-2 bg-zinc-100 dark:bg-zinc-800 rounded-t-sm" style={{ height: `${20 + i*15}%` }}></div>
-                                ))}
-                            </div>
-                        </div>
+                <div className="py-8 flex flex-col items-center justify-center text-center">
+                    <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-3 animate-pulse">
+                        <div className="w-3 h-3 rounded-full bg-nyt-accent"></div>
                     </div>
+                    <p className="text-xs font-serif italic text-muted-foreground/60">
+                        {lang === 'sr' ? 'Učitavanje metrike pulsa...' : 'Вчитување на метриката за пулс...'}
+                    </p>
                 </div>
             </div>
         );
