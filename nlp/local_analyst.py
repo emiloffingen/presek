@@ -85,16 +85,24 @@ class LocalAnalyst:
                 cls._instance = super(LocalAnalyst, cls).__new__(cls)
                 cls._instance.model = None
                 cls._instance.load_lock = threading.Lock()
-                _, LlamaGrammar = _import_llama_cpp()
-                if LlamaGrammar is not None:
-                    try:
-                        cls._instance.grammar = LlamaGrammar.from_string(JSON_GBNF)
-                    except Exception as e:
-                        log.error(f"[analyst] Failed to compile grammar: {e}")
-                        cls._instance.grammar = None
-                else:
-                    cls._instance.grammar = None
+                cls._instance._grammar = None
+                cls._instance._grammar_compiled = False
         return cls._instance
+
+    @property
+    def grammar(self):
+        if not self._grammar_compiled:
+            _, LlamaGrammar = _import_llama_cpp()
+            if LlamaGrammar is not None:
+                try:
+                    self._grammar = LlamaGrammar.from_string(JSON_GBNF)
+                except Exception as e:
+                    log.error(f"[analyst] Failed to compile grammar: {e}")
+                    self._grammar = None
+            else:
+                self._grammar = None
+            self._grammar_compiled = True
+        return self._grammar
 
     def _load_model(self):
         if self.model is not None:
