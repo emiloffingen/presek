@@ -64,21 +64,33 @@ export default function ThemeIsland({ fixed = false, lang = 'sr' }: { fixed?: bo
 
   const size = fixed ? 20 : 18;
   const activeTheme = ready ? theme : readStoredTheme();
-  const Icon = activeTheme === 'dark' ? Moon : Sun;
+  const isDark = activeTheme === 'dark';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses}`}
-      aria-label={activeTheme === 'light' ? t('theme.to_dark') : t('theme.to_light')}
+      className={`${baseClasses} ${fixed ? fixedClasses : inlineClasses} overflow-hidden`}
+      aria-label={isDark ? t('theme.to_light') : t('theme.to_dark')}
     >
-      <Icon
-        size={size}
-        strokeWidth={2.25}
-        className="theme-toggle-icon transition-colors"
-        aria-hidden="true"
-      />
+      <div className="relative w-full h-full flex items-center justify-center">
+        <Sun
+          size={size}
+          strokeWidth={2.25}
+          className={`absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
+          }`}
+          aria-hidden="true"
+        />
+        <Moon
+          size={size}
+          strokeWidth={2.25}
+          className={`absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+            isDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
+          }`}
+          aria-hidden="true"
+        />
+      </div>
     </button>
   );
 }

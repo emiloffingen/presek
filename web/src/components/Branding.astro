@@ -115,6 +115,11 @@ const t = useTranslations(lang);
         opacity: 1;
     }
 
+    .presek-branding:hover .accent-block {
+        transform: rotate(12deg) scale(1.06);
+        transform-origin: 50px 50px;
+    }
+
     /* --- DARK MODE ADJUSTMENTS --- */
     :global(.dark) .presek-branding {
         color: color-mix(in srgb, var(--foreground) 95%, white 5%);

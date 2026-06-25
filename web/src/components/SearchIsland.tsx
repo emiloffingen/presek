@@ -562,7 +562,7 @@ export default function SearchIsland({
 
   const overlayContent = isOpen && (
     <div
-      className="fixed inset-0 z-[10000] bg-background/95 backdrop-blur-2xl flex items-center justify-center transition-all animate-in fade-in duration-300"
+      className="fixed inset-0 z-[10000] bg-background/80 backdrop-blur-3xl flex items-center justify-center transition-all animate-in fade-in duration-300 search-overlay-backdrop"
       role="dialog"
       aria-modal="true"
       aria-label={t('search.dialog_label')}
@@ -571,7 +571,7 @@ export default function SearchIsland({
     >
       <div
         ref={dialogRef}
-        className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-background/95 border-x border-border/50 sm:border sm:border-border/50 shadow-2xl rounded-none flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
+        className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-card/85 backdrop-blur-xl border-x border-border/50 sm:border sm:border-border/50 shadow-premium sm:rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
         data-page-scope="search"
         onClick={(e) => e.stopPropagation()}
       >
