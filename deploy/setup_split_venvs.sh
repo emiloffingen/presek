@@ -72,6 +72,13 @@ main() {
   need_cmd "$PYTHON_BIN"
   install -d "$APP_ROOT" "$PYTHON_ENVS_DIR"
 
+  if [ -f "$APP_ROOT/shared/.env" ]; then
+    echo "> Loading shared env variables from $APP_ROOT/shared/.env"
+    set -a
+    source "$APP_ROOT/shared/.env"
+    set +a
+  fi
+
   if [ ! -d "$CURRENT" ]; then
     echo "Warning: $CURRENT not found — using SOURCE_ROOT=$SOURCE_ROOT for dependency resolution" >&2
   fi
