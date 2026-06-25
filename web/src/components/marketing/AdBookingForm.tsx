@@ -12,6 +12,7 @@ import {
   ArrowRight,
   TrendingUp
 } from 'lucide-react';
+import { localePathForLang } from '../../lib/localePaths';
 
 interface AdBookingFormProps {
   lang: 'sr' | 'mk';
@@ -164,9 +165,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const handleLookupRedirect = (e: React.FormEvent) => {
     e.preventDefault();
     if (!lookupId.trim()) return;
-    const statusUrl = lang === 'mk' 
-      ? `/mk/marketing/status?id=${encodeURIComponent(lookupId.trim())}`
-      : `/marketing/status?id=${encodeURIComponent(lookupId.trim())}`;
+    const statusUrl = localePathForLang(`/marketing/status?id=${encodeURIComponent(lookupId.trim())}`, lang);
     window.location.href = statusUrl;
   };
 
@@ -208,12 +207,12 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
 
     if (days > 0) {
       setDailyAvg(Math.round(targetImpressions / days));
+      const cpm = CPM_RATES[slotId];
+      setTotalCost(Math.round((targetImpressions / 1000) * cpm * 100) / 100);
     } else {
       setDailyAvg(0);
+      setTotalCost(0);
     }
-
-    const cpm = CPM_RATES[slotId];
-    setTotalCost(Math.round((targetImpressions / 1000) * cpm * 100) / 100);
   }, [startDate, endDate, targetImpressions, slotId]);
 
   // Handle file select
