@@ -96,7 +96,8 @@ const translations = {
 
 export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const t = translations[lang];
-  const todayStr = new Date().toISOString().split('T')[0];
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   const [activeTab, setActiveTab] = useState<'book' | 'track'>('book');
 
@@ -183,15 +184,26 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
   useEffect(() => {
     if (!startDate || !endDate) return;
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // Clear hours for comparison
-    start.setHours(0,0,0,0);
-    end.setHours(0,0,0,0);
+    const startParts = startDate.split('-');
+    const endParts = endDate.split('-');
+    let days = 0;
 
-    const diffTime = end.getTime() - start.getTime();
-    const days = diffTime >= 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 : 0;
+    if (startParts.length === 3 && endParts.length === 3) {
+      const startYear = parseInt(startParts[0], 10);
+      const startMonth = parseInt(startParts[1], 10) - 1;
+      const startDay = parseInt(startParts[2], 10);
+      
+      const endYear = parseInt(endParts[0], 10);
+      const endMonth = parseInt(endParts[1], 10) - 1;
+      const endDay = parseInt(endParts[2], 10);
+      
+      const startUTC = Date.UTC(startYear, startMonth, startDay);
+      const endUTC = Date.UTC(endYear, endMonth, endDay);
+      
+      const diffTime = endUTC - startUTC;
+      days = diffTime >= 0 ? Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1 : 0;
+    }
+    
     setNumDays(days);
 
     if (days > 0) {
@@ -238,10 +250,10 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     const newErrors: string[] = [];
 
     // Client-side validations
-    if (new Date(startDate) < new Date(todayStr)) {
+    if (startDate < todayStr) {
       newErrors.push(t.futureDateError);
     }
-    if (new Date(endDate) < new Date(startDate)) {
+    if (endDate < startDate) {
       newErrors.push(t.dateError);
     }
     if (dailyAvg < 2000) {
@@ -503,8 +515,8 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                       required
                       step={1000}
                       min={1000}
-                      value={targetImpressions}
-                      onChange={(e) => setTargetImpressions(Math.max(1000, Number(e.target.value)))}
+                      value={targetImpressions || ''}
+                      onChange={(e) => setTargetImpressions(e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
                       className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                     />
                   </div>
