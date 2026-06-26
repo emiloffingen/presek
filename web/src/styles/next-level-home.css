@@ -297,6 +297,10 @@
   display: none !important;
 }
 
+.home-page-variant-pregled .home-feed-only.homepage-analiza-only {
+  display: none !important;
+}
+
 .home-page-variant-feed:not(.home-analysis-expanded) .home-edition-collapsed {
   display: none !important;
 }
