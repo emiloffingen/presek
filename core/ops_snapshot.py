@@ -14,7 +14,7 @@ from core.health import (
     get_synthesis_quality_snapshot,
     load_last_refresh_time,
 )
-from core.limits import CELERY_QUEUE_CRITICAL_DEPTH, CELERY_QUEUE_WARN_DEPTH
+from core.runtime_limits import CELERY_QUEUE_CRITICAL_DEPTH, CELERY_QUEUE_WARN_DEPTH
 from core.queue_status import queue_status_payload, reader_pipeline_status
 
 _STALE_CLUSTER_SQL = """

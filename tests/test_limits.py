@@ -1,5 +1,5 @@
 from core.config import API_MAX_Q_LEN
-from core.limits import MAX_QUERY_PARAM_LENGTH, MAX_REQUEST_BODY_SIZE
+from core.runtime_limits import MAX_QUERY_PARAM_LENGTH, MAX_REQUEST_BODY_SIZE
 from routes.common import _is_rate_limited_path
 from routes.security import MAX_HEADER_VALUE_LENGTH
 

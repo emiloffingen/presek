@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from core.limits import (
+from core.runtime_limits import (
     CELERY_QUEUE_WARN_DEPTH,
     INTEL_QUEUE_FULL_DEFER_LIMIT,
     INTEL_QUEUE_SECONDARY_DEFER_LIMIT,

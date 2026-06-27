@@ -4,7 +4,7 @@ from tasks.intelligence.synthesis_translation import try_translate_synthesis_to_
 
 
 def test_translate_returns_none_when_disabled(monkeypatch):
-    monkeypatch.setattr("core.limits.SYNTHESIS_MK_TRANSLATE_FROM_SR", False)
+    monkeypatch.setattr("core.runtime_limits.SYNTHESIS_MK_TRANSLATE_FROM_SR", False)
     result = try_translate_synthesis_to_mk({"synthetic_headline": "Test"}, [])
     assert result is None
 

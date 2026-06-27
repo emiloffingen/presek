@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-from core.limits import (
+from core.runtime_limits import (
     MAX_HEADER_VALUE_LENGTH,
     MAX_QUERY_PARAM_LENGTH,
     MAX_REQUEST_BODY_SIZE,

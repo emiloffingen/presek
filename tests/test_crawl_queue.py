@@ -66,7 +66,7 @@ class TestPruneCrawlQueue:
         with (
             patch("tasks.utils.redis_client") as mock_redis,
             patch("tasks.utils.get_celery_queue_depth", return_value=200),
-            patch("core.limits.CRAWL_QUEUE_SOFT_LIMIT", 150),
+            patch("core.runtime_limits.CRAWL_QUEUE_SOFT_LIMIT", 150),
         ):
             mock_redis.lrange.return_value = messages
             result = prune_crawl_queue(dry_run=True)

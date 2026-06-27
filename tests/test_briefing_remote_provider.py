@@ -1,6 +1,6 @@
 import pytest
 
-from core.limits import briefing_remote_provider, resolve_briefing_ai_providers
+from core.runtime_limits import briefing_remote_provider, resolve_briefing_ai_providers
 
 
 @pytest.mark.parametrize(

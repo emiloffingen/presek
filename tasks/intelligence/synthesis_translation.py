@@ -22,7 +22,7 @@ def _resolve_generation_model(provider: str | None):
 
 def try_translate_synthesis_to_mk(sr_bundle, article_rows, fast_mode=False):
     """Translate a successful Serbian synthesis bundle to Macedonian."""
-    from core.limits import SYNTHESIS_MK_TRANSLATE_FROM_SR
+    from core.runtime_limits import SYNTHESIS_MK_TRANSLATE_FROM_SR
 
     if not SYNTHESIS_MK_TRANSLATE_FROM_SR or not sr_bundle:
         return None

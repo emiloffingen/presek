@@ -184,11 +184,11 @@ class LocalAnalyst:
         lock_key = "lock:local_llm_synthesis" if task_type == "synthesis" else "lock:local_llm_inference"
         if lock_timeout is None:
             if task_type == "synthesis":
-                from core.limits import LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
+                from core.runtime_limits import LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
 
                 lock_timeout = LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS
             else:
-                from core.limits import LOCAL_LLM_LOCK_TIMEOUT_SECONDS
+                from core.runtime_limits import LOCAL_LLM_LOCK_TIMEOUT_SECONDS
 
                 lock_timeout = LOCAL_LLM_LOCK_TIMEOUT_SECONDS
         lock_token = str(uuid.uuid4())

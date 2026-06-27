@@ -47,7 +47,7 @@ def _synthesis_dispatch_deferred() -> bool:
 
 
 def _effective_synthesis_refresh_hourly_cap() -> int:
-    from core.limits import (
+    from core.runtime_limits import (
         SYNTHESIS_QUEUE_BURST_INTEL_MAX,
         SYNTHESIS_REFRESH_HOURLY_CAP,
         SYNTHESIS_REFRESH_HOURLY_CAP_BURST,
@@ -367,7 +367,7 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
 @maintenance_task
 def upgrade_stuck_fast_syntheses_task(limit=None):
     """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
-    from core.limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_QUEUE, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
+    from core.runtime_limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_QUEUE, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
     from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids, prune_stale_fast_synthesis_pending
     from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
     from tasks.utils import maintenance_dispatches_deferred
@@ -411,7 +411,7 @@ def upgrade_stuck_fast_syntheses_task(limit=None):
 @maintenance_task
 def refresh_fallback_syntheses_task(limit=None):
     """Re-run full synthesis for provisional or deterministic fallback summaries."""
-    from core.limits import FALLBACK_SYNTHESIS_REFRESH_LIMIT
+    from core.runtime_limits import FALLBACK_SYNTHESIS_REFRESH_LIMIT
     from tasks.intelligence import synthesize_cluster_task
 
     if _synthesis_dispatch_deferred():
@@ -577,7 +577,7 @@ def prune_crawl_queue_task(dry_run=False):
 @maintenance_task
 def catch_up_deferred_crawls_task(limit=None):
     """Enqueue crawls for recent articles missing full_content when crawl queue has headroom."""
-    from core.limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
+    from core.runtime_limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
     from tasks.ingestion_task import crawl_article_task
     from tasks.utils import crawl_dispatches_deferred, get_celery_queue_depth
 
@@ -782,7 +782,7 @@ def prioritize_homepage_syntheses_task(limit=None):
 @maintenance_task(soft_time_limit=120, time_limit=180)
 def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_limit=800):
     """Queue recluster/repair work for homepage supply without blocking maintenance workers."""
-    from core.limits import INTEL_QUEUE_SECONDARY_DEFER_LIMIT
+    from core.runtime_limits import INTEL_QUEUE_SECONDARY_DEFER_LIMIT
     from tasks.intelligence.cluster_ops import recluster_recent_articles_task, repair_split_clusters_task
     from tasks.intelligence import intelligence_batches_deferred
     from tasks.utils import acquire_task_lock, get_celery_queue_depth, pipeline_backpressure_active
@@ -821,7 +821,7 @@ def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_lim
 @maintenance_task
 def refresh_low_score_syntheses_task(min_score=None, limit=None):
     """Re-run full synthesis for recent low-scoring cluster summaries."""
-    from core.limits import LOW_SCORE_SYNTHESIS_MIN, LOW_SCORE_SYNTHESIS_REFRESH_LIMIT
+    from core.runtime_limits import LOW_SCORE_SYNTHESIS_MIN, LOW_SCORE_SYNTHESIS_REFRESH_LIMIT
     from tasks.intelligence import synthesize_cluster_task
 
     if _synthesis_dispatch_deferred():

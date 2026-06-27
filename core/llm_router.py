@@ -161,7 +161,7 @@ class SmartModelRouter:
         routing_decision: dict,
     ) -> str:
         """Promote/demote provider candidates using recorded synthesis quality."""
-        from core.limits import synthesis_local_only
+        from core.runtime_limits import synthesis_local_only
 
         if synthesis_local_only() and candidate == "local":
             return candidate
@@ -213,7 +213,7 @@ class SmartModelRouter:
         )
         if chosen != candidate:
             routing_decision["reason"] = f"{reason}_quality_adjusted"
-        from core.limits import local_synthesis_enabled
+        from core.runtime_limits import local_synthesis_enabled
 
         if chosen == "local" and not local_synthesis_enabled():
             chosen = _default_remote_provider()
@@ -240,7 +240,7 @@ class SmartModelRouter:
     @staticmethod
     def get_dynamic_fallback_order(task_type="synthesis"):
         """Generate fallback order based on recent provider performance"""
-        from core.limits import synthesis_local_only
+        from core.runtime_limits import synthesis_local_only
 
         if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
             return ["local"]
@@ -267,7 +267,7 @@ class SmartModelRouter:
         sorted_providers = sorted(providers_with_stats, key=lambda x: x['score'], reverse=True)
         dynamic_order = [p['name'] for p in sorted_providers]
         
-        from core.limits import local_synthesis_enabled
+        from core.runtime_limits import local_synthesis_enabled
 
         if task_type == "synthesis" and not local_synthesis_enabled():
             return [provider for provider in dynamic_order if provider != "local"]
@@ -285,7 +285,7 @@ class SmartModelRouter:
         Determines the optimal LLM provider or local fallback for a given news cluster.
         Returns one of: 'local', 'nvidia', or 'enhanced_fallback' (empty input only).
         """
-        from core.limits import synthesis_local_only
+        from core.runtime_limits import synthesis_local_only
 
         SmartModelRouter._load_metrics_from_redis()
         if not articles:

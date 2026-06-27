@@ -10,7 +10,7 @@ def _paragraph_fingerprint(text: str) -> str:
     return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
 
 def _expected_article_paragraphs() -> int:
-    from core.limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
+    from core.runtime_limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
 
     return 3 if LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA else 5
 

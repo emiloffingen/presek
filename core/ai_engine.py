@@ -284,7 +284,7 @@ class OpenAICompatibleProvider(AIProvider):
         }
         try:
             if task_type == "daily_brief":
-                from core.limits import NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS
+                from core.runtime_limits import NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS
                 timeout = float(NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS)
             else:
                 timeout = 120.0
@@ -325,7 +325,7 @@ class LocalProvider(AIProvider):
 
     @staticmethod
     def _local_synthesis_system(lang: str) -> str:
-        from core.limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
+        from core.runtime_limits import LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA
 
         if LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA:
             if lang == "mk":
@@ -416,7 +416,7 @@ class LocalProvider(AIProvider):
             if json_mode or response_schema is not None:
                 prompt = self._local_synthesis_prompt(prompt, lang)
                 system = self._local_synthesis_system(lang)
-            from core.limits import (
+            from core.runtime_limits import (
                 LOCAL_LLM_SYNTHESIS_LOCK_TIMEOUT_SECONDS,
                 LOCAL_SYNTHESIS_MAX_TOKENS,
                 local_synthesis_enabled,
@@ -530,7 +530,7 @@ def build_provider_fallback_order(
     exclude_providers: list[str] | None = None,
 ) -> list[str]:
     """Build provider cascade order with optional primary override and exclusions."""
-    from core.limits import synthesis_local_only
+    from core.runtime_limits import synthesis_local_only
 
     if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
         order = ["local"]
@@ -568,7 +568,7 @@ def build_provider_fallback_order(
     else:
         order = list(base_order)
 
-    from core.limits import local_synthesis_enabled
+    from core.runtime_limits import local_synthesis_enabled
 
     if (
         "local" in PROVIDERS

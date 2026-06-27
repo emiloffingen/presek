@@ -119,7 +119,7 @@ def _schedule_deep_analyst_work(
 
 def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
     """Queue a deferred full-quality synthesis after an initial fast-mode publish."""
-    from core.limits import FAST_SYNTHESIS_UPGRADE_QUEUE
+    from core.runtime_limits import FAST_SYNTHESIS_UPGRADE_QUEUE
     from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
 
     if os.environ.get("FAST_SYNTHESIS_UPGRADE_ENABLED", "true").lower() != "true":

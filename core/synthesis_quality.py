@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from core.limits import (
+from core.runtime_limits import (
     SYNTHESIS_QUALITY_MIN_LOCAL,
     SYNTHESIS_QUALITY_MIN_NVIDIA,
 )

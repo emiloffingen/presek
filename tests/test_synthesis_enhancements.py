@@ -27,7 +27,7 @@ def test_clean_macedonian_spelling_and_script():
     assert _clean_macedonian_spelling_and_script("NATO и EU") == "NATO и EU"
 
 def test_score_synthesis_quality(monkeypatch):
-    monkeypatch.setattr("core.limits.LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA", False)
+    monkeypatch.setattr("core.runtime_limits.LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA", False)
     # Good synthesis
     headline = "Novi predsednik preuzeo dužnost"
     article = "Prvi pasus o preuzimanju dužnosti.\n\nDrugi pasus o ceremoniji.\n\nTreći pasus o dogovoru medija [1].\n\nČetvrti pasus o tome gde se razlikuju [2].\n\nPeti pasus o neverifikovanom razvoju i otvoreno pitanje?"

@@ -483,7 +483,7 @@ def generate_daily_brief_task(
 
         full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
-        from core.limits import resolve_briefing_ai_providers
+        from core.runtime_limits import resolve_briefing_ai_providers
 
         effective_provider, provider_exclusions = resolve_briefing_ai_providers(provider_override)
         brief, brief_provider = _call_ai(

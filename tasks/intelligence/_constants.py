@@ -30,7 +30,7 @@ from core.celery_app import celery_app
 from core.config import CLUSTER_LOOKBACK
 from core.database import db_manager as db
 from core.embeddings import average_embeddings, parse_embedding_value
-from core.limits import (
+from core.runtime_limits import (
     BACKFILL_QUEUE_DEPTH_LIMIT as _BACKFILL_QUEUE_DEPTH_LIMIT,
     INTEL_QUEUE_FULL_DEFER_LIMIT as _INTEL_QUEUE_FULL_DEFER_LIMIT,
     INTEL_QUEUE_SECONDARY_DEFER_LIMIT as _INTEL_QUEUE_SECONDARY_DEFER_LIMIT,

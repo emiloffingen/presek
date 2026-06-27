@@ -87,7 +87,7 @@ def _fact_grounding_diagnostics(
     if not synthesis_text or not article_rows:
         return {"ok": True, "ungrounded_numbers": [], "ungrounded_scores": []}
 
-    from core.limits import FACT_GROUNDING_MAX_UNGROUNDED, FACT_GROUNDING_MAX_UNGROUNDED_FAST
+    from core.runtime_limits import FACT_GROUNDING_MAX_UNGROUNDED, FACT_GROUNDING_MAX_UNGROUNDED_FAST
     from nlp.generation import _extract_number_tokens, _extract_sports_scores
     from nlp.utils import transliterate
 

@@ -310,7 +310,7 @@ class TestAstroFrontendIntegrity:
 
     def test_request_size_limit_matches_api_max_query_length(self):
         security = _read("routes/security.py")
-        assert "from core.limits import" in security
+        assert "from core.runtime_limits import" in security
         assert "MAX_QUERY_PARAM_LENGTH" in security
         limits = _read("core/limits.py")
         assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in limits

@@ -307,19 +307,19 @@ def get_reader_relevant_queue_depth() -> int:
 
 
 def fast_track_dispatches_deferred() -> bool:
-    from core.limits import FAST_TRACK_QUEUE_DEFER_LIMIT
+    from core.runtime_limits import FAST_TRACK_QUEUE_DEFER_LIMIT
 
     return get_celery_queue_depth(FAST_TRACK_QUEUE_NAME) >= FAST_TRACK_QUEUE_DEFER_LIMIT
 
 
 def maintenance_dispatches_deferred() -> bool:
-    from core.limits import MAINTENANCE_QUEUE_DEFER_LIMIT
+    from core.runtime_limits import MAINTENANCE_QUEUE_DEFER_LIMIT
 
     return get_celery_queue_depth(MAINTENANCE_QUEUE_NAME) >= MAINTENANCE_QUEUE_DEFER_LIMIT
 
 
 def pipeline_backpressure_active() -> bool:
-    from core.limits import (
+    from core.runtime_limits import (
         CELERY_QUEUE_CRITICAL_DEPTH,
         FAST_TRACK_QUEUE_DEFER_LIMIT,
         INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
@@ -341,7 +341,7 @@ def pipeline_backpressure_active() -> bool:
 
 
 def synthesis_dispatch_deferred() -> bool:
-    from core.limits import INTEL_QUEUE_FULL_DEFER_LIMIT, SYNTHESIS_QUEUE_DEFER_LIMIT
+    from core.runtime_limits import INTEL_QUEUE_FULL_DEFER_LIMIT, SYNTHESIS_QUEUE_DEFER_LIMIT
 
     if get_celery_queue_depth("synthesis") >= SYNTHESIS_QUEUE_DEFER_LIMIT:
         return True
@@ -354,14 +354,14 @@ def synthesis_dispatch_deferred() -> bool:
 
 
 def crawl_dispatches_deferred() -> bool:
-    from core.limits import CRAWL_QUEUE_DEFER_LIMIT
+    from core.runtime_limits import CRAWL_QUEUE_DEFER_LIMIT
 
     return get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME) >= CRAWL_QUEUE_DEFER_LIMIT
 
 
 def crawl_dispatch_cap() -> int | None:
     """Return a per-cycle crawl cap when the crawl queue is elevated, else None."""
-    from core.limits import CRAWL_DISPATCH_CAP, CRAWL_QUEUE_DEFER_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
+    from core.runtime_limits import CRAWL_DISPATCH_CAP, CRAWL_QUEUE_DEFER_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
 
     depth = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
     if depth >= CRAWL_QUEUE_DEFER_LIMIT:
@@ -479,7 +479,7 @@ def prune_ingestion_queue(*, max_pending: int = 1, dry_run: bool = False) -> dic
 
 def prune_crawl_queue(*, dry_run: bool = False) -> dict:
     """Drop duplicate crawl/image/invalidation dispatches, keeping the oldest per article."""
-    from core.limits import CRAWL_QUEUE_SOFT_LIMIT
+    from core.runtime_limits import CRAWL_QUEUE_SOFT_LIMIT
 
     depth_before = get_celery_queue_depth(INGESTION_CRAWL_QUEUE_NAME)
     if depth_before <= 1:
@@ -561,7 +561,7 @@ def prune_crawl_queue(*, dry_run: bool = False) -> dict:
 
 def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = False) -> dict:
     """Drop misrouted synthesis work from fast-track while keeping urgent tasks."""
-    from core.limits import FAST_TRACK_QUEUE_GROOM_DEPTH
+    from core.runtime_limits import FAST_TRACK_QUEUE_GROOM_DEPTH
 
     groom_threshold = int(groom_threshold or FAST_TRACK_QUEUE_GROOM_DEPTH)
     depth_before = get_celery_queue_depth(FAST_TRACK_QUEUE_NAME)
@@ -640,7 +640,7 @@ def reprioritize_fast_track_queue(*, groom_threshold: int = 60, dry_run: bool = 
 
 def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool = False) -> dict:
     """Drop duplicate maintenance housekeeping when the maintenance queue is congested."""
-    from core.limits import MAINTENANCE_QUEUE_SOFT_LIMIT
+    from core.runtime_limits import MAINTENANCE_QUEUE_SOFT_LIMIT
 
     groom_threshold = int(groom_threshold or MAINTENANCE_QUEUE_SOFT_LIMIT)
     depth_before = get_celery_queue_depth(MAINTENANCE_QUEUE_NAME)
@@ -689,7 +689,7 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
 
         kept.append(raw)
 
-    from core.limits import MAINTENANCE_QUEUE_DEFER_LIMIT
+    from core.runtime_limits import MAINTENANCE_QUEUE_DEFER_LIMIT
 
     defer_cap = max(20, MAINTENANCE_QUEUE_DEFER_LIMIT // 3)
     if len(kept) > MAINTENANCE_QUEUE_DEFER_LIMIT:

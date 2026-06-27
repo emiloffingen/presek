@@ -1,7 +1,7 @@
 """Operational Celery queue depth helpers for admin UI and metrics."""
 
 from core.health import MONITORED_CELERY_QUEUES
-from core.limits import (
+from core.runtime_limits import (
     CELERY_QUEUE_WARN_DEPTH,
     FAST_TRACK_QUEUE_DEFER_LIMIT,
     FAST_TRACK_QUEUE_SOFT_LIMIT,
