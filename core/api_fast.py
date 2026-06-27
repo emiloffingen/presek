@@ -468,6 +468,55 @@ async def version_info():
     return get_full_version_info()
 
 
+if "presek_db_pool_connections_num" in REGISTRY._names_to_collectors:
+    _DB_POOL_CONNECTIONS_NUM = REGISTRY._names_to_collectors["presek_db_pool_connections_num"]
+else:
+    _DB_POOL_CONNECTIONS_NUM = Gauge(
+        "presek_db_pool_connections_num",
+        "Current number of connections in the pool",
+        ["pool_type", "role"],
+    )
+
+if "presek_db_pool_available" in REGISTRY._names_to_collectors:
+    _DB_POOL_AVAILABLE = REGISTRY._names_to_collectors["presek_db_pool_available"]
+else:
+    _DB_POOL_AVAILABLE = Gauge(
+        "presek_db_pool_available",
+        "Number of available (idle) connections in the pool",
+        ["pool_type", "role"],
+    )
+
+if "presek_db_pool_waiting" in REGISTRY._names_to_collectors:
+    _DB_POOL_WAITING = REGISTRY._names_to_collectors["presek_db_pool_waiting"]
+else:
+    _DB_POOL_WAITING = Gauge(
+        "presek_db_pool_waiting",
+        "Number of requests currently waiting for a connection",
+        ["pool_type", "role"],
+    )
+
+
+def update_db_pool_metrics():
+    """Update Prometheus Gauges with active database connection pool stats."""
+    from core.database import db_manager, async_db
+
+    def collect_pool_stats(pool, pool_type: str, role: str):
+        if pool is None:
+            return
+        try:
+            stats = pool.get_stats()
+            _DB_POOL_CONNECTIONS_NUM.labels(pool_type=pool_type, role=role).set(stats.get("connections_num", 0))
+            _DB_POOL_AVAILABLE.labels(pool_type=pool_type, role=role).set(stats.get("pool_available", 0))
+            _DB_POOL_WAITING.labels(pool_type=pool_type, role=role).set(stats.get("requests_waiting", 0))
+        except Exception as e:
+            log.warning(f"Failed to collect database pool stats for {pool_type} {role}: {e}")
+
+    collect_pool_stats(getattr(db_manager, "_pool", None), "sync", "primary")
+    collect_pool_stats(getattr(db_manager, "_read_pool", None), "sync", "replica")
+    collect_pool_stats(getattr(async_db, "_pool", None), "async", "primary")
+    collect_pool_stats(getattr(async_db, "_read_pool", None), "async", "replica")
+
+
 @app.get("/metrics")
 @app.get("/api/metrics")
 @exempt_from_rate_limit
@@ -482,6 +531,12 @@ async def metrics(request: Request):
             _CELERY_QUEUE_DEPTH.labels(queue=queue).set(depth)
     except Exception as exc:
         log.warning("Failed to refresh Celery queue metrics: %s", exc)
+
+    try:
+        update_db_pool_metrics()
+    except Exception as exc:
+        log.warning("Failed to refresh database pool metrics: %s", exc)
+
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
