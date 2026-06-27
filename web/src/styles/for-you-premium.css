@@ -21,7 +21,7 @@
     grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
     gap: 1.5rem;
     padding: 1.5rem 0 1rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .for-you-skeleton-copy {
@@ -112,7 +112,7 @@
     gap: clamp(1.25rem, 4vw, 3rem);
     align-items: end;
     padding: clamp(1.5rem, 5vw, 3.25rem) 0 1.5rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--color-border);
     border-left: 3px solid var(--presek-mark);
     padding-left: clamp(0.85rem, 2vw, 1.35rem);
 }
@@ -158,12 +158,16 @@
 
 .for-you-signal-panel,
 .rail-panel,
-.cold-start-panel,
+.cold-start-panel {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0px);
+    background: color-mix(in srgb, var(--color-card) 72%, transparent);
+}
+
 .priority-story,
 .recommendation-tile {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg, 0px);
-    background: color-mix(in srgb, var(--card) 72%, transparent);
+    background: transparent;
+    border-radius: 0;
 }
 
 .for-you-signal-panel {
@@ -219,7 +223,7 @@
     justify-content: center;
     gap: 0.35rem;
     min-height: 34px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-ui);
     font-size: var(--text-ui-min);
@@ -232,7 +236,7 @@
     align-items: center;
     gap: 0.65rem;
     padding: 0.85rem 1rem;
-    border: 1px solid color-mix(in srgb, #f59e0b 55%, var(--border));
+    border: 1px solid color-mix(in srgb, #f59e0b 55%, var(--color-border));
     border-radius: var(--radius-lg, 0px);
     background: color-mix(in srgb, #f59e0b 10%, var(--background));
     color: var(--foreground);
@@ -306,7 +310,7 @@
     gap: 0.4rem;
     min-height: 34px;
     padding: 0 0.75rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-ui);
     font-size: var(--text-ui-kicker);
@@ -407,7 +411,7 @@
     gap: 0.15rem;
     min-height: 58px;
     place-items: center;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
     font-family: var(--font-ui);
     font-size: var(--text-ui-min);
@@ -442,7 +446,7 @@
     gap: 0.75rem;
     align-items: center;
     padding: 0.75rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
     background: color-mix(in srgb, var(--background) 62%, transparent);
 }
@@ -474,7 +478,7 @@
     align-items: center;
     min-height: 34px;
     padding: 0 0.7rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
 }
 
@@ -497,7 +501,7 @@
     gap: 0.75rem;
     align-items: start;
     padding: 0.75rem 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--color-border);
 }
 
 .next-item:first-child {
@@ -514,7 +518,7 @@
     display: grid;
     place-items: center;
     padding: 2rem;
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--color-border);
     border-radius: var(--radius-lg, 0px);
     color: var(--muted-foreground);
     text-align: center;
@@ -536,22 +540,22 @@
 .cold-start-unified-panel {
     display: grid;
     gap: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg, 0px);
-    background: color-mix(in srgb, var(--card) 72%, transparent);
+    background: color-mix(in srgb, var(--color-card) 72%, transparent);
     overflow: hidden;
 }
 
 .cold-start-unified-panel .for-you-briefing-card.is-embedded {
     border: 0;
     border-radius: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
-    background: color-mix(in srgb, var(--card) 82%, var(--presek-mark) 4%);
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--color-border));
+    background: color-mix(in srgb, var(--color-card) 82%, var(--presek-mark) 4%);
 }
 
 .cold-start-onboarding {
     padding: 0.85rem 1rem 0.35rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--color-border));
 }
 
 .cold-start-email-row {
@@ -591,9 +595,9 @@
     gap: 0.45rem;
     min-height: 38px;
     padding: 0 0.9rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 0px);
-    background: color-mix(in srgb, var(--card) 70%, transparent);
+    background: color-mix(in srgb, var(--color-card) 70%, transparent);
     font-family: var(--font-ui);
     font-size: var(--text-ui-kicker);
     font-weight: 700;
@@ -613,9 +617,9 @@
     gap: 1rem;
     align-items: end;
     padding: 1.1rem 1.2rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg, 0px);
-    background: color-mix(in srgb, var(--card) 82%, var(--presek-mark) 4%);
+    background: color-mix(in srgb, var(--color-card) 82%, var(--presek-mark) 4%);
 }
 
 .for-you-briefing-kicker {
@@ -660,7 +664,7 @@
     gap: 0.4rem;
     min-height: 38px;
     padding: 0 0.85rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     font-family: var(--font-ui);
     font-size: var(--text-ui-min);
     font-weight: 700;
@@ -681,9 +685,9 @@
 }
 
 .for-you-rail .morning-email-signup--settings {
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     padding: 1rem;
-    background: color-mix(in srgb, var(--card) 72%, transparent);
+    background: color-mix(in srgb, var(--color-card) 72%, transparent);
 }
 
 @media (max-width: 720px) {
@@ -755,11 +759,11 @@
     transform: translateY(-3px);
     border-color: var(--presek-mark);
     box-shadow: var(--shadow-lg);
-    background: color-mix(in srgb, var(--card) 94%, var(--presek-mark) 6%);
+    background: color-mix(in srgb, var(--color-card) 94%, var(--presek-mark) 6%);
 }
 
 .priority-story.is-primary:hover {
-    background: color-mix(in srgb, var(--card) 90%, var(--presek-mark) 10%);
+    background: color-mix(in srgb, var(--color-card) 90%, var(--presek-mark) 10%);
 }
 
 .cold-start-panel .onboarding-card {
@@ -776,7 +780,7 @@
     margin: 0 0 0.75rem;
     padding: 0.25rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--presek-mark) 25%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--presek-mark) 25%, var(--color-border));
     background: color-mix(in srgb, var(--presek-mark) 8%, transparent);
     font-family: var(--font-ui);
     font-size: var(--text-ui-min);
@@ -786,7 +790,7 @@
 }
 
 .for-you-rail-context {
-    border: 1px solid var(--border);
+    border: 1px solid var(--color-border);
     background: color-mix(in srgb, var(--secondary) 15%, var(--background));
 }
 
@@ -822,7 +826,7 @@
 
 .for-you-rail-context-body {
     padding: 0.85rem 0.9rem 1rem;
-    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
     display: grid;
     gap: 1.25rem;
 }
