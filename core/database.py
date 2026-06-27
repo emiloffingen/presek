@@ -513,6 +513,62 @@ class DatabaseManager:
         self._init_pool()
         self._init_read_pool()
 
+    def get_pool_stats(self) -> dict:
+        """Get connection pool statistics."""
+        stats = {}
+        if self._pool:
+            try:
+                # Use attribute access with fallbacks for different psycopg_pool versions
+                stats['current_connections'] = getattr(self._pool, 'getnconn', lambda: 0)()
+                stats['max_connections'] = getattr(self._pool, 'max_size', 10)
+                stats['idle_connections'] = getattr(self._pool, 'getnidle', lambda: 0)()
+                stats['waiting_requests'] = getattr(self._pool, 'getnwaiting', lambda: 0)()
+                stats['queue_size'] = getattr(self._pool, 'getnwaiting', lambda: 0)()
+                
+                # Fallback to direct attribute access if methods don't exist
+                if stats['current_connections'] == 0 and hasattr(self._pool, '_conn_q'):
+                    stats['current_connections'] = len(getattr(self._pool, '_conn_q', []))
+                if stats['max_connections'] == 10 and hasattr(self._pool, '_max_size'):
+                    stats['max_connections'] = getattr(self._pool, '_max_size', 10)
+            except Exception as e:
+                log.warning(f"Failed to get pool stats: {e}")
+                # Return empty stats instead of failing completely
+                stats = {}
+        return stats
+
+    def resize_pool(self, new_size: int) -> bool:
+        """Resize the connection pool."""
+        if not self._pool:
+            return False
+        
+        try:
+            current_size = self._pool.max_size
+            if new_size == current_size:
+                return True
+            
+            # Close current pool and create new one with new size
+            self._pool.close()
+            self._pool = psycopg_pool.ConnectionPool(
+                conninfo=DATABASE_URL,
+                min_size=min(DB_POOL_MINCONN, new_size),
+                max_size=new_size,
+                timeout=DB_POOL_TIMEOUT,
+                max_lifetime=DB_POOL_MAX_LIFETIME,
+                check=psycopg_pool.ConnectionPool.check_connection,
+                open=True,
+                kwargs=_pool_common_kwargs(),
+            )
+            log.info(f"Resized database pool from {current_size} to {new_size}")
+            return True
+        except Exception as e:
+            log.error(f"Failed to resize database pool: {e}")
+            # Try to restore original pool
+            try:
+                self._init_pool()
+            except Exception as restore_error:
+                log.error(f"Failed to restore database pool after resize failure: {restore_error}")
+            return False
+
     def get_conn(self):
         if not self._pool:
             return psycopg.connect(DATABASE_URL, row_factory=dict_row, options=DB_SESSION_OPTIONS)

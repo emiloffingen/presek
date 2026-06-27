@@ -158,17 +158,17 @@ def upgrade_fast_synthesis_task(cluster_id, content=None, defer_attempt=0):
     retry_backoff=True,
     max_retries=2,
 )
-def synthesize_urgent_task(cluster_id, content=None):
+def synthesize_urgent_task(cluster_id, content=None, force_llm=False):
     """Priority synthesis for new clusters."""
-    return synthesize_cluster_task(cluster_id, content, fast_mode=True)
+    return synthesize_cluster_task(cluster_id, content, fast_mode=True, force_llm=force_llm)
 
 
 @celery_app.task(name="tasks.intelligence.synthesize_cluster_task", rate_limit="60/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
-def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False):
+def synthesize_cluster_task(cluster_id, content, retry_attempt=0, fast_mode=False, force_llm=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     from tasks.intelligence.synthesis_pipeline import run_cluster_synthesis
 
-    return run_cluster_synthesis(cluster_id, content, fast_mode=fast_mode)
+    return run_cluster_synthesis(cluster_id, content, fast_mode=fast_mode, force_llm=force_llm)
 
 
 _DELEGATED = frozenset({'CLUSTER_LOOKBACK', '_call_ai', '_sanitize_synthesis_outputs', 'acquire_task_lock', 'analyst', 'average_embeddings', 'celery_app', 'clean_extracted_article_text', 'clean_json_response', 'db', 'deShout', 'detect_category', 'detect_topic', 'extract_clean_summary_text', 'extract_cluster_tags_locally', 'extract_entities', 'filter_cluster_tags', 'generate_cover_art', 'generate_local_placeholder', 'get_celery_queue_depth', 'get_dominant_color', 'invalidate_cluster_caches', 'invalidate_public_data_caches', 'log', 'normalize_citation_sources', 'normalize_headline', 'normalize_perspectives', 'normalize_summary_text', 'parse_embedding_value', 'record_runtime_event', 'redis_client', 'release_task_lock', 'schedule_task_once', 'summarize_article_fallback', 'synthesize_cluster_fallback', 'validate_person_names'})

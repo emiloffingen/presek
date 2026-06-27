@@ -1,7 +1,13 @@
 import asyncio
 import json
 from unittest.mock import patch
-from llama_cpp import LlamaGrammar
+import pytest
+
+try:
+    from llama_cpp import LlamaGrammar
+except ImportError:
+    LlamaGrammar = None
+
 from nlp.local_analyst import (
     LocalAnalyst,
     DeepMetadataResponse,
@@ -9,6 +15,8 @@ from nlp.local_analyst import (
     ResearchQueryResponse,
 )
 
+
+@pytest.mark.skipif(LlamaGrammar is None, reason="llama-cpp-python is not installed")
 def test_pydantic_schema_gbnf_compilation():
     """Verify that we can successfully compile GBNF grammars dynamically from Pydantic schemas."""
     # Test DeepMetadataResponse schema

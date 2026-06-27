@@ -251,6 +251,7 @@ def _generate_synthesis_via_cascade(
     fast_mode=False,
     current_context=None,
     legacy_summary=None,
+    force_llm=False,
 ):
     """Run router-directed provider cascade with JSON, grounding, and quality gates."""
     from core.ai_engine import build_provider_fallback_order
@@ -269,15 +270,19 @@ def _generate_synthesis_via_cascade(
 
     primary_provider = SmartModelRouter.route_cluster(article_rows, lang=lang)
     if primary_provider == "enhanced_fallback":
-        return {
-            "status": "deterministic",
-            "provider": "enhanced_fallback",
-            "model": "enhanced_fallback",
-            "fallback_reason": "router_selected_fallback",
-            "res_data": None,
-            "quality_score": None,
-            "raw": None,
-        }
+        if force_llm:
+            from core.llm_router import _default_remote_provider
+            primary_provider = _default_remote_provider()
+        else:
+            return {
+                "status": "deterministic",
+                "provider": "enhanced_fallback",
+                "model": "enhanced_fallback",
+                "fallback_reason": "router_selected_fallback",
+                "res_data": None,
+                "quality_score": None,
+                "raw": None,
+            }
 
     exclude_providers: list[str] = []
     last_fallback_reason = None

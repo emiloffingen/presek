@@ -141,16 +141,31 @@ def _client_ip_for_request(request: Request) -> str:
 
 
 def _static_admin_token_authorized(request: Request) -> bool:
-    if os.environ.get("ENV") == "production" and os.environ.get("ALLOW_STATIC_ADMIN_TOKEN", "").lower() != "true":
-        return False
-    expected = (os.environ.get("PRESEK_ADMIN_TOKEN") or "").strip()
-    if not expected:
-        return False
-    candidates = [(request.headers.get("X-Admin-Token") or "").strip()]
-    auth = str(request.headers.get("Authorization") or "").strip()
-    if auth.lower().startswith("bearer "):
-        candidates.append(auth[7:].strip())
-    return any(token and secrets.compare_digest(token, expected) for token in candidates)
+    """Check if request is authorized using the new admin token system or legacy token."""
+    # Try new admin token system first
+    try:
+        from core.admin_tokens import verify_admin_token, verify_legacy_admin_token
+        
+        # Check X-Admin-Token header
+        admin_token = (request.headers.get("X-Admin-Token") or "").strip()
+        if admin_token:
+            if verify_admin_token(admin_token):
+                return True
+            if verify_legacy_admin_token(admin_token):
+                return True
+        
+        # Check Authorization header
+        auth = str(request.headers.get("Authorization") or "").strip()
+        if auth.lower().startswith("bearer "):
+            bearer_token = auth[7:].strip()
+            if verify_admin_token(bearer_token):
+                return True
+            if verify_legacy_admin_token(bearer_token):
+                return True
+    except Exception as e:
+        log.warning(f"Admin token verification failed: {e}")
+    
+    return False
 
 
 def _source_admin_authorized(request: Request) -> bool:

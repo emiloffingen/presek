@@ -1,0 +1,40 @@
+---// Skip link for keyboard navigation---
+
+interface Props {
+  targetId?: string;
+  label?: string;
+}
+
+const { targetId = 'main-content', label } = Astro.props;
+const defaultLabel = label || 'Skip to main content';
+---
+
+<a href={`#${targetId}`} class="skip-link focus-ring">
+  {defaultLabel}
+</a>
+
+<style>
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 16px;
+    background: var(--background);
+    color: var(--foreground);
+    padding: 8px 16px;
+    border-radius: 4px;
+    z-index: 100;
+    transition: top 0.3s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .skip-link:focus {
+    top: 16px;
+  }
+
+  /* Ensure skip link is visible when focused */
+  .skip-link:focus-visible {
+    outline: none; /* Remove default outline since we have custom styling */
+  }
+</style>

@@ -6,6 +6,9 @@ import '../styles/global.css';
 import '../lib/transliterationInit.js';
 import LayoutBodyChrome from '../components/layout/LayoutBodyChrome.astro';
 import LayoutHead from '../components/layout/LayoutHead.astro';
+
+// Import skip link component
+import SkipLink from '../components/layout/SkipLink.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import {
   buildOrganizationSchema,
@@ -91,8 +94,11 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
 		]}
 	>
+		<SkipLink targetId="main-content" />
 		<LayoutBodyChrome lang={lang} cspNonce={cspNonce}>
-			<slot />
+			<main id="main-content" class="focus-ring" tabIndex="-1">
+				<slot />
+			</main>
 		</LayoutBodyChrome>
 	</body>
 </html>

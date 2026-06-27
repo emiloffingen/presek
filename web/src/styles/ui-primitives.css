@@ -1,5 +1,77 @@
 /* UI primitives: interactions, utilities, bento, scrollbars extracted from global.css */
 
+/* --- Accessibility Focus Styles --- */
+:focus-visible {
+  outline: 2px solid var(--presek-mark);
+  outline-offset: 2px;
+  transition: outline 0.2s ease;
+}
+
+.focus-ring {
+  position: relative;
+}
+
+.focus-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--presek-mark);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.focus-ring:focus-visible::after {
+  opacity: 1;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--background);
+  color: var(--foreground);
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.3s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Dark mode variables */
+:root {
+  --color-background: 255 255 255;
+  --color-foreground: 17 24 39;
+  --color-presek-mark: 59 130 246;
+}
+
+.dark {
+  --color-background: 17 24 39;
+  --color-foreground: 243 244 246;
+  --color-presek-mark: 99 102 241;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --color-background: 17 24 39;
+    --color-foreground: 243 244 246;
+    --color-presek-mark: 99 102 241;
+  }
+}
+
+/* Dark mode focus styles */
+.dark :focus-visible {
+  outline-color: var(--color-presek-mark);
+}
+
+.dark .focus-ring::after {
+  border-color: var(--color-presek-mark);
+}
+
 
 @keyframes fadeInUpStagger {
   from {

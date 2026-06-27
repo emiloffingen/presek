@@ -12,6 +12,7 @@ import Footer from '../Footer.astro';
 import ForYouIsland from '../ForYouIsland.tsx';
 import LeadHero from './LeadHero.astro';
 import SupportingBand from './SupportingBand.astro';
+import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
@@ -498,7 +499,9 @@ if (analizaNavItems.length > 0) {
                 {isHomepage && forYouClusters.length > 0 && (
 					<div class="section-wrapper for-you-wrapper" data-for-you-band>
                         <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
-					    <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
+                        <ErrorBoundary>
+                            <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
+                        </ErrorBoundary>
                     </div>
 				)}
                 </div>

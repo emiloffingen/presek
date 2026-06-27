@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, memo } from 'react';
 import { ArrowUpRight, Clock3, Compass, Sparkles, BrainCircuit } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile, $syncToken } from '../lib/store.ts';
@@ -17,6 +17,7 @@ import { localePathForLang, type Locale } from '../lib/localePaths';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { common } from '../i18n/namespaces/common';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
+import { PerformanceMonitor } from './PerformanceMonitor';
 
 function getSummary(cluster: any, lang: string) {
   const article = cluster?.articles?.[0];
@@ -36,8 +37,12 @@ interface ForYouIslandProps {
   lang?: Locale;
 }
 
-export default function ForYouIsland({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
+function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
+  
+  // Performance monitoring - only in development
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  isDevelopment && <PerformanceMonitor componentName="ForYouIsland" enabled={isDevelopment} />;
   const t = useClientTranslations(locale, common);
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
@@ -150,10 +155,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
       <section className="for-you-module" aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
-            <p className="for-you-kicker"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
-            <h2 id="for-you-title">{t('for_you.personalized_title')}</h2>
+            <p className="for-you-kicker" aria-hidden="true"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
+            <h2 id="for-you-title" tabIndex="-1">{t('for_you.personalized_title')}</h2>
           </div>
-          <p className="for-you-note">{t('for_you.preparing_recs')}</p>
+          <p className="for-you-note" aria-live="polite">{t('for_you.preparing_recs')}</p>
         </div>
         <div className="for-you-grid">
           {[1, 2, 3, 4].map(i => (
@@ -191,10 +196,10 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
       <section className={`for-you-module ${semanticLoading ? 'opacity-70' : ''}`} aria-labelledby="for-you-title">
         <div className="for-you-head">
           <div>
-            <p className="for-you-kicker"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
-            <h2 id="for-you-title">{t('for_you.personalized_title')}</h2>
+            <p className="for-you-kicker" aria-hidden="true"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
+            <h2 id="for-you-title" tabIndex="-1">{t('for_you.personalized_title')}</h2>
           </div>
-          <p className="for-you-note">{t('for_you.personalized_note')}</p>
+          <p className="for-you-note" aria-live="polite">{t('for_you.personalized_note')}</p>
         </div>
 
         <div className="for-you-grid">
@@ -209,7 +214,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const sourceCount = cluster.sources_count ?? cluster.articles?.length ?? 0;
 
             return (
-              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''}`} aria-label={t('for_you.open_story', { title })}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className={`for-you-card ${isSemantic ? 'premium-spotlight' : ''} focus-ring`} aria-label={t('for_you.open_story', { title })} tabIndex={0} role="article">
                 <PersonalizationWhyChip
                   lang={lang}
                   reason={item.reason}
@@ -261,7 +266,7 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
             const title = getTitle(cluster, lang);
             const sourceCount = cluster.sources_count ?? cluster.articles?.length ?? 0;
             return (
-              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className="for-you-card" aria-label={t('for_you.open_story', { title })}>
+              <a key={cluster.cluster_id} href={localePathForLang(`/cluster/${cluster.cluster_id}`, lang)} className="for-you-card focus-ring" aria-label={t('for_you.open_story', { title })} tabIndex={0} role="article">
                 <p className="for-you-card-kicker flex items-center gap-[var(--grid-gap)] px-3 py-1 bg-secondary/10 rounded-full w-fit mb-4 min-w-max">
                   <Clock3 size={12} />
                   <span className="leading-none">{t('for_you.current_moment')}</span>
@@ -290,6 +295,22 @@ export default function ForYouIsland({ clusters = [], excludeClusterIds = [], la
     </section>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+const ForYouIsland = memo(ForYouIslandComponent, areEqual);
+
+// Define when the component should update
+const areEqual = (prevProps: ForYouIslandProps, nextProps: ForYouIslandProps) => {
+  return (
+    prevProps.clusters === nextProps.clusters &&
+    prevProps.excludeClusterIds === nextProps.excludeClusterIds &&
+    prevProps.lang === nextProps.lang
+  );
+};
+
+ForYouIsland.displayName = 'ForYouIsland';
+
+export default ForYouIsland;
 
 function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
@@ -337,3 +358,19 @@ function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any)
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+const ForYouIsland = memo(ForYouIslandComponent, areEqual);
+
+// Define when the component should update
+const areEqual = (prevProps: ForYouIslandProps, nextProps: ForYouIslandProps) => {
+  return (
+    prevProps.clusters === nextProps.clusters &&
+    prevProps.excludeClusterIds === nextProps.excludeClusterIds &&
+    prevProps.lang === nextProps.lang
+  );
+};
+
+ForYouIsland.displayName = 'ForYouIsland';
+
+export default ForYouIsland;

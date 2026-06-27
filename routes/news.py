@@ -34,6 +34,7 @@ from utils import (
 
 from .common import _error_json, _news_row_limit, cleanAndDecode
 from .security import validate_cluster_id
+from core.input_validation import validate_cluster_id as validate_cluster_id_input, validate_language_code
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -1031,8 +1032,10 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
 
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
-    # Validate cluster_id
-    validate_cluster_id(cluster_id)
+    # Validate cluster_id using comprehensive validation
+    validate_cluster_id_input(cluster_id)
+    # Validate language code
+    lang = validate_language_code(lang, allowed_languages=["sr", "mk"])
     cache_key = f"api:cluster:detail:v3:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:

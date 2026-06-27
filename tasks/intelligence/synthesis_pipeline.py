@@ -29,7 +29,7 @@ from tasks.intelligence.synthesis_translation import try_translate_synthesis_to_
 from tasks.utils import log
 
 
-def run_cluster_synthesis(cluster_id, content, fast_mode=False):
+def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False):
     """Generates a multi-perspective synthesis for a cluster with historical continuity."""
     from core.synthesis_quality import record_synthesis_runtime_event
 
@@ -129,6 +129,7 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False):
                     fast_mode=fast_mode,
                     current_context=current_context,
                     legacy_summary=legacy_summary,
+                    force_llm=force_llm,
                 )
             else:
                 current_context = source_context_mk if lang == "mk" else source_context_sr

@@ -25,11 +25,12 @@ stripe.api_key = STRIPE_API_KEY
 
 # CPM Prices in EUR (converted from MKD at ~61.5 MKD/EUR)
 # Display MKD equivalents on frontend for local context
+# Adjusted to achieve exactly 50% savings vs traditional media rates
 MKD_PER_EUR = 61.5
 CPM_RATES_EUR = {
-    "top_banner": 1.00,      # ~60 MKD — 990x80 / 990x150
-    "sidebar": 1.25,         # ~75 MKD — 300x250 / 300x600
-    "mobile_content": 2.00,  # ~125 MKD — 300x250 / 800x200
+    "top_banner": 0.9756,    # 60 MKD exactly — 990x80 / 990x150 (50% of 120 MKD)
+    "sidebar": 1.2207,     # 75 MKD exactly — 300x250 / 300x600 (50% of 150 MKD)
+    "mobile_content": 2.00,  # 125 MKD — 300x250 / 800x200 (50% of 250 MKD)
 }
 
 @router.post("/marketing/checkout")
