@@ -207,15 +207,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
 
                     <div class="briefing-sidebar-col">
                         <div class="sidebar-inner sticky briefing-sidebar-sticky">
-                            <section class="sidebar-module p-5 bg-secondary/10 border border-border rounded-xl mb-6">
-                                <BriefingDeliveryIsland
-                                    content={briefingData.content}
-                                    dateLabel={displayDate}
-                                    variant="summary"
-                                    lang={lang}
-                                    client:visible
-                                />
-                            </section>
+
                             <BriefingSidebar
                                 stats={stats}
                                 health={{}}
