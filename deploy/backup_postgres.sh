@@ -53,7 +53,7 @@ main() {
   if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
     local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz.gpg"
     info "Creating encrypted PostgreSQL backup at $outfile"
-    pg_dump "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
+    pg_dump "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
   else
     local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz"
     info "Creating PostgreSQL backup at $outfile"
