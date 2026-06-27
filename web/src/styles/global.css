@@ -454,12 +454,12 @@ html[lang="sr-Latn"] .editorial-headline {
   z-index: 50;
   background-color: color-mix(
     in srgb,
-    var(--background) calc(var(--glass-opacity) * 100%),
+    var(--color-background) calc(var(--glass-opacity) * 100%),
     transparent
   );
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border);
   transition:
     background-color 0.3s var(--ease-editorial),
     backdrop-filter 0.3s var(--ease-editorial);
@@ -533,7 +533,7 @@ h6,
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -0.015em;
-  color: var(--foreground);
+  color: var(--color-foreground);
   font-style: normal;
   text-wrap: balance;
   margin: 0;
@@ -553,7 +553,7 @@ h6,
   font-size: var(--text-lg);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--foreground);
+  color: var(--color-foreground);
   text-wrap: pretty;
 }
 
@@ -593,7 +593,7 @@ h6,
   font-weight: 900;
   line-height: 1.18;
   letter-spacing: -0.012em;
-  color: var(--foreground);
+  color: var(--color-foreground);
   text-wrap: balance;
   transition:
     color 0.3s var(--ease-editorial),
@@ -649,9 +649,9 @@ textarea:focus-visible,
 select:focus-visible,
 [role="tab"]:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--ring) !important;
+  outline: 2px solid var(--color-ring) !important;
   outline-offset: 4px !important;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--background), transparent 20%) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-background), transparent 20%) !important;
 }
 
 .dark a:focus-visible,
@@ -662,7 +662,7 @@ select:focus-visible,
 .dark select:focus-visible,
 .dark [role="tab"]:focus-visible,
 .dark [tabindex]:focus-visible {
-  outline-color: var(--ring) !important;
+  outline-color: var(--color-ring) !important;
 }
 
 .headline-lead {
@@ -747,14 +747,14 @@ select:focus-visible,
   font-size: 1.15rem;
   font-weight: 900;
   line-height: 1.1;
-  color: var(--foreground);
+  color: var(--color-foreground);
   display: flex;
   align-items: center;
   gap: 0.75rem;
   letter-spacing: -0.01em;
   padding: 0.5rem 0;
-  border-top: 1px solid var(--foreground);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--color-foreground);
+  border-bottom: 1px solid var(--color-border);
   margin-bottom: 1rem;
   text-transform: uppercase;
   font-variant-caps: all-small-caps;
@@ -768,8 +768,8 @@ select:focus-visible,
   top: 0.75rem;
   z-index: 10000;
   padding: 0.65rem 1rem;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   border: 2px solid var(--nyt-accent);
   font-family: var(--font-ui);
   font-size: 0.875rem;
@@ -802,7 +802,7 @@ select:focus-visible,
 
 .headline-link:hover h2 {
   background-size: 100% 2px;
-  color: var(--foreground);
+  color: var(--color-foreground);
 }
 
 .headline-link:hover .headline-lead {

@@ -359,18 +359,4 @@ function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any)
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
-const ForYouIsland = memo(ForYouIslandComponent, areEqual);
 
-// Define when the component should update
-const areEqual = (prevProps: ForYouIslandProps, nextProps: ForYouIslandProps) => {
-  return (
-    prevProps.clusters === nextProps.clusters &&
-    prevProps.excludeClusterIds === nextProps.excludeClusterIds &&
-    prevProps.lang === nextProps.lang
-  );
-};
-
-ForYouIsland.displayName = 'ForYouIsland';
-
-export default ForYouIsland;
