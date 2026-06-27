@@ -257,6 +257,17 @@
     top: calc(var(--header-height, 72px) + 1rem);
 }
 
+@media (min-width: 981px) {
+    .for-you-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+        gap: clamp(1.5rem, 2.5vw, 3rem);
+    }
+    .for-you-main {
+        border-right: 1px solid color-mix(in srgb, var(--color-foreground) 10%, var(--color-border));
+        padding-right: clamp(1.5rem, 2.5vw, 3rem);
+    }
+}
+
 .for-you-section-head {
     display: flex;
     align-items: end;
@@ -307,7 +318,7 @@
 .priority-lane,
 .recommendation-grid {
     display: grid;
-    gap: 0.9rem;
+    gap: 0;
 }
 
 .priority-lane {
@@ -315,13 +326,25 @@
 }
 
 .priority-story {
-    padding: 0.95rem;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .priority-story.is-primary {
     grid-column: 1 / -1;
-    padding: 1.15rem;
-    background: color-mix(in srgb, var(--card) 86%, var(--presek-mark) 4%);
+    padding: 1.25rem 1rem;
+    background: color-mix(in srgb, var(--color-card) 86%, var(--color-presek-mark) 4%);
+    border-bottom: 1px solid var(--color-border);
+}
+
+@media (min-width: 721px) {
+    .priority-story:nth-child(2) {
+        border-right: 1px solid var(--color-border);
+        padding-right: 1.5rem;
+    }
+    .priority-story:nth-child(3) {
+        padding-left: 1.5rem;
+    }
 }
 
 .recommendation-grid {
@@ -330,7 +353,18 @@
 
 .recommendation-tile {
     min-width: 0;
-    padding: 0.85rem;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+@media (min-width: 721px) {
+    .recommendation-tile:nth-child(odd) {
+        border-right: 1px solid var(--color-border);
+        padding-right: 1.5rem;
+    }
+    .recommendation-tile:nth-child(even) {
+        padding-left: 1.5rem;
+    }
 }
 
 .story-reason {
