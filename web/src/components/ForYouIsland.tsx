@@ -296,9 +296,6 @@ function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = '
   );
 }
 
-// Memoize the component to prevent unnecessary re-renders
-const ForYouIsland = memo(ForYouIslandComponent, areEqual);
-
 // Define when the component should update
 const areEqual = (prevProps: ForYouIslandProps, nextProps: ForYouIslandProps) => {
   return (
@@ -307,6 +304,9 @@ const areEqual = (prevProps: ForYouIslandProps, nextProps: ForYouIslandProps) =>
     prevProps.lang === nextProps.lang
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+const ForYouIsland = memo(ForYouIslandComponent, areEqual);
 
 ForYouIsland.displayName = 'ForYouIsland';
 
