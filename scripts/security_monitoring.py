@@ -53,7 +53,7 @@ class SecurityMonitor:
         else:
             self.status = "healthy"
         
-        return {
+        result = {
             "status": self.status,
             "timestamp": self.last_run,
             "issues": len(self.security_issues),
@@ -65,6 +65,11 @@ class SecurityMonitor:
                 "info": self.security_info
             }
         }
+        
+        if self.status != "healthy":
+            self._send_alert(result)
+            
+        return result
 
     def _check_dependency_vulnerabilities(self):
         """Check for dependency vulnerabilities using pip-audit."""
@@ -314,9 +319,8 @@ class SecurityMonitor:
                 logger.info(f"Security monitoring completed: {result['status']}")
                 
                 # In production, this would send alerts for critical issues
-                if result['status'] == 'critical':
-                    logger.warning("CRITICAL security issues detected!")
-                    # self._send_alert(result)
+                if result['status'] in ('critical', 'warning'):
+                    self._send_alert(result)
                 
                 # Wait for next interval
                 import time
@@ -327,6 +331,42 @@ class SecurityMonitor:
             except Exception as e:
                 logger.error(f"Security monitoring error: {str(e)}")
                 time.sleep(60)  # Wait before retry
+
+    def _send_alert(self, result: Dict):
+        """Send alert notification for non-healthy status to system logs and optional webhook."""
+        status = result.get("status", "unknown")
+        msg = f"SECURITY ALERT: Status is '{status}'! Issues: {result.get('issues', 0)}, Warnings: {result.get('warnings', 0)}"
+        
+        if status == "critical":
+            logger.critical(msg)
+        else:
+            logger.warning(msg)
+            
+        for issue in result.get("details", {}).get("issues", []):
+            logger.critical(f"CRITICAL ISSUE: [{issue.get('category')}] {issue.get('message')}")
+        for warning in result.get("details", {}).get("warnings", []):
+            logger.warning(f"SECURITY WARNING: [{warning.get('category')}] {warning.get('message')}")
+
+        webhook_url = os.environ.get("SECURITY_MONITOR_WEBHOOK_URL")
+        if webhook_url:
+            import urllib.request
+            try:
+                data = json.dumps({
+                    "text": msg,
+                    "status": status,
+                    "details": result.get("details", {}),
+                    "timestamp": result.get("timestamp")
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    webhook_url,
+                    data=data,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    logger.info(f"Security alert pushed to webhook: HTTP {response.status}")
+            except Exception as e:
+                logger.error(f"Failed to push security alert to webhook: {e}")
 
 
 def main():
