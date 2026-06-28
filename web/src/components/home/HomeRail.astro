@@ -167,6 +167,43 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
         padding-bottom: 0;
     }
 
+    @media (min-width: 1180px) {
+        .broadsheet-rail {
+            grid-template-columns: 1fr !important;
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .broadsheet-rail > * {
+            border-right: none !important;
+            border-bottom: 1px solid var(--border) !important;
+            padding-right: 0 !important;
+            padding-bottom: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+
+        .broadsheet-rail > *:last-child {
+            border-bottom: none !important;
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+        }
+
+        .rail-block {
+            border-right: none !important;
+            border-bottom: 1px solid var(--border) !important;
+            padding-right: 0 !important;
+            padding-bottom: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+        }
+
+        .rail-block:last-child {
+            border-bottom: none !important;
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+        }
+    }
+
     .rail-block { margin-bottom: 0; padding-bottom: 2rem; border-bottom: 1px solid var(--border); }
     @media (min-width: 768px) {
         .rail-block { border-bottom: none; border-right: 1px solid var(--border); padding-right: 2rem; padding-bottom: 0; }
