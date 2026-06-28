@@ -19,8 +19,8 @@ interface AdBookingFormProps {
 }
 
 const CPM_RATES: Record<string, number> = {
-  top_banner: 1.00,       // ~60 MKD — 990x80 / 990x150
-  sidebar: 1.25,          // ~75 MKD — 300x250 / 300x600
+  top_banner: 0.9756,       // ~60 MKD — 990x80 / 990x150
+  sidebar: 1.2207,          // ~75 MKD — 300x250 / 300x600
   mobile_content: 2.00,   // ~125 MKD — 300x250
 };
 
