@@ -540,14 +540,28 @@ fi
 # 4. Backup database & Update Backend migrations
 DB_BACKUP_CREATED=0
 if [ "$RUN_DB_BACKUP" = "1" ] && [ -f "$COPY_ROOT/deploy/backup_postgres.sh" ]; then
-    info "Backing up database..."
-    if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$COPY_ROOT/deploy/backup_postgres.sh"; then
-        DB_BACKUP_CREATED=1
-        ok "Automatic database backup created successfully"
-    elif [ "$REQUIRE_DB_BACKUP" = "1" ]; then
-        fail "Database backup failed and REQUIRE_DB_BACKUP=1"
+    # Determine if there are actually any pending database migrations to run
+    has_pending_migrations=1
+    if [ -f "$VENV_DIR/bin/alembic" ]; then
+        current_rev=$("$VENV_DIR/bin/alembic" current 2>/dev/null | grep -v "INFO" | awk '{print $1}') || true
+        head_rev=$("$VENV_DIR/bin/alembic" heads 2>/dev/null | awk '{print $1}') || true
+        if [ -n "$current_rev" ] && [ -n "$head_rev" ] && [ "$current_rev" = "$head_rev" ]; then
+            has_pending_migrations=0
+        fi
+    fi
+
+    if [ "$has_pending_migrations" = "0" ] && [ "${FORCE_DB_BACKUP:-0}" != "1" ]; then
+        info "No pending database migrations detected. Skipping automatic database backup to save time. (Use FORCE_DB_BACKUP=1 to force backup)"
     else
-        warn "Database backup failed (continuing because REQUIRE_DB_BACKUP=0)"
+        info "Backing up database..."
+        if APP_ROOT="$APP_ROOT" ENV_FILE="$SHARED_DIR/.env" bash "$COPY_ROOT/deploy/backup_postgres.sh"; then
+            DB_BACKUP_CREATED=1
+            ok "Automatic database backup created successfully"
+        elif [ "$REQUIRE_DB_BACKUP" = "1" ]; then
+            fail "Database backup failed and REQUIRE_DB_BACKUP=1"
+        else
+            warn "Database backup failed (continuing because REQUIRE_DB_BACKUP=0)"
+        fi
     fi
 else
     info "Skipping database backup for DEPLOY_MODE=$DEPLOY_MODE"
