@@ -67,18 +67,18 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
     if (!data || data.length === 0) return null;
 
     return (
-        <section className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 overflow-hidden shadow-sm">
-            <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-lg p-4 md:p-8">
-                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded border border-nyt-red/10 shadow-sm z-10">
+        <section className="mb-12 border border-border rounded-none bg-card p-6 md:p-8 overflow-hidden">
+            <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/50 bg-secondary/10 rounded-none p-4 md:p-8">
+                <div className="absolute top-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-nyt-red/80 bg-background/95 px-2.5 py-1.5 rounded-none border border-nyt-red/10 z-10">
                     {t('pulse.landscape_quad_subj_sens')}
                 </div>
-                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-presek-mark/80 bg-background/95 px-2.5 py-1.5 rounded border border-presek-mark/10 shadow-sm z-10">
+                <div className="absolute top-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-presek-mark/80 bg-background/95 px-2.5 py-1.5 rounded-none border border-presek-mark/10 z-10">
                     {t('pulse.landscape_quad_obj_dyn')}
                 </div>
-                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded border border-border/40 shadow-sm z-10">
+                <div className="absolute bottom-4 left-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-muted-foreground/80 bg-background/95 px-2.5 py-1.5 rounded-none border border-border/40 z-10">
                     {t('pulse.landscape_quad_trad_stat')}
                 </div>
-                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded border border-emerald-600/10 shadow-sm z-10">
+                <div className="absolute bottom-4 right-4 text-[10px] md:text-[11px] font-black uppercase tracking-widest text-emerald-600/80 bg-background/95 px-2.5 py-1.5 rounded-none border border-emerald-600/10 z-10">
                     {t('pulse.landscape_quad_prec_analyt')}
                 </div>
 
@@ -118,13 +118,13 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
                                 {isHighTrust && <div className="w-1 h-1 bg-white rounded-full"></div>}
                             </div>
 
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-0.5 bg-background/95 border border-border/50 rounded shadow-sm whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:border-presek-mark/50 transition-all z-20">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-0.5 bg-background/95 border border-border/50 rounded-none whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:border-presek-mark/50 transition-all z-20">
                                 <span className={`text-[9px] font-black uppercase tracking-tight ${isHighTrust ? 'text-presek-mark' : 'text-foreground'}`}>
                                     {source.source}
                                 </span>
                             </div>
 
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-foreground text-background p-4 rounded-xl shadow-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50 scale-95 group-hover:scale-100">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 bg-foreground text-background p-4 rounded-none border border-background/20 shadow-none pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50 scale-95 group-hover:scale-100">
                                 <div className="flex items-center justify-between border-b border-background/20 pb-2 mb-3">
                                     <p className="text-[12px] font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] text-background">
                                         {source.source}
