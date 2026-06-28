@@ -233,6 +233,8 @@ export default function SearchIsland({
   const [showFilters, setShowFilters] = useState(false);
   const recognitionRef = useRef<any>(null);
   const queryCacheRef = useRef<Record<string, { suggestions: Suggestion[]; entity: EntityResult | null }>>({});
+  const queryRef = useRef(query);
+  queryRef.current = query;
   const openSearch = useCallback(() => setIsOpen(true), []);
 
   const closeSearch = useCallback(() => {
@@ -295,6 +297,18 @@ export default function SearchIsland({
       }
     }
 
+    // Restore search session state from sessionStorage
+    const sessionState = sessionStorage.getItem('presek_search_session_state');
+    if (sessionState) {
+      try {
+        const parsed = JSON.parse(sessionState);
+        if (parsed.query) setQuery(parsed.query);
+        if (parsed.timespan) setTimespan(parsed.timespan);
+        if (parsed.categoryFilter) setCategoryFilter(parsed.categoryFilter);
+        if (parsed.isOpen) setIsOpen(true);
+      } catch {}
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (hideTrigger) {
         if (e.key === 'Escape' && isOpen) closeSearch();
@@ -311,6 +325,20 @@ export default function SearchIsland({
         return;
       }
       if (e.key === 'Escape') closeSearch();
+
+      // Numerical hotkeys for Quick Actions when search query is empty
+      if (isOpen && !queryRef.current.trim()) {
+        const keyNum = parseInt(e.key, 10);
+        if (keyNum >= 1 && keyNum <= 4) {
+          const action = SEARCH_ACTIONS[keyNum - 1];
+          if (action) {
+            e.preventDefault();
+            closeSearch();
+            navigate(action.href);
+            return;
+          }
+        }
+      }
     };
 
     const handleOpenEvent = () => openSearch();
@@ -321,7 +349,7 @@ export default function SearchIsland({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('presek:open-search', handleOpenEvent);
     };
-  }, [isOpen, openSearch, closeSearch, hideTrigger]);
+  }, [isOpen, openSearch, closeSearch, hideTrigger, lang]);
 
   const startVoiceSearch = useCallback(() => {
     if (typeof window === 'undefined' || !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -511,6 +539,34 @@ export default function SearchIsland({
     };
   }, [query, isOpen, timespan, categoryFilter, lang, t]);
 
+  // Persist search session state to sessionStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isOpen) {
+      sessionStorage.setItem('presek_search_session_state', JSON.stringify({
+        query,
+        timespan,
+        categoryFilter,
+        isOpen
+      }));
+    } else {
+      sessionStorage.removeItem('presek_search_session_state');
+    }
+  }, [query, timespan, categoryFilter, isOpen]);
+
+  // Auto-scroll highlighted keyboard navigation element into view
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const activeEl = container.querySelector(`[data-active-nav="${activeIndex}"]`) as HTMLElement;
+    if (activeEl) {
+      activeEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+    }
+  }, [activeIndex]);
+
   const persistRecentSearch = (searchQuery: string) => {
     const cleanQuery = searchQuery.trim();
     if (!cleanQuery) return;
@@ -567,12 +623,16 @@ export default function SearchIsland({
     a.desc.toLowerCase().includes(query.toLowerCase())
   );
 
-  const selectedItem = (entityResult && activeIndex === 0)
+  const previewIndex = (activeIndex === -1 && query.trim().length >= 2)
+    ? 0
+    : activeIndex;
+
+  const selectedItem = (entityResult && previewIndex === 0)
     ? { type: 'ENTITY' as const, data: entityResult }
-    : (activeIndex >= (entityResult ? 1 : 0) && activeIndex < (entityResult ? 1 : 0) + suggestions.length)
-      ? { type: 'CLUSTER' as const, data: suggestions[entityResult ? activeIndex - 1 : activeIndex] }
-      : (activeIndex >= (entityResult ? 1 : 0) + suggestions.length)
-        ? { type: 'ACTION' as const, data: filteredActions[activeIndex - (entityResult ? 1 : 0) - suggestions.length] }
+    : (previewIndex >= (entityResult ? 1 : 0) && previewIndex < (entityResult ? 1 : 0) + suggestions.length)
+      ? { type: 'CLUSTER' as const, data: suggestions[entityResult ? previewIndex - 1 : previewIndex] }
+      : (previewIndex >= (entityResult ? 1 : 0) + suggestions.length && previewIndex < (entityResult ? 1 : 0) + suggestions.length + filteredActions.length)
+        ? { type: 'ACTION' as const, data: filteredActions[previewIndex - (entityResult ? 1 : 0) - suggestions.length] }
         : null;
 
   const overlayContent = isOpen && (
@@ -776,13 +836,18 @@ export default function SearchIsland({
                      <Zap size={12} /> {t('search.quick_actions')}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
-                    {SEARCH_ACTIONS.map(action => (
-                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left">
+                    {SEARCH_ACTIONS.map((action, i) => (
+                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left w-full">
                         <div className="p-2 bg-background rounded-none text-muted-foreground group-hover:text-foreground group-hover:bg-secondary transition-all">
                           <action.icon size={18} />
                         </div>
-                        <div>
-                          <p className="search-cmd-action-title">{action.label}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between w-full">
+                            <p className="search-cmd-action-title">{action.label}</p>
+                            <kbd className="hidden sm:inline px-1.5 py-0.5 bg-background border border-border/80 text-[9px] font-bold text-muted-foreground rounded-md shadow-sm">
+                              {i + 1}
+                            </kbd>
+                          </div>
                           <p className="ui-label-min text-muted-foreground line-clamp-1">{action.desc}</p>
                         </div>
                       </button>
@@ -807,6 +872,7 @@ export default function SearchIsland({
                   <button
                     type="button"
                     onClick={() => navigateToQuery(query)}
+                    data-active-nav="-1"
                     className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-none border transition-all text-left ${
                       activeIndex === -1
                         ? 'bg-secondary/80 border-border ring-1 ring-border'
@@ -830,6 +896,7 @@ export default function SearchIsland({
                         <h3 className="ui-kicker mb-3 sm:mb-4">{t('search.subjects')}</h3>
                         <button
                           onClick={() => navigateToQuery(entityResult.name)}
+                          data-active-nav="0"
                           className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                         >
                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-none overflow-hidden bg-secondary flex items-center justify-center shrink-0 border border-border">
@@ -858,6 +925,7 @@ export default function SearchIsland({
                               <button
                                 key={item.cluster_id}
                                 onClick={() => navigateToCluster(item.cluster_id)}
+                                data-active-nav={globalIdx}
                                 className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left group ${
                                   item.has_synthesis
                                     ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
@@ -906,6 +974,7 @@ export default function SearchIsland({
                           <button
                             key={action.id}
                             onClick={() => { closeSearch(); navigate(action.href); }}
+                            data-active-nav={globalIdx}
                             className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 rounded-none border transition-all text-left ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                           >
                             <div className="p-2 bg-secondary rounded-none text-muted-foreground">
