@@ -62,6 +62,18 @@ class AdminToken:
         now = datetime.datetime.now(datetime.timezone.utc)
         return self.expires_at <= now
 
+def _normalize_uuid_str(val) -> str:
+    """Normalize a UUID value (string or UUID object) to its 32-character hex representation."""
+    import uuid
+    if not val:
+        return ""
+    if isinstance(val, uuid.UUID):
+        return val.hex
+    try:
+        return uuid.UUID(str(val)).hex
+    except Exception:
+        return str(val)
+
 def _initialize_database():
     """Initialize database tables for admin token management."""
     try:
@@ -140,7 +152,6 @@ def create_admin_token(
     expires_at = now + datetime.timedelta(hours=expiry_hours)
     
     token_id = _generate_token_id()
-    token_secret = secrets.token_urlsafe(32)
     
     # Create JWT payload
     payload = {
@@ -156,9 +167,9 @@ def create_admin_token(
     if additional_claims:
         payload.update(additional_claims)
     
-    # Generate JWT token
-    token = jwt.encode(payload, token_secret, algorithm=ADMIN_TOKEN_ALGORITHM)
-    token_hash = _hash_token(token_secret)
+    # Generate JWT token signed with global ADMIN_TOKEN_SECRET
+    token = jwt.encode(payload, ADMIN_TOKEN_SECRET, algorithm=ADMIN_TOKEN_ALGORITHM)
+    token_hash = _hash_token(token)
     
     # Store token metadata
     admin_token = AdminToken(
@@ -198,6 +209,7 @@ def create_admin_token(
     
     return token, admin_token
 
+
 def verify_admin_token(token: str) -> Optional[AdminToken]:
     """
     Verify an admin token and return its metadata if valid.
@@ -209,11 +221,13 @@ def verify_admin_token(token: str) -> Optional[AdminToken]:
         AdminToken if valid, None if invalid
     """
     try:
-        # Decode JWT to get token ID
+        # Decode and verify JWT using global secret
         payload = jwt.decode(
             token,
-            options={"verify_signature": False},  # We verify separately
-            algorithms=[ADMIN_TOKEN_ALGORITHM]
+            ADMIN_TOKEN_SECRET,
+            algorithms=[ADMIN_TOKEN_ALGORITHM],
+            audience=ADMIN_TOKEN_AUDIENCE,
+            issuer=ADMIN_TOKEN_ISSUER
         )
         
         token_id = payload.get("jti")
@@ -234,18 +248,20 @@ def verify_admin_token(token: str) -> Optional[AdminToken]:
         if not row:
             return None
         
-        admin_token = AdminToken(**row[0])
+        # Ensure UUID structure maps cleanly to Dataclass string field
+        db_data = dict(row[0])
+        if "token_id" in db_data and db_data["token_id"]:
+            db_data["token_id"] = _normalize_uuid_str(db_data["token_id"])
+            
+        admin_token = AdminToken(**db_data)
         
         # Check if token is revoked or expired
         if not admin_token.is_active:
             return None
         
-        # Verify token signature using the stored hash
-        # Note: In a real implementation, we would need to store the actual secret
-        # or use a key management system. This is a simplified version.
-        
-        # For now, we'll trust the JWT signature and database record
-        # In production, you would implement proper key management
+        # Verify that the SHA256 of the token matches the stored token_hash
+        if admin_token.token_hash != _hash_token(token):
+            return None
         
         # Update last used time
         try:
@@ -351,7 +367,13 @@ def list_active_admin_tokens() -> List[AdminToken]:
             (now, now)
         )
         
-        return [AdminToken(**row) for row in rows] if rows else []
+        tokens = []
+        for row in rows:
+            db_data = dict(row)
+            if "token_id" in db_data and db_data["token_id"]:
+                db_data["token_id"] = _normalize_uuid_str(db_data["token_id"])
+            tokens.append(AdminToken(**db_data))
+        return tokens
     except Exception as e:
         log.error(f"Failed to list active admin tokens: {e}")
         return []
