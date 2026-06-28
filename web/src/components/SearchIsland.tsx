@@ -817,7 +817,7 @@ export default function SearchIsland({
                           onClick={() => navigateToQuery(entityResult.name)}
                           className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
                         >
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-secondary flex items-center justify-center shrink-0 border-2 border-border">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-none overflow-hidden bg-secondary flex items-center justify-center shrink-0 border border-border">
                             {entityResult.image_url ? (
                               <img src={proxiedImage(entityResult.image_url, 128)} className="w-full h-full object-cover" />
                             ) : (
