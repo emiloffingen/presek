@@ -71,8 +71,8 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    background: var(--editorial-positive);
+    box-shadow: 0 0 8px var(--editorial-positive);
     animation: status-pulse-glow 2s infinite;
 }
 

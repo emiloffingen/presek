@@ -464,10 +464,10 @@
 }
 
 .dark .digest-paper-view {
-    background: #141722;
-    color: #d1d5db;
+    background: var(--card);
+    color: var(--foreground);
     border-left-color: var(--ui-chrome);
-    border-color: #1e2436;
+    border-color: var(--border);
 }
 
 /* Animated Onboarding Progress Bar */
@@ -541,11 +541,11 @@
 }
 
 .sidebar-identity-status .status-dot.active {
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    background: var(--editorial-positive);
+    box-shadow: 0 0 8px var(--editorial-positive);
 }
 
 .sidebar-identity-status .status-dot.inactive {
-    background: #f59e0b;
-    box-shadow: 0 0 8px #f59e0b;
+    background: var(--editorial-watch);
+    box-shadow: 0 0 8px var(--editorial-watch);
 }
