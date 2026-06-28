@@ -103,10 +103,10 @@ export const ConsentBanner: React.FC = () => {
 
   return (
     <div
-      className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-0 pb-[env(safe-area-inset-bottom)] md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:px-0 md:pb-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
+      className="consent-banner pointer-events-none fixed bottom-4 left-4 right-4 z-[100] isolate md:left-auto md:right-4 md:w-[min(28rem,calc(100vw-2rem))] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
-      <div className="consent-banner-panel pointer-events-auto mx-auto max-w-5xl border-t border-border/80 bg-popover/96 px-3 py-2 text-popover-foreground shadow-none backdrop-blur-xl md:rounded-none md:border md:px-4 md:py-3 md:shadow-none">
+      <div className="consent-banner-panel pointer-events-auto border border-neutral-200/50 dark:border-neutral-800/60 bg-white/75 dark:bg-neutral-950/80 px-3.5 py-3 text-popover-foreground shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.35)] backdrop-blur-xl rounded-2xl md:px-4 md:py-3.5">
         <div className="flex items-center gap-2 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 md:mb-0.5">
@@ -139,18 +139,18 @@ export const ConsentBanner: React.FC = () => {
               <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 self-auto md:pt-0.5">
+          <div className="flex shrink-0 items-center gap-1.5 self-auto md:pt-0.5">
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-none border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-none"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200/50 dark:border-neutral-800/60 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-8 md:w-8"
             >
-              <X size={11} />
+              <X size={12} />
             </button>
             <button
               onClick={accept}
               aria-label={t('cookies.accept')}
-              className="rounded-none bg-foreground px-2 py-1 text-[7px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-none md:px-3.5 md:py-2 md:text-[10px]"
+              className="rounded-lg bg-neutral-900 dark:bg-neutral-100 px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-neutral-100 dark:text-neutral-900 transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[10px]"
             >
               {t('cookies.accept')}
             </button>

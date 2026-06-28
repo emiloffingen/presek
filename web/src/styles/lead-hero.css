@@ -92,8 +92,9 @@
     }
 
     .lead-entry-secondary:hover {
-        border-color: var(--ui-chrome-border);
-        color: var(--link-hover);
+        border-color: var(--foreground);
+        color: var(--foreground);
+        background: color-mix(in srgb, var(--foreground) 5%, transparent);
     }
 
     .lead-hero-no-visual .lead-copy .headline-lead {

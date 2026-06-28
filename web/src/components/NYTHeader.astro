@@ -282,9 +282,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                         <ManualThemeToggle lang={lang} />
                         <TextScaleIsland client:load lang={lang} />
                     </div>
-                    <div class="utility-theme-mobile utility-mobile-only" data-no-script-convert>
-                        <ManualThemeToggle lang={lang} />
-                    </div>
                     <details class="utility-menu utility-mobile-only">
                         <summary class="utility-menu-trigger" aria-label={t('settings.breadcrumb')}>
                             <span aria-hidden="true">⋯</span>
@@ -306,6 +303,10 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:load lang={lang} />
+                            <div class="flex items-center justify-between px-3 py-2 mt-2 border-t border-border/50">
+                                <span class="text-xs font-semibold text-muted-foreground">{lang === 'sr' ? 'Tema' : 'Тема'}</span>
+                                <ManualThemeToggle lang={lang} />
+                            </div>
                         </div>
                     </details>
                 </div>
