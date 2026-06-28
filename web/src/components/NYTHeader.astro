@@ -1,6 +1,6 @@
 ---
 import SearchEntryIsland from './SearchEntryIsland';
-import ManualThemeToggle from './ManualThemeToggle.astro';
+import SimpleThemeToggle from './SimpleThemeToggle.astro';
 import TextScaleIsland from './TextScaleIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
 import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
@@ -279,7 +279,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                     <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
                         <ScriptSwitcher />
-                        <ManualThemeToggle lang={lang} />
+                        <SimpleThemeToggle />
                         <TextScaleIsland client:load lang={lang} />
                     </div>
                     <details class="utility-menu utility-mobile-only">
@@ -305,7 +305,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             <TextScaleIsland client:load lang={lang} />
                             <div class="flex items-center justify-between px-3 py-2 mt-2 border-t border-border/50">
                                 <span class="text-xs font-semibold text-muted-foreground">{lang === 'sr' ? 'Tema' : 'Тема'}</span>
-                                <ManualThemeToggle lang={lang} />
+                                <SimpleThemeToggle />
                             </div>
                         </div>
                     </details>
