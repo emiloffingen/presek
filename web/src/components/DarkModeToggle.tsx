@@ -33,7 +33,7 @@ export default function DarkModeToggle() {
     <button
       onClick={toggleDarkMode}
       aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="p-2 rounded-full focus-ring dark-mode-toggle"
+      className="p-2 rounded-none focus-ring dark-mode-toggle"
       aria-pressed={darkMode}
     >
       {darkMode ? <Sun size={20} /> : <Moon size={20} />}

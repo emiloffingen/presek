@@ -143,14 +143,14 @@ export const ConsentBanner: React.FC = () => {
             <button
               onClick={dismiss}
               aria-label={t('cookies.dismiss')}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-md"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-none border border-border/70 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-9 md:w-9 md:rounded-none"
             >
               <X size={11} />
             </button>
             <button
               onClick={accept}
               aria-label={t('cookies.accept')}
-              className="rounded-sm bg-foreground px-2 py-1 text-[7px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-md md:px-3.5 md:py-2 md:text-[10px]"
+              className="rounded-none bg-foreground px-2 py-1 text-[7px] font-black uppercase tracking-[0.12em] text-background transition-colors hover:bg-nyt-accent hover:text-white md:rounded-none md:px-3.5 md:py-2 md:text-[10px]"
             >
               {t('cookies.accept')}
             </button>
