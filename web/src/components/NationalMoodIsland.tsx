@@ -67,7 +67,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-60">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-none p-6 opacity-60">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <Activity size={18} className="text-muted-foreground/40 animate-spin" style={{ animationDuration: '3s' }} />
@@ -89,7 +89,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     }
     if (!mood) {
         return (
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm opacity-80">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-none p-6 opacity-80">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <Activity size={18} className="text-muted-foreground/40" />
@@ -121,30 +121,26 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
     const indicatorPos = ((mood.score + 1) / 2) * 100;
 
     return (
-        <div className="relative overflow-hidden rounded-xl p-6 shadow-premium transition-all duration-500 national-mood-card group">
+        <div className="relative overflow-hidden rounded-none p-6 transition-all duration-500 national-mood-card group">
             <style>{`
                 .national-mood-card {
                   background: linear-gradient(135deg, rgba(254, 252, 246, 0.75) 0%, rgba(246, 240, 228, 0.7) 100%);
                   backdrop-filter: var(--glass-blur);
                   -webkit-backdrop-filter: var(--glass-blur);
                   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-                  box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
-                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+                  box-shadow: none;
                   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                 }
                 
                 .dark .national-mood-card {
                   background: linear-gradient(135deg, rgba(22, 26, 41, 0.7) 0%, rgba(15, 18, 29, 0.65) 100%);
                   border-color: color-mix(in srgb, var(--border) 80%, transparent);
-                  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3),
-                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+                  box-shadow: none;
                 }
                 
                 .national-mood-card:hover {
                   border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
-                  box-shadow: 0 16px 48px 0 color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.18)),
-                              inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
-                              0 0 30px -4px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+                  box-shadow: none;
                   transform: translateY(-2px);
                 }
                 
@@ -172,7 +168,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                 </div>
                 <div className="group relative">
                     <Info size={14} className="text-muted-foreground/60 cursor-help hover:text-nyt-accent transition-colors" />
-                    <div className="absolute right-0 bottom-full mb-3 w-56 p-3 bg-black/90 backdrop-blur-md text-white text-[11px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all transform translate-y-1 group-hover:translate-y-0 z-50 leading-relaxed">
+                    <div className="absolute right-0 bottom-full mb-3 w-56 p-3 bg-black/90 backdrop-blur-md text-white text-[11px] rounded-none border border-zinc-800 shadow-none opacity-0 group-hover:opacity-100 pointer-events-none transition-all transform translate-y-1 group-hover:translate-y-0 z-50 leading-relaxed">
                         {lang === 'sr'
                           ? 'Sistemska analiza emotivnog tona i objektivnosti u medijskom prostoru za poslednjih 24 časa.'
                           : 'Системска анализа на емотивниот тон и објективноста во медиумскиот простор за последните 24 часа.'}
@@ -188,7 +184,7 @@ export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
                         <span>{lang === 'sr' ? 'Neutralan' : 'Неутрален'}</span>
                         <span className="text-emerald-600">{lang === 'sr' ? 'Pozitivan' : 'Позитивен'}</span>
                     </div>
-                    <div className="relative h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-visible">
+                    <div className="relative h-1.5 w-full bg-zinc-100 dark:bg-zinc-900 rounded-none overflow-visible">
                         <div
                             className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white dark:bg-zinc-950 border-[3px] rounded-full shadow-lg transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) z-20"
                             style={{
