@@ -259,6 +259,7 @@ function getTimeStr(dateStr: string) {
                         decoding="async"
                         fetchpriority={isLead ? "high" : "auto"}
                         data-fallback-url={fallbackImageUrl}
+                        onload="this.classList.add('is-loaded'); const w = this.closest('.image-wrap'); if (w) w.setAttribute('data-image-state', 'ready');"
                     />
                 </div>
             )}
