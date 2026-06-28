@@ -156,7 +156,7 @@ function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = '
         <div className="for-you-head">
           <div>
             <p className="for-you-kicker" aria-hidden="true"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
-            <h2 id="for-you-title" tabIndex="-1">{t('for_you.personalized_title')}</h2>
+            <h2 id="for-you-title" tabIndex={-1}>{t('for_you.personalized_title')}</h2>
           </div>
           <p className="for-you-note" aria-live="polite">{t('for_you.preparing_recs')}</p>
         </div>
@@ -197,7 +197,7 @@ function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = '
         <div className="for-you-head">
           <div>
             <p className="for-you-kicker" aria-hidden="true"><Sparkles size={14} /> {t('for_you.hero_kicker')}</p>
-            <h2 id="for-you-title" tabIndex="-1">{t('for_you.personalized_title')}</h2>
+            <h2 id="for-you-title" tabIndex={-1}>{t('for_you.personalized_title')}</h2>
           </div>
           <p className="for-you-note" aria-live="polite">{t('for_you.personalized_note')}</p>
         </div>

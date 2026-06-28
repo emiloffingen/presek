@@ -47,9 +47,11 @@
   document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded fired, setting up theme toggle');
     const toggleButton = document.getElementById('simple-theme-toggle');
+    if (!toggleButton) return;
     const htmlElement = document.documentElement;
     const sunIcon = toggleButton.querySelector('.theme-toggle-sun');
     const moonIcon = toggleButton.querySelector('.theme-toggle-moon');
+    if (!sunIcon || !moonIcon) return;
     
     // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme');

@@ -1,5 +1,45 @@
-import React, { Suspense, lazy, ComponentType } from 'react';
-import { useInView } from 'react-intersection-observer';
+import React, { Suspense, lazy, type ComponentType, useState, useEffect, useRef } from 'react';
+
+interface UseInViewOptions extends IntersectionObserverInit {
+  triggerOnce?: boolean;
+}
+
+function useInView(options: UseInViewOptions = {}) {
+  const [inView, setInView] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        if (options.triggerOnce) {
+          observer.unobserve(element);
+        }
+      } else if (!options.triggerOnce) {
+        setInView(false);
+      }
+    }, {
+      root: options.root,
+      rootMargin: options.rootMargin,
+      threshold: options.threshold,
+    });
+
+    observer.observe(element);
+    return () => {
+      if (element) {
+        observer.unobserve(element);
+      }
+    };
+  }, [options.threshold, options.rootMargin, options.triggerOnce]);
+
+  return { ref, inView };
+}
 
 interface LazyLoadProps {
   component: () => Promise<{ default: ComponentType<any> }>;
@@ -63,11 +103,13 @@ export const LoadingFallback = ({ height = 200 }) => (
 );
 
 // Add spinner animation
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(style);
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+}
