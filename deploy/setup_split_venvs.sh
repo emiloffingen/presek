@@ -55,8 +55,7 @@ install_grouped_venv() {
   group_args=(--no-default-groups "${group_args[@]}")
 
   if [ -x "$versioned_venv/bin/python3" ] && [ "$FORCE_BOOTSTRAP" != "1" ]; then
-    echo "> Refreshing $label venv from lock file"
-    UV_PROJECT_ENVIRONMENT="$versioned_venv" uv sync --frozen --no-dev --no-install-project --directory "$SOURCE_ROOT" "${group_args[@]}"
+    echo "✓  $label venv is already up to date at $versioned_venv"
   else
     rm -rf "$versioned_venv"
     echo "> Creating $label venv at $versioned_venv"

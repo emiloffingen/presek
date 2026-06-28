@@ -516,6 +516,16 @@ ln -sfn "$SHARED_DIR/static/generated" "$RELEASE_DIR/static/generated"
 ln -sfn "$SHARED_DIR/static/uploads" "$RELEASE_DIR/static/uploads"
 
 # 3. Build Frontend
+if [ "$RUN_FRONTEND_BUILD" = "1" ] && [ -L "$CURRENT_LINK" ] && [ -f "$(readlink -f "$CURRENT_LINK")/.runtime-meta" ] && [ -d "$SOURCE_ROOT/.git" ]; then
+    current_commit=$(grep '^COMMIT_SHA=' "$(readlink -f "$CURRENT_LINK")/.runtime-meta" | cut -d= -f2) || true
+    if [ -n "$current_commit" ]; then
+        if git diff --quiet "$current_commit" HEAD -- web/; then
+            info "No changes under web/ directory detected since current release commit $current_commit. Skipping frontend build to save time."
+            RUN_FRONTEND_BUILD=0
+        fi
+    fi
+fi
+
 if [ "$RUN_FRONTEND_BUILD" = "1" ]; then
     info "Building frontend..."
     install_frontend_dependencies "$RELEASE_DIR/web"
@@ -590,12 +600,17 @@ fi
 
 # Write runtime metadata for rollback support
 info "Writing release runtime metadata..."
+commit_sha=""
+if [ -d "$SOURCE_ROOT/.git" ]; then
+    commit_sha=$(git rev-parse HEAD)
+fi
 cat > "$RELEASE_DIR/.runtime-meta" <<EOF
 VENV_TARGET=$(readlink -f "$VENV_DIR")
 WEB_NODE_MODULES_TARGET=$(readlink -f "$SHARED_WEB_NODE_MODULES")
 SCHEMA_UPDATED=$SCHEMA_UPDATED
 DB_BACKUP_CREATED=$DB_BACKUP_CREATED
 DEPLOY_MODE=$DEPLOY_MODE
+COMMIT_SHA=$commit_sha
 EOF
 
 # 5. Switch Release
