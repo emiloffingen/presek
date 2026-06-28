@@ -602,7 +602,7 @@ fi
 info "Writing release runtime metadata..."
 commit_sha=""
 if [ -d "$SOURCE_ROOT/.git" ]; then
-    commit_sha=$(git rev-parse HEAD)
+    commit_sha=$(git -C "$SOURCE_ROOT" rev-parse HEAD)
 fi
 cat > "$RELEASE_DIR/.runtime-meta" <<EOF
 VENV_TARGET=$(readlink -f "$VENV_DIR")
