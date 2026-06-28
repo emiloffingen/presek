@@ -199,7 +199,7 @@ function formatBriefingItem(item: string) {
     <details class="archive-pulse-deck-toggle mb-10 group">
         <summary class="list-none p-6 bg-secondary/5 cursor-pointer flex justify-between items-center group-open:bg-secondary/10">
             <div class="flex items-center gap-[var(--grid-gap)]">
-                <div class="p-2 bg-presek-mark/10 rounded-lg text-presek-mark">
+                <div class="p-2 bg-presek-mark/10 rounded-none text-presek-mark">
                     <Activity size={18} />
                 </div>
                 <div>
@@ -220,7 +220,7 @@ function formatBriefingItem(item: string) {
     <div class="broadsheet-grid">
         <section class="broadsheet-main">
             {q || source || topic ? (
-                <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-presek-mark/[0.03] border border-presek-mark/10 rounded-lg">
+                <div class="active-filters mb-12 flex items-center gap-[var(--grid-gap)] p-4 bg-presek-mark/[0.03] border border-presek-mark/10 rounded-none">
                     <span class="ui-label-min text-muted-foreground">{t('archive.active_filter')}</span>
                     <div class="flex flex-wrap gap-[var(--grid-gap)]">
                         {q && <span class="px-3 py-1 bg-foreground text-background rounded-full ui-label-min flex items-center gap-[var(--grid-gap)]">🔍 {q} <a href={buildFilterHref('q', '')} class="ml-1 opacity-60 hover:opacity-100">×</a></span>}
@@ -235,13 +235,13 @@ function formatBriefingItem(item: string) {
 
             <div class="archive-feed-list">
                 {error ? (
-                    <div class="py-24 text-center border-2 border-dashed border-border rounded-2xl">
+                    <div class="py-24 text-center border-2 border-dashed border-border rounded-none">
                         <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
                     </div>
                 ) : archive.clusters.length > 0 ? (
                     <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
                 ) : (
-                    <div class="py-32 text-center border-2 border-dashed border-border rounded-2xl">
+                    <div class="py-32 text-center border-2 border-dashed border-border rounded-none">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
                         <p class="font-nyt-body text-muted-foreground">{t('archive.try_other_filters')}</p>
                         <a href={localePath('/archive', lang, hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
@@ -254,7 +254,7 @@ function formatBriefingItem(item: string) {
             <PresekRailAd />
 
             <div class="rail-nav-block mb-12">
-                <a href={localePath('/archive', lang, hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-sm transition-all hover:bg-presek-mark shadow-lg shadow-black/5 hover:-translate-y-1">
+                <a href={localePath('/archive', lang, hostHeader)} class="group flex items-center justify-between p-4 bg-foreground text-background rounded-none transition-all hover:bg-presek-mark hover:-translate-y-1">
                     <span class="ui-label">{t('archive.back_today')}</span>
                     <ChevronRight size={16} />
                 </a>
@@ -277,7 +277,7 @@ function formatBriefingItem(item: string) {
                             </h3>
                             <div class="otd-content group">
                                 {onThisDay.image && (
-                                    <div class="mb-4 overflow-hidden rounded-lg shadow-sm">
+                                    <div class="mb-4 overflow-hidden rounded-none">
                                         <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
                                     </div>
                                 )}
