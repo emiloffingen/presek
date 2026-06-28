@@ -418,7 +418,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* The Plot Area */}
             <div className="lg:col-span-3">
-              <div className="relative w-full h-[400px] md:h-[480px] bg-background/40 border border-border/60 rounded-none overflow-hidden cursor-crosshair select-none shadow-inner">
+              <div className="relative w-full h-[400px] md:h-[480px] bg-background/40 border border-border/60 rounded-none overflow-hidden cursor-crosshair select-none">
                 
                 {/* Horizontal axis grid line */}
                 <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-foreground/20 dark:bg-foreground/15 border-t border-dashed border-foreground/10 pointer-events-none" />

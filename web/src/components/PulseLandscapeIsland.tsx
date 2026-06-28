@@ -51,8 +51,8 @@ const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang
 
     if (loading) {
         return (
-            <div className="mb-12 border border-border rounded-[1.25rem] bg-card p-6 md:p-8 animate-pulse overflow-hidden">
-                <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/30 bg-secondary/5 rounded-lg p-4 md:p-8">
+            <div className="mb-12 border border-border rounded-none bg-card p-6 md:p-8 animate-pulse overflow-hidden">
+                <div className="relative w-full aspect-square md:aspect-[16/9] border-2 border-border/30 bg-secondary/5 rounded-none p-4 md:p-8">
                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border/20 dashed"></div>
                      <div className="absolute top-1/2 left-0 right-0 h-px bg-border/20 dashed"></div>
                      <div className="w-full h-full flex items-center justify-center">

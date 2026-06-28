@@ -66,7 +66,7 @@
   --secondary: #13161b;
   --secondary-foreground: #d8d3c6;
   --muted: #101216;
-  --muted-foreground: #aaa294;
+  --muted-foreground: #bbb4a7;
   --accent: #f8fafc;
   --accent-foreground: #000000;
   --destructive: #f87171;
@@ -103,7 +103,7 @@
     --secondary: #13161b;
     --secondary-foreground: #d8d3c6;
     --muted: #101216;
-    --muted-foreground: #aaa294;
+    --muted-foreground: #bbb4a7;
     --accent: #f8fafc;
     --accent-foreground: #000000;
     --destructive: #f87171;
@@ -344,7 +344,7 @@
     --secondary: #13161b;
     --secondary-foreground: #d8d3c6;
     --muted: #101216;
-    --muted-foreground: #aaa294;
+    --muted-foreground: #bbb4a7;
     --accent: #f8fafc;
     --accent-foreground: #000000;
     --destructive: #f87171;
@@ -846,6 +846,58 @@ select:focus-visible,
 .page-content-top {
   padding-top: clamp(0.75rem, 2vw, 1.5rem);
 }
+
+/* 🖨️ Broadsheet Print Stylesheet */
+@media print {
+  /* Hide all interactive/non-content elements */
+  .header-sticky-wrapper,
+  .site-footer,
+  .site-layout-rail,
+  .breadcrumb-container,
+  .top-banner,
+  .cookie-consent-banner,
+  .consent-banner-panel,
+  .ui-concept-onboarding,
+  .utility-inline,
+  .filter-group,
+  .home-feed-filter,
+  .home-unified-feed-toolbar,
+  .performance-monitor,
+  button,
+  form,
+  nav,
+  details {
+    display: none !important;
+  }
+
+  /* Reset body styles for clean paper print */
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Adjust main container */
+  main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Force display of links in print */
+  a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Page break rules for articles */
+  article {
+    page-break-inside: avoid;
+    margin-bottom: 2rem;
+  }
+}
+
 
 
 
