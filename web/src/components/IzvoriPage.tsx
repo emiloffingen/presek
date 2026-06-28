@@ -361,7 +361,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
             </div>
           </div>
 
-          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-none border border-border shadow-sm">
+          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-none border border-border">
             {[
               { id: 'all', label: t('sources.all') },
               { id: 'high', label: t('sources.high_trust') },
@@ -372,7 +372,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                 onClick={() => setFilterTier(t_tier.id)}
                 className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-none ui-label-min transition-all ${
                   filterTier === t_tier.id
-                    ? 'bg-presek-mark text-white shadow-md'
+                    ? 'bg-presek-mark text-white'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -532,7 +532,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   
                   return (
                     <div
-                      className="absolute z-50 p-4 w-60 border border-border bg-background/95 dark:bg-background/95 shadow-2xl rounded-none transition-all duration-200 pointer-events-none text-left"
+                      className="absolute z-50 p-4 w-60 border border-border bg-background/95 dark:bg-background/95 shadow-none rounded-none transition-all duration-200 pointer-events-none text-left"
                       style={{
                         left: showLeft ? `calc(${coords.pctX}% - 260px)` : `calc(${coords.pctX}% + 20px)`,
                         top: showTop ? `calc(${coords.pctY}% - 120px)` : `calc(${coords.pctY}% + 10px)`,
