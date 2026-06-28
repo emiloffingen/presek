@@ -64,12 +64,12 @@ const t = useTranslations(lang);
           <button class="settings-tab-btn" data-tab="sinhronizacija">
             <KeyRound size={16} />
             <span>{t('settings.tab_sync')}</span>
-            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20" id="sync-tab-badge">{t('settings.badge_local')}</span>
+            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-500 border border-amber-500/20" id="sync-tab-badge">{t('settings.badge_local')}</span>
           </button>
           <button class="settings-tab-btn" data-tab="vodic">
             <Sparkles size={16} />
             <span>{t('settings.tab_guide')}</span>
-            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border" id="guide-tab-badge">0/4</span>
+            <span class="ml-auto ui-label-min px-1.5 py-0.5 rounded-none bg-secondary text-muted-foreground border border-border" id="guide-tab-badge">0/4</span>
           </button>
 
           <div class="sidebar-identity-status hidden lg:block">
@@ -218,7 +218,7 @@ const t = useTranslations(lang);
       if (desc) desc.innerText = copy.statusSyncedDesc;
       if (badge) {
         badge.innerText = copy.badgeActive;
-        badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+        badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-none bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
       }
     } else {
       if (dot) dot.className = 'status-dot inactive';
@@ -226,7 +226,7 @@ const t = useTranslations(lang);
       if (desc) desc.innerText = copy.statusLocalDesc;
       if (badge) {
         badge.innerText = copy.badgeLocal;
-        badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20';
+        badge.className = 'ml-auto ui-label-min px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-500 border border-amber-500/20';
       }
     }
   }
