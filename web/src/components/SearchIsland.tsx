@@ -644,6 +644,21 @@ export default function SearchIsland({
       onKeyDown={onDialogKeyDown}
       onClick={closeSearch}
     >
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes searchFadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .search-animate-item {
+          animation: searchFadeInUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+      `}} />
       <div
         ref={dialogRef}
         className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-card/85 backdrop-blur-xl border-x border-border/50 sm:border sm:border-border/50 shadow-premium sm:rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
@@ -837,7 +852,7 @@ export default function SearchIsland({
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
                     {SEARCH_ACTIONS.map((action, i) => (
-                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left w-full">
+                      <button key={action.id} onClick={() => { closeSearch(); navigate(action.href); }} className="search-animate-item flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 bg-secondary/30 hover:bg-secondary/60 border border-border/50 rounded-none transition-all group text-left w-full" style={{ animationDelay: `${i * 20}ms` }}>
                         <div className="p-2 bg-background rounded-none text-muted-foreground group-hover:text-foreground group-hover:bg-secondary transition-all">
                           <action.icon size={18} />
                         </div>
@@ -873,7 +888,7 @@ export default function SearchIsland({
                     type="button"
                     onClick={() => navigateToQuery(query)}
                     data-active-nav="-1"
-                    className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-none border transition-all text-left ${
+                    className={`search-animate-item w-full flex items-center gap-3 p-3 sm:p-4 rounded-none border transition-all text-left ${
                       activeIndex === -1
                         ? 'bg-secondary/80 border-border ring-1 ring-border'
                         : 'bg-secondary/20 border-border/50 hover:bg-secondary/40'
@@ -897,7 +912,8 @@ export default function SearchIsland({
                         <button
                           onClick={() => navigateToQuery(entityResult.name)}
                           data-active-nav="0"
-                          className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                          className={`search-animate-item w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left ${activeIndex === 0 ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                          style={{ animationDelay: '20ms' }}
                         >
                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-none overflow-hidden bg-secondary flex items-center justify-center shrink-0 border border-border">
                             {entityResult.image_url ? (
@@ -926,11 +942,12 @@ export default function SearchIsland({
                                 key={item.cluster_id}
                                 onClick={() => navigateToCluster(item.cluster_id)}
                                 data-active-nav={globalIdx}
-                                className={`w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left group ${
+                                className={`search-animate-item w-full flex items-start gap-3 sm:gap-[var(--grid-gap)] p-3 sm:p-4 rounded-none border transition-all text-left group ${
                                   item.has_synthesis
                                     ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
                                     : 'bg-transparent border-transparent hover:bg-secondary/30'
                                 } ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : ''}`}
+                                style={{ animationDelay: `${(idx + 1) * 20}ms` }}
                               >
                                 <div className="w-14 sm:w-16 aspect-[4/3] rounded-none overflow-hidden bg-secondary shrink-0 border border-border/50">
                                   {item.image_url && <img src={proxiedImage(item.image_url, 200)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />}
@@ -975,7 +992,8 @@ export default function SearchIsland({
                             key={action.id}
                             onClick={() => { closeSearch(); navigate(action.href); }}
                             data-active-nav={globalIdx}
-                            className={`w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 rounded-none border transition-all text-left ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            className={`search-animate-item w-full flex items-center gap-3 sm:gap-[var(--grid-gap)] p-3 rounded-none border transition-all text-left ${activeIndex === globalIdx ? 'bg-secondary/80 border-border ring-1 ring-border' : 'bg-transparent border-transparent hover:bg-secondary/30'}`}
+                            style={{ animationDelay: `${(idx + 1) * 20}ms` }}
                           >
                             <div className="p-2 bg-secondary rounded-none text-muted-foreground">
                               <action.icon size={16} />

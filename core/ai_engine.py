@@ -227,7 +227,7 @@ _SHARED_HTTP_CLIENT = None
 def _get_shared_client() -> httpx.Client:
     global _SHARED_HTTP_CLIENT
     if _SHARED_HTTP_CLIENT is None:
-        _SHARED_HTTP_CLIENT = httpx.Client()
+        _SHARED_HTTP_CLIENT = httpx.Client(timeout=30.0)
         atexit.register(_cleanup_shared_client)
     return _SHARED_HTTP_CLIENT
 
