@@ -570,6 +570,12 @@
     border-radius: 0;
     border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, var(--color-border));
     background: color-mix(in srgb, var(--color-card) 82%, var(--presek-mark) 4%);
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+.cold-start-unified-panel .for-you-briefing-card.is-embedded .for-you-briefing-actions {
+    justify-content: flex-start;
 }
 
 .cold-start-onboarding {
