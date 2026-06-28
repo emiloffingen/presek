@@ -48,7 +48,7 @@ const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
               href={sourceDocArticle.link}
               target="_blank"
               rel="noopener noreferrer"
-              class="ui-kicker ui-kicker--accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-full border border-nyt-accent/20 shadow-sm transition-all hover:shadow-md"
+              class="ui-kicker ui-kicker--accent hover:underline flex items-center gap-[var(--grid-gap)] bg-background px-6 py-3 rounded-none border border-border transition-all"
             >
               {t('cluster.source_document_read')} {sourceDocArticle.source}
               <ExternalLink size={14} />
