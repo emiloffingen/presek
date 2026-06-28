@@ -77,30 +77,26 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
   };
 
   return (
-    <div className="media-pulse-card p-5 md:p-6 rounded-xl overflow-hidden relative">
+    <div className="media-pulse-card p-5 md:p-6 rounded-none overflow-hidden relative">
       <style>{`
         .media-pulse-card {
           background: linear-gradient(135deg, rgba(254, 252, 246, 0.75) 0%, rgba(246, 240, 228, 0.7) 100%);
           backdrop-filter: var(--glass-blur);
           -webkit-backdrop-filter: var(--glass-blur);
           border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-          box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--background) 30%, rgba(0, 0, 0, 0.08)),
-                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 6%, transparent);
+          box-shadow: none;
           transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
         .dark .media-pulse-card {
           background: linear-gradient(135deg, rgba(22, 26, 41, 0.7) 0%, rgba(15, 18, 29, 0.65) 100%);
           border-color: color-mix(in srgb, var(--border) 80%, transparent);
-          box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3),
-                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
+          box-shadow: none;
         }
         
         .media-pulse-card:hover {
           border-color: color-mix(in srgb, var(--nyt-accent) 35%, var(--border));
-          box-shadow: 0 16px 48px 0 color-mix(in srgb, var(--background) 50%, rgba(0, 0, 0, 0.18)),
-                      inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 10%, transparent),
-                      0 0 30px -4px color-mix(in srgb, var(--nyt-accent) 6%, transparent);
+          box-shadow: none;
           transform: translateY(-2px);
         }
         
@@ -190,7 +186,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
 
           {/* HTML Tooltip Overlay */}
           <div
-            className={`absolute z-20 pointer-events-none bg-zinc-900 text-white dark:bg-white dark:text-black px-3 py-2 rounded shadow-xl text-xs font-bold transition-all duration-200 whitespace-nowrap flex flex-col items-center ${activeTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+            className={`absolute z-20 pointer-events-none bg-zinc-900 text-white dark:bg-white dark:text-black px-3 py-2 rounded-none border border-border text-xs font-bold transition-all duration-200 whitespace-nowrap flex flex-col items-center ${activeTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
             style={{
               left: activeTooltip ? `${(activeTooltip.x / 200) * 100}%` : '50%',
               top: activeTooltip ? `${(activeTooltip.y / 200) * 100}%` : '50%',
@@ -205,7 +201,7 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
         {/* Text Metrics */}
         <div className="flex-1 w-full space-y-6">
           <div className="text-center md:text-left">
-            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded ui-kicker ui-kicker--accent mb-3">{labels.mediaPulse}</span>
+            <span className="inline-block bg-nyt-accent/10 px-3 py-1 rounded-none ui-kicker ui-kicker--accent mb-3">{labels.mediaPulse}</span>
             <p className="text-2xl font-serif font-black leading-tight text-foreground">
               {labels.tone}: <span className={getSentimentColor(sentiment.score)}>{sentiment.tone}</span>
             </p>
@@ -217,8 +213,8 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
                 <span className="ui-kicker">{labels.objectivity}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{objectivity.toFixed(0)}%</span>
               </div>
-              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-zinc-700 to-zinc-950 dark:from-zinc-300 dark:to-white transition-all duration-1000 delay-300 rounded-full relative" style={{ width: isMounted ? `${objectivity}%` : '0%' }}>
+              <div className="h-2 w-full bg-secondary/40 rounded-none overflow-hidden border border-border/10">
+                  <div className="h-full bg-gradient-to-r from-zinc-700 to-zinc-950 dark:from-zinc-300 dark:to-white transition-all duration-1000 delay-300 rounded-none relative" style={{ width: isMounted ? `${objectivity}%` : '0%' }}>
                       <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
                   </div>
               </div>
@@ -228,8 +224,8 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
                 <span className="ui-kicker">{labels.sensationalism}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{sensationalism.toFixed(0)}%</span>
               </div>
-              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-nyt-red to-rose-400 transition-all duration-1000 delay-500 rounded-full relative" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}>
+              <div className="h-2 w-full bg-secondary/40 rounded-none overflow-hidden border border-border/10">
+                  <div className="h-full bg-gradient-to-r from-nyt-red to-rose-400 transition-all duration-1000 delay-500 rounded-none relative" style={{ width: isMounted ? `${sensationalism}%` : '0%' }}>
                       <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
                   </div>
               </div>
@@ -239,8 +235,8 @@ export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
                 <span className="ui-kicker">{labels.emotionality}</span>
                 <span className="text-lg font-black tabular-nums tracking-tighter">{emotionalCharge.toFixed(0)}%</span>
               </div>
-              <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/10 shadow-inner">
-                  <div className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-1000 delay-700 rounded-full relative" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}>
+              <div className="h-2 w-full bg-secondary/40 rounded-none overflow-hidden border border-border/10">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-1000 delay-700 rounded-none relative" style={{ width: isMounted ? `${emotionalCharge}%` : '0%' }}>
                       <div className="absolute top-0 right-0 bottom-0 w-2 bg-white/40 blur-[1px] animate-pulse" />
                   </div>
               </div>
