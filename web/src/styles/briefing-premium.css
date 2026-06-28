@@ -211,7 +211,7 @@
     border: 1px solid var(--presek-surface-border, color-mix(in srgb, var(--presek-mark) 25%, var(--border)));
     background: var(--presek-surface, color-mix(in srgb, var(--presek-mark) 4%, var(--card)));
     border-left: 3px solid var(--presek-mark);
-    border-radius: 1rem;
+    border-radius: 0;
     padding: 1.25rem 1.35rem;
     margin: 0 0 1.5rem;
 }

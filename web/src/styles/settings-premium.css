@@ -115,15 +115,15 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: 20px;
+    border-radius: 0;
     padding: 1.75rem;
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .premium-card:hover {
-    box-shadow: var(--shadow-lg);
-    border-color: var(--border);
+    box-shadow: none;
+    border-color: color-mix(in srgb, var(--nyt-accent) 45%, var(--border));
     transform: translateY(-2px);
 }
 
