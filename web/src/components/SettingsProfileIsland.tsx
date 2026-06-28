@@ -261,14 +261,14 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: 'sr' | '
                 <button
                   key={item.value}
                   type="button"
-                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-xl transition-all text-left group"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-none transition-all text-left group"
                   onClick={() => addFollow('topic', item.value)}
                 >
                   <div>
                     <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-none group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
                 </button>
               ))}
             </div>
@@ -290,14 +290,14 @@ export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: 'sr' | '
                 <button
                   key={item.value}
                   type="button"
-                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-xl transition-all text-left group"
+                  className="w-full flex items-center justify-between p-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 hover:border-border rounded-none transition-all text-left group"
                   onClick={() => addFollow('source', item.value)}
                 >
                   <div>
                     <span className="block font-sans font-bold text-xs uppercase tracking-wider text-foreground group-hover:text-foreground transition-colors">{item.value}</span>
                     <span className="block text-[11px] text-muted-foreground mt-0.5">{item.reason}</span>
                   </div>
-                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-lg group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
+                  <span className="text-xs font-black text-muted-foreground group-hover:text-foreground px-2.5 py-1 bg-secondary rounded-none group-hover:bg-muted transition-all">{t('settings.profile.follow_action')}</span>
                 </button>
               ))}
             </div>

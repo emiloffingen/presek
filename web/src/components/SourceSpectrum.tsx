@@ -80,8 +80,8 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang =
   }, [articles, lang]);
 
   return (
-    <div className="source-spectrum-container p-2 bg-secondary/5 rounded-lg border border-border/40">
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-secondary/30 mb-6 shadow-inner">
+    <div className="source-spectrum-container p-2 bg-secondary/5 rounded-none border border-border/40">
+      <div className="flex h-3 w-full overflow-hidden rounded-none bg-secondary/30 mb-6">
         {stats.map((s) => (
           <div
             key={s.name}
@@ -97,7 +97,7 @@ export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang =
           <div key={s.name} className="flex flex-col group">
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-[var(--grid-gap)]">
-                <div className="w-2.5 h-2.5 rounded-[2px] transition-transform group-hover:scale-110" style={{ backgroundColor: s.color }}></div>
+                <div className="w-2.5 h-2.5 rounded-none transition-transform group-hover:scale-110" style={{ backgroundColor: s.color }}></div>
                 <span className="text-[11px] font-semibold text-foreground/90">{s.displayName}</span>
               </div>
               <span className="text-[11px] font-black tabular-nums text-foreground/70">{Math.round(s.percentage)}%</span>

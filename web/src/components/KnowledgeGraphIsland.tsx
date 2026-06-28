@@ -37,10 +37,10 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
 
     if (loading) return (
         <div className="animate-pulse space-y-8">
-            <div className="h-64 bg-secondary/50 rounded-lg"></div>
+            <div className="h-64 bg-secondary/50 rounded-none"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
-                <div className="h-48 bg-secondary/50 rounded-lg"></div>
-                <div className="h-48 bg-secondary/50 rounded-lg"></div>
+                <div className="h-48 bg-secondary/50 rounded-none"></div>
+                <div className="h-48 bg-secondary/50 rounded-none"></div>
             </div>
         </div>
     );
@@ -114,7 +114,7 @@ const KnowledgeGraphIsland: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--grid-gap)]">
                     {data.relationships.map((rel, idx) => (
-                        <div key={idx} className="flex items-center justify-center gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10 rounded-lg italic font-serif">
+                        <div key={idx} className="flex items-center justify-center gap-[var(--grid-gap)] p-6 border border-border bg-secondary/10 rounded-none italic font-serif">
                             <span className="font-bold">{rel.entity_a}</span>
                             <div className="flex-1 flex items-center gap-1 opacity-30">
                                 <div className="h-px flex-1 bg-foreground"></div>

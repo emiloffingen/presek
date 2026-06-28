@@ -99,7 +99,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
             <select
             value={s1}
             onChange={e => setS1(e.target.value)}
-            className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-accent/20 transition-all appearance-none"
+            className="w-full bg-secondary/30 border border-border rounded-none px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-accent/20 transition-all appearance-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
             >
             {allSources.map(s => <option key={s} value={s}>{s}</option>)}
@@ -110,7 +110,7 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
             <select
             value={s2}
             onChange={e => setS2(e.target.value)}
-            className="w-full bg-secondary/30 border border-border rounded-lg px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-red/20 transition-all appearance-none"
+            className="w-full bg-secondary/30 border border-border rounded-none px-4 py-3 font-serif font-black text-base focus:outline-none focus:ring-2 focus:ring-nyt-red/20 transition-all appearance-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
             >
             {allSources.map(s => <option key={s} value={s}>{s}</option>)}
@@ -170,14 +170,14 @@ export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { al
           )}
 
           <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800 flex justify-between gap-[var(--grid-gap)]">
-            <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
+            <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-none border border-zinc-100 dark:border-zinc-800">
                 <p className="ui-kicker ui-kicker--accent mb-2">{s1}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m1.cluster_count}</span>
                     <span className="text-[10px] font-bold text-muted-foreground">{t('sources.compare_stories')}</span>
                 </div>
             </div>
-            <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800">
+            <div className="text-center flex-1 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-none border border-zinc-100 dark:border-zinc-800">
                 <p className="ui-kicker text-nyt-red mb-2">{s2}</p>
                 <div className="flex items-baseline justify-center gap-1">
                     <span className="text-2xl font-black tabular-nums">{m2.cluster_count}</span>

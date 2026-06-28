@@ -36,7 +36,7 @@ export default function DivergenceGaugeIsland({ pluralism_pct, high_consensus_pc
     const status = getStatus(divergence);
 
     return (
-        <div className="bg-card border border-border p-6 rounded-xl shadow-sm relative overflow-hidden h-full flex flex-col">
+        <div className="bg-card border border-border p-6 rounded-none relative overflow-hidden h-full flex flex-col">
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-[var(--grid-gap)]">
                     <Gauge size={18} className="text-muted-foreground" />
@@ -46,7 +46,7 @@ export default function DivergenceGaugeIsland({ pluralism_pct, high_consensus_pc
                 </div>
                 <div className="group relative">
                     <HelpCircle size={14} className="text-muted-foreground opacity-40 cursor-help" />
-                    <div className="absolute hidden group-hover:block right-0 bg-foreground text-background text-[10px] p-3 rounded-lg shadow-2xl z-50 w-64 font-sans leading-relaxed">
+                    <div className="absolute hidden group-hover:block right-0 bg-foreground text-background text-[10px] p-3 rounded-none border border-background/20 z-50 w-64 font-sans leading-relaxed">
                         {t('pulse.divergence_tooltip')}
                     </div>
                 </div>

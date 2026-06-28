@@ -286,7 +286,7 @@ function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = '
           })}
         </div>
       ) : (
-        <div className="py-12 text-center border border-dashed border-border rounded-lg bg-secondary/5">
+        <div className="py-12 text-center border border-dashed border-border rounded-none bg-secondary/5">
           <p className="text-sm text-muted-foreground">{t('for_you.no_new_recs')}</p>
         </div>
       )}
