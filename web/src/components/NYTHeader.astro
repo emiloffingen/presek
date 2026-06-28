@@ -306,7 +306,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:load lang={lang} />
-                            <ThemeIsland client:idle lang={lang} />
                         </div>
                     </details>
                 </div>
