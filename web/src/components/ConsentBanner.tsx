@@ -106,7 +106,7 @@ export const ConsentBanner: React.FC = () => {
       className="consent-banner pointer-events-none fixed inset-x-0 bottom-0 z-[100] isolate px-0 pb-[env(safe-area-inset-bottom)] md:inset-x-auto md:right-4 md:bottom-4 md:w-[min(28rem,calc(100vw-2rem))] md:px-0 md:pb-0 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-300"
       style={{ contain: 'layout paint style' }}
     >
-      <div className="consent-banner-panel pointer-events-auto mx-auto max-w-5xl border-t border-border/80 bg-popover/96 px-3 py-2 text-popover-foreground shadow-[0_-6px_18px_rgba(17,24,39,0.08)] backdrop-blur-xl md:rounded-md md:border md:px-4 md:py-3 md:shadow-[0_8px_22px_rgba(17,24,39,0.10)]">
+      <div className="consent-banner-panel pointer-events-auto mx-auto max-w-5xl border-t border-border/80 bg-popover/96 px-3 py-2 text-popover-foreground shadow-none backdrop-blur-xl md:rounded-none md:border md:px-4 md:py-3 md:shadow-none">
         <div className="flex items-center gap-2 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 md:mb-0.5">
