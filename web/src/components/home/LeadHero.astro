@@ -170,7 +170,6 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 	                        class="lead-media-image"
 	                        transition:name={`cluster-image-${leadCluster.cluster_id}`}
                             data-fallback-url={fallbackImageUrl}
-                            onload="this.classList.add('is-loaded'); this.closest('.lead-media-frame')?.classList.add('media-ready');"
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
@@ -348,7 +347,6 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
 	                        decoding="async"
 	                        class="lead-media-image"
                             data-fallback-url={fallbackImageUrl}
-                            onload="this.classList.add('is-loaded'); this.closest('.lead-media-frame')?.classList.add('media-ready');"
 	                    />
 	                    <div class="lead-media-overlay">
 	                        <div class="overlay-content">
@@ -369,4 +367,29 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
     </a>
     )}
 </section>
+
+<script>
+  // Programmatically handle image load to comply with Content Security Policy (no inline onload handlers)
+  function setupLeadImages() {
+    const images = document.querySelectorAll('.lead-media-image');
+    images.forEach(img => {
+      const htmlImg = img as HTMLImageElement;
+      if (htmlImg.complete) {
+        htmlImg.classList.add('is-loaded');
+        htmlImg.closest('.lead-media-frame')?.classList.add('media-ready');
+      } else {
+        htmlImg.addEventListener('load', () => {
+          htmlImg.classList.add('is-loaded');
+          htmlImg.closest('.lead-media-frame')?.classList.add('media-ready');
+        });
+      }
+    });
+  }
+
+  // Setup on initial load
+  setupLeadImages();
+
+  // Setup on Astro page transitions
+  document.addEventListener('astro:page-load', setupLeadImages);
+</script>
 
