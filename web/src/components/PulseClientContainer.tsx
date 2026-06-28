@@ -284,7 +284,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                             <Info size={8} className="opacity-40 group-hover:opacity-100" />
                         </div>
                         <span className="text-lg md:text-xl font-black">{intelligence.synthesis_transparency?.systemic_ratio > 0 ? `${intelligence.synthesis_transparency?.systemic_ratio}%` : '–'}</span>
-                        <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded shadow-xl mt-1 z-50 w-48 font-sans left-0 md:left-auto">
+                        <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded-none border border-background/20 mt-1 z-50 w-48 font-sans left-0 md:left-auto">
                             {t('pulse.transparency_tip')}
                         </div>
                     </div>
@@ -450,7 +450,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <div className="flex items-center justify-end gap-1 group cursor-help">
                                             <span>{t('pulse.table.objectivity')}</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
-                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
+                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded-none border border-background/20 mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
                                                 {t('pulse.table.objectivity_tip')}
                                             </div>
                                         </div>
@@ -459,7 +459,7 @@ export default function PulseClientContainer({ initialGlobalPulse, initialPulseD
                                         <div className="flex items-center justify-end gap-1 group cursor-help">
                                             <span>{t('pulse.table.sensationalism')}</span>
                                             <Info size={10} className="opacity-40 group-hover:opacity-100" />
-                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded shadow-xl mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
+                                            <div className="absolute hidden group-hover:block bg-foreground text-background text-[11px] p-2 rounded-none border border-background/20 mt-12 z-50 w-48 font-sans normal-case tracking-normal text-left">
                                                 {t('pulse.table.sensationalism_tip')}
                                             </div>
                                         </div>
