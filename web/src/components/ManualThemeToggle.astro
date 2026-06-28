@@ -1,27 +1,25 @@
 ---
-// ManualThemeToggle.astro - Simple theme toggle that works reliably
+interface Props {
+  labelDark?: string;
+  labelLight?: string;
+}
+
+const {
+  labelDark = 'Switch to dark mode',
+  labelLight = 'Switch to light mode',
+} = Astro.props;
 ---
 
 <button
   type="button"
   class="header-utility-button theme-toggle-button flex items-center justify-center transition-all duration-300 group relative text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 hover:bg-secondary active:scale-95 overflow-hidden"
-  aria-label="Toggle theme"
-  onclick="
-    try {
-      const html = document.documentElement;
-      const isDark = html.classList.contains('dark');
-      
-      if (isDark) {
-        html.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      } else {
-        html.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    } catch (e) {
-      console.error('Theme toggle failed:', e);
-    }
-  "
+  aria-label={labelDark}
+  aria-pressed="false"
+  title={labelDark}
+  data-theme-toggle
+  data-label-dark={labelDark}
+  data-label-light={labelLight}
+  data-theme-state="light"
 >
   <div class="relative w-full h-full flex items-center justify-center">
     <svg
@@ -76,17 +74,3 @@
     opacity: 1;
   }
 </style>
-
-<script is:inline>
-  // Apply saved theme on load
-  try {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      document.documentElement.classList.add('dark');
-    }
-  } catch (e) {
-    console.error('Theme application failed:', e);
-  }
-</script>

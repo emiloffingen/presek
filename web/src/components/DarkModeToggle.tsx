@@ -12,15 +12,21 @@ export default function DarkModeToggle() {
     if (savedPref === 'dark' || (!savedPref && systemPref)) {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
   }, []);
 
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
       localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
       localStorage.setItem('theme', 'light');
     }
   }, [darkMode]);

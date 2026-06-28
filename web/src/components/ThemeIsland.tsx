@@ -11,9 +11,11 @@ function applyThemeToDocument(next: 'light' | 'dark') {
   const root = document.documentElement;
   if (next === 'dark') {
     root.classList.add('dark');
+    root.classList.remove('light');
     root.style.colorScheme = 'dark';
   } else {
     root.classList.remove('dark');
+    root.classList.add('light');
     root.style.colorScheme = 'light';
   }
 

@@ -279,11 +279,11 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                     <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
                         <ScriptSwitcher />
-<ManualThemeToggle />
+                        <ManualThemeToggle labelDark={t('theme.to_dark')} labelLight={t('theme.to_light')} />
                         <TextScaleIsland client:load lang={lang} />
                     </div>
                     <div class="utility-theme-mobile utility-mobile-only" data-no-script-convert>
-<ManualThemeToggle />
+                        <ManualThemeToggle labelDark={t('theme.to_dark')} labelLight={t('theme.to_light')} />
                     </div>
                     <details class="utility-menu utility-mobile-only">
                         <summary class="utility-menu-trigger" aria-label={t('settings.breadcrumb')}>
