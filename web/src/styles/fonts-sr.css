@@ -8,3 +8,16 @@
 @import "@fontsource/ibm-plex-sans/latin-700.css";
 @import "@fontsource/noto-sans/latin-400.css";
 @import "@fontsource/noto-sans/latin-700.css";
+
+/* Broadsheet 2.0 Font System - Serbian Latin */
+@import "@fontsource/noto-serif/latin-700.css";
+@import "@fontsource/noto-serif/latin-900.css";
+@import "@fontsource/noto-serif/latin-900-italic.css";
+
+@import "@fontsource/noto-serif-display/latin-700.css";
+@import "@fontsource/noto-serif-display/latin-900.css";
+@import "@fontsource/noto-serif-display/latin-900-italic.css";
+
+@import "@fontsource/manrope/latin-600.css";
+@import "@fontsource/manrope/latin-700.css";
+@import "@fontsource/manrope/latin-800.css";
