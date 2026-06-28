@@ -5,7 +5,6 @@ import TextScaleIsland from './TextScaleIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
 import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import DarkModeToggle from './DarkModeToggle.tsx';
 import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { fetchJsonCached } from '../lib/apiCache';
@@ -282,7 +281,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                         <ScriptSwitcher />
                         <ThemeIsland client:media="(min-width: 769px)" lang={lang} />
                         <TextScaleIsland client:media="(min-width: 769px)" lang={lang} />
-                        <DarkModeToggle client:media="(min-width: 769px)" />
                     </div>
                     <div class="utility-theme-mobile utility-mobile-only" data-no-script-convert>
                         <ThemeIsland client:media="(max-width: 768px)" lang={lang} />
@@ -308,7 +306,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:media="(max-width: 768px)" lang={lang} />
-                            <DarkModeToggle client:media="(max-width: 768px)" />
+                            <ThemeIsland client:media="(max-width: 768px)" lang={lang} />
                         </div>
                     </details>
                 </div>
