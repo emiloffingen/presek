@@ -65,7 +65,7 @@ const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang
                                         <img
                                             src={proxyUrl(`/proxy?url=${encodeURIComponent(item.image_url)}&w=160`)}
                                             alt={item.title}
-                                            className="w-full h-full object-cover rounded border border-border group-hover:border-nyt-accent transition-colors"
+                                            className="w-full h-full object-cover rounded-none border border-border group-hover:border-nyt-accent transition-colors"
                                         />
                                     </div>
                                 )}
