@@ -7,14 +7,14 @@
 body {
   margin: 0;
   padding: 1rem;
-  background: #faf9f7;
-  color: #111;
+  background: var(--card);
+  color: var(--foreground);
 }
 
 .embed-card {
   max-width: 420px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--card);
   padding: 1rem 1.1rem;
 }
 

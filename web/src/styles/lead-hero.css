@@ -623,7 +623,7 @@
 		height: 100%;
 		object-fit: contain;
 		object-position: center;
-        background-color: #171717;
+        background-color: var(--background);
 		opacity: 1;
 		filter: blur(4px);
 		transition: filter 0.45s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
@@ -906,7 +906,7 @@
     }
 
     .lead-media-editorial-card.topic-fallback-card {
-        background: #111827;
+        background: var(--card);
     }
 
     .lead-media-editorial-card.topic-fallback-card .article-image-fallback {

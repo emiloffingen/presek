@@ -134,8 +134,8 @@ p,
 }
 
 ::selection {
-  background-color: #326891;
-  color: white;
+  background-color: var(--presek-mark);
+  color: var(--card-foreground);
 }
 
 html,
