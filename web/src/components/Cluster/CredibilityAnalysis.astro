@@ -402,13 +402,13 @@ const signalSummary = pluralismLabel && objectivityLabel
 		background: color-mix(in srgb, var(--secondary) 30%, var(--card));
 		border: 1px solid var(--border);
 		border-radius: var(--radius-md, 0px);
-		box-shadow: var(--shadow-sm);
-		transition: transform 0.3s var(--ease-editorial), border-color 0.3s var(--ease-editorial), box-shadow 0.3s var(--ease-editorial);
+		box-shadow: none;
+		transition: transform 0.3s var(--ease-editorial), border-color 0.3s var(--ease-editorial);
 	}
 	.editorial-angle-card:hover {
 		transform: translateY(-2px);
 		border-color: color-mix(in srgb, var(--presek-mark) 30%, var(--border));
-		box-shadow: var(--shadow-md);
+		box-shadow: none;
 	}
 
 	.angle-title {
@@ -446,7 +446,7 @@ const signalSummary = pluralismLabel && objectivityLabel
         background: color-mix(in srgb, var(--secondary) 26%, var(--card));
         border: 1px solid var(--border);
         border-radius: var(--radius-md, 0px);
-        box-shadow: var(--shadow-sm);
+        box-shadow: none;
         display: flex;
         flex-direction: column;
         gap: 1rem;
