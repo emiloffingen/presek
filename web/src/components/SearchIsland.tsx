@@ -232,6 +232,7 @@ export default function SearchIsland({
   const [isListening, setIsListening] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const queryCacheRef = useRef<Record<string, { suggestions: Suggestion[]; entity: EntityResult | null }>>({});
   const openSearch = useCallback(() => setIsOpen(true), []);
 
   const closeSearch = useCallback(() => {
@@ -442,14 +443,26 @@ export default function SearchIsland({
       return;
     }
 
+    const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
+    const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
+    const cacheKey = trimmed + timespanPart + categoryPart;
+
+    // Check synchronous query cache first for instant feedback (e.g. backspace / switching filters)
+    if (queryCacheRef.current[cacheKey]) {
+      const cached = queryCacheRef.current[cacheKey];
+      setSuggestions(cached.suggestions);
+      setEntityResult(cached.entity);
+      setIsLoading(false);
+      setActiveIndex(-1);
+      return;
+    }
+
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       setError(null);
       try {
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
-        const timespanPart = timespan !== 'all' ? `&timespan=${timespan}` : '';
-        const categoryPart = categoryFilter !== 'all' ? `&category=${encodeURIComponent(categoryFilter)}` : '';
         const data = await fetchJsonCached(url + timespanPart + categoryPart, 120_000);
         const nextSuggestions = Array.isArray(data?.clusters)
           ? data.clusters.map((cluster: any) => {
@@ -475,6 +488,8 @@ export default function SearchIsland({
           : [];
 
         if (!cancelled) {
+          // Save in cache
+          queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity: data.entity || null };
           setSuggestions(nextSuggestions);
           setEntityResult(data.entity || null);
           setActiveIndex(-1);
@@ -488,7 +503,7 @@ export default function SearchIsland({
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    }, 200);
+    }, 100); // Reduced debounce from 200ms to 100ms for a snappier, instant typing feel
 
     return () => {
       cancelled = true;

@@ -55,6 +55,18 @@ export default function SearchEntryIsland({
   const close = useCallback(() => setActive(false), []);
 
   useEffect(() => {
+    // Preload SearchIsland when idle to eliminate lazy load network latency
+    if (typeof window !== 'undefined') {
+      const preload = () => import('./SearchIsland');
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(preload);
+      } else {
+        setTimeout(preload, 1000);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
