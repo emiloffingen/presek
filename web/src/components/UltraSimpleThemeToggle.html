@@ -1,0 +1,83 @@
+<button type="button" 
+  class="header-utility-button theme-toggle-button flex items-center justify-center transition-all duration-300 group relative text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 hover:bg-secondary active:scale-95 overflow-hidden"
+  aria-label="Toggle theme"
+  id="ultra-simple-theme-toggle"
+  onclick="
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    
+    if (isDark) {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  "
+>
+  <div class="relative w-full h-full flex items-center justify-center">
+    <svg
+      class="absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] theme-toggle-sun"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.25"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2"/>
+      <path d="M12 20v2"/>
+      <path d="m4.93 4.93 1.41 1.41"/>
+      <path d="m17.66 17.66 1.41 1.41"/>
+      <path d="M2 12h2"/>
+      <path d="M20 12h2"/>
+      <path d="m6.34 17.66-1.41 1.41"/>
+      <path d="m19.07 4.93-1.41 1.41"/>
+    </svg>
+    <svg
+      class="absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] theme-toggle-moon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.25"
+      aria-hidden="true"
+    >
+      <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>
+    </svg>
+  </div>
+</button>
+
+<script>
+  // Apply saved theme on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const html = document.documentElement;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      html.classList.add('dark');
+    }
+  });
+</script>
+
+<style>
+  .theme-toggle-sun {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+  
+  .theme-toggle-moon {
+    transform: rotate(-90deg) scale(0);
+    opacity: 0;
+  }
+  
+  .dark .theme-toggle-sun {
+    transform: rotate(90deg) scale(0);
+    opacity: 0;
+  }
+  
+  .dark .theme-toggle-moon {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+</style>
