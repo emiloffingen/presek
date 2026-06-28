@@ -43,6 +43,18 @@ main() {
     set +a
   fi
 
+  # Check if Cloudflare R2 is configured in the environment
+  if [ -n "${R2_ACCESS_KEY_ID:-}" ] && [ -n "${R2_SECRET_ACCESS_KEY:-}" ]; then
+    info "Cloudflare R2 credentials detected; executing python R2 sync"
+    local py_bin="$APP_ROOT/venv/bin/python"
+    if [ ! -f "$py_bin" ]; then
+      py_bin="python3"
+    fi
+    "$py_bin" "$APP_DIR/deploy/sync_backups_r2.py"
+    ok "Cloudflare R2 offsite sync complete"
+    exit 0
+  fi
+
   local target="${BACKUP_OFFSITE_RCLONE_TARGET:-}"
   if [ -z "$target" ]; then
     warn "BACKUP_OFFSITE_RCLONE_TARGET is not set; skipping offsite backup sync"
