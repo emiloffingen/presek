@@ -131,6 +131,7 @@ def _get_fake_fastapi_modules():
     f.Request = _FakeRequest
     f.HTTPException = _FakeHTTPException
     f.Query = MagicMock(side_effect=lambda default=None, **kwargs: default)
+    f.Path = MagicMock(side_effect=lambda default=None, **kwargs: default)
     f.BackgroundTasks = MagicMock
     f.Depends = MagicMock
     f.Form = MagicMock

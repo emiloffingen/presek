@@ -25,7 +25,14 @@
   }
 
   function updateThemeControls(theme) {
-    var isDark = theme === 'dark';
+    var resolvedTheme = theme;
+    if (theme === 'system' || !theme) {
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      resolvedTheme = prefersDark ? 'dark' : 'light';
+    }
+    var isDark = resolvedTheme === 'dark';
+
+    // 1. Legacy toggles support
     document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
       var nextLabel = isDark
         ? button.getAttribute('data-label-light') || 'Switch to light mode'
@@ -33,12 +40,32 @@
       button.setAttribute('aria-label', nextLabel);
       button.setAttribute('aria-pressed', isDark ? 'true' : 'false');
       button.setAttribute('title', nextLabel);
-      button.setAttribute('data-theme-state', theme);
+      button.setAttribute('data-theme-state', resolvedTheme);
+    });
+
+    // 2. Segmented switcher support
+    document.querySelectorAll('[data-theme-switcher]').forEach(function (switcher) {
+      switcher.setAttribute('data-active-theme', theme);
+      switcher.querySelectorAll('[data-theme-val]').forEach(function (btn) {
+        var val = btn.getAttribute('data-theme-val');
+        if (val === theme) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-current', 'true');
+        } else {
+          btn.classList.remove('active');
+          btn.removeAttribute('aria-current');
+        }
+      });
     });
   }
 
   function setResolvedTheme(theme, persist) {
-    var isDark = theme === 'dark';
+    var resolvedTheme = theme;
+    if (theme === 'system' || !theme) {
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      resolvedTheme = prefersDark ? 'dark' : 'light';
+    }
+    var isDark = resolvedTheme === 'dark';
 
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -63,25 +90,33 @@
   function getStoredTheme() {
     try {
       var stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
-      return stored === 'dark' || stored === 'light' ? stored : null;
+      return stored === 'dark' || stored === 'light' || stored === 'system' ? stored : null;
     } catch (e) {
       return null;
     }
   }
 
   function applyTheme() {
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var stored = getStoredTheme();
-    setResolvedTheme(stored || (prefersDark ? 'dark' : 'light'), false);
+    var stored = getStoredTheme() || 'system';
+    setResolvedTheme(stored, false);
   }
 
   window.presekApplyTheme = setResolvedTheme;
   applyTheme();
   document.addEventListener('click', function (event) {
+    var btn = event.target && event.target.closest ? event.target.closest('[data-theme-val]') : null;
+    if (btn) {
+      var nextTheme = btn.getAttribute('data-theme-val');
+      setResolvedTheme(nextTheme, true);
+      return;
+    }
+
     var toggle = event.target && event.target.closest ? event.target.closest('[data-theme-toggle]') : null;
-    if (!toggle) return;
-    var nextTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-    setResolvedTheme(nextTheme, true);
+    if (toggle) {
+      var isDark = document.documentElement.classList.contains('dark');
+      var nextTheme = isDark ? 'light' : 'dark';
+      setResolvedTheme(nextTheme, true);
+    }
   });
   document.addEventListener('DOMContentLoaded', applyTheme);
   document.addEventListener('astro:page-load', applyTheme);
@@ -89,7 +124,8 @@
 
   try {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-      if (!getStoredTheme()) applyTheme();
+      var stored = getStoredTheme();
+      if (!stored || stored === 'system') applyTheme();
     });
   } catch (e) {}
 
