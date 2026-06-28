@@ -14,7 +14,7 @@ import logging
 from typing import Optional, List, Dict, Any, Union
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, validator, ValidationError
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from fastapi import HTTPException, Query, Path
 
 from core.api_errors import soft_error
@@ -51,13 +51,15 @@ class PaginationParams(BaseModel):
     page: int = Query(1, ge=1, le=1000, description="Page number")
     limit: int = Query(20, ge=5, le=100, description="Items per page")
     
-    @validator('page')
+    @field_validator('page')
+    @classmethod
     def validate_page(cls, v):
         if v < 1 or v > 1000:
             raise ValueError('Page must be between 1 and 1000')
         return v
     
-    @validator('limit')
+    @field_validator('limit')
+    @classmethod
     def validate_limit(cls, v):
         if v < 5 or v > 100:
             raise ValueError('Limit must be between 5 and 100')
@@ -68,7 +70,8 @@ class SearchParams(BaseModel):
     q: str = Query("", max_length=500, description="Search query")
     lang: Optional[str] = Query(None, max_length=2, description="Language code")
     
-    @validator('q')
+    @field_validator('q')
+    @classmethod
     def validate_search_query(cls, v):
         if len(v) > 500:
             raise ValueError('Search query too long (max 500 characters)')
@@ -81,7 +84,8 @@ class ClusterIDParam(BaseModel):
     """Validation model for cluster ID parameters."""
     cluster_id: str = Path(..., description="Cluster UUID")
     
-    @validator('cluster_id')
+    @field_validator('cluster_id')
+    @classmethod
     def validate_cluster_id(cls, v):
         if not CLUSTER_ID_PATTERN.match(v):
             raise ValueError('Invalid cluster ID format')
@@ -91,7 +95,8 @@ class ArticleIDParam(BaseModel):
     """Validation model for article ID parameters."""
     article_id: str = Path(..., description="Article UUID")
     
-    @validator('article_id')
+    @field_validator('article_id')
+    @classmethod
     def validate_article_id(cls, v):
         if not ARTICLE_ID_PATTERN.match(v):
             raise ValueError('Invalid article ID format')
@@ -101,7 +106,8 @@ class SourceNameParam(BaseModel):
     """Validation model for source name parameters."""
     source: str = Query(..., max_length=50, description="Source name")
     
-    @validator('source')
+    @field_validator('source')
+    @classmethod
     def validate_source_name(cls, v):
         if not SOURCE_NAME_PATTERN.match(v):
             raise ValueError('Invalid source name format')
@@ -111,7 +117,8 @@ class EmailParam(BaseModel):
     """Validation model for email parameters."""
     email: str = Query(..., max_length=254, description="Email address")
     
-    @validator('email')
+    @field_validator('email')
+    @classmethod
     def validate_email(cls, v):
         if not EMAIL_PATTERN.match(v):
             raise ValueError('Invalid email format')
@@ -121,7 +128,8 @@ class URLParam(BaseModel):
     """Validation model for URL parameters."""
     url: str = Query(..., max_length=2048, description="URL")
     
-    @validator('url')
+    @field_validator('url')
+    @classmethod
     def validate_url(cls, v):
         if len(v) > 2048:
             raise ValueError('URL too long (max 2048 characters)')
