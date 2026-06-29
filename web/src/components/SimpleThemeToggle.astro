@@ -1,3 +1,7 @@
+---
+// Generate a unique ID for the SVG mask to support multiple switcher instances cleanly
+const maskId = `moon-mask-${Math.random().toString(36).substring(2, 9)}`;
+---
 <!--
   Simple Theme Toggle - Vanilla JS version
   More reliable than React-based solution
@@ -8,36 +12,32 @@
   class="header-utility-button theme-toggle-button simple-theme-toggle-btn flex items-center justify-center transition-all duration-300 group relative text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 hover:bg-secondary active:scale-95 overflow-hidden"
   aria-label="Toggle theme"
 >
-  <div class="relative w-full h-full flex items-center justify-center">
-    <svg
-      class="absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] theme-toggle-sun"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.25"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="4"/>
-      <path d="M12 2v2"/>
-      <path d="M12 20v2"/>
-      <path d="m4.93 4.93 1.41 1.41"/>
-      <path d="m17.66 17.66 1.41 1.41"/>
-      <path d="M2 12h2"/>
-      <path d="M20 12h2"/>
-      <path d="m6.34 17.66-1.41 1.41"/>
-      <path d="m19.07 4.93-1.41 1.41"/>
-    </svg>
-    <svg
-      class="absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] theme-toggle-moon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.25"
-      aria-hidden="true"
-    >
-      <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>
-    </svg>
-  </div>
+  <svg
+    class="theme-toggle-svg w-5 h-5 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <mask id={maskId}>
+      <rect x="0" y="0" width="24" height="24" fill="white" />
+      <circle class="moon-mask-circle" cx="30" cy="0" r="8" fill="black" />
+    </mask>
+    <circle class="sun-body" cx="12" cy="12" r="5" mask={`url(#${maskId})`} fill="currentColor" />
+    <g class="sun-rays" stroke="currentColor" stroke-width="2">
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </g>
+  </svg>
 </button>
 
 <script>
@@ -88,23 +88,45 @@
 </script>
 
 <style>
-  .theme-toggle-sun {
-    transform: rotate(0) scale(1);
+  .theme-toggle-svg {
+    transform: rotate(0deg);
+  }
+  
+  .theme-toggle-svg .sun-body {
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), r 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center;
+    r: 5px;
+  }
+  
+  .theme-toggle-svg .moon-mask-circle {
+    transition: cx 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), cy 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), r 0.5s ease;
+    cx: 30;
+    cy: 0;
+  }
+  
+  .theme-toggle-svg .sun-rays {
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+    transform-origin: center;
     opacity: 1;
+    transform: scale(1);
   }
   
-  .theme-toggle-moon {
-    transform: rotate(-90deg) scale(0);
+  /* Dark mode styles using global modifier for container element */
+  :global(.dark) .theme-toggle-svg {
+    transform: rotate(40deg);
+  }
+  
+  :global(.dark) .theme-toggle-svg .sun-body {
+    r: 9px;
+  }
+  
+  :global(.dark) .theme-toggle-svg .moon-mask-circle {
+    cx: 18;
+    cy: 6;
+  }
+  
+  :global(.dark) .theme-toggle-svg .sun-rays {
+    transform: scale(0);
     opacity: 0;
-  }
-  
-  .dark .theme-toggle-sun {
-    transform: rotate(90deg) scale(0);
-    opacity: 0;
-  }
-  
-  .dark .theme-toggle-moon {
-    transform: rotate(0) scale(1);
-    opacity: 1;
   }
 </style>
