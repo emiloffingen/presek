@@ -4,7 +4,7 @@ import {
   stripMkPrefix,
   withMkPrefix,
 } from './lib/localePaths';
-import { buildFrameAncestorsPolicy, generateCspNonce } from './lib/csp';
+import { buildCspPolicy, generateCspNonce } from './lib/csp';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -36,8 +36,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const attachFrameAncestors = async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      // Astro security.csp owns script/style hashes; only add framing policy here.
-      response.headers.append('Content-Security-Policy', buildFrameAncestorsPolicy());
+      // Overwrite the build-time CSP with our custom unified CSP policy
+      response.headers.set('Content-Security-Policy', buildCspPolicy());
     }
     return response;
   };

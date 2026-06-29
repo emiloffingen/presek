@@ -35,30 +35,4 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-
-  // Hash-based CSP for Astro islands + inline page scripts (middleware only adds frame-ancestors).
-  security: {
-    csp: {
-      directives: [
-        "default-src 'self'",
-        "font-src 'self' data:",
-        "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com",
-        "connect-src 'self' https://presek.live https://www.presek.live https://presek.mk https://www.presek.mk https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://region1.google-analytics.com wss://presek.live wss://presek.mk",
-        "frame-src 'self'",
-        "base-uri 'self'",
-        "form-action 'self'",
-        "object-src 'none'",
-        "media-src 'self' data: https:",
-        "worker-src 'self'",
-      ],
-      // Do not enable strictDynamic: it disables 'self' and blocks parser-inserted
-      // /_astro/* and /js/* bundles, so React header islands never hydrate.
-      scriptDirective: {
-        resources: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com'],
-      },
-      styleDirective: {
-        resources: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
-      },
-    },
-  },
 });
