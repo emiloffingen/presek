@@ -54,7 +54,10 @@ export default defineConfig({
       // Do not enable strictDynamic: it disables 'self' and blocks parser-inserted
       // /_astro/* and /js/* bundles, so React header islands never hydrate.
       scriptDirective: {
-        resources: ["'self'", 'https://www.googletagmanager.com'],
+        resources: ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com'],
+      },
+      styleDirective: {
+        resources: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
       },
     },
   },
