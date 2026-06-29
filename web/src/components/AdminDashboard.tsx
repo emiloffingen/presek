@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { buildCsrfHeadersAsync } from '../lib/personalization.js';
 import {
@@ -15,6 +15,59 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
   const [data, setData] = useState<any>(null);
   const [synthesisTraces, setSynthesisTraces] = useState<any[]>([]);
   const [traceLoading, setTraceLoading] = useState(false);
+  const [liveActivity, setLiveActivity] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const source = new EventSource('/api/live');
+    source.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (!payload || !payload.type) return;
+
+        let message = '';
+        let type = '';
+
+        if (payload.type === 'new_article') {
+          message = `[INGEST] Ingested "${payload.title}" from ${payload.source}`;
+          type = 'ingest';
+        } else if (payload.type === 'new_articles') {
+          message = `[INGEST_BATCH] Ingested batch of ${payload.count} articles`;
+          type = 'ingest_batch';
+        } else if (payload.type === 'cluster_updated') {
+          message = `[SYNTHESIS] Re-synthesized cluster: "${payload.title}" (${payload.cluster_id})`;
+          type = 'synthesis';
+        }
+
+        if (message) {
+          setLiveActivity((prev) => [
+            {
+              id: Math.random().toString(),
+              time: new Date().toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              }),
+              message,
+              type,
+            },
+            ...prev,
+          ].slice(0, 15));
+        }
+      } catch (err) {
+        console.warn('Failed to parse SSE trace message:', err);
+      }
+    };
+
+    source.onerror = () => {
+      source.close();
+    };
+
+    return () => {
+      source.close();
+    };
+  }, [isAuthenticated, lang]);
 
   const fetchSynthesisTraces = async (overrideToken?: string) => {
     const activeToken = overrideToken || token;
@@ -406,6 +459,49 @@ export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {isAuthenticated && (
+        <section className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
+                {lang === 'sr' ? 'AKTIVNI OPERATIVNI TOK (REAL-TIME)' : 'АКТИВЕН ОПЕРАТИВЕН ТЕК (REAL-TIME)'}
+              </h2>
+              <p className="text-[11px] text-zinc-500 mt-2">
+                {lang === 'sr'
+                  ? 'Uživo praćenje scraper-a i AI syntezer-a bez potrebe za osvežavanjem stranice.'
+                  : 'Следење во живо на scraper и AI syntezer без потреба од освежување на страницата.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+              SSE STREAM ACTIVE
+            </div>
+          </div>
+
+          <div className="bg-black border border-zinc-800 font-mono text-[11px] p-4 rounded-lg overflow-y-auto max-h-60 space-y-1.5 select-text">
+            {liveActivity.length === 0 ? (
+              <p className="text-zinc-500 italic">
+                {lang === 'sr' ? '> Čekanje na sistemske događaje...' : '> Чекање на системски настани...'}
+              </p>
+            ) : (
+              liveActivity.map((log: any) => {
+                let colorClass = 'text-zinc-300';
+                if (log.type === 'ingest') colorClass = 'text-blue-400';
+                else if (log.type === 'ingest_batch') colorClass = 'text-cyan-400';
+                else if (log.type === 'synthesis') colorClass = 'text-purple-400';
+
+                return (
+                  <div key={log.id} className="flex gap-2">
+                    <span className="text-zinc-600 shrink-0">[{log.time}]</span>
+                    <span className={colorClass}>{log.message}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </section>
       )}
 

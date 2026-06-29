@@ -250,6 +250,30 @@ else:
         ["queue"],
     )
 
+if "presek_celery_failed_tasks_count" in REGISTRY._names_to_collectors:
+    _FAILED_TASKS_COUNT = REGISTRY._names_to_collectors["presek_celery_failed_tasks_count"]
+else:
+    _FAILED_TASKS_COUNT = Gauge(
+        "presek_celery_failed_tasks_count",
+        "Number of failed celery tasks in the system"
+    )
+
+if "presek_postgresql_database_size_mb" in REGISTRY._names_to_collectors:
+    _POSTGRESQL_DB_SIZE = REGISTRY._names_to_collectors["presek_postgresql_database_size_mb"]
+else:
+    _POSTGRESQL_DB_SIZE = Gauge(
+        "presek_postgresql_database_size_mb",
+        "Database size in megabytes"
+    )
+
+if "presek_articles_total" in REGISTRY._names_to_collectors:
+    _ARTICLES_TOTAL = REGISTRY._names_to_collectors["presek_articles_total"]
+else:
+    _ARTICLES_TOTAL = Gauge(
+        "presek_articles_total",
+        "Total number of ingested articles"
+    )
+
 
 def _audio_file_path(filename: str) -> str | None:
     if not _AUDIO_FILENAME_RE.fullmatch(filename):
@@ -540,6 +564,24 @@ async def metrics(request: Request):
         update_db_pool_metrics()
     except Exception as exc:
         log.warning("Failed to refresh database pool metrics: %s", exc)
+
+    try:
+        from core.database import db_manager
+        # 1. Fetch database size
+        size_mb = db_manager.get_db_size()
+        _POSTGRESQL_DB_SIZE.set(size_mb)
+
+        # 2. Fetch failed tasks count
+        failed_tasks_count_row = db_manager.execute("SELECT COUNT(*) as count FROM failed_tasks")
+        failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
+        _FAILED_TASKS_COUNT.set(failed_tasks_count)
+
+        # 3. Fetch total articles count
+        articles_total_row = db_manager.execute("SELECT COUNT(*) as count FROM articles")
+        articles_total = articles_total_row[0]["count"] if articles_total_row else 0
+        _ARTICLES_TOTAL.set(articles_total)
+    except Exception as exc:
+        log.warning("Failed to refresh custom operation metrics: %s", exc)
 
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 

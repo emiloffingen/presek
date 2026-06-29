@@ -679,3 +679,54 @@ class TestSourceReputationRows:
         assert result[0]["tendency"] == "Cesto prv na prikaznata"
         assert result[1]["trend_label"] == "Slabee"
         assert result[1]["lone_lead_rate"] == 0.8
+
+
+def test_event_stream_yields_published_events():
+    import asyncio
+    from unittest.mock import patch
+    import utils
+    from utils.cache import event_stream
+
+    class _FakePubSub:
+        def __init__(self):
+            self.closed = False
+            self.unsubscribed = False
+            self.calls = 0
+
+        def subscribe(self, _channel):
+            return None
+
+        def get_message(self, ignore_subscribe_messages=True, timeout=1.0):
+            self.calls += 1
+            if self.calls == 1:
+                return {
+                    "type": "message",
+                    "pattern": None,
+                    "channel": b"updates",
+                    "data": '{"type": "new_article", "title": "Test Title"}'
+                }
+            return None
+
+        def unsubscribe(self, _channel):
+            self.unsubscribed = True
+
+        def close(self):
+            self.closed = True
+
+    class _FakeRequest:
+        async def is_disconnected(self):
+            return False
+
+    async def _collect():
+        pubsub = _FakePubSub()
+        request = _FakeRequest()
+        with patch.object(utils.redis_client, "pubsub", return_value=pubsub):
+            stream = event_stream("updates", request=request)
+            first = await stream.__anext__()
+            return first, pubsub
+
+    first, pubsub = asyncio.run(_collect())
+    assert "data: {" in first
+    assert "Test Title" in first
+    assert pubsub.closed is True
+
