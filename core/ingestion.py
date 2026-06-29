@@ -58,7 +58,7 @@ INGESTION_ERRORS = Counter(
 )
 
 _OG_IMAGE_READ_LIMIT = 64 * 1024
-_OG_IMAGE_CONCURRENCY = 8
+_OG_IMAGE_CONCURRENCY = 20
 _BROWSER_LIKE_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -585,10 +585,10 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     if not is_safe_url(url) and client.__class__.__module__.startswith("httpx"):
         return None
 
-    max_retries = 2
+    max_retries = 1
     for attempt in range(max_retries):
         try:
-            async with client.stream("GET", url, timeout=10.0, follow_redirects=True) as resp:
+            async with client.stream("GET", url, timeout=3.5, follow_redirects=True) as resp:
                 # Handle Cloudflare and other 403s
                 if resp.status_code == 403 and str(resp.headers.get("cf-mitigated", "")).lower() == "challenge":
                     raise RuntimeError(f"Cloudflare challenge blocked og:image: {url}")
@@ -688,6 +688,14 @@ async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dic
         return 0
     if skipped_domains:
         log.info(f"[ingest] Skipping og:image fetch for {skipped_domains} articles on bot-protected domains")
+
+    # Sort by created_at descending (newest first) to prioritize fresh news
+    no_image.sort(key=lambda x: x.get("created_at") or datetime.datetime.min, reverse=True)
+    # Limit max fetches per cycle to prevent blocking the ingestion pipeline
+    MAX_OG_IMAGE_FETCHES = 100
+    if len(no_image) > MAX_OG_IMAGE_FETCHES:
+        log.info(f"[ingest] Limiting og:image fetch to latest {MAX_OG_IMAGE_FETCHES} of {len(no_image)} articles without images")
+        no_image = no_image[:MAX_OG_IMAGE_FETCHES]
 
     log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
     semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
