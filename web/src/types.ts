@@ -168,7 +168,9 @@ export interface ClusterDetail extends NewsCluster {
   }>;
   total_reading_time: number;
   narrative_diversity?: {
+    score?: number;
     verdict?: string;
+    bias_detected?: boolean;
   };
 }
 
