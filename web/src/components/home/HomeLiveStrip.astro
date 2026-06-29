@@ -28,7 +28,7 @@ const wireTeaser = wireItems[0]?.title || '';
 ---
 
 {articles.length > 0 && (
-    <details class="home-live-details" data-live-strip>
+    <details class="home-live-details" data-live-strip data-lang={lang}>
         <summary class="home-live-summary" aria-label={t('home.wire_title')}>
             <span class="home-live-summary-label">
                 <Activity size={13} />

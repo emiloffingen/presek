@@ -290,37 +290,42 @@
   function initLivePaint() {
     var wireItems = readJson('presek-live-data', []);
     var root = document.querySelector('[data-live-strip]');
-    if (!root || !Array.isArray(wireItems) || wireItems.length === 0) return;
+    if (!root) return;
 
     var mount = root.querySelector('[data-live-mount]');
     if (!mount) return;
+
+    var lang = root.dataset.lang || 'sr';
+
+    function paintItem(item, isNew) {
+      var link = document.createElement('a');
+      link.href = item.href;
+      link.className = 'home-live-item' + (isNew ? ' home-live-item-pulse' : '');
+
+      var meta = document.createElement('div');
+      meta.className = 'home-live-meta';
+
+      var time = document.createElement('span');
+      time.textContent = item.time || '';
+
+      var source = document.createElement('strong');
+      source.textContent = item.source || '';
+
+      meta.append(time, source);
+
+      var title = document.createElement('p');
+      title.textContent = item.title || '';
+
+      link.append(meta, title);
+      return link;
+    }
 
     function paint() {
       if (mount.dataset.ready === '1') return;
       mount.dataset.ready = '1';
       var frag = document.createDocumentFragment();
       for (var i = 0; i < wireItems.length; i++) {
-        var item = wireItems[i];
-        var link = document.createElement('a');
-        link.href = item.href;
-        link.className = 'home-live-item';
-
-        var meta = document.createElement('div');
-        meta.className = 'home-live-meta';
-
-        var time = document.createElement('span');
-        time.textContent = item.time || '';
-
-        var source = document.createElement('strong');
-        source.textContent = item.source || '';
-
-        meta.append(time, source);
-
-        var title = document.createElement('p');
-        title.textContent = item.title || '';
-
-        link.append(meta, title);
-        frag.appendChild(link);
+        frag.appendChild(paintItem(wireItems[i], false));
       }
       mount.appendChild(frag);
     }
@@ -340,6 +345,111 @@
       }, { rootMargin: '160px' });
       observer.observe(root);
     }
+
+    // Connect to SSE stream
+    if (window.EventSource && !root.dataset.liveConnected) {
+      root.dataset.liveConnected = '1';
+      var source = new EventSource('/api/live');
+      
+      // Keep track of connection for cleanup on Astro page transitions
+      var onPageUnload = function () {
+        source.close();
+        document.removeEventListener('astro:before-swap', onPageUnload);
+      };
+      document.addEventListener('astro:before-swap', onPageUnload);
+
+      source.onmessage = function (event) {
+        try {
+          var payload = JSON.parse(event.data);
+          if (payload && payload.type === 'new_article') {
+            var prefix = lang === 'mk' ? '/mk' : '';
+            var item = {
+              href: prefix + '/cluster/' + payload.cluster_id,
+              time: lang === 'mk' ? 'Сега' : 'Sada',
+              source: payload.source || '',
+              title: payload.title || ''
+            };
+
+            // 1. Add to beginning of wireItems array
+            wireItems.unshift(item);
+
+            // 2. Prepend to DOM if already painted
+            if (mount.dataset.ready === '1') {
+              var element = paintItem(item, true);
+              mount.insertBefore(element, mount.firstChild);
+            }
+
+            // 3. Update summary badge and teaser
+            var countEl = root.querySelector('.home-live-count');
+            if (countEl) {
+              countEl.textContent = Number(countEl.textContent || 0) + 1;
+            }
+            var teaserEl = root.querySelector('.home-live-summary-teaser');
+            if (teaserEl) {
+              var newLabel = lang === 'mk' ? '[НОВО]' : '[NOVO]';
+              teaserEl.textContent = newLabel + ' ' + item.source + ': ' + item.title;
+            }
+
+            // 4. Fire a beautiful glassmorphic toast notification
+            showLiveToast(item, lang);
+          }
+        } catch (e) {
+          console.warn('[SSE-Live] Error handling message:', e);
+        }
+      };
+
+      source.onerror = function () {
+        // Soft close, let EventSource automatic reconnect handle it
+      };
+    }
+  }
+
+  function showLiveToast(item, lang) {
+    var container = document.getElementById('presek-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'presek-toast-container';
+      document.body.appendChild(container);
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'presek-toast';
+
+    var header = document.createElement('div');
+    header.className = 'presek-toast-header';
+
+    var meta = document.createElement('span');
+    meta.className = 'presek-toast-meta';
+    meta.textContent = lang === 'mk' ? '📡 Нова Вест' : '📡 Nova Vest';
+
+    var source = document.createElement('span');
+    source.className = 'presek-toast-source';
+    source.textContent = item.source || '';
+
+    header.append(meta, source);
+
+    var body = document.createElement('p');
+    body.className = 'presek-toast-body';
+    body.textContent = item.title || '';
+
+    toast.append(header, body);
+
+    // Make toast clickable to navigate directly
+    toast.style.cursor = 'pointer';
+    toast.addEventListener('click', function () {
+      window.location.href = item.href;
+    });
+
+    container.appendChild(toast);
+
+    // Trigger exit animation after 5.5s
+    setTimeout(function () {
+      toast.classList.add('toast-exit');
+      // Remove from DOM after exit transition
+      setTimeout(function () {
+        toast.remove();
+      }, 400);
+    }, 5500);
   }
 
   function initAnalysisBandsPaint() {

@@ -74,9 +74,11 @@ async def lifespan(app: FastAPI):
         if async_db._pool:
             await async_db._pool.close()
             log.info("Async database connection pool closed successfully.")
+        async_db._pool = None
         if hasattr(async_db, "_read_pool") and async_db._read_pool:
             await async_db._read_pool.close()
             log.info("Async database read-replica connection pool closed successfully.")
+        async_db._read_pool = None
     except Exception as e:
         log.warning(f"Error closing async database pools during shutdown: {e}")
 
@@ -86,9 +88,11 @@ async def lifespan(app: FastAPI):
         if db_manager._pool:
             db_manager._pool.close()
             log.info("Sync database connection pool closed successfully.")
+        db_manager._pool = None
         if db_manager._read_pool:
             db_manager._read_pool.close()
             log.info("Sync database read-replica connection pool closed successfully.")
+        db_manager._read_pool = None
     except Exception as e:
         log.warning(f"Error closing sync database pools during shutdown: {e}")
 
