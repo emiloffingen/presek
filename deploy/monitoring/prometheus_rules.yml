@@ -144,3 +144,22 @@ groups:
         annotations:
           summary: "High Nginx error rate"
           description: "Nginx error rate is {{ $value }} (threshold: 5%)"
+
+      # Presek Custom Operational Alerts
+      - alert: CeleryFailedTasksSpike
+        expr: presek_celery_failed_tasks_count > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery failed tasks threshold exceeded"
+          description: "Presek Celery failed tasks count is {{ $value }} (threshold: 5)"
+
+      - alert: DatabaseSizeCritical
+        expr: presek_postgresql_database_size_mb > 50000
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL Database size critical"
+          description: "Presek database size is {{ $value }} MB (threshold: 50 GB)"
