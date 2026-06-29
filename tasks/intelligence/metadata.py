@@ -46,7 +46,7 @@ from tasks.intelligence._queue import _queue_backlog_high, _skip_when_intel_back
 from tasks.intelligence.synthesis import _compute_centroid_from_values
 
 @celery_app.task(name="tasks.intelligence.auto_summarize_task")
-def auto_summarize_task(cluster_ids: list[str] = None):
+def auto_summarize_task(*args, cluster_ids: list[str] = None, **kwargs):
     """Dispatch summarization/synthesis tasks for top clusters or targeted clusters."""
     from core.ai_engine import auto_summarize_top_clusters
     from tasks.utils import pipeline_backpressure_active, synthesis_dispatch_deferred
@@ -184,7 +184,7 @@ def recategorize_clusters_task(*args, **kwargs):
 
 
 @celery_app.task(name="tasks.intelligence.generate_cluster_metadata_task")
-def generate_cluster_metadata_task(hours=24, target_clusters=None):
+def generate_cluster_metadata_task(*args, hours=24, target_clusters=None, **kwargs):
     """Tag recent clusters with metadata (entities, source count, centroid, and representative image)."""
     try:
         if _queue_backlog_high():
