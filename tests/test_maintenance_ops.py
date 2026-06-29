@@ -317,6 +317,7 @@ class TestPrioritizeHomepageSyntheses:
         assert result["enqueued"] == 1
         mock_urgent.apply_async.assert_called_once_with(
             ("lead-home", None),
+            {"force_llm": True},
             countdown=0,
             queue="fast-track",
         )

@@ -186,6 +186,7 @@ def _cluster_needs_synthesis(cluster: dict) -> bool:
         or bool(freshness.get("is_stale"))
         or bool(synthesis_meta.get("needs_upgrade"))
         or "missing_synthesis" in reasons
+        or synthesis_meta.get("generation_provider") == "enhanced_fallback"
     )
     if not needs_synthesis:
         return False
@@ -753,13 +754,14 @@ def prioritize_homepage_syntheses_task(limit=None):
         if use_hero_fast_track or use_fast_track:
             synthesize_urgent_task.apply_async(
                 (cluster_id, None),
+                {"force_llm": True},
                 countdown=idx * 5,
                 queue="fast-track",
             )
         else:
             synthesize_cluster_task.apply_async(
                 (cluster_id, None),
-                {"fast_mode": False},
+                {"fast_mode": False, "force_llm": True},
                 countdown=idx * 15,
                 queue="synthesis",
             )
