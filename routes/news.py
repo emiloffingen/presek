@@ -584,11 +584,14 @@ async def fetch_news_data(
                 query += " AND a.country = %s"
                 params.append(country)
 
+            # Fetch a larger pool of recent candidate clusters (e.g. 500) so python-side
+            # ranking boosts (synthesis, source count, etc.) can filter and bubble up the best stories.
+            candidate_limit = max(500, page_size * 5)
             query += " GROUP BY a.cluster_id ORDER BY last_article DESC LIMIT %s"
-            params.append(page_size * (page + 1))
+            params.append(candidate_limit)
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
-            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
+            cids = [r["cluster_id"] for r in rows]
             rows = (
                 await db.async_execute(
                     "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
