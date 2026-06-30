@@ -491,6 +491,16 @@ class GeminiProvider(OpenAICompatibleProvider):
         )
 
 
+class GroqProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "groq",
+            api_key,
+            "https://api.groq.com/openai/v1/chat/completions",
+            model,
+        )
+
+
 PROVIDERS = {
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
@@ -500,6 +510,10 @@ PROVIDERS = {
     "gemini": GeminiProvider(
         api_key=os.environ.get("GEMINI_API_KEY", ""),
         model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+    ),
+    "groq": GroqProvider(
+        api_key=os.environ.get("GROQ_API_KEY", ""),
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
     ),
     "local": LocalProvider(),
 }

@@ -618,9 +618,9 @@ def resolve_primary_database_url() -> str:
     return url
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "nvidia", "local"]
-PROVIDER_FALLBACK_ORDER = ["gemini", "nvidia", "local"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "nvidia", "groq", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini", "nvidia", "groq", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini", "nvidia", "groq", "local"]  # default
 
 # Providers reserved exclusively for synthesis tasks.
 # When set, these providers are excluded from summarize/research/default cascades

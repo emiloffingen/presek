@@ -23,6 +23,8 @@ def _local_model_available() -> bool:
 def _default_remote_provider() -> str:
     if os.environ.get("GEMINI_API_KEY"):
         return "gemini"
+    if os.environ.get("GROQ_API_KEY"):
+        return "groq"
     return "nvidia"
 
 
