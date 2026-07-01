@@ -1,6 +1,5 @@
 import datetime
 import os
-import urllib.parse
 
 from core.api_helpers import normalize_perspectives
 from core.celery_app import celery_app

@@ -3,10 +3,10 @@ import sys
 
 sys.path.append("/home/emiloffingen/presek")
 
-from core.database import db_manager as db
 from core.ai_engine import sync_call_ai as _call_ai
+from core.database import db_manager as db
 from core.prompts import SYNTHESIS_SYSTEM_PROMPT_SR
-from tasks.intelligence import synthesize_cluster_task
+
 
 async def main():
     cluster_id = "3374b3ae8b5d"

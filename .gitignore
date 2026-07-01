@@ -48,7 +48,8 @@ coverage.xml
 *.pot
 
 # Environments
-.env
+.env*
+!.env.example
 .env.local
 .env.*.local
 .venv
@@ -123,12 +124,17 @@ models/
 /scripts/test_gemini_*.py
 
 # Keys and certificates
+# Specific key files
 private_key.pem
 public_key.pem
+# Generic patterns
 *.pem
 *.key
 *.crt
 *.cert
+# Key directories
+.keys/
+certs/
 
 # Previews
 previews/

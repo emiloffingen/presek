@@ -1,9 +1,12 @@
-import pytest
 import datetime
 import json
 from unittest.mock import AsyncMock, patch
+
+import pytest
+
 from core.topic_discovery import StoryDiscoveryEngine
 from tasks.intelligence import refine_knowledge_graph_sentiment_task
+
 
 @pytest.mark.anyio
 @patch("routes.news.db")
@@ -27,7 +30,8 @@ async def test_cluster_detail_works_without_llama_cpp(mock_db):
 
     with patch("nlp.local_analyst._import_llama_cpp", return_value=(None, None)), \
          patch("routes.news._is_publicly_displayable_article", return_value=True), \
-         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.annotate_cluster_articles", def side_effect(x, **k):
+    return x), \
          patch("routes.news.cached_response", return_value=None):
         response = await get_cluster_detail("abcdef0123456789abcdef0123456789", lang="mk")
         assert response["status"] == "success"
@@ -78,7 +82,8 @@ async def test_timeline_consolidation_merges_duplicates(mock_db):
     mock_db.async_get_synthesis_ids = AsyncMock(return_value=[])
     
     with patch("routes.news._is_publicly_displayable_article", return_value=True), \
-         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.annotate_cluster_articles", def side_effect(x, **k):
+    return x), \
          patch("routes.news.cached_response", return_value=None):
         
         response = await get_cluster_detail("abcdef0123456789abcdef0123456789", lang="sr")
@@ -189,7 +194,8 @@ async def test_stance_vectors_and_divergence_in_cluster_detail(mock_db):
     mock_db.async_get_synthesis_ids = AsyncMock(return_value=[])
     
     with patch("routes.news._is_publicly_displayable_article", return_value=True), \
-         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.annotate_cluster_articles", def side_effect(x, **k):
+    return x), \
          patch("routes.news.cached_response", return_value=None):
         
         response = await get_cluster_detail("abcdef0123456789abcdef0123456789", lang="sr")
@@ -294,7 +300,8 @@ async def test_cluster_detail_enqueues_jit_synthesis_when_missing(mock_db):
     mock_db.async_get_synthesis_ids = AsyncMock(return_value=[])
 
     with patch("routes.news._is_publicly_displayable_article", return_value=True), \
-         patch("routes.news.annotate_cluster_articles", side_effect=lambda x, **k: x), \
+         patch("routes.news.annotate_cluster_articles", def side_effect(x, **k):
+    return x), \
          patch("routes.news.cached_response", return_value=None), \
          patch("routes.news.set_cache") as mock_set_cache, \
          patch("routes.news._maybe_enqueue_missing_synthesis") as mock_enqueue:

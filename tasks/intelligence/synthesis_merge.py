@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from core.embeddings import average_embeddings, parse_embedding_value
 
+
 def _compute_centroid_from_values(values):
     return average_embeddings(values)
 

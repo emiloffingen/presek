@@ -8,11 +8,10 @@ Provides:
 - Dependency registration and resolution
 """
 
-import logging
 import inspect
 import sys
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 from functools import wraps
+from typing import Any, Callable, Dict, TypeVar
 
 from core.logging_config import get_logger
 

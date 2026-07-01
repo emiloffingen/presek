@@ -17,11 +17,7 @@ STRONG_IMAGE_SQL_FILTER = """
     AND image_url NOT LIKE '%%fallback%%'
     AND image_url NOT LIKE '%%no-image%%'
 """
-import datetime
-import json
 import os
-import re
-import sys
 import threading
 
 from core.ai_engine import clean_json_response, generate_cover_art
@@ -32,8 +28,14 @@ from core.database import db_manager as db
 from core.embeddings import average_embeddings, parse_embedding_value
 from core.runtime_limits import (
     BACKFILL_QUEUE_DEPTH_LIMIT as _BACKFILL_QUEUE_DEPTH_LIMIT,
+)
+from core.runtime_limits import (
     INTEL_QUEUE_FULL_DEFER_LIMIT as _INTEL_QUEUE_FULL_DEFER_LIMIT,
+)
+from core.runtime_limits import (
     INTEL_QUEUE_SECONDARY_DEFER_LIMIT as _INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
+)
+from core.runtime_limits import (
     INTEL_QUEUE_SOFT_DEFER_LIMIT as _INTEL_QUEUE_SOFT_DEFER_LIMIT,
 )
 

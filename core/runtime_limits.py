@@ -2,7 +2,7 @@
 
 import os
 
-from core.config import API_MAX_PAGE, API_MAX_Q_LEN
+from core.config import API_MAX_Q_LEN
 
 MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN

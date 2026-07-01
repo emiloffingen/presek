@@ -1,17 +1,21 @@
 import logging
-import sys
 import os
+import sys
 
 sys.path.insert(0, "/home/emiloffingen/presek")
 os.environ["VIBE_HOME"] = "/home/emiloffingen/presek"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", stream=sys.stdout)
 
-from core.database import db_manager as db
-from tasks.delivery.briefing import _load_daily_brief_clusters, _build_daily_brief_context, _resolve_briefing_date, _briefing_window_for_date
 from core.ai_engine import sync_call_ai as _call_ai
 from core.prompts import DAILY_BRIEF_SYSTEM_PROMPT, DAILY_BRIEF_SYSTEM_PROMPT_MK
-from tasks.delivery.briefing_quality import _has_valid_daily_brief_structure, _is_grounded_daily_brief, _is_high_quality_briefing
+from tasks.delivery.briefing import _build_daily_brief_context, _load_daily_brief_clusters, _resolve_briefing_date
+from tasks.delivery.briefing_quality import (
+    _has_valid_daily_brief_structure,
+    _is_grounded_daily_brief,
+    _is_high_quality_briefing,
+)
+
 
 def run_test(lang="sr"):
     print(f"\n==================== Testing Briefing Generation for {lang} ====================")

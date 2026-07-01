@@ -178,8 +178,9 @@ class LocalAnalyst:
                 log.error(f"[analyst] Remote generation failed, falling back to local: {e}")
 
         # Acquire Redis lock with token verification to prevent concurrent CPU-heavy llama-cpp generation
-        from utils import redis_client
         import uuid
+
+        from utils import redis_client
 
         lock_key = "lock:local_llm_synthesis" if task_type == "synthesis" else "lock:local_llm_inference"
         if lock_timeout is None:

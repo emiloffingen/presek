@@ -1,8 +1,9 @@
+import datetime
+import json
 import logging
 import os
-import json
-import datetime
 import random
+
 from nlp.categories import detect_topic
 from nlp.generation import _extract_sports_scores
 

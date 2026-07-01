@@ -1,10 +1,10 @@
+import asyncio
+import logging
 import os
 import re
-import logging
 import subprocess
 import threading
 import time
-import asyncio
 from typing import Optional
 
 log = logging.getLogger("presek.audio")

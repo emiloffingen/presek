@@ -9,6 +9,7 @@ from core.text_extraction import clean_extracted_article_text
 from nlp import deShout, synthesize_cluster_fallback
 from nlp.categories import normalize_headline
 
+
 def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk"):
     clean_summary = normalize_summary_text(summary)
     clean_perspectives = normalize_perspectives(perspectives)

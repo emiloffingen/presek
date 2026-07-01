@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
 from tasks.delivery.briefing import notify_daily_briefing_ready_task

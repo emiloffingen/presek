@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 SERBIAN_COPY_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b[Ii]zvještaj([a-zčćžšđ]*)\b"), r"izveštaj\1"),
     (re.compile(r"\bizvještaj([a-zčćžšđ]*)\b", re.IGNORECASE), r"izveštaj\1"),

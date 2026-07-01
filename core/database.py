@@ -9,8 +9,8 @@ import alembic.command
 import alembic.config
 import psycopg
 import psycopg_pool
+from prometheus_client import REGISTRY, Counter
 from psycopg.rows import dict_row
-from prometheus_client import Counter, REGISTRY
 
 from core.version import APP_VERSION_LABEL
 
@@ -575,7 +575,7 @@ class DatabaseManager:
         return self._pool.getconn()
 
     def put_conn(self, conn):
-        _return_connection(self._pool, conn, fallback_put=lambda c: c.close())
+        _return_connection(self._pool, conn, lambda c: c.close())
 
     def execute(self, sql, params=None, fetch=True, read_only=None):
         """Standardized query execution with automatic connection release.

@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from urllib.parse import urljoin
+
 from playwright.async_api import async_playwright
 
 log = logging.getLogger("presek.take_all_screenshots")

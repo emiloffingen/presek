@@ -61,16 +61,21 @@ def _load_home_module():
     }
 
     fake_utils = types.ModuleType("utils")
-    fake_utils.cached_response = lambda *_args, **_kwargs: None
-    fake_utils.set_cache = lambda *_args, **_kwargs: None
+    fake_utils.def cached_response(*_args, **_kwargs):
+    return None
+    fake_utils.def set_cache(*_args, **_kwargs):
+    return None
     fake_utils.redis_client = None
-    fake_utils.record_runtime_event = lambda *_args, **_kwargs: None
+    fake_utils.def record_runtime_event(*_args, **_kwargs):
+    return None
 
     fake_nlp = types.ModuleType("nlp")
-    fake_nlp.normalize_focus_entity_surface = lambda name: str(name or "").strip()
+    fake_nlp.def normalize_focus_entity_surface(name):
+    return str(name or "").strip()
 
     fake_api_errors = types.ModuleType("core.api_errors")
-    fake_api_errors.soft_error = lambda *_args, **_kwargs: None
+    fake_api_errors.def soft_error(*_args, **_kwargs):
+    return None
 
     fake_audio_service = types.ModuleType("core.audio_service")
 
@@ -80,7 +85,8 @@ def _load_home_module():
     fake_audio_service.AudioService = _FakeAudioService
 
     fake_queue_status = types.ModuleType("core.queue_status")
-    fake_queue_status.reader_pipeline_status = lambda *_args, **_kwargs: {}
+    fake_queue_status.def reader_pipeline_status(*_args, **_kwargs):
+    return {}
 
     fake_common = types.ModuleType("routes.common")
 
@@ -94,18 +100,24 @@ def _load_home_module():
     fake_common.cleanAndDecode = _fake_clean_and_decode
 
     fake_intelligence = types.ModuleType("routes.intelligence")
-    fake_intelligence.get_top_entities = lambda *args, **kwargs: []
+    fake_intelligence.def get_top_entities(*args, **kwargs):
+    return []
 
     fake_news = types.ModuleType("routes.news")
-    fake_news.get_news = lambda *args, **kwargs: {}
-    fake_news.fetch_news_data = lambda *args, **kwargs: {}
+    fake_news.def get_news(*args, **kwargs):
+    return {}
+    fake_news.def fetch_news_data(*args, **kwargs):
+    return {}
 
     fake_stats = types.ModuleType("routes.stats")
-    fake_stats.get_briefing = lambda *args, **kwargs: {}
-    fake_stats.get_stats_summary = lambda *args, **kwargs: {}
+    fake_stats.def get_briefing(*args, **kwargs):
+    return {}
+    fake_stats.def get_stats_summary(*args, **kwargs):
+    return {}
 
     fake_system = types.ModuleType("routes.system")
-    fake_system.get_trending_route = lambda *args, **kwargs: []
+    fake_system.def get_trending_route(*args, **kwargs):
+    return []
 
     sys.modules["utils"] = fake_utils
     sys.modules["core.api_errors"] = fake_api_errors

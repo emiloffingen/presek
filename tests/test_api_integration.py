@@ -4,6 +4,7 @@ Tests end-to-end functionality of API endpoints.
 """
 
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 

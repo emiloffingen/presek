@@ -78,7 +78,6 @@ class TestDatabaseManagerExecute:
     """Tests for DatabaseManager.execute method."""
 
     def test_reset_pool_rebuilds_primary_and_read_pools(self):
-        from core.database import DatabaseManager
 
         manager = _fresh_database_manager()
         primary = MagicMock()
@@ -97,7 +96,6 @@ class TestDatabaseManagerExecute:
         mock_init_read.assert_called_once()
 
     def test_execute_fetch_returns_dicts(self):
-        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -114,7 +112,6 @@ class TestDatabaseManagerExecute:
         assert isinstance(result, list)
 
     def test_execute_no_fetch_commits(self):
-        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -131,7 +128,6 @@ class TestDatabaseManagerExecute:
         mock_conn.commit.assert_called_once()
 
     def test_execute_rolls_back_on_error(self):
-        from core.database import DatabaseManager
 
         mock_pool = MagicMock()
         mock_conn = MagicMock()
@@ -149,7 +145,6 @@ class TestDatabaseManagerExecute:
         mock_conn.rollback.assert_called_once()
 
     def test_get_db_size_returns_float(self):
-        from core.database import DatabaseManager
 
         manager = _fresh_database_manager()
         manager.execute_one = MagicMock(return_value={"mb": 128.4})
@@ -157,7 +152,6 @@ class TestDatabaseManagerExecute:
         manager.execute_one.assert_called_once()
 
     def test_get_db_size_returns_zero_when_missing(self):
-        from core.database import DatabaseManager
 
         manager = _fresh_database_manager()
         manager.execute_one = MagicMock(return_value=None)
@@ -175,7 +169,6 @@ class TestGetDb:
 
     def test_search_articles_empty_query(self):
         """search_articles returns [] for empty/too-long queries."""
-        from core.database import DatabaseManager
 
         manager = _fresh_database_manager()
         manager._pool = MagicMock()
@@ -187,7 +180,6 @@ class TestSchemaMigrations:
     def test_init_schema_calls_alembic_upgrade(self):
         from unittest.mock import patch
 
-        from core.database import DatabaseManager
 
         manager = _fresh_database_manager()
 

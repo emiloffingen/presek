@@ -207,7 +207,8 @@ def copy_bundle_passes_publish_gate(
 
 
 # Backwards-compatible aliases
-mk_copy_passes_publish_gate = lambda text: assess_mk_copy_purity(text).get("ok", False)
+def mk_copy_passes_publish_gate(text):
+    return assess_mk_copy_purity(text).get("ok", False)
 
 
 def mk_bundle_passes_publish_gate(

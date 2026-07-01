@@ -4,7 +4,6 @@ from pathlib import Path
 from core.synthesis_quality import build_synthesis_meta
 from core.trust_signals import build_trust_summary
 
-
 FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "cluster_api_sample.json"
 
 

@@ -1,3 +1,4 @@
+from nlp.generation import synthesize_cluster_fallback
 from tasks.intelligence import (
     _build_source_comparison_prompt_block,
     _clean_macedonian_spelling_and_script,
@@ -6,8 +7,8 @@ from tasks.intelligence import (
     _score_editorial_summary,
     _score_synthesis_quality,
 )
-from nlp.generation import synthesize_cluster_fallback
 from tasks.synthesis_sanitize import sanitize_synthesis_outputs
+
 
 def test_clean_macedonian_spelling_and_script():
     # Test lookalike/homoglyph swap

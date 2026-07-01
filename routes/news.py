@@ -12,10 +12,12 @@ from pydantic import BaseModel
 from core.api_errors import soft_error
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
-from core.synthesis_quality import build_synthesis_meta, synthesis_needs_upgrade
-from core.trust_signals import build_trust_summary
+from core.input_validation import validate_cluster_id as validate_cluster_id_input
+from core.input_validation import validate_language_code
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
 from core.queue_status import reader_pipeline_status
+from core.synthesis_quality import build_synthesis_meta, synthesis_needs_upgrade
+from core.trust_signals import build_trust_summary
 from nlp import filter_cluster_tags
 from utils import (
     _coerce_datetime,
@@ -34,7 +36,6 @@ from utils import (
 
 from .common import _error_json, _news_row_limit, cleanAndDecode
 from .security import validate_cluster_id
-from core.input_validation import validate_cluster_id as validate_cluster_id_input, validate_language_code
 
 log = logging.getLogger("presek")
 router = APIRouter()

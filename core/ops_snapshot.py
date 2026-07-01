@@ -7,15 +7,13 @@ from datetime import datetime, timezone
 
 from core.database import db_manager as db
 from core.health import (
-    _REDIS_KEY,
     _freshness_payload,
-    _get_redis,
     _probe_celery_queue,
     get_synthesis_quality_snapshot,
     load_last_refresh_time,
 )
-from core.runtime_limits import CELERY_QUEUE_CRITICAL_DEPTH, CELERY_QUEUE_WARN_DEPTH
 from core.queue_status import queue_status_payload, reader_pipeline_status
+from core.runtime_limits import CELERY_QUEUE_CRITICAL_DEPTH, CELERY_QUEUE_WARN_DEPTH
 
 _STALE_CLUSTER_SQL = """
 WITH recent AS (

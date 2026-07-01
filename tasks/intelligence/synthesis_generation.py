@@ -14,6 +14,7 @@ from tasks.intelligence.synthesis_scoring import (
 )
 from tasks.utils import log
 
+
 def _resolve_generation_model(provider: str | None):
     if not provider:
         return None
@@ -181,8 +182,8 @@ def _attempt_gemma_rescue(
     last_fallback_reason: str | None = None,
 ):
     """Explicit local/Gemma attempt before deterministic fallback."""
-    from core.runtime_limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC, local_synthesis_enabled
     from core.llm_router import _local_model_available
+    from core.runtime_limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC, local_synthesis_enabled
 
     if (
         not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC

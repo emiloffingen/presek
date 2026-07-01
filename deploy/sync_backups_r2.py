@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import glob
 import os
 import sys
-import glob
 from pathlib import Path
+
 import boto3
 from botocore.client import Config
+
 
 def main():
     # Find app root and load env file
@@ -69,7 +71,7 @@ def main():
             print(f"  - Uploading {key} to R2...")
             try:
                 s3.upload_file(str(file_path), bucket_name, key)
-                print(f"    ✓ Upload complete")
+                print("    ✓ Upload complete")
             except Exception as e:
                 print(f"    x Upload failed: {e}", file=sys.stderr)
                 
@@ -86,7 +88,7 @@ def main():
                     key not in local_basenames):
                     print(f"  - Deleting old backup from R2: {key}...")
                     s3.delete_object(Bucket=bucket_name, Key=key)
-                    print(f"    ✓ Deleted")
+                    print("    ✓ Deleted")
     except Exception as e:
         print(f"Failed to list or delete objects from R2: {e}", file=sys.stderr)
         

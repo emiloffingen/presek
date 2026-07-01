@@ -1,16 +1,16 @@
 from unittest.mock import patch
 
-from core.runtime_limits import (
-    CELERY_QUEUE_WARN_DEPTH,
-    INTEL_QUEUE_FULL_DEFER_LIMIT,
-    INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
-    INTEL_QUEUE_SOFT_DEFER_LIMIT,
-)
 from core.queue_status import (
     get_all_queue_depths,
     get_intel_backlog_status,
     queue_status_payload,
     reader_pipeline_status,
+)
+from core.runtime_limits import (
+    CELERY_QUEUE_WARN_DEPTH,
+    INTEL_QUEUE_FULL_DEFER_LIMIT,
+    INTEL_QUEUE_SECONDARY_DEFER_LIMIT,
+    INTEL_QUEUE_SOFT_DEFER_LIMIT,
 )
 
 
@@ -22,7 +22,8 @@ class TestQueueStatus:
         assert get_intel_backlog_status(INTEL_QUEUE_FULL_DEFER_LIMIT) == "backlogged"
 
     def test_get_all_queue_depths_uses_monitored_queues(self):
-        with patch("core.queue_status.redis_client.llen", side_effect=lambda name: {"intel-heavy": 12}.get(name, 0)):
+        with patch("core.queue_status.redis_client.llen", def side_effect(name):
+    return {"intel-heavy": 12}.get(name, 0)):
             depths = get_all_queue_depths()
         assert depths["intel-heavy"] == 12
         assert "ingestion" in depths

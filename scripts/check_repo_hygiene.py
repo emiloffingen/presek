@@ -9,7 +9,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 BLOCKED_PATTERNS = (
     "*/__pycache__/*",
     "__pycache__/*",

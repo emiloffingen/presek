@@ -3,7 +3,6 @@
 Verify the mathematical calculations in Presek marketing system.
 """
 
-import math
 
 # Constants from the code (updated for exact 50% savings)
 MKD_PER_EUR = 61.5

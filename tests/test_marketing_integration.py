@@ -1,9 +1,11 @@
-import os
 import io
-import pytest
 from datetime import date, timedelta
+
+import pytest
 from fastapi.testclient import TestClient
+
 from core.database import db_manager as db
+
 
 @pytest.fixture
 def client():
@@ -76,6 +78,7 @@ def test_checkout_validation_large_file(client):
 
 def test_checkout_and_ad_lifecycle(client):
     from unittest.mock import patch
+
     from PIL import Image
     
     # Create a valid minimal PNG image in memory
@@ -314,8 +317,9 @@ def test_checkout_validation_corrupted_image(client):
 
 
 def test_checkout_production_requires_stripe(client):
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     
     img = Image.new("RGBA", (10, 10), (255, 0, 0, 0))
     file_data = io.BytesIO()

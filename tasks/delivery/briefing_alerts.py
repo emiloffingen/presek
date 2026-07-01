@@ -6,7 +6,6 @@ import datetime
 
 from core.config import BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
-from tasks.utils import log
 from utils import assess_cluster_synthesis_freshness
 
 from .core import (
@@ -16,6 +15,7 @@ from .core import (
     _parse_row_datetime,
 )
 from .subscribers import _cluster_delivery_match, _normalize_synced_profile_for_delivery
+
 
 def _load_recent_breaking_clusters(hours=4, limit=24):
     from .briefing import _load_daily_brief_clusters

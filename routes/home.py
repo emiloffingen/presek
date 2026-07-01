@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
-from utils import cached_response, set_cache
-
 from core.api_errors import soft_error
 from core.audio_service import AudioService
 from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
+from utils import cached_response, set_cache
+
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
 from .news import fetch_news_data
@@ -572,8 +572,7 @@ def _is_live_now_candidate(cluster):
 
 def _clusters_sorted_by_recency(clusters):
     return sorted(
-        clusters or [],
-        key=lambda cluster: _parse_time(_article_freshness_time(_primary_article(cluster))),
+        clusters or [], key=lambda cluster: _parse_time(_article_freshness_time(_primary_article(cluster))),
         reverse=True,
     )
 
@@ -751,10 +750,11 @@ def _is_usable_focus_entity(name):
 async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str, Any]]:
     """Load recent clusters that have full generated synthesis for the target language."""
     from collections import defaultdict
+
     from core.database import db_manager as db
-    from utils import score_cluster, score_cluster_for_homepage, is_balanced, annotate_cluster_articles
-    from routes.news import _compute_editorial_signals, _public_article_payload, _as_list, _parse_maybe_json
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
+    from routes.news import _as_list, _compute_editorial_signals, _parse_maybe_json, _public_article_payload
+    from utils import annotate_cluster_articles, is_balanced, score_cluster, score_cluster_for_homepage
 
     rows = await db.async_execute(
         """
@@ -991,8 +991,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         for_you_pool = []
         if sync_token:
             try:
-                from routes.profile import get_personalized_news_by_profile, _normalize_synced_profile
                 from core.database import db_manager as db
+                from routes.profile import _normalize_synced_profile, get_personalized_news_by_profile
                 row = await db.async_execute_one(
                     "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
                     (sync_token,),

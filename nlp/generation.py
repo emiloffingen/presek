@@ -6,6 +6,7 @@ from collections import Counter
 from core.trending import STOPWORDS
 
 log = logging.getLogger(__name__)
+from core.language import transliterate_cyr_to_lat
 from nlp.utils import (
     _articles_cache_key,
     _cache_get,
@@ -17,7 +18,6 @@ from nlp.utils import (
     deShout,
 )
 from utils import record_runtime_event
-from core.language import transliterate_cyr_to_lat
 
 _T = {
     "mk": {
@@ -118,7 +118,7 @@ from nlp.keywords import (
     extract_keyphrases_locally,
     normalize_tag_name,
 )
-from nlp.text_processing import _is_noisy_summary_sentence, _normalize_summary_sentence, _jaccard_similarity
+from nlp.text_processing import _is_noisy_summary_sentence, _jaccard_similarity, _normalize_summary_sentence
 
 
 def _split_briefing_sentences(text):
@@ -1413,8 +1413,7 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     if not clusters:
         return f"# {t['dneven_brifing']}\n\n## {t['golemata_slika']}\n\n{t['nema_vesti']}"
     display_clusters = sorted(
-        clusters[:4],
-        key=lambda item: (
+        clusters[:4], key=lambda item: (
             -int(bool(str(item.get("cluster_summary") or "").strip())),
             int(_is_penalized_briefing_title(item.get("title"))),
             -int(item.get("source_count") or 0),
@@ -1833,7 +1832,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
 
     # Vector Art backgrounds centered at cx=590, cy=225
     art_templates = {
-        "Sport": f"""
+        "Sport": """
             <ellipse cx="590" cy="225" rx="110" ry="60" class="ph-stroke-vvline" stroke-width="1.5"/>
             <ellipse cx="590" cy="225" rx="140" ry="80" class="ph-stroke-accent" stroke-width="2" stroke-dasharray="6 4" opacity="0.25"/>
             <line x1="450" y1="280" x2="730" y2="170" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
@@ -1848,7 +1847,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
             <line x1="440" y1="170" x2="700" y2="170" class="ph-stroke-vline" stroke-width="1" stroke-dasharray="4 4"/>
             <circle cx="690" cy="120" r="8" class="ph-accent-fill" opacity="0.7"/>
         """,
-        "Tehnologija": f"""
+        "Tehnologija": """
             <circle cx="590" cy="225" r="70" class="ph-stroke-vvline" stroke-width="1"/>
             <rect x="520" y="155" width="140" height="140" rx="12" class="ph-stroke-accent" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.3"/>
             <circle cx="590" cy="225" r="22" class="ph-accent-fill" opacity="0.4"/>
@@ -1858,25 +1857,25 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
             <line x1="535" y1="170" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
             <line x1="645" y1="280" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
         """,
-        "Zabava": f"""
+        "Zabava": """
             <path d="M 460 240 C 510 160, 550 290, 590 225 C 630 160, 670 290, 720 210" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.35"/>
             <circle cx="590" cy="225" r="45" class="ph-accent-fill" opacity="0.3"/>
             <circle cx="610" cy="205" r="8" class="ph-fill-dot" opacity="0.6"/>
         """,
-        "Politika": f"""
+        "Politika": """
             <path d="M 480 270 L 700 270" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
             <path d="M 480 160 L 700 160" class="ph-stroke-accent" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
             <path d="M 515 160 L 515 270 M 552 160 L 552 270 M 590 160 L 590 270 M 627 160 L 627 270 M 665 160 L 665 270" class="ph-stroke-line" stroke-width="2" opacity="0.6"/>
             <path d="M 495 160 L 590 110 L 685 160 Z" class="ph-accent-shape" stroke-width="3" opacity="0.3"/>
             <circle cx="590" cy="215" r="20" class="ph-accent-fill" opacity="0.5"/>
         """,
-        "Svet": f"""
+        "Svet": """
             <circle cx="590" cy="225" r="90" class="ph-stroke-accent" stroke-width="2.5" opacity="0.3"/>
             <ellipse cx="590" cy="225" rx="90" ry="32" class="ph-stroke-line" stroke-width="1.5"/>
             <ellipse cx="590" cy="225" rx="32" ry="90" class="ph-stroke-line" stroke-width="1.5"/>
             <circle cx="625" cy="180" r="7" class="ph-accent-fill" opacity="0.7"/>
         """,
-        "Local": f"""
+        "Local": """
             <circle cx="590" cy="225" r="90" class="ph-stroke-vvline" stroke-width="1"/>
             <circle cx="590" cy="225" r="70" class="ph-stroke-accent" stroke-width="2" stroke-dasharray="6 4" opacity="0.35"/>
             <circle cx="590" cy="225" r="40" class="ph-stroke-line" stroke-width="1"/>
@@ -1885,7 +1884,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
             <circle cx="550" cy="245" r="10" class="ph-accent-fill" opacity="0.7"/>
             <circle cx="550" cy="245" r="4" class="ph-fill-dot" opacity="0.9"/>
         """,
-        "default": f"""
+        "default": """
             <circle cx="590" cy="225" r="60" class="ph-stroke-vvline" stroke-width="1"/>
             <circle cx="590" cy="225" r="85" class="ph-stroke-accent" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.25"/>
             <circle cx="590" cy="225" r="22" class="ph-accent-fill" opacity="0.4"/>

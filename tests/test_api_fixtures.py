@@ -3,7 +3,6 @@ from pathlib import Path
 
 from core.synthesis_quality import build_synthesis_meta
 
-
 FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "home_api_sample.json"
 
 

@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 ADMIN_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "admin_dashboard_sample.json"
 TRACE_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "synthesis_trace_sample.json"
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+
 def _clean_macedonian_spelling_and_script(text: str) -> str:
     if not text:
         return text

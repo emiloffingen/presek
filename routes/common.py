@@ -3,13 +3,11 @@ import ipaddress
 import logging
 import os
 import re
-import secrets
 from typing import Optional
 
 from fastapi import HTTPException, Request
-from fastapi.responses import JSONResponse
 
-from core.api_errors import api_error_response, rate_limit_payload, soft_error
+from core.api_errors import api_error_response, rate_limit_payload
 from core.database import db_manager as db
 from nlp.utils import cleanAndDecode
 

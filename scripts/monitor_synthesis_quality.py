@@ -187,8 +187,16 @@ def _persist_gap_metrics() -> dict[str, int]:
 
 
 def build_snapshot(primary_days: int = 1, history_days: int = 7):
-    from core.runtime_limits import FAST_SYNTHESIS_STUCK_HOURS, STUCK_FAST_SYNTHESIS_CRITICAL_COUNT, LOW_SCORE_SYNTHESIS_MIN
-    from core.synthesis_quality import count_low_score_syntheses, count_stuck_fast_syntheses, count_upgradeable_syntheses
+    from core.runtime_limits import (
+        FAST_SYNTHESIS_STUCK_HOURS,
+        LOW_SCORE_SYNTHESIS_MIN,
+        STUCK_FAST_SYNTHESIS_CRITICAL_COUNT,
+    )
+    from core.synthesis_quality import (
+        count_low_score_syntheses,
+        count_stuck_fast_syntheses,
+        count_upgradeable_syntheses,
+    )
 
     primary = build_report(primary_days)
     history = build_report(history_days)

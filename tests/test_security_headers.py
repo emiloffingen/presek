@@ -2,8 +2,9 @@
 Test security headers and middleware functionality.
 """
 import pytest
-from routes.security import SecurityHeadersMiddleware, generate_csrf_token, validate_csrf_token
+
 from core.auth import create_jwt_token, decode_jwt
+from routes.security import SecurityHeadersMiddleware, generate_csrf_token, validate_csrf_token
 
 
 def test_csrf_token_generation_and_validation():
@@ -42,7 +43,8 @@ async def test_security_headers_middleware():
     from starlette.datastructures import Headers
     from starlette.responses import JSONResponse
 
-    middleware = SecurityHeadersMiddleware(app=lambda scope, receive, send: None)
+    middleware = SecurityHeadersMiddleware(def app(scope, receive, send):
+    return None)
     request = type(
         "Request",
         (),
@@ -81,8 +83,8 @@ def test_input_validation_functions():
         validate_cluster_id,
         validate_date,
         validate_email,
-        validate_string_param,
         validate_list_param,
+        validate_string_param,
     )
     
     # Test cluster ID validation

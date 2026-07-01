@@ -1,7 +1,7 @@
 import asyncio
-import time
-import sys
 import os
+import sys
+import time
 
 # Ensure project root in path
 sys.path.append(os.getcwd())
@@ -16,6 +16,7 @@ if "DATABASE_READ_REPLICA_URL" not in os.environ:
     )
 
 from core.database import async_db
+
 
 async def simulate_read_request(req_id):
     """Simulate a read request (SELECT query) which should route to replica."""

@@ -9,9 +9,8 @@ Provides:
 """
 
 import time
-import logging
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from core.celery_app import celery_app
 from core.logging_config import get_logger

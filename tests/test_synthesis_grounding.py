@@ -1,8 +1,6 @@
 from tasks.intelligence.synthesis_grounding import (
     _fact_grounding_diagnostics,
-    _is_fact_grounded_synthesis,
     _is_grounded_synthesis,
-    _synthesis_source_corpus,
 )
 
 

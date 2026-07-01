@@ -368,7 +368,11 @@ def prune_intel_queue_task(defer_threshold=None, dry_run=False):
 @maintenance_task
 def upgrade_stuck_fast_syntheses_task(limit=None):
     """Enqueue full-quality upgrades for fast-mode publishes that stayed provisional too long."""
-    from core.runtime_limits import FAST_SYNTHESIS_STUCK_HOURS, FAST_SYNTHESIS_UPGRADE_QUEUE, FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT
+    from core.runtime_limits import (
+        FAST_SYNTHESIS_STUCK_HOURS,
+        FAST_SYNTHESIS_UPGRADE_QUEUE,
+        FAST_SYNTHESIS_UPGRADE_SWEEP_LIMIT,
+    )
     from core.synthesis_quality import list_stuck_fast_synthesis_cluster_ids, prune_stale_fast_synthesis_pending
     from tasks.intelligence.synthesis import upgrade_fast_synthesis_task
     from tasks.utils import maintenance_dispatches_deferred
@@ -444,8 +448,7 @@ def refresh_fallback_syntheses_task(limit=None):
 
     homepage_ids = set(_collect_homepage_cluster_ids())
     ordered_rows = sorted(
-        rows,
-        key=lambda row: (str(row["cluster_id"]) not in homepage_ids, row["latest_at"]),
+        rows, key=lambda row: (str(row["cluster_id"]) not in homepage_ids, row["latest_at"]),
     )
 
     enqueued = 0
@@ -480,7 +483,7 @@ def refresh_fallback_syntheses_task(limit=None):
 def refresh_synthesis_quality_task():
     """Refresh the Redis synthesis quality snapshot used by /api/health."""
     try:
-        from scripts.monitor_synthesis_quality import build_snapshot, _write_redis
+        from scripts.monitor_synthesis_quality import _write_redis, build_snapshot
 
         snapshot = build_snapshot()
         _write_redis(snapshot)
@@ -636,10 +639,9 @@ def prune_ingestion_queue_task(max_pending=1, dry_run=False):
 @maintenance_task
 def ensure_ingestion_freshness_task(max_age_minutes=120):
     """Trigger ingestion when the public freshness badge has gone stale."""
-    from core.health import load_last_refresh_time, _freshness_payload
-    from tasks.ingestion_task import run_ingestion
-
+    from core.health import _freshness_payload, load_last_refresh_time
     from core.ingestion_lock import break_stale_ingestion_lock, is_ingestion_in_flight
+    from tasks.ingestion_task import run_ingestion
 
     prune_ingestion_queue(max_pending=1)
 
@@ -785,8 +787,8 @@ def prioritize_homepage_syntheses_task(limit=None):
 def boost_homepage_cluster_supply_task(hours=36, recluster_limit=600, repair_limit=800):
     """Queue recluster/repair work for homepage supply without blocking maintenance workers."""
     from core.runtime_limits import INTEL_QUEUE_SECONDARY_DEFER_LIMIT
-    from tasks.intelligence.cluster_ops import recluster_recent_articles_task, repair_split_clusters_task
     from tasks.intelligence import intelligence_batches_deferred
+    from tasks.intelligence.cluster_ops import recluster_recent_articles_task, repair_split_clusters_task
     from tasks.utils import acquire_task_lock, get_celery_queue_depth, pipeline_backpressure_active
 
     if pipeline_backpressure_active() or intelligence_batches_deferred():
@@ -1236,8 +1238,7 @@ def prune_system_logs_and_releases():
     releases_dir = app_root / "releases"
     if releases_dir.exists():
         all_releases = sorted(
-            [d for d in releases_dir.iterdir() if d.is_dir()],
-            key=lambda x: x.stat().st_mtime,
+            [d for d in releases_dir.iterdir() if d.is_dir()], key=lambda x: x.stat().st_mtime,
             reverse=True
         )
         for old_rel in all_releases[5:]:

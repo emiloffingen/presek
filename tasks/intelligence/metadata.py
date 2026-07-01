@@ -1,49 +1,22 @@
-from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
-from core.entities import extract_entities, validate_person_names
-from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT_MK,
-    SUMMARY_SYSTEM_PROMPT_SR,
-    SYNTHESIS_SYSTEM_PROMPT_MK,
-    SYNTHESIS_SYSTEM_PROMPT_SR,
-)
-from core.text_extraction import clean_extracted_article_text
-from nlp.categories import normalize_headline
+import datetime
+
+from core.entities import extract_entities
 from nlp import (
-    deShout,
     extract_cluster_tags_locally,
     filter_cluster_tags,
     generate_local_placeholder,
-    summarize_article_fallback,
-    synthesize_cluster_fallback,
 )
 from nlp.categories import detect_category, detect_topic
-from nlp.local_analyst import analyst
-from nlp.utils import extract_clean_summary_text
-from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
+from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._queue import _queue_backlog_high, _skip_when_intel_backlog
+from tasks.intelligence.synthesis import _compute_centroid_from_values
 from tasks.utils import (
-    acquire_task_lock,
-    get_celery_queue_depth,
-    invalidate_cluster_caches,
     invalidate_public_data_caches,
     log,
-    record_runtime_event,
-    redis_client,
-    release_task_lock,
     schedule_task_once,
 )
 from utils import get_dominant_color
 
-from tasks.intelligence._constants import *  # noqa: F403
-
-import datetime
-import json
-import os
-import re
-import sys
-import threading
-
-from tasks.intelligence._queue import _queue_backlog_high, _skip_when_intel_backlog
-from tasks.intelligence.synthesis import _compute_centroid_from_values
 
 @celery_app.task(name="tasks.intelligence.auto_summarize_task")
 def auto_summarize_task(*args, cluster_ids: list[str] = None, **kwargs):

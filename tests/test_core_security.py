@@ -1,15 +1,13 @@
 """
 Core security tests that don't require external dependencies.
 """
-import sys
-import os
-import secrets
-
-import pytest
-import hmac
 import hashlib
-import time
+import hmac
+import os
 import re
+import secrets
+import sys
+import time
 
 
 def test_csrf_token_functions():

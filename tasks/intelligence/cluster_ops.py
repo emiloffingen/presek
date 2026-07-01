@@ -1,55 +1,19 @@
-from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
-from core.ingestion import cosine_dist
-from core.entities import extract_entities, validate_person_names
-from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT_MK,
-    SUMMARY_SYSTEM_PROMPT_SR,
-    SYNTHESIS_SYSTEM_PROMPT_MK,
-    SYNTHESIS_SYSTEM_PROMPT_SR,
-)
-from core.text_extraction import clean_extracted_article_text
-from nlp.categories import normalize_headline
-from nlp import (
-    deShout,
-    extract_cluster_tags_locally,
-    filter_cluster_tags,
-    generate_local_placeholder,
-    summarize_article_fallback,
-    synthesize_cluster_fallback,
-)
-from nlp.categories import detect_category, detect_topic
-from nlp.local_analyst import analyst
-from nlp.utils import extract_clean_summary_text
-from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
-from tasks.utils import (
-    acquire_task_lock,
-    get_celery_queue_depth,
-    invalidate_cluster_caches,
-    invalidate_public_data_caches,
-    log,
-    record_runtime_event,
-    redis_client,
-    release_task_lock,
-    schedule_task_once,
-)
-from utils import get_dominant_color
-
-from tasks.intelligence._constants import *  # noqa: F403
-
 import datetime
-import json
-import os
-import re
-import sys
-import threading
 
-from tasks.intelligence._queue import _skip_when_intel_backlog, _skip_when_intel_full
+from core.ingestion import cosine_dist
+from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._queue import _skip_when_intel_full
 from tasks.intelligence.metadata import (
     auto_summarize_task,
     extract_entities_task,
     generate_cluster_metadata_task,
 )
 from tasks.intelligence.synthesis import _split_cluster_merge_score
+from tasks.utils import (
+    invalidate_public_data_caches,
+    log,
+)
+
 
 @celery_app.task(name="tasks.intelligence.recluster_recent_articles_task")
 def recluster_recent_articles_task(hours=24, limit=800):

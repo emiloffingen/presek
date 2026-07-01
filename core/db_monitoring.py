@@ -8,11 +8,10 @@ Provides:
 - Performance metrics
 """
 
-import time
-import logging
 import os
-from typing import Optional, Dict, Any
+import time
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 from core.database import db_manager as db
 from core.logging_config import get_logger

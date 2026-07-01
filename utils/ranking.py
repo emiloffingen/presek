@@ -360,8 +360,7 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
             }
         )
     return sorted(
-        results,
-        key=lambda i: (
+        results, key=lambda i: (
             i["effective_weight"],
             i["recent_volume"],
             i["speed_first_count"],

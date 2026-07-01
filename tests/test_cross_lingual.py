@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from core.cross_lingual import get_cross_lingual_counterparts
 

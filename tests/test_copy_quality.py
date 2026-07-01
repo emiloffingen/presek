@@ -1,4 +1,4 @@
-from core.copy_quality import assess_copy_purity, assess_sr_copy_purity, copy_bundle_passes_publish_gate
+from core.copy_quality import assess_sr_copy_purity, copy_bundle_passes_publish_gate
 
 
 def test_sr_copy_rejects_cyrillic_heavy_text():

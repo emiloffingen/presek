@@ -1,7 +1,9 @@
+import json
+import re
+
 from core.database import db_manager as db
 from core.language import transliterate_lat_to_cyr
-import re
-import json
+
 
 def has_latin(text):
     if not text:

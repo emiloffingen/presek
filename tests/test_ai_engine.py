@@ -1,6 +1,6 @@
-from unittest.mock import Mock
 import sys
 import types
+from unittest.mock import Mock
 
 from core.ai_engine import (
     LocalProvider,

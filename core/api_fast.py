@@ -1,5 +1,4 @@
 import datetime
-import json
 import os
 import re
 import time
@@ -241,6 +240,7 @@ _UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
 _LOCAL_METRICS_CLIENTS = frozenset({"127.0.0.1", "::1", "::ffff:127.0.0.1"})
 from prometheus_client import REGISTRY
+
 if "presek_celery_queue_depth" in REGISTRY._names_to_collectors:
     _CELERY_QUEUE_DEPTH = REGISTRY._names_to_collectors["presek_celery_queue_depth"]
 else:
@@ -421,7 +421,7 @@ app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name
 
 
 # Import and include routers
-from routes import admin, home, intelligence, news, profile, stats, system, marketing, monitoring
+from routes import admin, home, intelligence, marketing, monitoring, news, profile, stats, system
 
 
 def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
@@ -526,7 +526,7 @@ else:
 
 def update_db_pool_metrics():
     """Update Prometheus Gauges with active database connection pool stats."""
-    from core.database import db_manager, async_db
+    from core.database import async_db, db_manager
 
     def collect_pool_stats(pool, pool_type: str, role: str):
         if pool is None:

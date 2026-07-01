@@ -54,8 +54,8 @@ def test_input_validation_functions():
         validate_cluster_id,
         validate_date,
         validate_email,
-        validate_string_param,
         validate_list_param,
+        validate_string_param,
     )
     
     print("Testing input validation functions...")
@@ -80,11 +80,13 @@ async def test_security_headers_middleware():
     """Test that security headers middleware adds expected headers."""
     from starlette.datastructures import Headers
     from starlette.responses import JSONResponse
+
     from routes.security import SecurityHeadersMiddleware
     
     print("Testing security headers middleware...")
 
-    middleware = SecurityHeadersMiddleware(app=lambda scope, receive, send: None)
+    middleware = SecurityHeadersMiddleware(def app(scope, receive, send):
+    return None)
     request = type(
         "Request",
         (),

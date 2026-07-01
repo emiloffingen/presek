@@ -4,12 +4,12 @@ Continuous Security Monitoring for Presek Application
 Provides real-time security status and alerting capabilities.
 """
 
-import os
 import json
-import subprocess
 import logging
+import os
+import subprocess
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # Configure logging
 logging.basicConfig(

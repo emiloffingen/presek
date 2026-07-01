@@ -1,18 +1,19 @@
-import os
 import asyncio
+import os
 import sys
 
 # Ensure project root is in python path
 sys.path.append("/home/emiloffingen/presek")
 
-from core.database import db_manager as db
 from core.audio_service import AudioService, select_cluster_audio_text
+from core.database import db_manager as db
 from tasks.intelligence import synthesize_cluster_task
 
+
 async def regenerate_cluster(cluster_id: str):
-    print(f"\n==================================================")
+    print("\n==================================================")
     print(f"REGENERATING CLUSTER {cluster_id}")
-    print(f"==================================================")
+    print("==================================================")
     
     print(f"Deleting existing cluster summaries for {cluster_id} to force clean AI regeneration...")
     await db.async_execute("DELETE FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,), fetch=False)

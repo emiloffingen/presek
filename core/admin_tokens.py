@@ -8,14 +8,13 @@ Provides a secure admin token system with:
 - Rate limiting for token operations
 """
 
+import datetime
 import os
 import secrets
-import datetime
-from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 import jwt
-from fastapi import HTTPException
 
 from core.database import db_manager as db
 from core.logging_config import get_logger

@@ -1,48 +1,16 @@
-from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
-from core.entities import extract_entities, validate_person_names
+import datetime
+import json
+
 from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT_MK,
-    SUMMARY_SYSTEM_PROMPT_SR,
     SYNTHESIS_SYSTEM_PROMPT_MK,
     SYNTHESIS_SYSTEM_PROMPT_SR,
 )
-from core.text_extraction import clean_extracted_article_text
-from nlp.categories import normalize_headline
+from core.synthesis_quality import record_synthesis_runtime_event
 from nlp import (
-    deShout,
-    extract_cluster_tags_locally,
-    filter_cluster_tags,
     generate_local_placeholder,
-    summarize_article_fallback,
     synthesize_cluster_fallback,
 )
-from nlp.categories import detect_category, detect_topic
-from nlp.local_analyst import analyst
-from nlp.utils import extract_clean_summary_text
-from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
-from core.synthesis_quality import record_synthesis_runtime_event
-from tasks.utils import (
-    acquire_task_lock,
-    get_celery_queue_depth,
-    invalidate_cluster_caches,
-    invalidate_public_data_caches,
-    log,
-    record_runtime_event,
-    redis_client,
-    release_task_lock,
-    schedule_task_once,
-)
-from utils import get_dominant_color
-
 from tasks.intelligence._constants import *  # noqa: F403
-
-import datetime
-import json
-import os
-import re
-import sys
-import threading
-
 from tasks.intelligence._queue import (
     _dispatch_batched,
     _historical_summary_dispatch_limit,
@@ -56,6 +24,15 @@ from tasks.intelligence.synthesis import (
     _fetch_synthesis_history_context,
     _generate_synthesis_via_cascade,
 )
+from tasks.utils import (
+    acquire_task_lock,
+    get_celery_queue_depth,
+    log,
+    redis_client,
+    release_task_lock,
+    schedule_task_once,
+)
+
 
 @celery_app.task(name="tasks.intelligence.auto_repair_sources_task")
 def auto_repair_sources_task():

@@ -1,6 +1,5 @@
-from unittest.mock import MagicMock, patch
-
 import json
+from unittest.mock import MagicMock, patch
 
 from tasks.utils import reprioritize_fast_track_queue
 

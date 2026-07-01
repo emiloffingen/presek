@@ -297,13 +297,15 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     m_dict_cur.execute.return_value = m_dict_cur
     m_dict_cur.fetchall.return_value = recent_rows
     m_dict_cur.connection.encoding = "UTF8"
-    m_dict_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
+    m_dict_cur.mogrify.def side_effect(sql, args):
+    return b"(dummy)"
 
     m_std_cur = MagicMock()
     m_std_cur.execute.return_value = m_std_cur
     m_std_cur.fetchall.return_value = [(123, "RS")]
     m_std_cur.connection.encoding = "UTF8"
-    m_std_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
+    m_std_cur.mogrify.def side_effect(sql, args):
+    return b"(dummy)"
 
     class _Conn:
         def __init__(self):
@@ -354,7 +356,8 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
 
     conn = _Conn()
     m_db_manager = MagicMock()
-    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: (
+    m_db_manager.execute.def side_effect(sql, params=None, **kwargs):
+    return (
         recent_rows if "SELECT link" in sql else None
     )
 
@@ -377,7 +380,8 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
             ingestion,
             "httpx",
             types.SimpleNamespace(
-                AsyncClient=lambda **_kwargs: _AsyncClient(),
+                def AsyncClient(**_kwargs):
+    return _AsyncClient(),
                 Timeout=MagicMock(),
                 Limits=MagicMock(),
                 TimeoutException=Exception,

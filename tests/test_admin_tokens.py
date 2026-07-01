@@ -1,8 +1,9 @@
-import os
 import datetime
-import secrets
+import os
+
 import jwt
 import pytest
+
 from core.database import db_manager as db
 
 # Set test environment settings
@@ -80,7 +81,7 @@ def test_token_signed_with_wrong_key_fails():
 
 def test_token_revocation():
     """Test token revocation flow."""
-    from core.admin_tokens import create_admin_token, verify_admin_token, revoke_admin_token
+    from core.admin_tokens import create_admin_token, revoke_admin_token, verify_admin_token
 
     token_str, token_meta = create_admin_token(subject="revocation-target")
     assert verify_admin_token(token_str) is not None
@@ -95,7 +96,7 @@ def test_token_revocation():
 
 def test_revoke_all_tokens_for_subject():
     """Test revoking all active tokens for a specific subject."""
-    from core.admin_tokens import create_admin_token, verify_admin_token, revoke_all_tokens_for_subject
+    from core.admin_tokens import create_admin_token, revoke_all_tokens_for_subject, verify_admin_token
 
     token_str_1, _ = create_admin_token(subject="multi-admin")
     token_str_2, _ = create_admin_token(subject="multi-admin")
@@ -137,7 +138,7 @@ def test_list_active_admin_tokens():
 
 def test_cleanup_expired_tokens():
     """Test cleaning up expired tokens removes them from the database."""
-    from core.admin_tokens import create_admin_token, cleanup_expired_tokens
+    from core.admin_tokens import cleanup_expired_tokens, create_admin_token
     
     # We can simulate expired tokens by updating their expires_at in the database
     _, token_meta = create_admin_token(subject="expiring-soon")

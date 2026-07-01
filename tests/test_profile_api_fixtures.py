@@ -3,7 +3,6 @@ from pathlib import Path
 
 from core.personalization_score import blend_personalization_score, score_cluster_for_profile
 
-
 FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "profile_api_sample.json"
 
 

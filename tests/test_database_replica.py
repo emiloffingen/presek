@@ -118,6 +118,7 @@ def test_fallback_to_primary_when_replica_unavailable():
 def test_database_manager_initialization_with_replica():
     """Test database manager initialization with replica support."""
     import importlib
+
     import core.database
 
     # Mock ConnectionPool so it doesn't connect to replica

@@ -1,4 +1,5 @@
 import logging
+
 from fastapi import APIRouter, Depends, Request
 
 from core.limiter import custom_rate_limit

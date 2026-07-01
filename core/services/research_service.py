@@ -7,15 +7,16 @@ from urllib.parse import parse_qs, unquote, urlparse
 import httpx
 from lxml import html
 from prometheus_client import Histogram
+
 from core.ai_engine import async_call_ai, clean_json_response
+from core.embeddings import get_query_embedding_async
+from core.entities import extract_entities
 from core.prompts import RESEARCH_SYSTEM_PROMPT, RESEARCH_SYSTEM_PROMPT_MK
 from core.research_helpers import (
     RESEARCH_MODE_PLAN,
     RESEARCH_MODE_QUERIES,
     build_gemma_research_context,
 )
-from core.entities import extract_entities
-from core.embeddings import get_query_embedding_async
 from nlp.local_analyst import ResearchQueryResponse
 
 log = logging.getLogger(__name__)

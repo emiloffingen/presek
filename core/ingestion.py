@@ -1054,7 +1054,12 @@ async def ingest_all_sources_async():
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
 
-        from core.clustering import VECTOR_THRESHOLD, _cluster_title_overlap, _extract_title_entities, _meaningful_entity_token_overlap
+        from core.clustering import (
+            VECTOR_THRESHOLD,
+            _cluster_title_overlap,
+            _extract_title_entities,
+            _meaningful_entity_token_overlap,
+        )
 
         prepared_rows = []
         batch_clusters = []

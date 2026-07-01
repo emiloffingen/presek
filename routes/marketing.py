@@ -1,15 +1,15 @@
+import io
+import logging
 import os
 import re
-import io
 import uuid
-import logging
-import stripe
-from datetime import datetime, date
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, File, Form
-from fastapi.responses import JSONResponse, RedirectResponse
+from datetime import datetime
 from urllib.parse import urlparse
+
+import stripe
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from PIL import Image
+
 from core.database import db_manager as db
 from core.limiter import custom_rate_limit
 
@@ -355,9 +355,9 @@ async def request_campaigns_access(request: Request, email: str = Form(...)):
         proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
         base_url = f"{proto}://{host}"
         
-        email_content = f"<h2>Presek Marketing Access Link</h2>"
-        email_content += f"<p>Hello, you requested access links to your advertising campaigns on Presek.</p>"
-        email_content += f"<p>Below are your registered campaigns:</p><ul>"
+        email_content = "<h2>Presek Marketing Access Link</h2>"
+        email_content += "<p>Hello, you requested access links to your advertising campaigns on Presek.</p>"
+        email_content += "<p>Below are your registered campaigns:</p><ul>"
         
         for row in rows:
             camp_id = row["id"]

@@ -54,11 +54,11 @@ except Exception as e:
     binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
 from core.health import _probe_database, _probe_redis
 from core.version import version_payload
+from nlp.image_quality import classify_image_url as _image_quality
 from utils import _peer_ip, _resolve_public_ips
 
 from .common import _PROXY_MAX_BYTES, _is_allowed_proxy_content_type, cleanAndDecode
 from .security import validate_cluster_id
-from nlp.image_quality import classify_image_url as _image_quality
 
 log = logging.getLogger("presek")
 router = APIRouter()

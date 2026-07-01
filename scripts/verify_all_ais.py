@@ -8,6 +8,7 @@ sys.path.append(os.getcwd())
 
 from core.ai_engine import PROVIDERS
 
+
 async def test_provider(name, provider):
     print(f"\n>>> Testing {name.upper()}...")
     # Check if api_key exists as an attribute (some providers might not have it)

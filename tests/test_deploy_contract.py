@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "deploy" / "python_env_contract.json"
 VERIFY_SCRIPT = ROOT / "deploy" / "verify_release_imports.py"

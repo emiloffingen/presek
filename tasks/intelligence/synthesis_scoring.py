@@ -6,6 +6,7 @@ import re
 
 from core.editorial_quality import weak_editorial_abstraction_count
 
+
 def _paragraph_fingerprint(text: str) -> str:
     return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
 

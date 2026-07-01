@@ -1,5 +1,7 @@
-from core.database import db_manager as db
 import re
+
+from core.database import db_manager as db
+
 
 def has_latin(text):
     if not text:

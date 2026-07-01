@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import urllib.parse
+
 from playwright.async_api import async_playwright
 
 logging.basicConfig(level=logging.INFO)

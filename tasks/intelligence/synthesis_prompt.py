@@ -5,6 +5,7 @@ from __future__ import annotations
 from tasks.intelligence._constants import COUNTRY_LANG, db
 from tasks.utils import log
 
+
 def _load_cluster_articles_for_synthesis(cluster_id):
     return db.execute(
         "SELECT title, description, summary, full_content, source, link, created_at, category, topic, country, embedding FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 8",
@@ -68,8 +69,8 @@ def _build_source_comparison_prompt_block(article_rows, lang="sr"):
 
 def _fetch_synthesis_history_context(cluster_id, lang="sr", article_rows=None):
     try:
-        from core.embeddings import get_cluster_embedding
         from core.config import HISTORY_SEMANTIC_THRESHOLD
+        from core.embeddings import get_cluster_embedding
 
         current_vec = get_cluster_embedding(cluster_id)
         if not current_vec:

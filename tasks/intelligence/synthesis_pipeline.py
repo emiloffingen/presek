@@ -5,13 +5,12 @@ from __future__ import annotations
 from core.entities import validate_person_names
 from core.prompts import SYNTHESIS_SYSTEM_PROMPT_MK, SYNTHESIS_SYSTEM_PROMPT_SR
 from nlp import synthesize_cluster_fallback
-from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
-from tasks.intelligence.synthesis_generation import _generate_synthesis_via_cascade
 from tasks.intelligence.synthesis_bundle import (
     _build_citation_sources,
     _build_synthesis_source_context,
     _ensure_dict,
 )
+from tasks.intelligence.synthesis_generation import _generate_synthesis_via_cascade
 from tasks.intelligence.synthesis_persist import finalize_cluster_synthesis, persist_lang_synthesis
 from tasks.intelligence.synthesis_prompt import (
     _build_source_comparison_prompt_block,
@@ -26,6 +25,7 @@ from tasks.intelligence.synthesis_scheduling import (
 )
 from tasks.intelligence.synthesis_scoring import _compute_lightweight_quality_score
 from tasks.intelligence.synthesis_translation import try_translate_synthesis_to_mk as _try_translate_synthesis_to_mk
+from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
 from tasks.utils import log
 
 

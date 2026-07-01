@@ -1,7 +1,7 @@
-import sys
 import os
-import urllib.request
+import sys
 import urllib.error
+import urllib.request
 
 # Ensure project root in path
 sys.path.append(os.getcwd())

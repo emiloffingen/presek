@@ -98,9 +98,12 @@ def _install_httpx_stub():
     httpx.AsyncClient = AsyncClient
     httpx.Response = MagicMock
     httpx.BaseTransport = MagicMock
-    httpx.URL = lambda x: x
-    httpx.Proxy = lambda x: x
-    httpx.Timeout = lambda x: x
+    httpx.def URL(x):
+    return x
+    httpx.def Proxy(x):
+    return x
+    httpx.def Timeout(x):
+    return x
     sys.modules["httpx"] = httpx
 
 
@@ -227,7 +230,8 @@ def _install_trafilatura_stub():
         return
 
     trafilatura = types.ModuleType("trafilatura")
-    trafilatura.extract = lambda *args, **kwargs: ""
+    trafilatura.def extract(*args, **kwargs):
+    return ""
     sys.modules["trafilatura"] = trafilatura
 
 

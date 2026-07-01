@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 _BULLET_RE = re.compile(r"^[-*•]\s+(.+)$")
 
 

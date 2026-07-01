@@ -612,7 +612,8 @@ class TestSummarizeArticleTaskQuality:
             ) as mock_call_ai,
             patch(
                 "tasks.intelligence.summarization.clean_json_response",
-                side_effect=lambda value: value,
+                def side_effect(value):
+    return value,
             ),
             patch("tasks.intelligence.summarization.invalidate_public_data_caches"),
             patch("tasks.utils.record_task_event"),

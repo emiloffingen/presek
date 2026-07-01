@@ -22,8 +22,9 @@ def main() -> int:
     report: dict = {"status": "ok", "checks": []}
 
     try:
-        from core.ops_snapshot import build_ops_snapshot
         import asyncio
+
+        from core.ops_snapshot import build_ops_snapshot
 
         ops = asyncio.run(build_ops_snapshot())
         report["ops_status"] = ops.get("status")
@@ -69,6 +70,7 @@ def main() -> int:
     if args.cluster_id:
         try:
             import asyncio
+
             from core.synthesis_trace import build_cluster_synthesis_trace
 
             trace = asyncio.run(build_cluster_synthesis_trace(args.cluster_id, lang=args.lang))

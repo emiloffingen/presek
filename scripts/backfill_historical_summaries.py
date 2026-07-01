@@ -25,8 +25,8 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.reset_cursor:
-        from tasks.utils import redis_client
         from tasks.intelligence import _HISTORICAL_SUMMARY_CURSOR_KEY
+        from tasks.utils import redis_client
 
         redis_client.delete(_HISTORICAL_SUMMARY_CURSOR_KEY)
         print(json.dumps({"reset_cursor": True}, indent=2))

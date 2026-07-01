@@ -1,5 +1,5 @@
-from core.localization import localization_engine, ENTITY_NOISE_WORDS, TAG_NOISE_WORDS, TAG_MAPPINGS
-from nlp.keywords import normalize_tag_name, is_valid_focus_entity
+from core.localization import ENTITY_NOISE_WORDS, TAG_MAPPINGS, TAG_NOISE_WORDS, localization_engine
+from nlp.keywords import is_valid_focus_entity, normalize_tag_name
 
 
 def test_localization_engine_loaded():

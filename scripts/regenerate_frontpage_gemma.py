@@ -18,10 +18,12 @@ os.environ["ENV"] = "production"
 os.environ.setdefault("CSRF_TOKEN_SECRET", "test")
 
 import asyncio
+from unittest.mock import patch
+
 from routes.home import get_home
 from tasks.intelligence import synthesize_cluster_task
-from unittest.mock import patch
 from utils import redis_client
+
 
 async def regenerate_frontpage():
     if not os.path.exists(model_path):

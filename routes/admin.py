@@ -7,9 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from core.api_errors import soft_error
 from core.config import PROVIDER_FALLBACK_ORDER
 from core.database import db_manager as db
-from core.db_monitoring import get_database_health, check_db_pool_health, get_current_pool_stats
-from core.queue_monitoring import get_queue_health, check_queue_health, get_current_queue_stats, get_scaling_recommendation
+from core.db_monitoring import check_db_pool_health, get_current_pool_stats, get_database_health
 from core.health import _probe_database, _probe_redis, get_source_statuses
+from core.queue_monitoring import (
+    check_queue_health,
+    get_current_queue_stats,
+    get_queue_health,
+    get_scaling_recommendation,
+)
 from core.version import version_payload
 from routes.security import verify_csrf_token
 

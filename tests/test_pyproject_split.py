@@ -1,9 +1,8 @@
 """Verify Phase 4 dependency isolation between API and worker groups."""
 
 import re
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 
 def _load_pyproject() -> dict:

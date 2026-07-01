@@ -1,6 +1,7 @@
 import asyncio
 import json
 from unittest.mock import patch
+
 import pytest
 
 try:
@@ -9,8 +10,8 @@ except ImportError:
     LlamaGrammar = None
 
 from nlp.local_analyst import (
-    LocalAnalyst,
     DeepMetadataResponse,
+    LocalAnalyst,
     PluralismResponse,
     ResearchQueryResponse,
 )

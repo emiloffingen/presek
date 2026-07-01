@@ -1,5 +1,4 @@
 import pytest
-
 from fastapi import HTTPException
 
 # Now we can import the validators

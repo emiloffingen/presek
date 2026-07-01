@@ -1,6 +1,7 @@
 """Test authentication functionality."""
 
 import pytest
+
 from core.auth import create_admin_jwt, create_jwt_token, decode_jwt, verify_admin_jwt
 
 
@@ -68,6 +69,7 @@ def test_jwt_expiration():
 def test_verify_admin_accepts_jwt():
     """Test admin verification with JWT authentication."""
     import asyncio
+
     from routes.admin import verify_admin
 
     admin_token = create_admin_jwt()
@@ -102,7 +104,9 @@ def test_static_admin_token_disabled_by_default_in_production(monkeypatch):
 def test_admin_endpoint_without_auth():
     """Test admin verification without authentication."""
     import asyncio
+
     from fastapi import HTTPException
+
     from routes.admin import verify_admin
 
     request = type("Request", (), {"headers": {}})()
@@ -115,7 +119,9 @@ def test_admin_endpoint_without_auth():
 def test_admin_endpoint_with_invalid_token():
     """Test admin verification with invalid token."""
     import asyncio
+
     from fastapi import HTTPException
+
     from routes.admin import verify_admin
 
     request = type("Request", (), {"headers": {"Authorization": "Bearer invalid.token.here"}})()

@@ -17,6 +17,7 @@ from tasks.intelligence.synthesis_bundle import _ensure_dict
 from tasks.intelligence.synthesis_merge import _compute_centroid_from_values
 from tasks.utils import log, schedule_task_once
 
+
 def _schedule_deep_analyst_work(
     *,
     cluster_id: str,

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 
-from core.ai_engine import clean_json_response, sync_call_ai as _call_ai
+from core.ai_engine import clean_json_response
+from core.ai_engine import sync_call_ai as _call_ai
 from tasks.intelligence.synthesis_grounding import _is_fact_grounded_synthesis
 from tasks.utils import log
 

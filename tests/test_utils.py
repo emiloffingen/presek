@@ -684,6 +684,7 @@ class TestSourceReputationRows:
 def test_event_stream_yields_published_events():
     import asyncio
     from unittest.mock import patch
+
     import utils
     from utils.cache import event_stream
 

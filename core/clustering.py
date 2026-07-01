@@ -75,8 +75,6 @@ Key metrics to watch:
 """
 
 import datetime
-from core.language import transliterate_cyr_to_lat
-
 import logging
 import math
 import os
@@ -85,6 +83,7 @@ import uuid
 from collections import Counter
 
 from core.config import CLUSTERING_THRESHOLDS, LANGUAGE_CONFIG
+from core.language import transliterate_cyr_to_lat
 
 log = logging.getLogger("presek")
 

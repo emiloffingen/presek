@@ -6,6 +6,7 @@ import re
 
 from tasks.utils import log
 
+
 def _synthesis_source_corpus(article_rows):
     return " ".join(
         part

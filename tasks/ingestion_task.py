@@ -14,19 +14,18 @@ from core.celery_app import celery_app
 from core.crawler import crawler
 from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
+from core.image_service import image_service
 from core.ingestion_lock import (
     break_stale_ingestion_lock,
     release_ingestion_lock,
     try_acquire_ingestion_lock,
 )
-from core.image_service import image_service
 from core.services.notifier import SystemNotifier as Notifier
 from core.version import APP_VERSION_LABEL
 from tasks.utils import (
     invalidate_public_data_caches,
     invalidate_public_data_caches_debounced,
     log,
-    redis_client,
     safe_async_run,
 )
 

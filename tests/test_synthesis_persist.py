@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from tasks.intelligence.synthesis_persist import finalize_cluster_synthesis, persist_lang_synthesis
 

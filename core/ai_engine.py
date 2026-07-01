@@ -317,8 +317,9 @@ class OpenAICompatibleProvider(AIProvider):
 class LocalProvider(AIProvider):
     def __init__(self):
         try:
-            from nlp.local_analyst import MODEL_PATH
             import os
+
+            from nlp.local_analyst import MODEL_PATH
             self.model = os.path.basename(MODEL_PATH)
         except ImportError:
             self.model = "gemma-4-E2B-it-Q4_K_M.gguf"

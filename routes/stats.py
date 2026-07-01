@@ -6,9 +6,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request, Depends
-from .security import verify_csrf_token
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from core.api_errors import soft_error
@@ -28,8 +27,8 @@ from utils import (
 )
 
 # Cleanup: removed _source_admin_authorized
-from .common import _source_admin_authorized, _error_json
-from .security import validate_date, validate_email, validate_string_param
+from .common import _error_json, _source_admin_authorized
+from .security import validate_date, validate_email, validate_string_param, verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -652,6 +651,7 @@ async def _fetch_stats_parallel():
 
 
 from routes.security import admin_auth
+
 
 @router.get("/stats/full")
 async def get_stats_full(request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)):

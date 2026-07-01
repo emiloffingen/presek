@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from core.api_errors import soft_error
@@ -95,8 +95,7 @@ def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     compact = []
     # Sort and take top N without further destructive processing
     for item in sorted(
-        by_key.values(),
-        key=lambda entry: int(entry.get("total_mentions") or 0),
+        by_key.values(), key=lambda entry: int(entry.get("total_mentions") or 0),
         reverse=True,
     ):
         compact.append(item)
@@ -719,8 +718,7 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             }
 
         processed = sorted(
-            aggregated.values(),
-            key=lambda entry: int(entry.get("total_mentions") or 0),
+            aggregated.values(), key=lambda entry: int(entry.get("total_mentions") or 0),
             reverse=True,
         )
         return processed[:8]
@@ -1352,6 +1350,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
     }
 
 from routes.security import admin_auth
+
 
 @router.post("/intelligence/save-insight")
 async def save_insight(

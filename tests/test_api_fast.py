@@ -130,8 +130,10 @@ def _get_fake_fastapi_modules():
     f.APIRouter = _FakeRouter
     f.Request = _FakeRequest
     f.HTTPException = _FakeHTTPException
-    f.Query = MagicMock(side_effect=lambda default=None, **kwargs: default)
-    f.Path = MagicMock(side_effect=lambda default=None, **kwargs: default)
+    f.Query = MagicMock(def side_effect(default=None, **kwargs):
+    return default)
+    f.Path = MagicMock(def side_effect(default=None, **kwargs):
+    return default)
     f.BackgroundTasks = MagicMock
     f.Depends = MagicMock
     f.Form = MagicMock
@@ -1334,7 +1336,8 @@ def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(moc
         patch("PIL.ImageDraw.Draw"),
         patch("PIL.ImageFont.truetype"),
     ):
-        fake_image.save.side_effect = lambda output, format=None: output.write(b"png")
+        fake_image.save.def side_effect(output, format=None):
+    return output.write(b"png")
         resp = asyncio.run(system_routes.get_cluster_share_card("abc123"))
     fake_client.get.assert_not_called()
     assert resp.media_type == "image/png"
@@ -1725,9 +1728,10 @@ def test_fastapi_synthesize_nodes_endpoint(mock_all):
     mock_local_analyst_module.analyst = mock_analyst
     sys.modules["nlp.local_analyst"] = mock_local_analyst_module
 
+    import datetime
+
     import routes.intelligence as intelligence
     from routes.intelligence import NodeSynthesisRequest
-    import datetime
 
     async def execute_side_effect(query, params=None, **kwargs):
         if "FROM entity_mentions_daily" in query:

@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 fasttext = pytest.importorskip("fasttext")
