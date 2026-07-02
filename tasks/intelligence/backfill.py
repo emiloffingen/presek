@@ -18,13 +18,9 @@ from tasks.intelligence._queue import (
     _skip_when_intel_backlog,
     intelligence_secondary_deferred,
 )
-from tasks.intelligence.synthesis import (
-    _fetch_synthesis_history_context,
-    _generate_synthesis_via_cascade,
-)
-from tasks.intelligence.synthesis_prompt import _build_source_comparison_prompt_block
-)
+from tasks.intelligence.synthesis_pipeline import _generate_synthesis_via_cascade
 from tasks.intelligence.synthesis_prompt import (
+    _build_source_comparison_prompt_block,
     _build_cluster_synthesis_prompt,
 )
 from tasks.utils import (

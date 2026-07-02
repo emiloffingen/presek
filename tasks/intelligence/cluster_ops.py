@@ -8,7 +8,7 @@ from tasks.intelligence.metadata import (
     extract_entities_task,
     generate_cluster_metadata_task,
 )
-from tasks.intelligence.synthesis import _split_cluster_merge_score
+from tasks.intelligence.synthesis_merge import _split_cluster_merge_score
 from tasks.utils import (
     invalidate_public_data_caches,
     log,
