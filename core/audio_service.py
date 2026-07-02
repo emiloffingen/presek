@@ -245,9 +245,10 @@ class AudioService:
             import edge_tts
 
             # Map languages to high-quality neural voices
+            # For Serbian, try the male voice first as it often sounds more natural
             voice_map = {
                 "mk": "mk-MK-MarijaNeural",
-                "sr": "sr-RS-SophieNeural",
+                "sr": "sr-RS-NicholasNeural",  # Changed from SophieNeural to NicholasNeural
                 "en": "en-US-AvaNeural",
             }
 
@@ -289,9 +290,65 @@ class AudioService:
                 if result["error"]:
                     raise result["error"]
 
+            # Enhance audio quality using FFmpeg post-processing
+            if cls._enhance_edge_audio_quality(filepath):
+                log.info(f"[audio] Enhanced Edge TTS audio quality for {filepath}")
+            
             return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
         except Exception as e:
             log.error(f"[audio] Edge TTS audio generation failed: {e}")
+            return False
+
+    @classmethod
+    def _enhance_edge_audio_quality(cls, filepath: str) -> bool:
+        """Enhance Edge TTS audio quality using FFmpeg post-processing."""
+        try:
+            temp_file = filepath.replace(".mp3", "_enhanced.mp3")
+            
+            # Special processing for Serbian audio to reduce robotic sound
+            is_serbian = "_sr_" in filepath or "_sr_v3" in filepath
+            
+            # Use FFmpeg to improve audio quality:
+            # - Increase sample rate from 24kHz to 48kHz
+            # - Increase bitrate from 48kbps to 192kbps
+            # - Apply audio normalization and special processing for Serbian
+            cmd = [
+                "ffmpeg",
+                "-y",  # Overwrite output file if it exists
+                "-i", filepath,
+                "-af", "loudnorm=I=-16:TP=-1.5",  # Normalize audio levels
+            ]
+            
+            # Add Serbian-specific processing to reduce robotic artifacts
+            if is_serbian:
+                cmd.extend([
+                    "-af", "aecho=0.8:0.9:1000:0.3",  # Add subtle echo to reduce robotic sound
+                    "-af", "highpass=f=200,lowpass=f=3000",  # Filter extreme frequencies
+                ])
+            
+            cmd.extend([
+                "-ar", "48000",  # Increase sample rate to 48kHz
+                "-b:a", "192k",  # Increase bitrate to 192kbps
+                "-ac", "2",  # Convert to stereo for better quality
+                "-loglevel", "quiet",
+                temp_file
+            ])
+            
+            result = subprocess.run(cmd, capture_output=True, timeout=60)
+            
+            if result.returncode == 0 and os.path.exists(temp_file):
+                # Replace original file with enhanced version
+                os.replace(temp_file, filepath)
+                return True
+            else:
+                log.warning(f"[audio] FFmpeg audio enhancement failed: {result.stderr.decode() if result.stderr else 'unknown error'}")
+                # Clean up temp file if it exists
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                return False
+                
+        except Exception as e:
+            log.warning(f"[audio] Audio quality enhancement failed: {e}")
             return False
 
     @staticmethod
