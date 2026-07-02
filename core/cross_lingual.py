@@ -5,10 +5,13 @@ from __future__ import annotations
 from core.database import db_manager as db
 
 
-async def get_cross_lingual_counterparts(cluster_id: str, lang: str, limit: int = 4) -> list[dict]:
+async def get_cross_lingual_counterparts(
+    cluster_id: str, lang: str, limit: int = 4
+) -> list[dict]:
     other_lang = "mk" if lang == "sr" else "sr"
-    rows = await db.async_execute(
-        """
+    rows = (
+        await db.async_execute(
+            """
         SELECT DISTINCT ON (sc2.cluster_id)
             sc2.cluster_id,
             cs.lang,
@@ -29,9 +32,11 @@ async def get_cross_lingual_counterparts(cluster_id: str, lang: str, limit: int 
         ORDER BY sc2.cluster_id, sc2.relevance_score DESC NULLS LAST
         LIMIT %s
         """,
-        (other_lang, cluster_id, limit),
-        read_only=True,
-    ) or []
+            (other_lang, cluster_id, limit),
+            read_only=True,
+        )
+        or []
+    )
 
     return [
         {

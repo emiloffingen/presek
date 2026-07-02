@@ -51,7 +51,9 @@ def generate_csrf_token() -> str:
     """Generate a CSRF token."""
     timestamp = str(int(time.time()))
     message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
-    signature = hmac.new(CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
+    signature = hmac.new(
+        CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256
+    ).hexdigest()
     return f"{timestamp}:{signature}"
 
 
@@ -59,23 +61,21 @@ def validate_csrf_token(token: str) -> bool:
     """Validate a CSRF token."""
     if not token or ":" not in token:
         return False
-    
+
     try:
         timestamp_str, signature = token.split(":", 1)
         timestamp = int(timestamp_str)
-        
+
         # Check if token is expired
         if int(time.time()) - timestamp > CSRF_TOKEN_EXPIRY:
             return False
-        
+
         # Reconstruct and validate signature
         message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
         expected_signature = hmac.new(
-            CSRF_TOKEN_SECRET.encode(), 
-            message.encode(), 
-            hashlib.sha256
+            CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256
         ).hexdigest()
-        
+
         return hmac.compare_digest(signature, expected_signature)
     except Exception:
         return False
@@ -102,16 +102,12 @@ async def verify_csrf_token(request: Request):
         raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
 
     if not validate_csrf_token(csrf_token):
-        raise HTTPException(
-            status_code=403,
-            detail="Nevaliden CSRF token"
-        )
+        raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
 
     if os.environ.get("ENV") == "production" and not cookie_token:
         raise HTTPException(status_code=403, detail="CSRF cookie required")
 
     return True
-
 
 
 # Security Headers Middleware
@@ -134,9 +130,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=63072000; includeSubDomains; preload"
+            )
         else:
-            response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=300; includeSubDomains"
+            )
 
         # Content Security Policy with nonce-based approach
         # Nonce allows inline scripts/styles that include the nonce attribute
@@ -190,7 +190,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             max_age=CSRF_TOKEN_EXPIRY,
         )
 
-
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
             "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
@@ -219,7 +218,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # =============================================================================
 
 CLUSTER_ID_PATTERN = re.compile(r"^[a-f0-9\-]{6,64}$")
-UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+UUID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
+)
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
@@ -231,7 +232,9 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     if not isinstance(cluster_id, str):
         raise HTTPException(status_code=400, detail=f"{param_name} mora da bide tekst")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
+        _raise_http_error(
+            400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
+        )
     return cluster_id
 
 
@@ -291,7 +294,9 @@ def validate_string_param(
     return value
 
 
-def validate_list_param(items, param_name: str, max_items: int = 20, max_item_length: int = 100) -> list:
+def validate_list_param(
+    items, param_name: str, max_items: int = 20, max_item_length: int = 100
+) -> list:
     """Validate a list parameter."""
     if items is None:
         return []
@@ -353,12 +358,16 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(status_code=400, detail="Nevaliden Content-Length naslov")
+                raise HTTPException(
+                    status_code=400, detail="Nevaliden Content-Length naslov"
+                )
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
+                _raise_http_error(
+                    400, f"Query parameter '{key}' exceeds maximum length"
+                )
 
         # Check headers
         for key, value in request.headers.items():
@@ -380,14 +389,20 @@ class EnhancedRateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         from utils import check_rate_limit
 
-        from .common import _client_ip_for_request, _is_rate_limited_path, _rate_limit_error_payload
+        from .common import (
+            _client_ip_for_request,
+            _is_rate_limited_path,
+            _rate_limit_error_payload,
+        )
 
         client_ip = _client_ip_for_request(request)
 
         # Security enhancement: Only allow bypass for specific admin endpoints in development
-        if (client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+        if (
+            client_ip in {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
             and os.environ.get("ENV") != "production"
-            and not request.url.path.startswith(("/admin/", "/api/admin"))):
+            and not request.url.path.startswith(("/admin/", "/api/admin"))
+        ):
             return await call_next(request)
 
         # Check if this path should be rate limited
@@ -458,12 +473,13 @@ async def admin_auth(request: Request) -> str:
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid token")
-    
+
     token = auth_header.split("Bearer ")[1]
     if not verify_admin_jwt(token):
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     from core.auth import decode_jwt
+
     try:
         payload = decode_jwt(token)
         if payload and "sub" in payload:
@@ -471,7 +487,6 @@ async def admin_auth(request: Request) -> str:
     except Exception:
         pass
     return "admin"
-
 
 
 async def valid_cluster_id(cluster_id: str) -> str:

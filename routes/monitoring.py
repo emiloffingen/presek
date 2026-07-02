@@ -24,5 +24,5 @@ async def get_security_status(request: Request, auth_ok: str = Depends(admin_aut
         return {
             "status": "error",
             "message": "Failed to run security checks",
-            "error": str(e)
+            "error": str(e),
         }

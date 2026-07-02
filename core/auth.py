@@ -33,12 +33,18 @@ class JWTBearer(HTTPBearer):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
+        credentials: HTTPAuthorizationCredentials = await super(
+            JWTBearer, self
+        ).__call__(request)
         if credentials:
             if not credentials.scheme == "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
+                raise HTTPException(
+                    status_code=403, detail="Invalid authentication scheme."
+                )
             if not self.verify_jwt(credentials.credentials):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
+                raise HTTPException(
+                    status_code=403, detail="Invalid token or expired token."
+                )
             return credentials.credentials
         else:
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
@@ -52,7 +58,9 @@ class JWTBearer(HTTPBearer):
             return False
 
 
-def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] = None) -> str:
+def create_jwt_token(
+    subject: str, additional_claims: Optional[Dict[str, Any]] = None
+) -> str:
     """Create a new JWT token."""
     now = datetime.now(timezone.utc)
     payload = {

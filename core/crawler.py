@@ -28,28 +28,90 @@ def prune_boilerplate_html(html_str: str) -> str:
         doc = html.fromstring(html_str.encode("utf-8"), parser=parser)
 
         # 1. Elements to remove by tag name
-        tags_to_remove = ["header", "footer", "nav", "aside", "script", "style", "noscript", "iframe", "form"]
+        tags_to_remove = [
+            "header",
+            "footer",
+            "nav",
+            "aside",
+            "script",
+            "style",
+            "noscript",
+            "iframe",
+            "form",
+        ]
         for tag in tags_to_remove:
             for elem in doc.xpath(f"//{tag}"):
                 if elem.getparent() is not None:
                     elem.getparent().remove(elem)
 
         noisy_keywords = [
-            "sidebar", "side-bar", "widget", "comment", "related", "recommend",
-            "share", "sharing", "social", "ads", "ad-box", "ad-container",
-            "banner", "newsletter", "popup", "modal", "footer", "header",
-            "nav-menu", "navbar", "menu-container", "tags", "tag-list",
-            "meteo", "weather", "latest-news", "popular-news", "most-read",
-            "most-popular", "disqus", "fb-root", "facebook",
-            "cookie", "cookies", "consent", "gdpr", "privacy",
+            "sidebar",
+            "side-bar",
+            "widget",
+            "comment",
+            "related",
+            "recommend",
+            "share",
+            "sharing",
+            "social",
+            "ads",
+            "ad-box",
+            "ad-container",
+            "banner",
+            "newsletter",
+            "popup",
+            "modal",
+            "footer",
+            "header",
+            "nav-menu",
+            "navbar",
+            "menu-container",
+            "tags",
+            "tag-list",
+            "meteo",
+            "weather",
+            "latest-news",
+            "popular-news",
+            "most-read",
+            "most-popular",
+            "disqus",
+            "fb-root",
+            "facebook",
+            "cookie",
+            "cookies",
+            "consent",
+            "gdpr",
+            "privacy",
             # Regional (Serbian / Macedonian) keywords
-            "povrzani", "povezani", "najnovi", "najcitanije", "najcitaniji", "najcitani",
-            "reklama", "reklame", "spodeli", "podeli", "anketa", "komentari", "meteorološki",
-            "kolačići", "kolacici", "privatnost"
+            "povrzani",
+            "povezani",
+            "najnovi",
+            "najcitanije",
+            "najcitaniji",
+            "najcitani",
+            "reklama",
+            "reklame",
+            "spodeli",
+            "podeli",
+            "anketa",
+            "komentari",
+            "meteorološki",
+            "kolačići",
+            "kolacici",
+            "privatnost",
         ]
 
         # Do not prune elements whose classes/IDs suggest they are main content wrappers
-        exclude_wrapper_keywords = ["wrapper", "content", "main", "post", "article", "container", "body", "page"]
+        exclude_wrapper_keywords = [
+            "wrapper",
+            "content",
+            "main",
+            "post",
+            "article",
+            "container",
+            "body",
+            "page",
+        ]
         exclude_conds = []
         for exc in exclude_wrapper_keywords:
             exclude_conds.append(
@@ -115,12 +177,20 @@ class CrawlerService:
         try:
             headers = self._get_headers()
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
+            async with httpx.AsyncClient(
+                headers=headers, follow_redirects=True, timeout=15.0
+            ) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
-                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
-                        return {"url": url, "error": "Security block: peer IP mismatch", "method": "fast"}
+                        log.warning(
+                            f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}"
+                        )
+                        return {
+                            "url": url,
+                            "error": "Security block: peer IP mismatch",
+                            "method": "fast",
+                        }
 
                     await resp.aread()
                     resp.raise_for_status()
@@ -136,7 +206,9 @@ class CrawlerService:
         extracted = self._parse_with_trafilatura(html_content, final_url)
 
         if not extracted.get("content") or len(extracted.get("content", "")) < 200:
-            log.info(f"Low quality content from fast path for {url}, falling back to headless")
+            log.info(
+                f"Low quality content from fast path for {url}, falling back to headless"
+            )
             return await self._extract_headless(url)
 
         result.update(extracted)
@@ -191,8 +263,7 @@ class CrawlerService:
                 html_content = await page.content()
                 final_url = page.url
 
-                metadata = await page.evaluate(
-                    """() => {
+                metadata = await page.evaluate("""() => {
                     const getMeta = (name) => {
                         const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
                         return el ? el.getAttribute('content') : null;
@@ -203,8 +274,7 @@ class CrawlerService:
                         description: getMeta('og:description') || getMeta('description'),
                         author: getMeta('author') || getMeta('article:author'),
                     };
-                }"""
-                )
+                }""")
 
                 await browser.close()
                 browser = None
@@ -213,11 +283,43 @@ class CrawlerService:
 
                 result.update(
                     {
-                        "title": str(metadata.get("title")) if metadata.get("title") else (str(extracted.get("title")) if extracted.get("title") else None),
-                        "content": str(extracted.get("content")) if extracted.get("content") else None,
-                        "image_url": str(metadata.get("ogImage")) if metadata.get("ogImage") else (str(extracted.get("image_url")) if extracted.get("image_url") else None),
-                        "author": str(metadata.get("author")) if metadata.get("author") else (str(extracted.get("author")) if extracted.get("author") else None),
-                        "published_at": str(extracted.get("published_at")) if extracted.get("published_at") else None,
+                        "title": (
+                            str(metadata.get("title"))
+                            if metadata.get("title")
+                            else (
+                                str(extracted.get("title"))
+                                if extracted.get("title")
+                                else None
+                            )
+                        ),
+                        "content": (
+                            str(extracted.get("content"))
+                            if extracted.get("content")
+                            else None
+                        ),
+                        "image_url": (
+                            str(metadata.get("ogImage"))
+                            if metadata.get("ogImage")
+                            else (
+                                str(extracted.get("image_url"))
+                                if extracted.get("image_url")
+                                else None
+                            )
+                        ),
+                        "author": (
+                            str(metadata.get("author"))
+                            if metadata.get("author")
+                            else (
+                                str(extracted.get("author"))
+                                if extracted.get("author")
+                                else None
+                            )
+                        ),
+                        "published_at": (
+                            str(extracted.get("published_at"))
+                            if extracted.get("published_at")
+                            else None
+                        ),
                     }
                 )
         except Exception as e:
@@ -241,26 +343,26 @@ class CrawlerService:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 try:
-                    page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
-                    await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
+                    page = await browser.new_page(
+                        user_agent=self._get_headers()["User-Agent"]
+                    )
+                    await page.goto(
+                        homepage_url, wait_until="networkidle", timeout=30000
+                    )
 
-                    found = await page.evaluate(
-                        """() => {
+                    found = await page.evaluate("""() => {
                         const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
                         return links
                             .filter(l => l.type && (l.type.includes('rss') || l.type.includes('atom') || l.type.includes('xml')))
                             .map(l => l.href);
-                    }"""
-                    )
+                    }""")
 
-                    found_links = await page.evaluate(
-                        """() => {
+                    found_links = await page.evaluate("""() => {
                         const anchors = Array.from(document.querySelectorAll('a'));
                         return anchors
                             .filter(a => a.href && (a.href.includes('/feed') || a.href.includes('rss.xml')))
                             .map(a => a.href);
-                    }"""
-                    )
+                    }""")
                 finally:
                     await browser.close()
 

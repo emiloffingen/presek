@@ -18,6 +18,7 @@ from utils import cached_response, set_cache
 
 log = logging.getLogger("presek.routes.system")
 
+
 def _counter_once(name: str, documentation: str, labelnames=()):
     try:
         return Counter(name, documentation, labelnames)
@@ -51,7 +52,9 @@ try:
     binary_redis_client.ping()
 except Exception as e:
     log.warning(f"Binary Redis client failed to connect to {_redis_url}: {e}")
-    binary_redis_client = _redis_lib.from_url("redis://localhost:6379/0", decode_responses=False)
+    binary_redis_client = _redis_lib.from_url(
+        "redis://localhost:6379/0", decode_responses=False
+    )
 from core.health import _probe_database, _probe_redis
 from core.version import version_payload
 from nlp.image_quality import classify_image_url as _image_quality
@@ -112,7 +115,9 @@ async def health(request: Request):
     redis_public.pop("config", None)
 
     payload = {
-        "status": "healthy" if db_status.get("ok") and redis_status.get("ok") else "degraded",
+        "status": (
+            "healthy" if db_status.get("ok") and redis_status.get("ok") else "degraded"
+        ),
         "version": version_payload()["version"],
         "version_label": version_payload()["version_label"],
         "uptime_seconds": int(time.time() - _STARTED_AT),
@@ -124,7 +129,9 @@ async def health(request: Request):
 
 
 @router.get("/system/media-quality")
-async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):
+async def media_quality_report(
+    limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"
+):
     """Report recent clusters with missing or weak representative imagery."""
     cache_key = f"system:media-quality:v1:{lang}:{limit}"
     cached = cached_response(cache_key, ttl=300)
@@ -165,12 +172,20 @@ async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optio
                     "quality": quality,
                     "reason": reason,
                     "article_count": int(row.get("article_count") or 0),
-                    "latest_at": row.get("latest_at").isoformat() if row.get("latest_at") else None,
+                    "latest_at": (
+                        row.get("latest_at").isoformat()
+                        if row.get("latest_at")
+                        else None
+                    ),
                 }
             )
 
     payload = {
-        "status": "ok" if counts.get("missing", 0) + counts.get("weak", 0) == 0 else "degraded",
+        "status": (
+            "ok"
+            if counts.get("missing", 0) + counts.get("weak", 0) == 0
+            else "degraded"
+        ),
         "lang": lang,
         "sample_size": len(rows or []),
         "counts": counts,
@@ -180,7 +195,6 @@ async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optio
     return payload
 
 
-
 @router.get("/sw.js")
 async def serve_sw():
     return FileResponse("sw.js", media_type="application/javascript")
@@ -188,7 +202,9 @@ async def serve_sw():
 
 @router.get("/manifest.json")
 async def serve_manifest():
-    return FileResponse(os.path.join("static", "manifest.json"), media_type="application/manifest+json")
+    return FileResponse(
+        os.path.join("static", "manifest.json"), media_type="application/manifest+json"
+    )
 
 
 @router.get("/robots.txt")
@@ -247,7 +263,11 @@ async def get_weather(lang: Optional[str] = "sr"):
         return res
     except Exception as e:
         log.debug(f"Failed to fetch weather for {city}: {e}")
-        return {"temp": None, "icon": "🌡️", "city": "Skopje" if lang == "mk" else "Beograd"}
+        return {
+            "temp": None,
+            "icon": "🌡️",
+            "city": "Skopje" if lang == "mk" else "Beograd",
+        }
 
 
 @router.get("/trending")
@@ -260,9 +280,10 @@ async def get_trending_route(lang: Optional[str] = "sr"):
 
     target_country = "MK" if lang == "mk" else "RS"
     words = get_trending(limit=20, country=target_country)
-    
+
     if lang == "mk":
         from core.language import transliterate_lat_to_cyr
+
         for w in words:
             if isinstance(w, dict) and "word" in w:
                 cw = transliterate_lat_to_cyr(w["word"])
@@ -382,7 +403,11 @@ async def get_navigation(lang: Optional[str] = "sr"):
         (target_country, target_country, target_country),
     )
 
-    cluster_ids = [c["cluster_id"] for c in recent_clusters if c.get("cluster_id") and c.get("title")]
+    cluster_ids = [
+        c["cluster_id"]
+        for c in recent_clusters
+        if c.get("cluster_id") and c.get("title")
+    ]
     articles_by_cluster: dict[str, list] = defaultdict(list)
     if cluster_ids:
         article_rows = await db.async_execute(
@@ -400,7 +425,8 @@ async def get_navigation(lang: Optional[str] = "sr"):
             created_at = c.get("created_at")
             breaking_items.append(
                 {
-                    "label": cleanAndDecode(c["title"])[:80] + ("..." if len(c["title"]) > 80 else ""),
+                    "label": cleanAndDecode(c["title"])[:80]
+                    + ("..." if len(c["title"]) > 80 else ""),
                     "href": f"/cluster/{c['cluster_id']}",
                     "type": "breaking",
                     "created_at": created_at.isoformat() if created_at else None,
@@ -552,7 +578,11 @@ async def get_navigation(lang: Optional[str] = "sr"):
             {"label": L["news"], "items": news_items, "type": "dynamic"},
             {"label": L["magazine"], "items": magazine_items, "type": "magazine"},
             {"label": L["fokus"], "items": entities[:5], "type": "trending"},
-            {"label": "Opservatorijum" if lang == "sr" else "Опсерваториум", "items": observatory_items, "type": "core"},
+            {
+                "label": "Opservatorijum" if lang == "sr" else "Опсерваториум",
+                "items": observatory_items,
+                "type": "core",
+            },
         ],
     }
     set_cache(cache_key, res, ttl=600)
@@ -600,18 +630,30 @@ async def get_cluster_share_card(cluster_id: str):
                     _STATIC_ROOT.resolve(),
                     (_APP_ROOT.parent.parent / "shared" / "static").resolve(),
                 ]
-                if any(_path_is_relative_to(local_path, root) for root in allowed_roots) and local_path.exists():
+                if (
+                    any(
+                        _path_is_relative_to(local_path, root) for root in allowed_roots
+                    )
+                    and local_path.exists()
+                ):
                     bg_img = Image.open(local_path)
 
             if not bg_img and bg_url and bg_url.startswith("http"):
                 safe_ips = _resolve_public_ips(bg_url)
                 import httpx
 
-                async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+                async with httpx.AsyncClient(
+                    timeout=3.0, follow_redirects=True
+                ) as client:
                     async with client.stream("GET", bg_url) as resp:
                         p_ip = _peer_ip(resp)
                         ctype = str(resp.headers.get("Content-Type", ""))
-                        if p_ip and p_ip in safe_ips and resp.status_code == 200 and _is_allowed_proxy_content_type(ctype):
+                        if (
+                            p_ip
+                            and p_ip in safe_ips
+                            and resp.status_code == 200
+                            and _is_allowed_proxy_content_type(ctype)
+                        ):
                             content = b""
                             async for chunk in resp.aiter_bytes(chunk_size=16384):
                                 content += chunk
@@ -632,7 +674,9 @@ async def get_cluster_share_card(cluster_id: str):
                 (int(bg_img.width * ratio), int(bg_img.height * ratio)),
                 Image.Resampling.LANCZOS,
             )
-            img.paste(bg_img, (int((1200 - bg_img.width) / 2), int((630 - bg_img.height) / 2)))
+            img.paste(
+                bg_img, (int((1200 - bg_img.width) / 2), int((630 - bg_img.height) / 2))
+            )
 
             # Add Dark Overlay
             overlay = Image.new("RGBA", (1200, 630), (0, 0, 0, 160))
@@ -671,8 +715,12 @@ async def get_cluster_share_card(cluster_id: str):
             y_text += 85
 
         # 8. Footer Info
-        draw.text((90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer)
-        draw.text((1110, 550), "presek.rs", fill=(255, 255, 255), font=f_footer, anchor="ra")
+        draw.text(
+            (90, 550), "SITE izvori NA EDNO MESTO", fill=(156, 163, 175), font=f_footer
+        )
+        draw.text(
+            (1110, 550), "presek.rs", fill=(255, 255, 255), font=f_footer, anchor="ra"
+        )
 
         out = BytesIO()
         img.save(out, format="PNG")
@@ -718,7 +766,9 @@ def _allowed_static_roots() -> list[Path]:
 
     home_dir = os.environ.get("HOME") or "/home/emiloffingen"
     try:
-        runtime_shared = (Path(home_dir) / "presek-runtime" / "shared" / "static").resolve()
+        runtime_shared = (
+            Path(home_dir) / "presek-runtime" / "shared" / "static"
+        ).resolve()
         if runtime_shared.exists():
             roots.append(runtime_shared)
     except Exception:
@@ -768,7 +818,9 @@ async def proxy_image(
             from nlp.generation import generate_local_placeholder
             from nlp.placeholder_brand import minimal_fallback_svg
 
-            svg = generate_local_placeholder(cid or "px", t or "vest", cat or "vesti", theme=theme, lang=lang or "sr")
+            svg = generate_local_placeholder(
+                cid or "px", t or "vest", cat or "vesti", theme=theme, lang=lang or "sr"
+            )
             log.warning(f"[proxy] Serving fallback for {url or 'unknown'}: {reason}")
 
             return Response(
@@ -796,7 +848,9 @@ async def proxy_image(
             try:
                 candidate = _resolve_safe_static_relative(relative)
                 if not candidate:
-                    log.warning(f"[proxy/static] Path traversal attempt or invalid root for {url}")
+                    log.warning(
+                        f"[proxy/static] Path traversal attempt or invalid root for {url}"
+                    )
                     return serve_fallback("security_block")
 
                 if not candidate.exists() or not candidate.is_file():
@@ -813,7 +867,9 @@ async def proxy_image(
             parsed_url = urllib.parse.urlparse(url)
             if not parsed_url.netloc:
                 return serve_fallback("invalid_domain")
-            if parsed_url.netloc.endswith((".localhost", "localhost", "127.0.0.1", "0.0.0.0")):
+            if parsed_url.netloc.endswith(
+                (".localhost", "localhost", "127.0.0.1", "0.0.0.0")
+            ):
                 return serve_fallback("security_localhost_block")
             if parsed_url.path.lower().endswith(".svg"):
                 return serve_fallback("remote_svg_block")
@@ -856,7 +912,9 @@ async def proxy_image(
                 (url,),
             )
             if local_img_row:
-                local_full = _resolve_safe_static_relative(local_img_row["local_image_path"])
+                local_full = _resolve_safe_static_relative(
+                    local_img_row["local_image_path"]
+                )
                 if local_full and local_full.exists() and local_full.is_file():
                     with open(local_full, "rb") as f:
                         img_data = f.read()
@@ -876,7 +934,9 @@ async def proxy_image(
             try:
                 import httpx
 
-                async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                async with httpx.AsyncClient(
+                    timeout=8.0, follow_redirects=True
+                ) as client:
                     async with client.stream("GET", url, headers=headers) as resp:
                         p_ip = _peer_ip(resp)
                         if not p_ip or p_ip not in safe_ips:
@@ -911,7 +971,9 @@ async def proxy_image(
 
             if img.width > target_w:
                 ratio = target_w / float(img.width)
-                img = img.resize((target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS)
+                img = img.resize(
+                    (target_w, int(float(img.height) * ratio)), Image.Resampling.LANCZOS
+                )
 
             out = BytesIO()
             quality = 30 if target_w <= 80 else 75

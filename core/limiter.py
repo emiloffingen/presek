@@ -24,6 +24,7 @@ try:
         ip = None
         try:
             from routes.common import _client_ip_for_request
+
             ip = _client_ip_for_request(request)
         except Exception:
             pass

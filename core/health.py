@@ -97,7 +97,9 @@ def _probe_redis():
     return result
 
 
-def _source_quality_payload(status: str, fetched: int, accepted: int, error: str | None = None):
+def _source_quality_payload(
+    status: str, fetched: int, accepted: int, error: str | None = None
+):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -128,7 +130,9 @@ def _source_quality_payload(status: str, fetched: int, accepted: int, error: str
     }
 
 
-def update_source_policy(source_name: str, status: str, fetched: int = 0, accepted: int = 0):
+def update_source_policy(
+    source_name: str, status: str, fetched: int = 0, accepted: int = 0
+):
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
@@ -156,7 +160,9 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
         state["consecutive_errors"] = 0
 
     low_accept = (
-        fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
+        fetched >= LOW_ACCEPTANCE_MIN_FETCHED
+        and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD
+        and status != "error"
     )
     if low_accept:
         state["low_accept_streak"] = int(state.get("low_accept_streak", 0)) + 1
@@ -278,10 +284,16 @@ def _freshness_payload(last_refresh_time: str | None):
 
     try:
         refresh_dt = datetime.fromisoformat(last_refresh_time.replace("Z", "+00:00"))
-        age_minutes = max(0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60))
+        age_minutes = max(
+            0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60)
+        )
     except Exception as e:
         log.debug(f"Failed to parse refresh time {last_refresh_time}: {e}")
-        return {"status": "stale", "age_minutes": None, "label": "Nepoznato osvezuvanje"}
+        return {
+            "status": "stale",
+            "age_minutes": None,
+            "label": "Nepoznato osvezuvanje",
+        }
 
     if age_minutes <= 15:
         return {
@@ -342,7 +354,9 @@ def get_synthesis_quality_snapshot():
         return {}
 
 
-def get_operational_status(db_ok: bool, redis_ok: bool, synthesis_quality: dict, celery_queue: dict):
+def get_operational_status(
+    db_ok: bool, redis_ok: bool, synthesis_quality: dict, celery_queue: dict
+):
     """Derive a coarse operational status for health checks and smoke tests."""
     if not db_ok or not redis_ok:
         return "degraded"

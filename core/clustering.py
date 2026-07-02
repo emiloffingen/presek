@@ -306,7 +306,9 @@ def _temporal_decay(created_at) -> float:
         return 1.0
     if isinstance(created_at, str):
         try:
-            created_at = datetime.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            created_at = datetime.datetime.fromisoformat(
+                created_at.replace("Z", "+00:00")
+            )
         except (ValueError, TypeError):
             return 1.0
 
@@ -389,17 +391,57 @@ _WEAK_ENTITY_TOKENS = frozenset(
 )
 
 
-def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lang: str = "sr") -> set[str]:
+def _entity_token_overlap(
+    left_entities: set[str], right_entities: set[str], lang: str = "sr"
+) -> set[str]:
     # Use lowercase stemmed tokens and apply synonyms to improve overlap detection
     # (e.g., "Vlada" and "Ministarstvo" -> "vlad")
     left_tokens = {
-        _apply_synonyms([stem(transliterate_cyr_to_lat(token.strip().lower().replace("ć", "c").replace("č", "c").replace("š", "s").replace("ž", "z").replace("đ", "dj")).replace("ch", "c").replace("sh", "s").replace("zh", "z").replace("dj", "d"), lang=lang)])[0]
+        _apply_synonyms(
+            [
+                stem(
+                    transliterate_cyr_to_lat(
+                        token.strip()
+                        .lower()
+                        .replace("ć", "c")
+                        .replace("č", "c")
+                        .replace("š", "s")
+                        .replace("ž", "z")
+                        .replace("đ", "dj")
+                    )
+                    .replace("ch", "c")
+                    .replace("sh", "s")
+                    .replace("zh", "z")
+                    .replace("dj", "d"),
+                    lang=lang,
+                )
+            ]
+        )[0]
         for entity in (left_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 3
     }
     right_tokens = {
-        _apply_synonyms([stem(transliterate_cyr_to_lat(token.strip().lower().replace("ć", "c").replace("č", "c").replace("š", "s").replace("ž", "z").replace("đ", "dj")).replace("ch", "c").replace("sh", "s").replace("zh", "z").replace("dj", "d"), lang=lang)])[0]
+        _apply_synonyms(
+            [
+                stem(
+                    transliterate_cyr_to_lat(
+                        token.strip()
+                        .lower()
+                        .replace("ć", "c")
+                        .replace("č", "c")
+                        .replace("š", "s")
+                        .replace("ž", "z")
+                        .replace("đ", "dj")
+                    )
+                    .replace("ch", "c")
+                    .replace("sh", "s")
+                    .replace("zh", "z")
+                    .replace("dj", "d"),
+                    lang=lang,
+                )
+            ]
+        )[0]
         for entity in (right_entities or set())
         for token in str(entity).split()
         if len(token.strip()) >= 3
@@ -408,12 +450,21 @@ def _entity_token_overlap(left_entities: set[str], right_entities: set[str], lan
     return res
 
 
-def _meaningful_entity_token_overlap(left_entities: set[str], right_entities: set[str], lang: str = "sr") -> set[str]:
-    return _entity_token_overlap(left_entities, right_entities, lang=lang) - _WEAK_ENTITY_TOKENS
+def _meaningful_entity_token_overlap(
+    left_entities: set[str], right_entities: set[str], lang: str = "sr"
+) -> set[str]:
+    return (
+        _entity_token_overlap(left_entities, right_entities, lang=lang)
+        - _WEAK_ENTITY_TOKENS
+    )
 
 
 def _meaningful_entity_tokens(tokens: set[str]) -> set[str]:
-    return {token for token in (tokens or set()) if str(token).strip().lower() not in _WEAK_ENTITY_TOKENS}
+    return {
+        token
+        for token in (tokens or set())
+        if str(token).strip().lower() not in _WEAK_ENTITY_TOKENS
+    }
 
 
 def _rep_age_hours(created_at) -> float:
@@ -476,14 +527,18 @@ def _topic_bridge_allowed(
         return (
             (shared_count >= 1 and phrase_overlap >= (0.16 if same_day else 0.22))
             or phrase_overlap >= (0.42 if recent_cycle else 0.50)
-            or lexical_overlap >= (0.50 if recent_cycle else (0.56 if same_day else 0.62))
+            or lexical_overlap
+            >= (0.50 if recent_cycle else (0.56 if same_day else 0.62))
         )
 
     return (
         (shared_count >= 2 and phrase_overlap >= (0.24 if same_day else 0.30))
         or (
             shared_count >= 1
-            and (phrase_overlap >= (0.34 if same_day else 0.42) or lexical_overlap >= (0.48 if same_day else 0.56))
+            and (
+                phrase_overlap >= (0.34 if same_day else 0.42)
+                or lexical_overlap >= (0.48 if same_day else 0.56)
+            )
         )
         or phrase_overlap >= (0.50 if recent_cycle else 0.56)
         or lexical_overlap >= (0.60 if recent_cycle else (0.66 if same_day else 0.72))
@@ -554,7 +609,9 @@ def find_cluster_semantic(
             cid = row["cluster_id"]
 
             # Temporal Tightening
-            age_hours = (datetime.datetime.now() - row["updated_at"]).total_seconds() / 3600.0
+            age_hours = (
+                datetime.datetime.now() - row["updated_at"]
+            ).total_seconds() / 3600.0
             if age_hours > 12:
                 threshold *= 0.85
             if age_hours > 24:
@@ -566,7 +623,9 @@ def find_cluster_semantic(
                     from core.database import db_manager
 
                     ents = db_manager.get_cluster_entities([cid]).get(cid, set())
-                    input_ents = _extract_title_entities(title or "", semantic=semantic_entities)
+                    input_ents = _extract_title_entities(
+                        title or "", semantic=semantic_entities
+                    )
                     overlap = _entity_token_overlap(ents, input_ents)
                     meaningful = overlap - _WEAK_ENTITY_TOKENS
                     if ents and input_ents and not meaningful:
@@ -676,12 +735,18 @@ def find_or_create_cluster(
         rep_topic = rep_0.get("topic", "vesti")
         incoming_topic = topic or "vesti"
         rep_category = rep_0.get("category")
-        freshest_rep_hours = min((_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0)
+        freshest_rep_hours = min(
+            (_rep_age_hours(rep.get("created_at")) for rep in reps), default=999.0
+        )
         shared_entities = (
-            potential_entities.intersection(rep_entities) if potential_entities and rep_entities else set()
+            potential_entities.intersection(rep_entities)
+            if potential_entities and rep_entities
+            else set()
         )
         if not shared_entities and potential_entities and rep_entities:
-            shared_entities = _entity_token_overlap(potential_entities, rep_entities, lang=lang)
+            shared_entities = _entity_token_overlap(
+                potential_entities, rep_entities, lang=lang
+            )
         meaningful_shared = _meaningful_entity_tokens(shared_entities)
         topic_bridge = _topic_bridge_allowed(
             incoming_topic,
@@ -689,11 +754,17 @@ def find_or_create_cluster(
             category,
             rep_category,
             max(
-                (_title_phrase_overlap(normalized_input, rep["title"], lang=lang) for rep in reps),
+                (
+                    _title_phrase_overlap(normalized_input, rep["title"], lang=lang)
+                    for rep in reps
+                ),
                 default=0.0,
             ),
             max(
-                (get_cosine(vec1, text_to_vector(rep["title"], lang=lang)) for rep in reps),
+                (
+                    get_cosine(vec1, text_to_vector(rep["title"], lang=lang))
+                    for rep in reps
+                ),
                 default=0.0,
             ),
             shared_entities,
@@ -719,7 +790,9 @@ def find_or_create_cluster(
         if source and source in cluster_sources.get(cid, set()):
             # Find time of earliest/latest article from same source in this cluster
             source_times = [
-                r["created_at"] for r in recent_articles if r.get("cluster_id") == cid and r.get("source") == source
+                r["created_at"]
+                for r in recent_articles
+                if r.get("cluster_id") == cid and r.get("source") == source
             ]
             if source_times:
                 # If the last article from this source was < 2 hours ago, penalize heavily
@@ -727,11 +800,15 @@ def find_or_create_cluster(
                 try:
                     last_src_time = max(source_times)
                     if isinstance(last_src_time, str):
-                        last_src_time = datetime.datetime.fromisoformat(last_src_time.replace("Z", "+00:00"))
+                        last_src_time = datetime.datetime.fromisoformat(
+                            last_src_time.replace("Z", "+00:00")
+                        )
 
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
                     if last_src_time.tzinfo is None:
-                        last_src_time = last_src_time.replace(tzinfo=datetime.timezone.utc)
+                        last_src_time = last_src_time.replace(
+                            tzinfo=datetime.timezone.utc
+                        )
 
                     if (now_utc - last_src_time).total_seconds() < 7200:  # 2 hours
                         source_penalty = 0.4  # Very high penalty for rapid repeats
@@ -758,17 +835,24 @@ def find_or_create_cluster(
 
             # Short title penalty: be stricter with very short headlines (under 30 chars)
             # as they are prone to false positives.
-            if len(normalized_input) < 30 or len(_normalize_cluster_title(rep_title)) < 30:
+            if (
+                len(normalized_input) < 30
+                or len(_normalize_cluster_title(rep_title)) < 30
+            ):
                 lexical_score *= 0.85
                 phrase_score *= 0.85
 
             # Same-source follow-ups should only merge when the titles still
             # look like the same story, or when they share concrete entities.
-            if same_source_cluster and input_fp != _get_fingerprint(rep_title, lang=lang):
+            if same_source_cluster and input_fp != _get_fingerprint(
+                rep_title, lang=lang
+            ):
                 if (
                     phrase_score < 0.26
                     and lexical_score < 0.58
-                    and not (len(meaningful_shared) >= 1 if meaningful_shared else False)
+                    and not (
+                        len(meaningful_shared) >= 1 if meaningful_shared else False
+                    )
                 ):
                     continue
 
@@ -830,7 +914,10 @@ def find_or_create_cluster(
             else:  # Older clusters
                 current_threshold = min(threshold, 0.48)
 
-        if current_best_rep_score > current_threshold and current_best_rep_score > best_score:
+        if (
+            current_best_rep_score > current_threshold
+            and current_best_rep_score > best_score
+        ):
             best_score = current_best_rep_score
             best_cid = cid
 
@@ -849,7 +936,9 @@ def find_or_create_cluster(
                     countdown=30,
                 )
             except Exception as e:
-                log.warning(f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}")
+                log.warning(
+                    f"[clustering] centroid refresh dispatch failed for {best_cid}: {e}"
+                )
         return best_cid
 
     return uuid.uuid4().hex[:12]

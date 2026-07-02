@@ -35,9 +35,7 @@ def analyze_query_patterns() -> Dict[str, List[str]]:
                         
                         # Find SQL queries
                         sql_matches = re.finditer(
-                            r'"""[^"]*SELECT[^"]*"""|'[^']*SELECT[^']*'|
-                            r"execute\([^)]*SELECT[^)]*\)|
-                            r"db_manager\.execute\([^)]*SELECT[^)]*\)",
+                            r'"""[^"]*SELECT[^"]*"""',
                             content,
                             re.IGNORECASE | re.DOTALL
                         )

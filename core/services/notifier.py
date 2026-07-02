@@ -61,7 +61,11 @@ class BreakingNewsNotifier:
                 "message": message,
                 "tags": ["newspaper", "rotating_light"],
                 "priority": 4,
-                "click": (f"https://presek.live/cluster/{cluster_id}" if cluster_id else "https://presek.live"),
+                "click": (
+                    f"https://presek.live/cluster/{cluster_id}"
+                    if cluster_id
+                    else "https://presek.live"
+                ),
             }
             with httpx.Client(timeout=5.0) as client:
                 resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
@@ -86,7 +90,11 @@ class BreakingNewsNotifier:
             "message": msg,
             "tags": ["soccer", "goal_net", "bell"],
             "priority": 5,  # Max priority for scores
-            "click": (f"https://presek.live/cluster/{cluster_id}" if cluster_id else "https://presek.live"),
+            "click": (
+                f"https://presek.live/cluster/{cluster_id}"
+                if cluster_id
+                else "https://presek.live"
+            ),
         }
         try:
             with httpx.Client(timeout=5.0) as client:

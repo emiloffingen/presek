@@ -85,7 +85,9 @@ class StoryDiscoveryEngine:
 
         if best_storyline and float(best_storyline["distance"]) < link_threshold:
             sid = best_storyline["id"]
-            log.info(f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity}, threshold: {link_threshold:.2f})")
+            log.info(
+                f"Linking cluster {cid} to existing storyline: {best_storyline['title']} (velocity: {velocity}, threshold: {link_threshold:.2f})"
+            )
 
             db.execute(
                 "INSERT INTO storyline_clusters_v2 (storyline_id, cluster_id, relevance_score) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
@@ -105,8 +107,7 @@ class StoryDiscoveryEngine:
             try:
                 cluster_lang = "mk"
                 art_rows = db.execute(
-                    "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1",
-                    (cid,)
+                    "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,)
                 )
                 if art_rows and art_rows[0].get("country") == "RS":
                     cluster_lang = "sr"
@@ -117,7 +118,7 @@ class StoryDiscoveryEngine:
                         meta = json.loads(meta)
                     except Exception:
                         meta = {}
-                
+
                 story_lang = meta.get("lang") or "mk"
                 if story_lang != cluster_lang:
                     meta["is_cross_lingual"] = True
@@ -128,7 +129,9 @@ class StoryDiscoveryEngine:
                         fetch=False,
                     )
             except Exception as e:
-                log.warning(f"Failed to update cross-lingual metadata for storyline {sid}: {e}")
+                log.warning(
+                    f"Failed to update cross-lingual metadata for storyline {sid}: {e}"
+                )
         else:
             # 3. Create a new storyline if it has sufficient momentum
             if cluster["source_count"] >= 3 or velocity >= 2:
@@ -166,8 +169,7 @@ class StoryDiscoveryEngine:
         lang = "mk"
         try:
             art_rows = db.execute(
-                "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1",
-                (cid,)
+                "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,)
             )
             if art_rows and art_rows[0].get("country") == "RS":
                 lang = "sr"
@@ -213,7 +215,12 @@ class StoryDiscoveryEngine:
             res = db.execute(
                 """INSERT INTO storylines_v2 (title, slug, last_activity, centroid, metadata)
                    VALUES (%s, %s, NOW(), %s, %s) RETURNING id""",
-                (story_title, slug, emb, json.dumps({"origin_cluster": cid, "lang": lang})),
+                (
+                    story_title,
+                    slug,
+                    emb,
+                    json.dumps({"origin_cluster": cid, "lang": lang}),
+                ),
             )
             if res:
                 sid = res[0]["id"]
@@ -237,7 +244,7 @@ class StoryDiscoveryEngine:
 
         for s in active_storylines:
             sid = s["id"]
-            
+
             # Determine language from metadata
             metadata = s.get("metadata") or {}
             if isinstance(metadata, str):
@@ -263,8 +270,10 @@ class StoryDiscoveryEngine:
             if not rows:
                 continue
 
-            combined_text = "\n".join([f"• {r['title']}: {r.get('summary','')}" for r in rows])
-            
+            combined_text = "\n".join(
+                [f"• {r['title']}: {r.get('summary','')}" for r in rows]
+            )
+
             if is_cross_lingual:
                 system_prompt = (
                     "Ti si glavni regionalni urednik za Balkan. Ova priča (storyline) se prati i u srpskim i u makedonskim medijima. "

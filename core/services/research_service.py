@@ -21,13 +21,16 @@ from nlp.local_analyst import ResearchQueryResponse
 
 log = logging.getLogger(__name__)
 
-RESEARCH_LATENCY = Histogram('presek_research_latency_seconds', 'Research generation latency', ['mode'])
+RESEARCH_LATENCY = Histogram(
+    "presek_research_latency_seconds", "Research generation latency", ["mode"]
+)
+
 
 class ResearchService:
     @staticmethod
     async def _get_semantic_cache(cluster_id, query_embedding, mode, lang):
         """Finds cached research by semantic similarity in Redis."""
-        # This is a simplified semantic cache: 
+        # This is a simplified semantic cache:
         # In a real impl we'd use Redis Search/Vector Indexing here.
         # For now, we store results indexed by query embedding in sorted sets/hashes.
         return None
@@ -81,7 +84,9 @@ class ResearchService:
             "Accept": "text/html,application/xhtml+xml",
         }
         try:
-            async with httpx.AsyncClient(timeout=6.0, follow_redirects=True, headers=headers) as client:
+            async with httpx.AsyncClient(
+                timeout=6.0, follow_redirects=True, headers=headers
+            ) as client:
                 response = await client.get(
                     "https://html.duckduckgo.com/html/",
                     params={"q": clean_query, "kl": region},
@@ -99,12 +104,26 @@ class ResearchService:
 
         results = []
         seen = set()
-        for result in doc.xpath("//*[contains(concat(' ', normalize-space(@class), ' '), ' result ')]"):
-            title_nodes = result.xpath(".//*[contains(concat(' ', normalize-space(@class), ' '), ' result__a ')]")
-            title = " ".join(title_nodes[0].xpath(".//text()")).strip() if title_nodes else ""
-            url = ResearchService._clean_search_url(title_nodes[0].get("href", "")) if title_nodes else ""
+        for result in doc.xpath(
+            "//*[contains(concat(' ', normalize-space(@class), ' '), ' result ')]"
+        ):
+            title_nodes = result.xpath(
+                ".//*[contains(concat(' ', normalize-space(@class), ' '), ' result__a ')]"
+            )
+            title = (
+                " ".join(title_nodes[0].xpath(".//text()")).strip()
+                if title_nodes
+                else ""
+            )
+            url = (
+                ResearchService._clean_search_url(title_nodes[0].get("href", ""))
+                if title_nodes
+                else ""
+            )
             snippet = " ".join(
-                result.xpath(".//*[contains(concat(' ', normalize-space(@class), ' '), ' result__snippet ')]//text()")
+                result.xpath(
+                    ".//*[contains(concat(' ', normalize-space(@class), ' '), ' result__snippet ')]//text()"
+                )
             ).strip()
             title = re.sub(r"\s+", " ", title)
             snippet = re.sub(r"\s+", " ", snippet)
@@ -121,33 +140,47 @@ class ResearchService:
     def _format_public_search_context(results):
         if not results:
             return ""
-        lines = ["JAVNI WEB SEARCH REZULTATI (naslovi i isečci, koristiti kao dodatne signale):"]
+        lines = [
+            "JAVNI WEB SEARCH REZULTATI (naslovi i isečci, koristiti kao dodatne signale):"
+        ]
         for idx, item in enumerate(results, 1):
             snippet = f" - {item['snippet']}" if item.get("snippet") else ""
             lines.append(f"[W{idx}] {item['title']}{snippet}\nURL: {item['url']}")
         return "\n".join(lines)
 
     @staticmethod
-    async def _get_google_grounded_research(research_query: str, context: str, mode: str, lang: str):
+    async def _get_google_grounded_research(
+        research_query: str, context: str, mode: str, lang: str
+    ):
         return None
 
     @staticmethod
-    async def get_cluster_research(cluster_id: str, mode: str, query: str, lang: str = "sr"):
+    async def get_cluster_research(
+        cluster_id: str, mode: str, query: str, lang: str = "sr"
+    ):
         start_time = time.time()
         clean_mode = (mode or "facts").strip().lower()
         if clean_mode not in {"facts", "perspectives", "context", "custom"}:
             clean_mode = "facts"
 
         effective_lang = lang if lang in RESEARCH_MODE_QUERIES else "sr"
-        research_query = query if clean_mode == "custom" else RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
+        research_query = (
+            query
+            if clean_mode == "custom"
+            else RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
+        )
 
         # 1. Check Semantic Cache
         query_embedding = await get_query_embedding_async(research_query)
-        cached = await ResearchService._get_semantic_cache(cluster_id, query_embedding, clean_mode, lang)
+        cached = await ResearchService._get_semantic_cache(
+            cluster_id, query_embedding, clean_mode, lang
+        )
         if cached:
             return cached
 
-        context, sources = await build_gemma_research_context(cluster_id, clean_mode, query)
+        context, sources = await build_gemma_research_context(
+            cluster_id, clean_mode, query
+        )
 
         google_response = await ResearchService._get_google_grounded_research(
             research_query,
@@ -156,25 +189,35 @@ class ResearchService:
             lang,
         )
         if google_response:
-            augmented = await ResearchService._augment_report_with_entities(google_response["answer"])
+            augmented = await ResearchService._augment_report_with_entities(
+                google_response["answer"]
+            )
             google_response["entities"] = augmented["entities"]
             if not google_response.get("sources"):
                 google_response["sources"] = sources
-            await ResearchService._set_semantic_cache(cluster_id, query_embedding, clean_mode, lang, google_response)
+            await ResearchService._set_semantic_cache(
+                cluster_id, query_embedding, clean_mode, lang, google_response
+            )
             RESEARCH_LATENCY.labels(mode=clean_mode).observe(time.time() - start_time)
             return google_response
 
-        search_query = ResearchService._derive_public_search_query(research_query, context, clean_mode)
+        search_query = ResearchService._derive_public_search_query(
+            research_query, context, clean_mode
+        )
         public_sources = await ResearchService._public_web_search(search_query, lang)
         public_context = ResearchService._format_public_search_context(public_sources)
         if public_context:
             context = f"{context}\n\n{public_context}"
 
         plan_lang = effective_lang if effective_lang in RESEARCH_MODE_PLAN else "sr"
-        plan_raw = RESEARCH_MODE_PLAN[plan_lang].get(clean_mode, RESEARCH_MODE_PLAN[plan_lang]["custom"])
+        plan_raw = RESEARCH_MODE_PLAN[plan_lang].get(
+            clean_mode, RESEARCH_MODE_PLAN[plan_lang]["custom"]
+        )
 
         # Final report generation (single LLM call)
-        research_system_prompt = RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
+        research_system_prompt = (
+            RESEARCH_SYSTEM_PROMPT_MK if lang == "mk" else RESEARCH_SYSTEM_PROMPT
+        )
         prompt = (
             f"Pitanje: {research_query}\nPlan: {plan_raw}\nContext: {context}"
             if lang == "sr"
@@ -202,13 +245,22 @@ class ResearchService:
             response = {"answer": response, "suggestions": []}
 
         if isinstance(response, dict) and "answer" in response:
-            augmented = await ResearchService._augment_report_with_entities(response["answer"])
+            augmented = await ResearchService._augment_report_with_entities(
+                response["answer"]
+            )
             response["entities"] = augmented["entities"]
-            response.setdefault("provider", f"public_web_search+{provider}" if public_sources else provider)
+            response.setdefault(
+                "provider",
+                f"public_web_search+{provider}" if public_sources else provider,
+            )
             response.setdefault("sources", public_sources or sources)
-            response.setdefault("search_queries", [search_query] if public_sources else [])
-            
+            response.setdefault(
+                "search_queries", [search_query] if public_sources else []
+            )
+
         if response:
-            await ResearchService._set_semantic_cache(cluster_id, query_embedding, clean_mode, lang, response)
-            
+            await ResearchService._set_semantic_cache(
+                cluster_id, query_embedding, clean_mode, lang, response
+            )
+
         return response

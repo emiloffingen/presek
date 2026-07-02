@@ -13,12 +13,22 @@ if not hasattr(fastapi, "responses"):
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
 
 from core.api_errors import normalize_http_exception_content, rate_limit_payload
-from core.limiter import RateLimitExceeded, _rate_limiter_enabled, exempt_from_rate_limit, limiter
+from core.limiter import (
+    RateLimitExceeded,
+    _rate_limiter_enabled,
+    exempt_from_rate_limit,
+    limiter,
+)
 from routes.security import generate_csrf_token, verify_csrf_token
 
 if _rate_limiter_enabled:
@@ -70,6 +80,7 @@ async def lifespan(app: FastAPI):
     # 1. Close Async Database Pools
     try:
         from core.database import async_db
+
         if async_db._pool:
             await async_db._pool.close()
             log.info("Async database connection pool closed successfully.")
@@ -84,6 +95,7 @@ async def lifespan(app: FastAPI):
     # 2. Close Sync Database Pools
     try:
         from core.database import db_manager
+
         if db_manager._pool:
             db_manager._pool.close()
             log.info("Sync database connection pool closed successfully.")
@@ -98,6 +110,7 @@ async def lifespan(app: FastAPI):
     # 3. Disconnect Redis Client
     try:
         from utils import redis_client
+
         if redis_client:
             redis_client.close()
             log.info("Redis cache client disconnected successfully.")
@@ -107,6 +120,7 @@ async def lifespan(app: FastAPI):
     # 4. Shutdown Embedding Thread Pool and Unload Local AI Model
     try:
         from core.embeddings import shutdown_embedding_executor
+
         shutdown_embedding_executor()
     except Exception as e:
         log.warning(f"Error shutting down embedding thread pool during shutdown: {e}")
@@ -126,8 +140,17 @@ from core.health import _probe_database, _probe_redis
 # Security: Restrict CORS to configured origins. In production, never use "*" with allow_credentials=True
 cors_origins = os.environ.get("CORS_ORIGINS", "")
 if cors_origins == "*" and os.environ.get("ENV") == "production":
-    cors_origins = ["https://presek.live", "https://www.presek.live", "https://presek.rs", "https://www.presek.rs", "https://presek.mk", "https://www.presek.mk"]
-    log.warning("CORS_ORIGINS was '*', defaulting to presek.live, presek.rs, and presek.mk for production security")
+    cors_origins = [
+        "https://presek.live",
+        "https://www.presek.live",
+        "https://presek.rs",
+        "https://www.presek.rs",
+        "https://presek.mk",
+        "https://www.presek.mk",
+    ]
+    log.warning(
+        "CORS_ORIGINS was '*', defaulting to presek.live, presek.rs, and presek.mk for production security"
+    )
 elif cors_origins == "*":
     # In development, still avoid wildcard - use explicit localhost origins
     cors_origins = [
@@ -138,7 +161,9 @@ elif cors_origins == "*":
         "http://localhost:3001",
         "http://127.0.0.1:3001",
     ]
-    log.warning("CORS_ORIGINS set to '*' in development - using explicit localhost origins instead")
+    log.warning(
+        "CORS_ORIGINS set to '*' in development - using explicit localhost origins instead"
+    )
 else:
     cors_origins = (
         cors_origins.split(",")
@@ -230,11 +255,17 @@ if _rate_limiter_enabled:
 
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
 _UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
-_GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
+_GENERATED_FILENAME_RE = re.compile(
+    r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE
+)
 _home_dir = os.environ.get("HOME") or "/home/emiloffingen"
-_STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static"))
+_STATIC_ROOT = os.environ.get(
+    "STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static")
+)
 if not os.path.exists(_STATIC_ROOT):
-    _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
+    _STATIC_ROOT = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "static")
+    )
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
@@ -251,27 +282,29 @@ else:
     )
 
 if "presek_celery_failed_tasks_count" in REGISTRY._names_to_collectors:
-    _FAILED_TASKS_COUNT = REGISTRY._names_to_collectors["presek_celery_failed_tasks_count"]
+    _FAILED_TASKS_COUNT = REGISTRY._names_to_collectors[
+        "presek_celery_failed_tasks_count"
+    ]
 else:
     _FAILED_TASKS_COUNT = Gauge(
         "presek_celery_failed_tasks_count",
-        "Number of failed celery tasks in the system"
+        "Number of failed celery tasks in the system",
     )
 
 if "presek_postgresql_database_size_mb" in REGISTRY._names_to_collectors:
-    _POSTGRESQL_DB_SIZE = REGISTRY._names_to_collectors["presek_postgresql_database_size_mb"]
+    _POSTGRESQL_DB_SIZE = REGISTRY._names_to_collectors[
+        "presek_postgresql_database_size_mb"
+    ]
 else:
     _POSTGRESQL_DB_SIZE = Gauge(
-        "presek_postgresql_database_size_mb",
-        "Database size in megabytes"
+        "presek_postgresql_database_size_mb", "Database size in megabytes"
     )
 
 if "presek_articles_total" in REGISTRY._names_to_collectors:
     _ARTICLES_TOTAL = REGISTRY._names_to_collectors["presek_articles_total"]
 else:
     _ARTICLES_TOTAL = Gauge(
-        "presek_articles_total",
-        "Total number of ingested articles"
+        "presek_articles_total", "Total number of ingested articles"
     )
 
 
@@ -280,7 +313,9 @@ def _audio_file_path(filename: str) -> str | None:
         return None
     candidate = os.path.abspath(os.path.join(_AUDIO_UPLOAD_DIR, filename))
     try:
-        if os.path.commonpath([candidate, os.path.abspath(_AUDIO_UPLOAD_DIR)]) != os.path.abspath(_AUDIO_UPLOAD_DIR):
+        if os.path.commonpath(
+            [candidate, os.path.abspath(_AUDIO_UPLOAD_DIR)]
+        ) != os.path.abspath(_AUDIO_UPLOAD_DIR):
             return None
     except ValueError:
         return None
@@ -359,16 +394,25 @@ async def serve_uploaded_audio(filename: str, request: Request):
     if range_header:
         match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
         if not match:
-            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+            return Response(
+                status_code=416,
+                headers={**headers, "Content-Range": f"bytes */{file_size}"},
+            )
 
         start_raw, end_raw = match.groups()
         if start_raw == "" and end_raw == "":
-            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+            return Response(
+                status_code=416,
+                headers={**headers, "Content-Range": f"bytes */{file_size}"},
+            )
 
         if start_raw == "":
             suffix_length = int(end_raw)
             if suffix_length <= 0:
-                return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+                return Response(
+                    status_code=416,
+                    headers={**headers, "Content-Range": f"bytes */{file_size}"},
+                )
             start = max(file_size - suffix_length, 0)
             end = file_size - 1
         else:
@@ -377,7 +421,10 @@ async def serve_uploaded_audio(filename: str, request: Request):
             end = min(end, file_size - 1)
 
         if start >= file_size or start > end:
-            return Response(status_code=416, headers={**headers, "Content-Range": f"bytes */{file_size}"})
+            return Response(
+                status_code=416,
+                headers={**headers, "Content-Range": f"bytes */{file_size}"},
+            )
 
         content_length = end - start + 1
         partial_headers = {
@@ -386,7 +433,9 @@ async def serve_uploaded_audio(filename: str, request: Request):
             "Content-Range": f"bytes {start}-{end}/{file_size}",
         }
         if request.method == "HEAD":
-            return Response(status_code=206, headers=partial_headers, media_type="audio/mpeg")
+            return Response(
+                status_code=206, headers=partial_headers, media_type="audio/mpeg"
+            )
         return StreamingResponse(
             _iter_file_range(path, start, end),
             status_code=206,
@@ -414,21 +463,34 @@ async def serve_uploaded_image(filename: str):
 
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name="static")
-
-
-
+app.mount(
+    "/static", StaticFiles(directory="static", follow_symlink=False), name="static"
+)
 
 
 # Import and include routers
-from routes import admin, home, intelligence, marketing, monitoring, news, profile, stats, system
+from routes import (
+    admin,
+    home,
+    intelligence,
+    marketing,
+    monitoring,
+    news,
+    profile,
+    stats,
+    system,
+)
 
 
-def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
+def _safe_rank_cluster_citations(
+    question: str, answer: str, articles, citation_numbers
+) -> list[dict]:
     try:
         return _rank_cluster_citations(question, answer, articles, citation_numbers)
     except Exception as e:
-        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
+        log.warning(
+            f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True
+        )
         return []
 
 
@@ -497,7 +559,9 @@ async def version_info():
 
 
 if "presek_db_pool_connections_num" in REGISTRY._names_to_collectors:
-    _DB_POOL_CONNECTIONS_NUM = REGISTRY._names_to_collectors["presek_db_pool_connections_num"]
+    _DB_POOL_CONNECTIONS_NUM = REGISTRY._names_to_collectors[
+        "presek_db_pool_connections_num"
+    ]
 else:
     _DB_POOL_CONNECTIONS_NUM = Gauge(
         "presek_db_pool_connections_num",
@@ -533,11 +597,19 @@ def update_db_pool_metrics():
             return
         try:
             stats = pool.get_stats()
-            _DB_POOL_CONNECTIONS_NUM.labels(pool_type=pool_type, role=role).set(stats.get("connections_num", 0))
-            _DB_POOL_AVAILABLE.labels(pool_type=pool_type, role=role).set(stats.get("pool_available", 0))
-            _DB_POOL_WAITING.labels(pool_type=pool_type, role=role).set(stats.get("requests_waiting", 0))
+            _DB_POOL_CONNECTIONS_NUM.labels(pool_type=pool_type, role=role).set(
+                stats.get("connections_num", 0)
+            )
+            _DB_POOL_AVAILABLE.labels(pool_type=pool_type, role=role).set(
+                stats.get("pool_available", 0)
+            )
+            _DB_POOL_WAITING.labels(pool_type=pool_type, role=role).set(
+                stats.get("requests_waiting", 0)
+            )
         except Exception as e:
-            log.warning(f"Failed to collect database pool stats for {pool_type} {role}: {e}")
+            log.warning(
+                f"Failed to collect database pool stats for {pool_type} {role}: {e}"
+            )
 
     collect_pool_stats(getattr(db_manager, "_pool", None), "sync", "primary")
     collect_pool_stats(getattr(db_manager, "_read_pool", None), "sync", "replica")
@@ -567,17 +639,24 @@ async def metrics(request: Request):
 
     try:
         from core.database import db_manager
+
         # 1. Fetch database size
         size_mb = db_manager.get_db_size()
         _POSTGRESQL_DB_SIZE.set(size_mb)
 
         # 2. Fetch failed tasks count
-        failed_tasks_count_row = db_manager.execute("SELECT COUNT(*) as count FROM failed_tasks")
-        failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
+        failed_tasks_count_row = db_manager.execute(
+            "SELECT COUNT(*) as count FROM failed_tasks"
+        )
+        failed_tasks_count = (
+            failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
+        )
         _FAILED_TASKS_COUNT.set(failed_tasks_count)
 
         # 3. Fetch total articles count
-        articles_total_row = db_manager.execute("SELECT COUNT(*) as count FROM articles")
+        articles_total_row = db_manager.execute(
+            "SELECT COUNT(*) as count FROM articles"
+        )
         articles_total = articles_total_row[0]["count"] if articles_total_row else 0
         _ARTICLES_TOTAL.set(articles_total)
     except Exception as exc:
@@ -599,7 +678,9 @@ async def image_proxy(
 ):
     from routes.system import proxy_image
 
-    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat, theme=theme, lang=lang)
+    return await proxy_image(
+        url=url, w=w, cid=cid, t=t, cat=cat, theme=theme, lang=lang
+    )
 
 
 # Legacy/Helper endpoints
@@ -639,7 +720,10 @@ async def track_delivery_event(
     token: str,
     redirect: str = "/briefing",
 ):
-    from core.signed_tokens import ALLOWED_DELIVERY_EVENT_TYPES, parse_delivery_track_token
+    from core.signed_tokens import (
+        ALLOWED_DELIVERY_EVENT_TYPES,
+        parse_delivery_track_token,
+    )
     from routes.common import _safe_tracking_redirect_path
 
     clean_type = str(event_type or "").strip().lower()
@@ -648,11 +732,15 @@ async def track_delivery_event(
 
     parsed = parse_delivery_track_token(token)
     if not parsed:
-        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
+        return JSONResponse(
+            status_code=400, content={"detail": "Invalid tracking token"}
+        )
 
     parsed_event_id, parsed_type, parsed_redirect = parsed
     if parsed_event_id != event_id or parsed_type != clean_type:
-        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
+        return JSONResponse(
+            status_code=400, content={"detail": "Invalid tracking token"}
+        )
 
     p = await db.async_execute_one(
         "SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s",
@@ -697,7 +785,9 @@ def trigger_reclustering(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
+        task = celery_app.send_task(
+            "tasks.intelligence.recluster_recent_articles_task", args=[hours, limit]
+        )
 
         return {
             "status": "success",
@@ -706,7 +796,9 @@ def trigger_reclustering(
         }
     except Exception as e:
         log.error(f"Failed to trigger reclustering: {e}")
-        raise HTTPException(status_code=503, detail="Failed to trigger reclustering") from e
+        raise HTTPException(
+            status_code=503, detail="Failed to trigger reclustering"
+        ) from e
 
 
 @app.post("/api/admin/trigger-storyline-discovery")
@@ -723,10 +815,16 @@ def trigger_storyline_discovery(
 
         task = celery_app.send_task("tasks.intelligence.discover_storylines_task")
 
-        return {"status": "success", "task_id": str(task.id), "message": "Triggered storyline discovery"}
+        return {
+            "status": "success",
+            "task_id": str(task.id),
+            "message": "Triggered storyline discovery",
+        }
     except Exception as e:
         log.error(f"Failed to trigger storyline discovery: {e}")
-        raise HTTPException(status_code=503, detail="Failed to trigger storyline discovery") from e
+        raise HTTPException(
+            status_code=503, detail="Failed to trigger storyline discovery"
+        ) from e
 
 
 @app.get("/api/admin/clustering-status")
@@ -751,7 +849,9 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
         )[0]["count"]
 
         # Check clusters in storylines
-        clusters_in_storylines = db.execute("SELECT COUNT(*) as count FROM storyline_clusters_v2")[0]["count"]
+        clusters_in_storylines = db.execute(
+            "SELECT COUNT(*) as count FROM storyline_clusters_v2"
+        )[0]["count"]
 
         return {
             "status": "success",
@@ -761,7 +861,9 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
                 "storylines_24h": storylines,
                 "clusters_in_storylines_total": clusters_in_storylines,
                 "clustering_rate": (
-                    round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
+                    round(clustered_articles / max(recent_articles, 1) * 100, 1)
+                    if recent_articles > 0
+                    else 0
                 ),
             },
             "health": {

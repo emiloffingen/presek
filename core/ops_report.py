@@ -11,8 +11,9 @@ from core.ops_snapshot import build_ops_snapshot
 async def build_weekly_ops_report() -> dict:
     ops = await build_ops_snapshot()
 
-    synthesis_rows = await db.async_execute(
-        """
+    synthesis_rows = (
+        await db.async_execute(
+            """
         SELECT COALESCE(NULLIF(generation_provider, ''), 'unknown') AS provider,
                COUNT(*) AS count
         FROM cluster_summaries
@@ -20,11 +21,14 @@ async def build_weekly_ops_report() -> dict:
         GROUP BY 1
         ORDER BY count DESC
         """,
-        read_only=True,
-    ) or []
+            read_only=True,
+        )
+        or []
+    )
 
-    tag_noise = await db.async_execute(
-        """
+    tag_noise = (
+        await db.async_execute(
+            """
         SELECT tag, COUNT(*) AS count
         FROM (
             SELECT unnest(tags) AS tag
@@ -36,11 +40,14 @@ async def build_weekly_ops_report() -> dict:
         ORDER BY count DESC
         LIMIT 8
         """,
-        read_only=True,
-    ) or []
+            read_only=True,
+        )
+        or []
+    )
 
-    source_gaps = await db.async_execute(
-        """
+    source_gaps = (
+        await db.async_execute(
+            """
         SELECT source, COUNT(*) AS articles_7d
         FROM articles
         WHERE created_at >= NOW() - INTERVAL '7 days'
@@ -49,14 +56,17 @@ async def build_weekly_ops_report() -> dict:
         ORDER BY articles_7d DESC
         LIMIT 10
         """,
-        read_only=True,
-    ) or []
+            read_only=True,
+        )
+        or []
+    )
 
     total_providers = sum(int(row.get("count") or 0) for row in synthesis_rows)
     fallback = sum(
         int(row.get("count") or 0)
         for row in synthesis_rows
-        if str(row.get("provider") or "").lower() in ("enhanced_fallback", "local", "unknown")
+        if str(row.get("provider") or "").lower()
+        in ("enhanced_fallback", "local", "unknown")
     )
 
     return {
@@ -64,14 +74,19 @@ async def build_weekly_ops_report() -> dict:
         "window_days": 7,
         "ops": ops,
         "synthesis": {
-            "providers_7d": {row["provider"]: int(row["count"]) for row in synthesis_rows},
+            "providers_7d": {
+                row["provider"]: int(row["count"]) for row in synthesis_rows
+            },
             "total_7d": total_providers,
-            "fallback_ratio_7d": round(fallback / total_providers, 4) if total_providers else 0.0,
+            "fallback_ratio_7d": (
+                round(fallback / total_providers, 4) if total_providers else 0.0
+            ),
         },
         "tag_noise_samples": [
             {"tag": row["tag"], "count": int(row["count"])} for row in tag_noise
         ],
         "single_hit_sources_7d": [
-            {"source": row["source"], "articles": int(row["articles_7d"])} for row in source_gaps
+            {"source": row["source"], "articles": int(row["articles_7d"])}
+            for row in source_gaps
         ],
     }

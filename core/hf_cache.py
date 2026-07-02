@@ -28,5 +28,7 @@ def configure_huggingface_cache() -> str:
 
     os.environ.setdefault("HF_HOME", cache_root)
     os.environ.setdefault("HF_HUB_CACHE", os.path.join(cache_root, "hub"))
-    os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", os.path.join(cache_root, "sentence_transformers"))
+    os.environ.setdefault(
+        "SENTENCE_TRANSFORMERS_HOME", os.path.join(cache_root, "sentence_transformers")
+    )
     return cache_root

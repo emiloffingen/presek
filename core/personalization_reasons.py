@@ -49,8 +49,12 @@ def build_personalization_reasons(
 ) -> dict:
     metadata = metadata or {}
     is_mk = lang == "mk"
-    followed_topics = {t.casefold(): t for t in _norm_list(profile.get("followedTopics") or [])}
-    followed_sources = {s.casefold(): s for s in _norm_list(profile.get("followedSources") or [])}
+    followed_topics = {
+        t.casefold(): t for t in _norm_list(profile.get("followedTopics") or [])
+    }
+    followed_sources = {
+        s.casefold(): s for s in _norm_list(profile.get("followedSources") or [])
+    }
 
     topic_counts: Counter[str] = Counter()
     source_counts: Counter[str] = Counter()
@@ -60,7 +64,9 @@ def build_personalization_reasons(
             continue
         for topic in _norm_list([recent.get("topic"), recent.get("category")]):
             topic_counts[topic.casefold()] += 1
-        for source in _norm_list([*(recent.get("sources") or []), recent.get("primarySource")]):
+        for source in _norm_list(
+            [*(recent.get("sources") or []), recent.get("primarySource")]
+        ):
             source_counts[source.casefold()] += 1
         for tag in _norm_list(recent.get("tags") or []):
             tag_counts[tag.casefold()] += 1
@@ -70,7 +76,9 @@ def build_personalization_reasons(
         + [a.get("category") for a in articles if a.get("category")]
     )
     cluster_sources = _norm_list([a.get("source") for a in articles if a.get("source")])
-    cluster_tags = _norm_list(metadata.get("tags") if isinstance(metadata.get("tags"), list) else [])
+    cluster_tags = _norm_list(
+        metadata.get("tags") if isinstance(metadata.get("tags"), list) else []
+    )
 
     reasons: list[tuple[float, str]] = []
 
@@ -78,19 +86,41 @@ def build_personalization_reasons(
         key = topic.casefold()
         if key in followed_topics:
             label = followed_topics[key]
-            reasons.append((3.2, f"Следена тема: {label}" if is_mk else f"Praćena tema: {label}"))
+            reasons.append(
+                (3.2, f"Следена тема: {label}" if is_mk else f"Praćena tema: {label}")
+            )
         elif topic_counts.get(key, 0) >= 2:
             count = topic_counts[key]
             if is_mk:
-                reasons.append((2.0, f"Често читате {topic}" if count >= 3 else f"Поврзано со {topic}"))
+                reasons.append(
+                    (
+                        2.0,
+                        (
+                            f"Често читате {topic}"
+                            if count >= 3
+                            else f"Поврзано со {topic}"
+                        ),
+                    )
+                )
             else:
-                reasons.append((2.0, f"Često čitate {topic}" if count >= 3 else f"Povezano sa {topic}"))
+                reasons.append(
+                    (
+                        2.0,
+                        (
+                            f"Često čitate {topic}"
+                            if count >= 3
+                            else f"Povezano sa {topic}"
+                        ),
+                    )
+                )
 
     for source in cluster_sources:
         key = source.casefold()
         if key in followed_sources:
             label = followed_sources[key]
-            reasons.append((2.9, f"Следен извор: {label}" if is_mk else f"Praćeni izvor: {label}"))
+            reasons.append(
+                (2.9, f"Следен извор: {label}" if is_mk else f"Praćeni izvor: {label}")
+            )
         elif source_counts.get(key, 0) >= 2:
             if is_mk:
                 reasons.append((1.6, f"{source} често се појавува во вашето читање"))
@@ -100,24 +130,30 @@ def build_personalization_reasons(
     for tag in cluster_tags:
         key = tag.casefold()
         if tag_counts.get(key, 0) >= 2:
-            reasons.append((1.4, f"Поврзано со {tag}" if is_mk else f"Povezano sa {tag}"))
+            reasons.append(
+                (1.4, f"Поврзано со {tag}" if is_mk else f"Povezano sa {tag}")
+            )
 
     if similarity is not None and similarity >= 0.55 and not reasons:
         reasons.append(
             (
                 1.1,
-                "Слично на приказните што неодамна ги читавте"
-                if is_mk
-                else "Slično pričama koje ste nedavno čitali",
+                (
+                    "Слично на приказните што неодамна ги читавте"
+                    if is_mk
+                    else "Slično pričama koje ste nedavno čitali"
+                ),
             )
         )
     elif similarity is not None and similarity >= 0.7:
         reasons.append(
             (
                 0.9,
-                "Семантички блиску до вашите интереси"
-                if is_mk
-                else "Semantički blizu vaših interesovanja",
+                (
+                    "Семантички блиску до вашите интереси"
+                    if is_mk
+                    else "Semantički blizu vaših interesovanja"
+                ),
             )
         )
 
@@ -135,12 +171,22 @@ def build_personalization_reasons(
         if source.casefold() in followed_sources
     ]
 
-    top = labels[0] if labels else ("Препорака според вашиот профил" if is_mk else "Preporuka prema vašem profilu")
+    top = (
+        labels[0]
+        if labels
+        else (
+            "Препорака според вашиот профил"
+            if is_mk
+            else "Preporuka prema vašem profilu"
+        )
+    )
 
     return {
         "reason": top,
         "match_reasons": labels,
         "matched_topics": matched_topics[:4],
         "matched_sources": matched_sources[:4],
-        "why_summary": _build_why_summary(matched_topics, matched_sources, labels, lang),
+        "why_summary": _build_why_summary(
+            matched_topics, matched_sources, labels, lang
+        ),
     }

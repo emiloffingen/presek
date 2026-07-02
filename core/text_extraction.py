@@ -34,7 +34,9 @@ def clean_extracted_article_text(text: str) -> str:
     )
 
     # "Oglas" or "Оглас"
-    text = re.sub(r"(?:(?<=\s)|^)(?:Oglas|Оглас)(?=\s|$)", " ", text, flags=re.IGNORECASE)
+    text = re.sub(
+        r"(?:(?<=\s)|^)(?:Oglas|Оглас)(?=\s|$)", " ", text, flags=re.IGNORECASE
+    )
 
     # "Pročitajte još" and other variations / categories in both alphabets
     read_more_pattern = r"(?:Pročitajte\s+još|Прочитајте\s+још|Pročitajte\s+više|Прочитајте\s+више|Procitajte\s+povece|Прочитајте\s+повеќе|Прочитајте\s+уште)"
@@ -71,7 +73,9 @@ def clean_extracted_article_text(text: str) -> str:
         text,
         flags=re.IGNORECASE | re.DOTALL,
     )
-    text = re.sub(rf"\b{follow_us_pattern}:?.*$", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        rf"\b{follow_us_pattern}:?.*$", "", text, flags=re.IGNORECASE | re.DOTALL
+    )
 
     # "Koje je tvoje mišljenje o ovoj temi?" and variations
     opinion_pattern = (
@@ -89,7 +93,9 @@ def clean_extracted_article_text(text: str) -> str:
         r"Ucestvuvaj\s+vo\s+diskusijata\s+ili\s+procitaj\s+(?:gi\s+)?komentarite|"
         r"Учествувај\s+во\s+дискусијата\s+или\s+прочитај\s+(?:ги\s+)?коментарите)"
     )
-    text = re.sub(rf"\b{discussion_pattern}.*$", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        rf"\b{discussion_pattern}.*$", "", text, flags=re.IGNORECASE | re.DOTALL
+    )
 
     # "Budite prvi koji će ostaviti komentar" and variations
     be_first_pattern = (
@@ -98,7 +104,9 @@ def clean_extracted_article_text(text: str) -> str:
         r"Bidete\s+prvi\s+(?:koi|sto)\s+ke\s+ostavat\s+komentar|"
         r"Бидете\s+први\s+(?:кои|што)\s+ќе\s+остават\s+коментар)"
     )
-    text = re.sub(rf"\b{be_first_pattern}.*$", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        rf"\b{be_first_pattern}.*$", "", text, flags=re.IGNORECASE | re.DOTALL
+    )
 
     # Tag blocks
     text = re.sub(

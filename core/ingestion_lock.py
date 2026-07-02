@@ -16,7 +16,9 @@ INGESTION_LOCK_TTL_SECONDS = 3600
 INGESTION_TASK_NAME = "tasks.ingestion_task.run_ingestion"
 STALE_INGESTION_LOCK_SECONDS = 1800
 
-_lock_owner: contextvars.ContextVar[str | None] = contextvars.ContextVar("ingestion_lock_owner", default=None)
+_lock_owner: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "ingestion_lock_owner", default=None
+)
 
 _RELEASE_SCRIPT = """
 if redis.call('get', KEYS[1]) == ARGV[1] then
@@ -52,11 +54,15 @@ def _ingestion_celery_task_active() -> bool | None:
                     return True
         return False
     except Exception as exc:
-        log.debug("[ingestion] Celery inspect failed while checking active ingestion: %s", exc)
+        log.debug(
+            "[ingestion] Celery inspect failed while checking active ingestion: %s", exc
+        )
         return None
 
 
-def break_stale_ingestion_lock(max_age_seconds: int = STALE_INGESTION_LOCK_SECONDS) -> bool:
+def break_stale_ingestion_lock(
+    max_age_seconds: int = STALE_INGESTION_LOCK_SECONDS,
+) -> bool:
     """Clear a Redis ingestion lock left behind by a dead worker."""
     try:
         raw = redis_client.get(INGESTION_LOCK_KEY)
@@ -97,7 +103,9 @@ def try_acquire_ingestion_lock() -> bool | None:
     owner = uuid.uuid4().hex
     value = _lock_value(owner)
     try:
-        acquired = redis_client.set(INGESTION_LOCK_KEY, value, nx=True, ex=INGESTION_LOCK_TTL_SECONDS)
+        acquired = redis_client.set(
+            INGESTION_LOCK_KEY, value, nx=True, ex=INGESTION_LOCK_TTL_SECONDS
+        )
         if acquired:
             _lock_owner.set(value)
             return True
@@ -123,7 +131,9 @@ def renew_ingestion_lock() -> bool:
             )
         )
         if not renewed:
-            log.warning("[ingestion] Lock renew failed: lock lost or owned by another worker")
+            log.warning(
+                "[ingestion] Lock renew failed: lock lost or owned by another worker"
+            )
         return renewed
     except Exception as exc:
         log.warning("[ingestion] Redis lock renew failed: %s", exc)
@@ -135,9 +145,13 @@ def release_ingestion_lock() -> None:
     if not owner:
         return
     try:
-        released = bool(redis_client.eval(_RELEASE_SCRIPT, 1, INGESTION_LOCK_KEY, owner))
+        released = bool(
+            redis_client.eval(_RELEASE_SCRIPT, 1, INGESTION_LOCK_KEY, owner)
+        )
         if not released:
-            log.warning("[ingestion] Lock release skipped: not owner or lock already expired")
+            log.warning(
+                "[ingestion] Lock release skipped: not owner or lock already expired"
+            )
     except Exception as exc:
         log.debug("[ingestion] Redis lock release failed: %s", exc)
     finally:

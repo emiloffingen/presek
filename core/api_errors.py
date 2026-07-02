@@ -30,7 +30,9 @@ def api_error_payload(
     return payload
 
 
-def soft_error(*, message: str = "", code: str | None = None, **extra: Any) -> dict[str, Any]:
+def soft_error(
+    *, message: str = "", code: str | None = None, **extra: Any
+) -> dict[str, Any]:
     """Graceful error body for HTTP 200 responses (partial page failure)."""
     return api_error_payload(message, code=code, **extra)
 
@@ -50,14 +52,20 @@ def api_error_response(
 
 
 def raise_api_error(status_code: int, message: str, *, code: str | None = None) -> None:
-    raise HTTPException(status_code=status_code, detail=message, headers={"X-Error-Code": code} if code else None)
+    raise HTTPException(
+        status_code=status_code,
+        detail=message,
+        headers={"X-Error-Code": code} if code else None,
+    )
 
 
 def normalize_http_exception_content(detail: Any) -> dict[str, Any]:
     if isinstance(detail, str):
         return api_error_payload(detail)
     if isinstance(detail, list):
-        return api_error_payload("Nevaliden baranie", detail=detail, code="validation_error")
+        return api_error_payload(
+            "Nevaliden baranie", detail=detail, code="validation_error"
+        )
     return api_error_payload(str(detail), detail=detail)
 
 

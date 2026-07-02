@@ -96,7 +96,9 @@ class TextFormatter(logging.Formatter):
         # Check for extra data
         extra_str = ""
         if hasattr(record, "extra_data") and record.extra_data:
-            extra_str = " | " + " ".join(f"{k}={v}" for k, v in record.extra_data.items())
+            extra_str = " | " + " ".join(
+                f"{k}={v}" for k, v in record.extra_data.items()
+            )
 
         return super().format(record) + extra_str
 
@@ -258,7 +260,9 @@ def log_request(
         logger.info("Request completed", extra=data)
 
 
-def log_error(logger: logging.Logger, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
+def log_error(
+    logger: logging.Logger, error: Exception, context: Optional[Dict[str, Any]] = None
+) -> None:
     """Log an error with context."""
     data = {
         "error_type": type(error).__name__,
@@ -286,7 +290,9 @@ def early_setup() -> None:
     handler.setLevel(log_level)
 
     # Use a simple formatter initially
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
     handler.setFormatter(formatter)
 
     # Configure root logger

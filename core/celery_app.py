@@ -10,7 +10,10 @@ from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
 from kombu import Queue
 
-from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS, HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT
+from core.config import (
+    HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
+    HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT,
+)
 from core.logging_config import get_logger
 
 log = get_logger("presek_celery")
@@ -113,7 +116,9 @@ celery_app.conf.update(
         "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance"},
         "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion-crawl"},
         "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion-crawl"},
-        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion-crawl"},
+        "tasks.ingestion_task.post_crawl_invalidation_task": {
+            "queue": "ingestion-crawl"
+        },
         "tasks.intelligence.synthesize_cluster_task": {"queue": "synthesis"},
         "tasks.intelligence.synthesize_urgent_task": {"queue": "fast-track"},
         "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
@@ -122,7 +127,9 @@ celery_app.conf.update(
         "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance"},
         "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "synthesis"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},
-        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track"},
+        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {
+            "queue": "fast-track"
+        },
         "tasks.delivery.email.*": {"queue": "delivery"},
         "tasks.delivery.briefing.*": {"queue": "delivery"},
         "tasks.delivery.*": {"queue": "delivery"},
@@ -208,7 +215,9 @@ celery_app.conf.update(
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
             "schedule": HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
             "kwargs": {"limit": HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT},
-            "options": {"expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)},
+            "options": {
+                "expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)
+            },
         },
         "boost-homepage-cluster-supply": {
             "task": "tasks.maintenance.boost_homepage_cluster_supply_task",

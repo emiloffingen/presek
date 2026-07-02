@@ -33,6 +33,8 @@ def _normalize_proxy_content_type(content_type: str) -> str:
 
 def _is_allowed_proxy_content_type(content_type: str) -> bool:
     return _normalize_proxy_content_type(content_type) in _PROXY_ALLOWED_TYPES
+
+
 SYNC_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{20,128}$")
 
 
@@ -54,10 +56,14 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
     token = str(value or "").strip()
     if not token:
         if required:
-            raise HTTPException(status_code=400, detail="Nedostasuva kluc za sinhronizacija")
+            raise HTTPException(
+                status_code=400, detail="Nedostasuva kluc za sinhronizacija"
+            )
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
-        raise HTTPException(status_code=400, detail="Nevaliden format na klucot za sinhronizacija")
+        raise HTTPException(
+            status_code=400, detail="Nevaliden format na klucot za sinhronizacija"
+        )
     return token
 
 
@@ -65,7 +71,7 @@ def _looks_cyrillic_headline(text: str) -> bool:
     value = str(text or "").strip()
     if not value:
         return False
-    cyrillic = sum(1 for ch in value if "\u0400" <= ch <= "\u04FF")
+    cyrillic = sum(1 for ch in value if "\u0400" <= ch <= "\u04ff")
     latin = sum(1 for ch in value if ("A" <= ch <= "Z") or ("a" <= ch <= "z"))
     if cyrillic < 8:
         return False
@@ -84,7 +90,9 @@ def _preferred_cluster_headline(rows) -> str:
         if not fallback:
             fallback = title
         original_title = cleanAndDecode(row.get("original_title") or "")
-        is_translated = bool(row.get("is_translated")) or (original_title and title != original_title)
+        is_translated = bool(row.get("is_translated")) or (
+            original_title and title != original_title
+        )
         if is_translated and _looks_cyrillic_headline(title):
             return title
         if preferred_cyrillic is None and _looks_cyrillic_headline(title):
@@ -125,13 +133,19 @@ def _is_trusted_proxy_ip(client_host: str) -> bool:
 
 def _client_ip_for_request(request: Request) -> str:
     """Extract the best-guess client IP address from known trusted proxies only."""
-    client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
+    client_host = _parse_ip_literal(
+        str(getattr(getattr(request, "client", None), "host", "") or "")
+    )
 
     if _is_trusted_proxy_ip(client_host):
         # Trust X-Real-IP or the first entry in X-Forwarded-For
-        real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
+        real_ip = _parse_ip_literal(
+            (request.headers.get("X-Real-IP") or "").split(",")[0].strip()
+        )
         if not real_ip:
-            real_ip = _parse_ip_literal((request.headers.get("X-Forwarded-For") or "").split(",")[0].strip())
+            real_ip = _parse_ip_literal(
+                (request.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+            )
         if real_ip:
             return real_ip
 
@@ -143,7 +157,7 @@ def _static_admin_token_authorized(request: Request) -> bool:
     # Try new admin token system first
     try:
         from core.admin_tokens import verify_admin_token, verify_legacy_admin_token
-        
+
         # Check X-Admin-Token header
         admin_token = (request.headers.get("X-Admin-Token") or "").strip()
         if admin_token:
@@ -151,7 +165,7 @@ def _static_admin_token_authorized(request: Request) -> bool:
                 return True
             if verify_legacy_admin_token(admin_token):
                 return True
-        
+
         # Check Authorization header
         auth = str(request.headers.get("Authorization") or "").strip()
         if auth.lower().startswith("bearer "):
@@ -162,7 +176,7 @@ def _static_admin_token_authorized(request: Request) -> bool:
                 return True
     except Exception as e:
         log.warning(f"Admin token verification failed: {e}")
-    
+
     return False
 
 
@@ -193,7 +207,9 @@ def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
 
 
 def _extract_sync_token(request: Request) -> str:
-    if not request or (hasattr(request, "__class__") and "Mock" in request.__class__.__name__):
+    if not request or (
+        hasattr(request, "__class__") and "Mock" in request.__class__.__name__
+    ):
         return ""
     try:
         token = str(request.headers.get("X-Sync-Token") or "").strip()
@@ -290,7 +306,9 @@ def _is_rate_limited_path(path: str) -> bool:
         return False
     if clean in _RATE_LIMITED_API_PATHS:
         return True
-    if re.fullmatch(r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean):
+    if re.fullmatch(
+        r"/api/intelligence/cluster/[a-f0-9]{6,64}/(research|analyst)", clean
+    ):
         return True
     if re.fullmatch(r"/api/research/[a-f0-9\-]{6,64}", clean):
         return True
@@ -305,7 +323,10 @@ def _rate_limit_error_payload() -> dict:
 
 
 async def build_intelligence_summary_payload(
-    last_24h: int, category: Optional[str] = None, runtime_events: Optional[dict] = None, lang: Optional[str] = "sr"
+    last_24h: int,
+    category: Optional[str] = None,
+    runtime_events: Optional[dict] = None,
+    lang: Optional[str] = "sr",
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     import asyncio
@@ -315,7 +336,10 @@ async def build_intelligence_summary_payload(
     country_filter = "MK" if lang == "mk" else "RS"
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
     cache_key = f"stats:intel_summary:{last_24h}:{cat_id}:v4"
-    use_redis = bool(os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"))
+    use_redis = bool(
+        os.environ.get("REDIS_URL")
+        and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED")
+    )
     cached = cached_response(cache_key, ttl=600) if use_redis else None
     if cached:
         return cached
@@ -343,14 +367,21 @@ async def build_intelligence_summary_payload(
     )
 
     total_articles_24h = counts_res.get("total", last_24h) if counts_res else 0
-    intl_articles_24h = counts_res.get("intl", counts_res.get("count", 0)) if counts_res else 0
+    intl_articles_24h = (
+        counts_res.get("intl", counts_res.get("count", 0)) if counts_res else 0
+    )
 
     if runtime_events is not None:
         ai_events = runtime_events or {}
     elif use_redis:
         bucket = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
         try:
-            ai_events = await asyncio.to_thread(redis_client.hgetall, f"presek:runtime_events:{bucket}") or {}
+            ai_events = (
+                await asyncio.to_thread(
+                    redis_client.hgetall, f"presek:runtime_events:{bucket}"
+                )
+                or {}
+            )
         except Exception as e:
             log.warning(f"[stats] runtime event read failed: {e}")
             ai_events = {}
@@ -405,13 +436,17 @@ async def build_intelligence_summary_payload(
     res = {
         "last_24h": total_articles_24h,
         "international_share_pct": (
-            round((intl_articles_24h / max(1, total_articles_24h) * 100), 1) if total_articles_24h > 0 else 0
+            round((intl_articles_24h / max(1, total_articles_24h) * 100), 1)
+            if total_articles_24h > 0
+            else 0
         ),
         "synthesis_transparency": {
             "systemic_summaries": systemic_summaries,
             "local_summaries": local_summaries,
             "systemic_ratio": (
-                round(systemic_summaries / (systemic_summaries + local_summaries) * 100, 1)
+                round(
+                    systemic_summaries / (systemic_summaries + local_summaries) * 100, 1
+                )
                 if (systemic_summaries + local_summaries) > 0
                 else 0
             ),
@@ -425,11 +460,15 @@ async def build_intelligence_summary_payload(
                 1,
             ),
             "high_consensus_pct": round(
-                balance_stats["high_consensus"] / max(1, balance_stats["total_clusters"]) * 100,
+                balance_stats["high_consensus"]
+                / max(1, balance_stats["total_clusters"])
+                * 100,
                 1,
             ),
             "diverse_sources_pct": round(
-                balance_stats["diverse_sources"] / max(1, balance_stats["total_clusters"]) * 100,
+                balance_stats["diverse_sources"]
+                / max(1, balance_stats["total_clusters"])
+                * 100,
                 1,
             ),
         },

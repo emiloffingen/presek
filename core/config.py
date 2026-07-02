@@ -52,13 +52,19 @@ def validate_required_env(required_keys=REQUIRED_RUNTIME_ENV_KEYS):
         # In production, this should be a hard failure
         if os.environ.get("ENV") == "production":
             missing_str = ", ".join(missing)
-            log.critical(f"PRODUCTION STARTUP FAILED: Missing required environment variables: {missing_str}")
+            log.critical(
+                f"PRODUCTION STARTUP FAILED: Missing required environment variables: {missing_str}"
+            )
             raise RuntimeError(f"Missing required environment variables: {missing_str}")
         else:
             # In development, log warnings but allow startup
             for key in missing:
-                log.warning(f"Missing environment variable (required for production): {key}")
-            log.warning(f"Running in development mode with missing config. For production, set: {', '.join(missing)}")
+                log.warning(
+                    f"Missing environment variable (required for production): {key}"
+                )
+            log.warning(
+                f"Running in development mode with missing config. For production, set: {', '.join(missing)}"
+            )
 
 
 def validate_recommended_env():
@@ -395,12 +401,20 @@ AUTO_SUMMARIZE_TOP_N = int(os.environ.get("AUTO_SUMMARIZE_TOP_N", "20"))
 AUTO_SUMMARIZE_MIN_SRC = int(os.environ.get("AUTO_SUMMARIZE_MIN_SRC", "2"))
 AUTO_SUMMARIZE_DELAY = float(os.environ.get("AUTO_SUMMARIZE_DELAY", "1.5"))
 AUTO_SUMMARIZE_FRESH_HOURS = int(os.environ.get("AUTO_SUMMARIZE_FRESH_HOURS", "6"))
-HOMEPAGE_SYNTHESIS_ONLY = os.environ.get("HOMEPAGE_SYNTHESIS_ONLY", "true").lower() in ("1", "true", "yes")
-HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT = int(os.environ.get("HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT", "24"))
+HOMEPAGE_SYNTHESIS_ONLY = os.environ.get("HOMEPAGE_SYNTHESIS_ONLY", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT = int(
+    os.environ.get("HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT", "24")
+)
 HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS = float(
     os.environ.get("HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS", "300")
 )
-HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM = int(os.environ.get("HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM", "60"))
+HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM = int(
+    os.environ.get("HOMEPAGE_SYNTHESIS_QUEUE_HEADROOM", "60")
+)
 
 # ── API limits ────────────────────────────────────────────────────
 API_MAX_PAGE = 1000  # Maximum page number for pagination
@@ -508,7 +522,6 @@ SOURCE_CATEGORIES = {
     "Republika": "Tabloidi",
     "Mondo": "glavni",
     "Novosti": "glavni",
-    
     # Macedonian sources
     "MKD.mk": "glavni",
     "Meta.mk": "Agencijski",
@@ -586,11 +599,17 @@ BALANCED_COVERAGE_THRESHOLD = 3  # clusters with 3+ diverse sources get a badge
 # ── Performance & Resource Management ───────────────────────────
 # Local model tasks can take significant RAM and can slow down the server.
 # Set to False to disable local translation/style normalization.
-LOCAL_TRANSLATION_ENABLED = os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").lower() == "true"
-ENABLE_EXPENSIVE_STYLE_TASKS = os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
+LOCAL_TRANSLATION_ENABLED = (
+    os.environ.get("LOCAL_TRANSLATION_ENABLED", "true").lower() == "true"
+)
+ENABLE_EXPENSIVE_STYLE_TASKS = (
+    os.environ.get("ENABLE_EXPENSIVE_STYLE_TASKS", "false").lower() == "true"
+)
 
 # GPU acceleration for embeddings
-ENABLE_GPU_ACCELERATION = os.environ.get("ENABLE_GPU_ACCELERATION", "false").lower() == "true"
+ENABLE_GPU_ACCELERATION = (
+    os.environ.get("ENABLE_GPU_ACCELERATION", "false").lower() == "true"
+)
 
 # Database read replica configuration
 DATABASE_READ_REPLICA_URL = os.environ.get("DATABASE_READ_REPLICA_URL", "")
@@ -600,7 +619,9 @@ USE_READ_REPLICA = bool(DATABASE_READ_REPLICA_URL)
 def resolve_primary_database_url() -> str:
     """Return the primary write DATABASE_URL, rejecting accidental replica overrides."""
     url = (os.environ.get("DATABASE_URL") or "postgresql://localhost/presek").strip()
-    replica_url = (DATABASE_READ_REPLICA_URL or os.environ.get("DATABASE_REPLICA_URL") or "").strip()
+    replica_url = (
+        DATABASE_READ_REPLICA_URL or os.environ.get("DATABASE_REPLICA_URL") or ""
+    ).strip()
     if replica_url and url == replica_url:
         log = __import__("logging").getLogger("presek.config")
         log.critical(
@@ -616,6 +637,7 @@ def resolve_primary_database_url() -> str:
             url,
         )
     return url
+
 
 # ── AI Routing Configuration ────────────────────────────────────
 PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini", "nvidia", "groq", "local"]

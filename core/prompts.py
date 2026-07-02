@@ -26,31 +26,31 @@ SYNTHESIS_SYSTEM_PROMPT = (
     '    "3-4 uredničke stavke, svaka 18-32 reči.",\n'
     '    "Svaka stavka mora imati poseban posao: glavni razvoj, značaj/posledica, konsenzus izvora ili otvoreno pitanje.",\n'
     '    "Ne ponavljaj naslov, ne koristi etikete poput Šta se desilo:, ne prepričavaj isti podatak drugim rečima."\n'
-    '  ],\n'
+    "  ],\n"
     '  "article": "Profesionalni urednički tekst u tačno 5 kratkih, logično povezanih pasusa. Svaki pasus mora striktno odgovarati jednom od 5 slotova propisane strukture ispod. Mora zvučati kao rad iskusnog urednika: precizno, autoritativno, kontekstualno i bez AI šablona.",\n'
     '  "key_facts": [\n'
     '    "Samo suvi, neosporni podaci: tačne brojke, imena, datumi, lokacije ili citirani zakoni",\n'
     '    "Bez ikakvog komentara ili ulepšavanja."\n'
-    '  ],\n'
+    "  ],\n"
     '  "perspectives": [\n'
-    '    {\n'
+    "    {\n"
     '      "angle": "Naziv uredničkog ugla (npr. Pro-vladin, Nezavisni istraživački, Opozicioni, Međunarodni, Senzacionalistički)",\n'
     '      "content": "Duboka analiza načina uokvirivanja vesti. Koji narativ ovaj ugao gura? Šta naglašava, šta namerno prećutkuje, a šta koristi kao spin? NE ponavljaj gole činjenice."\n'
-    '    }\n'
-    '  ],\n'
+    "    }\n"
+    "  ],\n"
     '  "verification_report": {\n'
     '    "agreements": ["Činjenice i podaci oko kojih se svi medijski izvori bezuslovno slažu."],\n'
     '    "conflicts": ["Direktne kontradikcije među izvorima: neslaganja u brojevima, optužbama, uzrocima ili hronologiji."],\n'
     '    "missing_info": ["Ključne informacije koje su svi ili većina medija izostavili, a koje su neophodne za potpuno razumevanje pozadine."]\n'
-    '  },\n'
+    "  },\n"
     '  "sentiment": {\n'
     '    "score": 0.0,\n'
     '    "tone": "neutralno/pozitivno/negativno"\n'
-    '  },\n'
+    "  },\n"
     '  "tone_analysis": {\n'
     '    "objectivity": 0.90,\n'
     '    "sensationalism": 0.10\n'
-    '  }\n'
+    "  }\n"
     "}\n\n"
     "STRUKTURA PASUSA ZA UREDNIČKI TEKST ('article') - TAČNO 5 PASUSA:\n"
     "- Pasus 1 (ŠTA SE DESILO): Počni konkretnom novom informacijom i njenim značenjem. Prva rečenica mora sadržati aktere i razvoj događaja; bez meta-uvoda poput 'Ovaj klaster', 'U vestima se navodi', 'Prema medijskim izveštajima'.\n"
@@ -191,31 +191,31 @@ SYNTHESIS_SYSTEM_PROMPT_MK = (
     '    "3-4 уреднички ставки, секоја 18-32 зборови.",\n'
     '    "Секоја ставка мора да има посебна работа: главен развој, значење/последица, консензус на извори или отворено прашање.",\n'
     '    "Не го повторувај насловот, не користи етикети како Што се случи:, не прераскажувај ист податок со други зборови."\n'
-    '  ],\n'
+    "  ],\n"
     '  "article": "Професионален уреднички текст во точно 5 кратки, логички поврзани пасуси. Секој пасус мора стриктно да одговара на еден од 5-те слотови на пропишаната структура подолу. Мора да звучи како текст од искусен уредник: прецизно, авторитативно, контекстуално и без AI шаблони.",\n'
     '  "key_facts": [\n'
     '    "Типични неоспорни податоци: бројки, имиња, датуми, локации или цитирани закони",\n'
     '    "Без дополнително улепшување."\n'
-    '  ],\n'
+    "  ],\n"
     '  "perspectives": [\n'
-    '    {\n'
+    "    {\n"
     '      "angle": "Име на уредничкиот агол (на пр. Про-владин, Независен истражувачки, Опозициски, Меѓународен, Сензационалистички)",\n'
     '      "content": "Длабока анализа на начинот на кој се врамуваат вестите. Каков наратив турка овој агол? Што нагласува, што намерно премолчува, а што користи како спин? НЕ ги повторуваат голите факти."\n'
-    '    }\n'
-    '  ],\n'
+    "    }\n"
+    "  ],\n"
     '  "verification_report": {\n'
     '    "agreements": ["Факти и податоци околу кои сите медиумски извори безусловно се согласуваат."],\n'
     '    "conflicts": ["Директни контрадикции меѓу изворите: несогласувања во бројките, обвинувањата, причините или хронологијата."],\n'
     '    "missing_info": ["Клучни информации кои сите или повеќето медиуми ги изоставиле, а кои се неопходни за целосно разбирање на позадината."]\n'
-    '  },\n'
+    "  },\n"
     '  "sentiment": {\n'
     '    "score": 0.0,\n'
     '    "tone": "неутрално/позитивно/негативно"\n'
-    '  },\n'
+    "  },\n"
     '  "tone_analysis": {\n'
     '    "objectivity": 0.90,\n'
     '    "sensationalism": 0.10\n'
-    '  }\n'
+    "  }\n"
     "}\n\n"
     "СТРУКТУРА НА ПАСУСИ ВО УРЕДНИЧКИОТ ТЕКСТ ('article') - ТОЧНО 5 ПАСУСИ:\n"
     "- Пасус 1 (ШТО СЕ СЛУЧИ): Почни со конкретната нова информација и нејзиното значење. Првата реченица мора да ги содржи актерите и развојот; без мета-вовед како 'Овој кластер', 'Во вестите се наведува' или 'Според медиумските извештаи'.\n"

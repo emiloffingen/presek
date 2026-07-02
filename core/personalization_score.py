@@ -41,7 +41,9 @@ def _is_strong_topic_signal(value: str) -> bool:
     return str(value or "").strip().casefold() not in _WEAK_TOPICS
 
 
-def _build_reader_signals(profile: dict) -> tuple[Counter[str], Counter[str], Counter[str]]:
+def _build_reader_signals(
+    profile: dict,
+) -> tuple[Counter[str], Counter[str], Counter[str]]:
     topic_counts: Counter[str] = Counter()
     source_counts: Counter[str] = Counter()
     tag_counts: Counter[str] = Counter()
@@ -51,7 +53,9 @@ def _build_reader_signals(profile: dict) -> tuple[Counter[str], Counter[str], Co
             continue
         for topic in _norm_list([recent.get("topic"), recent.get("category")]):
             topic_counts[topic.casefold()] += 1
-        for source in _norm_list([*(recent.get("sources") or []), recent.get("primarySource")]):
+        for source in _norm_list(
+            [*(recent.get("sources") or []), recent.get("primarySource")]
+        ):
             source_counts[source.casefold()] += 1
         for tag in _norm_list(recent.get("tags") or []):
             tag_counts[tag.casefold()] += 1
@@ -80,10 +84,16 @@ def score_cluster_for_profile(
         [a.get("topic") for a in articles if a.get("topic")]
         + [a.get("category") for a in articles if a.get("category")]
     )
-    cluster_tags = _norm_list(metadata.get("tags") if isinstance(metadata.get("tags"), list) else [])
+    cluster_tags = _norm_list(
+        metadata.get("tags") if isinstance(metadata.get("tags"), list) else []
+    )
 
-    followed_topics = {t.casefold(): t for t in _norm_list(profile.get("followedTopics") or [])}
-    followed_sources = {s.casefold(): s for s in _norm_list(profile.get("followedSources") or [])}
+    followed_topics = {
+        t.casefold(): t for t in _norm_list(profile.get("followedTopics") or [])
+    }
+    followed_sources = {
+        s.casefold(): s for s in _norm_list(profile.get("followedSources") or [])
+    }
     seen_cluster_ids = {
         str(item.get("cluster_id"))
         for item in (profile.get("recentClusters") or [])
@@ -127,9 +137,11 @@ def score_cluster_for_profile(
             reasons.append(
                 (
                     weight,
-                    f"{source} често се појавува во вашето читање"
-                    if is_mk
-                    else f"{source} često se pojavljuje u vašem čitanju",
+                    (
+                        f"{source} често се појавува во вашето читање"
+                        if is_mk
+                        else f"{source} često se pojavljuje u vašem čitanju"
+                    ),
                 )
             )
 

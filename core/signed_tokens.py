@@ -38,8 +38,12 @@ def _decode_signed(token: str) -> str | None:
         return None
     try:
         padding = "=" * (-len(token) % 4)
-        raw = base64.urlsafe_b64decode((token + padding).encode("ascii")).decode("utf-8")
-        canonical = base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii").rstrip("=")
+        raw = base64.urlsafe_b64decode((token + padding).encode("ascii")).decode(
+            "utf-8"
+        )
+        canonical = (
+            base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii").rstrip("=")
+        )
         if not hmac.compare_digest(token, canonical):
             return None
         payload, exp_str, sig = raw.rsplit(":", 2)
@@ -57,7 +61,9 @@ def _decode_signed(token: str) -> str | None:
 def build_newsletter_unsubscribe_token(email: str, locale: str) -> str:
     clean_email = email.strip().lower()
     clean_locale = "mk" if str(locale or "sr").strip().lower() == "mk" else "sr"
-    return _encode_signed(f"unsub|{clean_email}|{clean_locale}", NEWSLETTER_UNSUBSCRIBE_TTL)
+    return _encode_signed(
+        f"unsub|{clean_email}|{clean_locale}", NEWSLETTER_UNSUBSCRIBE_TTL
+    )
 
 
 def parse_newsletter_unsubscribe_token(token: str) -> tuple[str, str] | None:
@@ -83,7 +89,9 @@ def build_delivery_track_token(event_id: int, event_type: str, redirect: str) ->
     clean_redirect = str(redirect or "/briefing").strip()
     if not clean_redirect.startswith("/"):
         clean_redirect = "/briefing"
-    return _encode_signed(f"track|{int(event_id)}|{clean_type}|{clean_redirect}", DELIVERY_TRACK_TTL)
+    return _encode_signed(
+        f"track|{int(event_id)}|{clean_type}|{clean_redirect}", DELIVERY_TRACK_TTL
+    )
 
 
 def parse_delivery_track_token(token: str) -> tuple[int, str, str] | None:

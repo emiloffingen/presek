@@ -24,7 +24,12 @@ from nlp import normalize_focus_entity_surface, normalize_tag_name
 from utils import cached_response, score_cluster, set_cache
 
 from .common import _is_valid_focus_entity, cleanAndDecode
-from .security import validate_cluster_id, validate_list_param, validate_string_param, verify_csrf_token
+from .security import (
+    validate_cluster_id,
+    validate_list_param,
+    validate_string_param,
+    verify_csrf_token,
+)
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -53,9 +58,7 @@ class GlobalPulseResponse(BaseModel):
 
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
-_CASE_INSENSITIVE_TAG_EXISTS = (
-    "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
-)
+_CASE_INSENSITIVE_TAG_EXISTS = "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))"
 
 # Backward-compatible aliases for tests and patches
 _RESEARCH_MODE_QUERIES = RESEARCH_MODE_QUERIES
@@ -74,7 +77,9 @@ _FOCUS_ENTITY_GENERIC_SINGLE_WORDS = {
 
 def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     by_key = {
-        str(item.get("name") or "").casefold(): dict(item) for item in items if str(item.get("name") or "").strip()
+        str(item.get("name") or "").casefold(): dict(item)
+        for item in items
+        if str(item.get("name") or "").strip()
     }
 
     # Merge common fragmented geopolitics phrase into one canonical entity.
@@ -95,7 +100,8 @@ def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
     compact = []
     # Sort and take top N without further destructive processing
     for item in sorted(
-        by_key.values(), key=lambda entry: int(entry.get("total_mentions") or 0),
+        by_key.values(),
+        key=lambda entry: int(entry.get("total_mentions") or 0),
         reverse=True,
     ):
         compact.append(item)
@@ -113,53 +119,49 @@ async def get_pulse_overview():
         return cached
 
     # 1. Trending Entities (Last 48h)
-    trending = await db.async_execute(
-        """
+    trending = await db.async_execute("""
         SELECT name, total_mentions, sentiment_score, type
         FROM knowledge_entities
         WHERE last_seen >= NOW() - INTERVAL '48 hours'
         ORDER BY total_mentions DESC
         LIMIT 10
-    """
-    )
+    """)
 
     # 2. Sentiment Extremes
-    positives = await db.async_execute(
-        """
+    positives = await db.async_execute("""
         SELECT name, sentiment_score
         FROM knowledge_entities
         WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
         ORDER BY sentiment_score DESC
         LIMIT 5
-    """
-    )
+    """)
 
-    negatives = await db.async_execute(
-        """
+    negatives = await db.async_execute("""
         SELECT name, sentiment_score
         FROM knowledge_entities
         WHERE total_mentions >= 5 AND last_seen >= NOW() - INTERVAL '7 days'
         ORDER BY sentiment_score ASC
         LIMIT 5
-    """
-    )
+    """)
 
     # 3. Hot Relationships (Duos)
-    relationships = await db.async_execute(
-        """
+    relationships = await db.async_execute("""
         SELECT entity_a, entity_b, weight
         FROM knowledge_relationships
         WHERE last_seen >= NOW() - INTERVAL '48 hours'
         ORDER BY weight DESC
         LIMIT 6
-    """
-    )
+    """)
 
     result = {
         "trending": trending,
         "sentiment": {"positives": positives, "negatives": negatives},
         "relationships": relationships,
-        "updated_at": (await db.async_execute_one("SELECT MAX(last_seen) as last FROM knowledge_entities"))["last"],
+        "updated_at": (
+            await db.async_execute_one(
+                "SELECT MAX(last_seen) as last FROM knowledge_entities"
+            )
+        )["last"],
     }
 
     set_cache(cache_key, result, ttl=600)
@@ -185,7 +187,11 @@ async def get_cluster_storyline_history(cluster_id: str):
 
     vecs = []
     for r in rows:
-        vecs.append(json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"]))
+        vecs.append(
+            json.loads(r["embedding"])
+            if isinstance(r["embedding"], str)
+            else list(r["embedding"])
+        )
 
     if not vecs:
         return {"history": []}
@@ -221,13 +227,21 @@ async def get_cluster_storyline_history(cluster_id: str):
 
 @router.get("/intelligence/cluster/{cluster_id}/research")
 @custom_rate_limit("3/minute")
-async def get_deep_research(request: Request, cluster_id: str, mode: str = "facts", q: str = "", lang: str = "sr"):
+async def get_deep_research(
+    request: Request,
+    cluster_id: str,
+    mode: str = "facts",
+    q: str = "",
+    lang: str = "sr",
+):
     """
     Performs on-demand cluster research with the best available AI provider.
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
-    clean_query = validate_string_param(q, "q", max_length=1000, allow_empty=True).strip()
+    clean_query = validate_string_param(
+        q, "q", max_length=1000, allow_empty=True
+    ).strip()
     if clean_mode not in {"facts", "perspectives", "context", "custom"}:
         return {
             "status": "error",
@@ -237,7 +251,7 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
                 else "Nevalidan tip istraživanja."
             ),
         }
-    
+
     if clean_mode == "custom" and not clean_query:
         return {
             "status": "error",
@@ -250,8 +264,14 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
 
     # Caching check
     effective_lang = lang if lang in _RESEARCH_MODE_QUERIES else "sr"
-    query = clean_query if clean_mode == "custom" else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
-    query_hash = hashlib.sha1(query.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
+    query = (
+        clean_query
+        if clean_mode == "custom"
+        else _RESEARCH_MODE_QUERIES[effective_lang][clean_mode]
+    )
+    query_hash = hashlib.sha1(query.encode("utf-8"), usedforsecurity=False).hexdigest()[
+        :12
+    ]
     cache_key = f"api:intelligence:research:cascade:{cluster_id}:{clean_mode}:{query_hash}:{lang}:v3"
     cached = cached_response(cache_key)
     if cached:
@@ -259,7 +279,10 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
 
     # Delegate to service
     from core.services.research_service import ResearchService
-    response = await ResearchService.get_cluster_research(cluster_id, clean_mode, clean_query, lang)
+
+    response = await ResearchService.get_cluster_research(
+        cluster_id, clean_mode, clean_query, lang
+    )
 
     if not response:
         return {
@@ -293,27 +316,27 @@ async def get_deep_research(request: Request, cluster_id: str, mode: str = "fact
         return result
     except Exception as e:
         log.error(f"Deep research error: {e}", exc_info=True)
-        return {
-            "status": "error",
-            "message": "Greška pri pretraživanju."
-        }
-
-
+        return {"status": "error", "message": "Greška pri pretraživanju."}
 
 
 @router.get("/intelligence/cluster/{cluster_id}/analyst")
 @custom_rate_limit("5/minute")
-async def get_cluster_analyst_report(request: Request, cluster_id: str, mode: str = "facts", lang: str = "sr"):
+async def get_cluster_analyst_report(
+    request: Request, cluster_id: str, mode: str = "facts", lang: str = "sr"
+):
     """
     Internal 'Deep Intel' Analyst.
     Refactored to use ResearchService for unified research logic.
     """
     validate_cluster_id(cluster_id)
     clean_mode = (mode or "facts").strip().lower()
-    
+
     from core.services.research_service import ResearchService
-    response = await ResearchService.get_cluster_research(cluster_id, clean_mode, "", lang)
-    
+
+    response = await ResearchService.get_cluster_research(
+        cluster_id, clean_mode, "", lang
+    )
+
     if not response:
         return soft_error(message="Greška pri generisanju izveštaja.")
 
@@ -330,7 +353,12 @@ async def get_cluster_analyst_report(request: Request, cluster_id: str, mode: st
 
 @router.get("/intelligence/source-pulse")
 async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
-    from utils import cached_response, get_source_effective_weight, get_source_trust_label, set_cache
+    from utils import (
+        cached_response,
+        get_source_effective_weight,
+        get_source_trust_label,
+        set_cache,
+    )
 
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"
     cache_key = f"api:intelligence:source-pulse:{cat_id}:v4"
@@ -440,8 +468,13 @@ async def get_source_pulse(category: Optional[str] = None, lang: Optional[str] =
         r["trust_label"] = get_source_trust_label(r["source"], lang=lang)
         r["effective_weight"] = round(get_source_effective_weight(r["source"]), 2)
         # Calculate delta defensively
-        if r.get("avg_objectivity") is not None and r.get("baseline_objectivity") is not None:
-            r["objectivity_delta"] = round(r["avg_objectivity"] - r["baseline_objectivity"], 3)
+        if (
+            r.get("avg_objectivity") is not None
+            and r.get("baseline_objectivity") is not None
+        ):
+            r["objectivity_delta"] = round(
+                r["avg_objectivity"] - r["baseline_objectivity"], 3
+            )
         else:
             r["objectivity_delta"] = 0
 
@@ -512,7 +545,11 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
         ]
         sent = None
         try:
-            sent = json.loads(c["sentiment"]) if isinstance(c["sentiment"], str) else c["sentiment"]
+            sent = (
+                json.loads(c["sentiment"])
+                if isinstance(c["sentiment"], str)
+                else c["sentiment"]
+            )
         except Exception:
             sent = {"sentiment": {"score": 0, "tone": "neutralno"}}
         processed.append(
@@ -634,8 +671,14 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             tuple(ts_params),
         )
 
-    velocity, by_category, by_topic_sentiment, count_row, ingestion_rate = await asyncio.gather(
-        get_velocity(), get_by_category(), get_topic_sentiment(), get_last_24h_count(), get_ingestion_rate()
+    velocity, by_category, by_topic_sentiment, count_row, ingestion_rate = (
+        await asyncio.gather(
+            get_velocity(),
+            get_by_category(),
+            get_topic_sentiment(),
+            get_last_24h_count(),
+            get_ingestion_rate(),
+        )
     )
 
     velocity_total = sum(row["n"] for row in velocity)
@@ -644,7 +687,9 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
     # 3. Pluralism & AI Metrics (Aggregated)
     from .common import build_intelligence_summary_payload
 
-    intel = await build_intelligence_summary_payload(last_24h, category=category, lang=lang)
+    intel = await build_intelligence_summary_payload(
+        last_24h, category=category, lang=lang
+    )
 
     # 4. Top Trending Entities (with 48h fallback)
     async def fetch_top_entities(interval_str):
@@ -718,7 +763,8 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
             }
 
         processed = sorted(
-            aggregated.values(), key=lambda entry: int(entry.get("total_mentions") or 0),
+            aggregated.values(),
+            key=lambda entry: int(entry.get("total_mentions") or 0),
             reverse=True,
         )
         return processed[:8]
@@ -745,15 +791,12 @@ async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] =
 @router.get("/intelligence/network-graph")
 @custom_rate_limit("30/minute")
 async def get_network_graph(
-    request: Request,
-    entity: Optional[str] = None,
-    limit: int = 50,
-    min_weight: int = 2
+    request: Request, entity: Optional[str] = None, limit: int = 50, min_weight: int = 2
 ):
     """Fetches the nodes and edges for the interactive media network graph visualization."""
     limit = min(100, max(10, limit))
     min_weight = max(1, min_weight)
-    
+
     # Cache key based on params
     cache_key = f"presek:network_graph:entity:{entity or 'global'}:limit:{limit}:min:{min_weight}"
     cached = cached_response(cache_key)
@@ -767,7 +810,7 @@ async def get_network_graph(
     if entity:
         # Star-shaped sub-network around the centered entity
         entity_name_cleaned = entity.strip()
-        
+
         # Get matching relationships involving the target entity
         relationships = await db.async_execute(
             """
@@ -796,10 +839,10 @@ async def get_network_graph(
     for rel in relationships:
         seen_entities.add(rel["entity_a"])
         seen_entities.add(rel["entity_b"])
-        
+
         c_a_to_b = rel.get("count_a_to_b") or 0
         c_b_to_a = rel.get("count_b_to_a") or 0
-        
+
         # Determine dominant direction
         if c_b_to_a > c_a_to_b:
             edge_src = rel["entity_b"]
@@ -814,14 +857,16 @@ async def get_network_graph(
             edge_tgt = rel["entity_b"]
             direction = "mutual"
 
-        edges.append({
-            "source": edge_src,
-            "target": edge_tgt,
-            "weight": rel["weight"],
-            "a_to_b": c_a_to_b,
-            "b_to_a": c_b_to_a,
-            "direction": direction
-        })
+        edges.append(
+            {
+                "source": edge_src,
+                "target": edge_tgt,
+                "weight": rel["weight"],
+                "a_to_b": c_a_to_b,
+                "b_to_a": c_b_to_a,
+                "direction": direction,
+            }
+        )
 
     # Fetch entity details
     if seen_entities:
@@ -834,35 +879,35 @@ async def get_network_graph(
             """,
             (entity_list,),
         )
-        
+
         # Create look-up map
         entity_map = {e["name"]: e for e in entities_data}
-        
+
         for name in entity_list:
             data = entity_map.get(name)
             if data:
-                nodes.append({
-                    "id": name,
-                    "label": name,
-                    "type": data["type"] or "ENTITY",
-                    "mentions": data["total_mentions"] or 1,
-                    "sentiment": float(data["sentiment_score"] or 0.0)
-                })
+                nodes.append(
+                    {
+                        "id": name,
+                        "label": name,
+                        "type": data["type"] or "ENTITY",
+                        "mentions": data["total_mentions"] or 1,
+                        "sentiment": float(data["sentiment_score"] or 0.0),
+                    }
+                )
             else:
-                nodes.append({
-                    "id": name,
-                    "label": name,
-                    "type": "ENTITY",
-                    "mentions": 1,
-                    "sentiment": 0.0
-                })
-    
-    result = {
-        "status": "success",
-        "nodes": nodes,
-        "edges": edges
-    }
-    
+                nodes.append(
+                    {
+                        "id": name,
+                        "label": name,
+                        "type": "ENTITY",
+                        "mentions": 1,
+                        "sentiment": 0.0,
+                    }
+                )
+
+    result = {"status": "success", "nodes": nodes, "edges": edges}
+
     return result
 
 
@@ -898,15 +943,15 @@ async def synthesize_nodes(
         """,
         (entities,),
     )
-    
+
     cluster_ids = [r["cluster_id"] for r in rows]
     if not cluster_ids:
-        msg = "Nema nedavnih zabeleženih interakcija u vestima za izabrane entitete u poslednjih 14 dana." if lang == "sr" else "Нема неодамнешни забележани интеракции во вестите за избраните ентитети во последните 14 дена."
-        return {
-            "status": "success",
-            "synthesis": msg,
-            "citations": []
-        }
+        msg = (
+            "Nema nedavnih zabeleženih interakcija u vestima za izabrane entitete u poslednjih 14 dana."
+            if lang == "sr"
+            else "Нема неодамнешни забележани интеракции во вестите за избраните ентитети во последните 14 дена."
+        )
+        return {"status": "success", "synthesis": msg, "citations": []}
 
     # Fetch top articles from these clusters
     articles = await db.async_execute(
@@ -921,12 +966,12 @@ async def synthesize_nodes(
     )
 
     if not articles:
-        msg = "Nema nedavnih članaka za ove entitete." if lang == "sr" else "Нема неодамнешни написи за овие ентитети."
-        return {
-            "status": "success",
-            "synthesis": msg,
-            "citations": []
-        }
+        msg = (
+            "Nema nedavnih članaka za ove entitete."
+            if lang == "sr"
+            else "Нема неодамнешни написи за овие ентитети."
+        )
+        return {"status": "success", "synthesis": msg, "citations": []}
 
     # Format context for Gemma 4 E2B Local Analyst
     context_lines = []
@@ -936,50 +981,57 @@ async def synthesize_nodes(
         title = art["title"] or ""
         desc = art["description"] or ""
         src = art["source"] or ""
-        context_lines.append(f"[{cite_id}] NASLOV: {title} | IZVOR: {src}\nOPIS: {desc}\n")
-        citations.append({
-            "id": cite_id,
-            "title": title,
-            "source": src,
-            "link": art["link"] or "#"
-        })
+        context_lines.append(
+            f"[{cite_id}] NASLOV: {title} | IZVOR: {src}\nOPIS: {desc}\n"
+        )
+        citations.append(
+            {"id": cite_id, "title": title, "source": src, "link": art["link"] or "#"}
+        )
 
     context_text = "\n".join(context_lines)
 
     # Construct LLM prompt
     from nlp.local_analyst import analyst
-    
+
     if lang == "sr":
         system_prompt = (
             "Ti si vrhunski politički analitičar za Presek. Napravi sažetu, objektivnu, visoko-profesionalnu sintezu "
-            "interakcija, sukoba ili saveza između sledećih entiteta: " + ", ".join(entities) + ".\n"
+            "interakcija, sukoba ili saveza između sledećih entiteta: "
+            + ", ".join(entities)
+            + ".\n"
             "Koristi isključivo priloženi novinski kontekst. Citiraj izvore koristeći brojeve u formatu [1], [2], itd.\n"
             "Odgovori ISKLJUČIVO na srpskom jeziku (ekavica). Piši u stilu ozbiljne analize (New York Times stil)."
         )
     else:
         system_prompt = (
             "Ти си врвен политички аналитичар за Пресек. Направи концизна, објективна, високо-професионална синтеза "
-            "на интеракциите, конфликтите или сојузите меѓу следниве ентитети: " + ", ".join(entities) + ".\n"
+            "на интеракциите, конфликтите или сојузите меѓу следниве ентитети: "
+            + ", ".join(entities)
+            + ".\n"
             "Користи го исклучиво приложениот контекст од вести. Цитирај ги изворите користејќи броеви во формат [1], [2], итн.\n"
             "Одговори ИСКЛУЧИВО на стандарден литературен македонски јазик. Пиши во стил на сериозна анализа."
         )
 
-    prompt = f"ENTITETI: {', '.join(entities)}\n\nKONTEKST VESTI:\n{context_text[:6000]}"
+    prompt = (
+        f"ENTITETI: {', '.join(entities)}\n\nKONTEKST VESTI:\n{context_text[:6000]}"
+    )
 
     try:
-        synthesis_text = analyst.analyze(prompt, system_prompt, max_tokens=768, lang=lang, lock_timeout=15)
+        synthesis_text = analyst.analyze(
+            prompt, system_prompt, max_tokens=768, lang=lang, lock_timeout=15
+        )
     except Exception as e:
         log.error(f"[analyst] Group synthesis failed: {e}")
         synthesis_text = f"Greška prilikom analize lokalnog modela: {e}"
 
     if not synthesis_text:
-        synthesis_text = "Nije bilo moguće generisati analizu." if lang == "sr" else "Не беше можно да се генерира анализа."
+        synthesis_text = (
+            "Nije bilo moguće generisati analizu."
+            if lang == "sr"
+            else "Не беше можно да се генерира анализа."
+        )
 
-    return {
-        "status": "success",
-        "synthesis": synthesis_text,
-        "citations": citations
-    }
+    return {"status": "success", "synthesis": synthesis_text, "citations": citations}
 
 
 @router.get("/entity-graph/{entity_name}")
@@ -1021,7 +1073,9 @@ async def cluster_research(request: Request, cluster_id: str, q: str):
     from nlp.local_analyst import analyst
 
     validate_cluster_id(cluster_id)
-    clean_query = validate_string_param(q, "q", max_length=1000, allow_empty=False).strip()
+    clean_query = validate_string_param(
+        q, "q", max_length=1000, allow_empty=False
+    ).strip()
 
     # Get cluster context
     row = await db.async_execute_one(
@@ -1168,7 +1222,11 @@ async def get_personalized_recommendations(
         return {"status": "success", "clusters": []}
     user_vectors = []
 
-    if interest_vector and isinstance(interest_vector, list) and len(interest_vector) == 384:
+    if (
+        interest_vector
+        and isinstance(interest_vector, list)
+        and len(interest_vector) == 384
+    ):
         user_vectors.append(interest_vector)
 
     if recent_ids:
@@ -1179,7 +1237,9 @@ async def get_personalized_recommendations(
         for r in rows:
             if r["embedding"]:
                 user_vectors.append(
-                    json.loads(r["embedding"]) if isinstance(r["embedding"], str) else list(r["embedding"])
+                    json.loads(r["embedding"])
+                    if isinstance(r["embedding"], str)
+                    else list(r["embedding"])
                 )
     for t in followed:
         vec = generate_query_embedding(t)
@@ -1214,7 +1274,9 @@ async def get_personalized_recommendations(
         arts = cmap.get(cid, [])
         if not arts:
             continue
-        s_row = await db.async_execute_one("SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,))
+        s_row = await db.async_execute_one(
+            "SELECT summary FROM cluster_summaries WHERE cluster_id = %s", (cid,)
+        )
         m_row = await db.async_execute_one(
             "SELECT representative_image FROM cluster_metadata WHERE cluster_id = %s",
             (cid,),
@@ -1223,7 +1285,9 @@ async def get_personalized_recommendations(
             {
                 "cluster_id": cid,
                 "articles": arts,
-                "representative_image": (m_row["representative_image"] if m_row else None),
+                "representative_image": (
+                    m_row["representative_image"] if m_row else None
+                ),
                 "score": score_cluster(arts),
                 "has_synthesis": bool(s_row and s_row["summary"]),
                 "is_breaking": any(a.get("is_breaking") for a in arts),
@@ -1240,14 +1304,21 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         from .security import validate_date
 
         validate_date(date)
-        row = await db.async_execute_one("SELECT * FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang))
+        row = await db.async_execute_one(
+            "SELECT * FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang)
+        )
     else:
         row = await db.async_execute_one(
-            "SELECT * FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1", (lang,)
+            "SELECT * FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1",
+            (lang,),
         )
 
     if not row:
-        return soft_error(message="Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen")
+        return soft_error(
+            message=(
+                "Брифингот не е пронајден" if lang == "mk" else "Brifing nije pronađen"
+            )
+        )
 
     target_date = row["date"]
     target_country = "MK" if lang == "mk" else "RS"
@@ -1271,16 +1342,18 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         """,
             (target_country, target_date, target_date, entity_type),
         )
-        
+
         processed = []
         seen = set()
         for r in rows:
-            name = normalize_person_surface_name(normalize_tag_name(normalize_entity_name(r["name"])))
+            name = normalize_person_surface_name(
+                normalize_tag_name(normalize_entity_name(r["name"]))
+            )
             if not _is_valid_focus_entity(name, entity_type):
                 continue
             if lang == "mk":
                 name = transliterate_lat_to_cyr(name)
-            
+
             key = name.casefold()
             if key in seen:
                 continue
@@ -1349,6 +1422,7 @@ async def get_latest_briefing(date: Optional[str] = None, lang: str = "sr"):
         "day_stats": stats_res,
     }
 
+
 from routes.security import admin_auth
 
 
@@ -1363,31 +1437,37 @@ async def save_insight(
     cluster_id = data.get("cluster_id")
     title = data.get("title")
     report = data.get("report")
-    
+
     from core.database import db_manager as db
-    
+
     # Use asynchronous execution to prevent blocking the worker thread
     await db.async_execute(
         "INSERT INTO saved_insights (user_id, cluster_id, title, report) VALUES (%s, %s, %s, %s)",
         (authorized, cluster_id, title, report),
-        fetch=False
+        fetch=False,
     )
-    
+
     return {"status": "success", "message": "Insight saved successfully."}
+
 
 @router.get("/intelligence/briefing/audio")
 @custom_rate_limit("2/minute")
-async def get_briefing_audio(request: Request, date: Optional[str] = None, lang: str = "sr"):
+async def get_briefing_audio(
+    request: Request, date: Optional[str] = None, lang: str = "sr"
+):
     """Generates or fetches the daily briefing TTS audio and returns its public URL."""
     if date:
         from .security import validate_date
+
         validate_date(date)
         row = await db.async_execute_one(
-            "SELECT content, date FROM daily_briefings WHERE date = %s AND lang = %s", (date, lang)
+            "SELECT content, date FROM daily_briefings WHERE date = %s AND lang = %s",
+            (date, lang),
         )
     else:
         row = await db.async_execute_one(
-            "SELECT content, date FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1", (lang,)
+            "SELECT content, date FROM daily_briefings WHERE lang = %s ORDER BY date DESC LIMIT 1",
+            (lang,),
         )
 
     if not row or not row.get("content"):
@@ -1397,6 +1477,7 @@ async def get_briefing_audio(request: Request, date: Optional[str] = None, lang:
     content = str(row["content"])
 
     from core.audio_service import AudioService
+
     loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(
         None, AudioService.generate_briefing_audio, target_date, content, lang

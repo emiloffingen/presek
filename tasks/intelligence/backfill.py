@@ -19,10 +19,12 @@ from tasks.intelligence._queue import (
     intelligence_secondary_deferred,
 )
 from tasks.intelligence.synthesis import (
-    _build_cluster_synthesis_prompt,
     _build_source_comparison_prompt_block,
     _fetch_synthesis_history_context,
     _generate_synthesis_via_cascade,
+)
+from tasks.intelligence.synthesis_prompt import (
+    _build_cluster_synthesis_prompt,
 )
 from tasks.utils import (
     acquire_task_lock,

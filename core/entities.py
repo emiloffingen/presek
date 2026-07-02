@@ -40,7 +40,9 @@ def _get_spacy():
             _spacy_unavailable = True
             return None
         try:
-            _spacy_nlp = spacy.load("xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"])
+            _spacy_nlp = spacy.load(
+                "xx_ent_wiki_sm", disable=["tagger", "parser", "lemmatizer"]
+            )
             log.info("[entities] spaCy xx_ent_wiki_sm NER loaded")
         except Exception as e:
             log.warning(
@@ -319,7 +321,9 @@ IGNORE_WORDS = {
 # Uses a negative lookahead to avoid matching common trailing noise words
 _trailing_ignore = "|".join(IGNORE_WORDS)
 PROPER_NOUN_PATTERN = re.compile(
-    r"(?:\b[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b(?:[\s-]+\b(?!" + _trailing_ignore + r")[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b){0,3})"
+    r"(?:\b[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b(?:[\s-]+\b(?!"
+    + _trailing_ignore
+    + r")[A-Za-z\u0400-\u04FF][A-Za-z0-9\u0400-\u04FF]+\b){0,3})"
 )
 
 
@@ -407,9 +411,16 @@ for _surname, _people in _surname_to_person.items():
 
 ENTITY_ALIASES.update(_unique_person_surnames)
 
-_ENTITY_ALIASES_CASEFOLDED = {str(alias).strip().casefold(): canonical for alias, canonical in ENTITY_ALIASES.items()}
-_KNOWN_ENTITIES_ORDERED = sorted(KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0]))
-_ENTITY_ALIASES_ORDERED = sorted(ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0]))
+_ENTITY_ALIASES_CASEFOLDED = {
+    str(alias).strip().casefold(): canonical
+    for alias, canonical in ENTITY_ALIASES.items()
+}
+_KNOWN_ENTITIES_ORDERED = sorted(
+    KNOWN_ENTITIES.items(), key=lambda item: (-len(item[0]), item[0])
+)
+_ENTITY_ALIASES_ORDERED = sorted(
+    ENTITY_ALIASES.items(), key=lambda item: (-len(item[0]), item[0])
+)
 
 _KNOWN_SURNAMES = {}
 _KNOWN_FIRSTNAMES = {}
@@ -443,7 +454,10 @@ def _title_case_name_part(part: str) -> str:
             return ""
         return piece[:1].upper() + piece[1:].lower()
 
-    hyphenated = ["'".join(_fix_piece(piece) for piece in apostrophe.split("'")) for apostrophe in part.split("-")]
+    hyphenated = [
+        "'".join(_fix_piece(piece) for piece in apostrophe.split("'"))
+        for apostrophe in part.split("-")
+    ]
     return "-".join(hyphenated)
 
 
@@ -513,7 +527,10 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
         joined_text = str(text)
 
     # 1. Look for known name phrases (2 or 3 parts)
-    all_words = re.findall(r"\b[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+(?:\s+[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+){1,2}\b", joined_text)
+    all_words = re.findall(
+        r"\b[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+(?:\s+[A-Za-z\u0400-\u04FF][A-Za-z\u0400-\u04FF-]+){1,2}\b",
+        joined_text,
+    )
     all_words = list(set(all_words))  # De-duplicate for efficiency
     all_words.sort(key=len, reverse=True)
 
@@ -546,7 +563,9 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
 
         # Fallback for very specific high-profile mixups
         if not canonical:
-            if first == "Bujar" and ("Siljanovska" in clean_pair or "Siljanovska" in clean_pair):
+            if first == "Bujar" and (
+                "Siljanovska" in clean_pair or "Siljanovska" in clean_pair
+            ):
                 canonical = "Gordana Siljanovska-Davkova"
                 matched_part = parts[-1]
 
@@ -559,7 +578,10 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
             is_wrong_first = first != canonical_parts[0] and first in _KNOWN_FIRSTNAMES
 
             # Special logic for Bujar + Siljanovska
-            if first == "Bujar" and ("Siljanovska" in (matched_part or "") or "Siljanovska" in (matched_part or "")):
+            if first == "Bujar" and (
+                "Siljanovska" in (matched_part or "")
+                or "Siljanovska" in (matched_part or "")
+            ):
                 is_wrong_first = True
                 canonical = "Gordana Siljanovska-Davkova"
 
@@ -570,7 +592,9 @@ def validate_person_names(text: str | list[str]) -> str | list[str]:
                 pattern = rf"(?<![A-Za-z\u0400-\u04FF-]){re.escape(clean_pair)}(?![A-Za-z\u0400-\u04FF-])"
                 if re.search(pattern, joined_text):
                     joined_text = re.sub(pattern, canonical, joined_text)
-                    log.info(f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}")
+                    log.info(
+                        f"[entities/fix] Hallucination detected: {clean_pair} -> {canonical}"
+                    )
 
     if is_list:
         return joined_text.split("\n")
@@ -583,26 +607,33 @@ def normalize_entity_name(name: str) -> str:
         return ""
     if any(ord(c) >= 0x0400 for c in clean):
         from core.language import transliterate_cyr_to_lat
+
         try:
             clean = transliterate_cyr_to_lat(clean)
         except Exception:
             pass
-    
+
     res = _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold())
     if res:
         return res
-        
+
     # Try diacritic-stripped fallback
     stripped = clean.lower()
-    for src, dst in [("ć", "c"), ("č", "c"), ("š", "s"), ("ž", "z"), ("đ", "dj"), ("đ", "d")]:
+    for src, dst in [
+        ("ć", "c"),
+        ("č", "c"),
+        ("š", "s"),
+        ("ž", "z"),
+        ("đ", "dj"),
+        ("đ", "d"),
+    ]:
         stripped = stripped.replace(src, dst)
-        
+
     res = _ENTITY_ALIASES_CASEFOLDED.get(stripped)
     if res:
         return res
-        
-    return clean
 
+    return clean
 
 
 def _is_name_like_phrase(candidate: str) -> bool:
@@ -622,7 +653,13 @@ def _is_name_like_phrase(candidate: str) -> bool:
     return True
 
 
-def determine_relationship_direction(ent_a_name: str, ent_a_type: str, ent_b_name: str, ent_b_type: str, context_text: str) -> str:
+def determine_relationship_direction(
+    ent_a_name: str,
+    ent_a_type: str,
+    ent_b_name: str,
+    ent_b_type: str,
+    context_text: str,
+) -> str:
     """
     Zero-token heuristic to determine influence direction between two entities in a given text.
     Returns: 'a_to_b', 'b_to_a', or 'mutual'.
@@ -632,7 +669,7 @@ def determine_relationship_direction(ent_a_name: str, ent_a_type: str, ent_b_nam
 
     # Case-insensitive search for first occurrence index
     text_lower = context_text.lower()
-    
+
     # Extract 5-char prefix stems to handle Cyrillic/Latin declensions (e.g. Skupština -> Skupštinu, Vlada -> Vladu)
     def get_stem(name):
         name_clean = (name or "").strip()
@@ -650,7 +687,7 @@ def determine_relationship_direction(ent_a_name: str, ent_a_type: str, ent_b_nam
     # If one is a PERSON and the other is not, the PERSON is more likely to be the initiator of the flow.
     type_a = (ent_a_type or "").upper()
     type_b = (ent_b_type or "").upper()
-    
+
     if type_a == "PERSON" and type_b != "PERSON":
         return "a_to_b"
     if type_b == "PERSON" and type_a != "PERSON":
@@ -678,7 +715,11 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
     if not entities:
         return
 
-    sentiment = analyze_sentiment_locally(context_text, bypass_llm=True) if context_text else 0.0
+    sentiment = (
+        analyze_sentiment_locally(context_text, bypass_llm=True)
+        if context_text
+        else 0.0
+    )
 
     entity_info = {}
     for ent in entities:
@@ -702,12 +743,14 @@ def update_knowledge_graph(entities: list[dict], context_text: str = ""):
         for i in range(len(sorted_names)):
             for j in range(i + 1, len(sorted_names)):
                 a, b = sorted_names[i], sorted_names[j]
-                
+
                 a_name, a_type = entity_info[a]
                 b_name, b_type = entity_info[b]
-                
-                direction = determine_relationship_direction(a_name, a_type, b_name, b_type, context_text)
-                
+
+                direction = determine_relationship_direction(
+                    a_name, a_type, b_name, b_type, context_text
+                )
+
                 count_a_to_b = 0
                 count_b_to_a = 0
                 if direction == "a_to_b":
@@ -763,7 +806,9 @@ def extract_entities(text: str, max_entities: int = 5) -> list[dict]:
                     continue
                 mapped = _SPACY_LABEL_MAP.get(ent.label_, "ENTITY")
                 if mapped == "PERSON" and not (
-                    _is_name_like_phrase(name) or name in ENTITY_ALIASES or name in KNOWN_ENTITIES
+                    _is_name_like_phrase(name)
+                    or name in ENTITY_ALIASES
+                    or name in KNOWN_ENTITIES
                 ):
                     continue
                 # Prefer the curated type if we already matched this name

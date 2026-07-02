@@ -43,7 +43,9 @@ class LocalizationEngine:
         with self._lock:
             try:
                 if not os.path.exists(RULES_FILE_PATH):
-                    log.warning(f"Localization rules file not found at {RULES_FILE_PATH}, using hardcoded defaults.")
+                    log.warning(
+                        f"Localization rules file not found at {RULES_FILE_PATH}, using hardcoded defaults."
+                    )
                     self._load_fallback_defaults()
                     return False
 
@@ -51,7 +53,9 @@ class LocalizationEngine:
                     rules = json.load(f)
 
                 self._apply_rules_dict(rules)
-                log.info(f"Successfully loaded and initialized dynamic localization rules from {RULES_FILE_PATH}")
+                log.info(
+                    f"Successfully loaded and initialized dynamic localization rules from {RULES_FILE_PATH}"
+                )
                 return True
             except Exception as e:
                 log.error(f"Failed to load localization rules: {e}", exc_info=True)
@@ -69,15 +73,19 @@ class LocalizationEngine:
                     "source_noise_words",
                     "tag_generic_starters",
                     "tag_mappings",
-                    "protected_names"
+                    "protected_names",
                 }
                 if not all(k in rules for k in required_keys):
-                    log.warning("Rejected rule update: Missing one or more required keys.")
+                    log.warning(
+                        "Rejected rule update: Missing one or more required keys."
+                    )
                     return False
 
                 # Ensure maps are structured properly
                 if not isinstance(rules["tag_mappings"], dict):
-                    log.warning("Rejected rule update: tag_mappings must be a dictionary.")
+                    log.warning(
+                        "Rejected rule update: tag_mappings must be a dictionary."
+                    )
                     return False
 
                 # Write to disk
@@ -86,16 +94,23 @@ class LocalizationEngine:
 
                 # Hot-reload in memory
                 self._apply_rules_dict(rules)
-                log.info("Successfully updated on disk and hot-reloaded dynamic localization rules.")
-                
+                log.info(
+                    "Successfully updated on disk and hot-reloaded dynamic localization rules."
+                )
+
                 # Dynamic cache clearing trigger if Redis client is available
                 try:
                     from utils.cache import delete_cache_prefix
+
                     delete_cache_prefix("api:news:v2:")
                     delete_cache_prefix("api:home:")
-                    log.info("Successfully invalidated news and homepage caches to apply new rules immediately.")
+                    log.info(
+                        "Successfully invalidated news and homepage caches to apply new rules immediately."
+                    )
                 except Exception as cache_err:
-                    log.debug(f"Redis cache invalidation skipped during localization update: {cache_err}")
+                    log.debug(
+                        f"Redis cache invalidation skipped during localization update: {cache_err}"
+                    )
 
                 return True
             except Exception as e:
@@ -117,22 +132,37 @@ class LocalizationEngine:
     def _apply_rules_dict(self, rules: Dict[str, Any]):
         """Helper to clear and populate references in-place."""
         ENTITY_NOISE_WORDS.clear()
-        ENTITY_NOISE_WORDS.update(w.strip().lower() for w in rules.get("entity_noise_words", []))
+        ENTITY_NOISE_WORDS.update(
+            w.strip().lower() for w in rules.get("entity_noise_words", [])
+        )
 
         TAG_NOISE_WORDS.clear()
-        TAG_NOISE_WORDS.update(w.strip().lower() for w in rules.get("tag_noise_words", []))
+        TAG_NOISE_WORDS.update(
+            w.strip().lower() for w in rules.get("tag_noise_words", [])
+        )
 
         SOURCE_NOISE_WORDS.clear()
-        SOURCE_NOISE_WORDS.update(w.strip().lower() for w in rules.get("source_noise_words", []))
+        SOURCE_NOISE_WORDS.update(
+            w.strip().lower() for w in rules.get("source_noise_words", [])
+        )
 
         TAG_GENERIC_STARTERS.clear()
-        TAG_GENERIC_STARTERS.update(w.strip().lower() for w in rules.get("tag_generic_starters", []))
+        TAG_GENERIC_STARTERS.update(
+            w.strip().lower() for w in rules.get("tag_generic_starters", [])
+        )
 
         TAG_MAPPINGS.clear()
-        TAG_MAPPINGS.update({k.strip().lower(): v.strip() for k, v in rules.get("tag_mappings", {}).items()})
+        TAG_MAPPINGS.update(
+            {
+                k.strip().lower(): v.strip()
+                for k, v in rules.get("tag_mappings", {}).items()
+            }
+        )
 
         PROTECTED_NAMES.clear()
-        PROTECTED_NAMES.update(w.strip().lower() for w in rules.get("protected_names", []))
+        PROTECTED_NAMES.update(
+            w.strip().lower() for w in rules.get("protected_names", [])
+        )
 
     def _load_fallback_defaults(self):
         """Standard fail-safe defaults in case config file is deleted or corrupt."""
@@ -149,15 +179,19 @@ class LocalizationEngine:
         TAG_GENERIC_STARTERS.update(["novo", "nova", "glavno"])
 
         TAG_MAPPINGS.clear()
-        TAG_MAPPINGS.update({
-            "makedonsk": "Makedonija",
-            "mickoski": "Hristijan Mickoski",
-            "filipce": "Venko Filipce",
-            "evropski": "Evropa"
-        })
+        TAG_MAPPINGS.update(
+            {
+                "makedonsk": "Makedonija",
+                "mickoski": "Hristijan Mickoski",
+                "filipce": "Venko Filipce",
+                "evropski": "Evropa",
+            }
+        )
 
         PROTECTED_NAMES.clear()
-        PROTECTED_NAMES.update(["srbija", "makedonci", "makedonski", "makedonec", "makedon"])
+        PROTECTED_NAMES.update(
+            ["srbija", "makedonci", "makedonski", "makedonec", "makedon"]
+        )
 
 
 # Initialize engine singleton immediately

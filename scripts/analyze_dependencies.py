@@ -251,8 +251,8 @@ def main():
     
     for rec in recommendations:
         if rec["priority"] == "high":
-            update_script += f"echo "Updating {rec['package']} from {rec['current']} to {rec['latest']}..."\n"
-            update_script += f"pip install --upgrade {rec['package']}=={rec['latest']}\n"
+            update_script += f"echo 'Updating {rec["package"]} from {rec["current"]} to {rec["latest"]}...'\n"
+            update_script += f"pip install --upgrade {rec["package"]}=={rec["latest"]}\n"
     
     update_script += "\necho '✅ Critical dependency updates completed!'\n"
     update_script += "echo 'Run pip-audit to verify security fixes.'\n"

@@ -27,11 +27,15 @@ def get_celery_queue_depth(queue_name: str = "celery") -> int:
 
 
 def get_all_queue_depths() -> dict[str, int]:
-    return {name: int(get_celery_queue_depth(name) or 0) for name in MONITORED_CELERY_QUEUES}
+    return {
+        name: int(get_celery_queue_depth(name) or 0) for name in MONITORED_CELERY_QUEUES
+    }
 
 
 def get_intel_backlog_status(intel_depth: int | None = None) -> str:
-    depth = int(get_celery_queue_depth("intel-heavy") if intel_depth is None else intel_depth)
+    depth = int(
+        get_celery_queue_depth("intel-heavy") if intel_depth is None else intel_depth
+    )
     if depth >= INTEL_QUEUE_FULL_DEFER_LIMIT:
         return "backlogged"
     if depth >= INTEL_QUEUE_SECONDARY_DEFER_LIMIT:
@@ -46,7 +50,11 @@ def get_total_queue_depth() -> int:
 
 
 def get_fast_track_backlog_status(fast_track_depth: int | None = None) -> str:
-    depth = int(get_celery_queue_depth("fast-track") if fast_track_depth is None else fast_track_depth)
+    depth = int(
+        get_celery_queue_depth("fast-track")
+        if fast_track_depth is None
+        else fast_track_depth
+    )
     if depth >= FAST_TRACK_QUEUE_DEFER_LIMIT:
         return "backlogged"
     if depth >= FAST_TRACK_QUEUE_SOFT_LIMIT:
@@ -70,7 +78,9 @@ def get_reader_relevant_queue_depth() -> int:
 
 
 def get_pipeline_backlog_status(total_depth: int | None = None) -> str:
-    depth = int(total_depth if total_depth is not None else get_reader_relevant_queue_depth())
+    depth = int(
+        total_depth if total_depth is not None else get_reader_relevant_queue_depth()
+    )
     if depth >= PIPELINE_TOTAL_DEFER_DEPTH:
         return "critical"
     if depth >= CELERY_QUEUE_WARN_DEPTH * 4:
@@ -113,7 +123,9 @@ def reader_pipeline_status() -> dict:
     payload = queue_status_payload()
     intel_depth = int(payload.get("intel_heavy_depth") or 0)
     fast_track_depth = int(payload.get("fast_track_depth") or 0)
-    reader_depth = int(payload.get("reader_queue_depth") or get_reader_relevant_queue_depth())
+    reader_depth = int(
+        payload.get("reader_queue_depth") or get_reader_relevant_queue_depth()
+    )
     pipeline_status = get_pipeline_backlog_status(reader_depth)
     return {
         "busy": pipeline_status in {"busy", "backlogged", "critical"}

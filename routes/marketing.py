@@ -28,10 +28,11 @@ stripe.api_key = STRIPE_API_KEY
 # Adjusted to achieve exactly 50% savings vs traditional media rates
 MKD_PER_EUR = 61.5
 CPM_RATES_EUR = {
-    "top_banner": 0.9756,    # 60 MKD exactly — 990x80 / 990x150 (50% of 120 MKD)
-    "sidebar": 1.2207,     # 75 MKD exactly — 300x250 / 300x600 (50% of 150 MKD)
+    "top_banner": 0.9756,  # 60 MKD exactly — 990x80 / 990x150 (50% of 120 MKD)
+    "sidebar": 1.2207,  # 75 MKD exactly — 300x250 / 300x600 (50% of 150 MKD)
     "mobile_content": 2.00,  # 125 MKD — 300x250 / 800x200 (50% of 250 MKD)
 }
+
 
 @router.post("/marketing/checkout")
 @custom_rate_limit("5/minute")
@@ -44,7 +45,7 @@ async def create_ad_checkout(
     target_url: str = Form(...),
     start_date: str = Form(...),
     end_date: str = Form(...),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
 ):
     try:
         # 1. Validation
@@ -55,43 +56,61 @@ async def create_ad_checkout(
         # Validate target URL (prevent XSS / javascript protocols)
         parsed_url = urlparse(target_url)
         if parsed_url.scheme not in ("http", "https"):
-            raise HTTPException(status_code=400, detail="Target URL must start with http:// or https://")
+            raise HTTPException(
+                status_code=400, detail="Target URL must start with http:// or https://"
+            )
         if not parsed_url.netloc:
-            raise HTTPException(status_code=400, detail="Target URL must have a valid domain or host")
+            raise HTTPException(
+                status_code=400, detail="Target URL must have a valid domain or host"
+            )
 
         if slot_id not in CPM_RATES_EUR:
             raise HTTPException(status_code=400, detail="Invalid slot selection")
 
         if target_impressions < 1000:
-            raise HTTPException(status_code=400, detail="Minimum target impressions is 1,000")
+            raise HTTPException(
+                status_code=400, detail="Minimum target impressions is 1,000"
+            )
 
         try:
             start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
             end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid date format, use YYYY-MM-DD")
+            raise HTTPException(
+                status_code=400, detail="Invalid date format, use YYYY-MM-DD"
+            )
 
         if start_dt > end_dt:
-            raise HTTPException(status_code=400, detail="Start date must be before or equal to end date")
+            raise HTTPException(
+                status_code=400, detail="Start date must be before or equal to end date"
+            )
 
         # Validate file size (max 150KB)
         content = await file.read()
         if len(content) > 150 * 1024:
-            raise HTTPException(status_code=400, detail="File size exceeds maximum allowed of 150KB")
+            raise HTTPException(
+                status_code=400, detail="File size exceeds maximum allowed of 150KB"
+            )
 
         # Validate file extension
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
-            raise HTTPException(status_code=400, detail="Invalid file type. Only web images allowed")
+            raise HTTPException(
+                status_code=400, detail="Invalid file type. Only web images allowed"
+            )
 
         # Verify actual image content using Pillow
         try:
             image = Image.open(io.BytesIO(content))
             image.verify()
             if image.format not in ("PNG", "JPEG", "GIF", "WEBP"):
-                raise HTTPException(status_code=400, detail="Invalid image content format")
+                raise HTTPException(
+                    status_code=400, detail="Invalid image content format"
+                )
         except Exception:
-            raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+            raise HTTPException(
+                status_code=400, detail="Uploaded file is not a valid image"
+            )
 
         # 2. File Upload Persistence
         campaign_id = str(uuid.uuid4())
@@ -119,22 +138,30 @@ async def create_ad_checkout(
             try:
                 # Retrieve host to build callback URLs
                 host = request.headers.get("host") or "presek.mk"
-                proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+                proto = (
+                    "https"
+                    if request.headers.get("x-forwarded-proto") == "https"
+                    else "http"
+                )
                 base_url = f"{proto}://{host}"
 
                 session = stripe.checkout.Session.create(
                     payment_method_types=["card"],
-                    line_items=[{
-                        "price_data": {
-                            "currency": "eur",
-                            "product_data": {
-                                "name": f"Presek Banner Ad - {slot_id.replace('_', ' ').title()}",
-                                "description": f"{target_impressions:,} impressions target from {start_date} to {end_date}",
+                    line_items=[
+                        {
+                            "price_data": {
+                                "currency": "eur",
+                                "product_data": {
+                                    "name": f"Presek Banner Ad - {slot_id.replace('_', ' ').title()}",
+                                    "description": f"{target_impressions:,} impressions target from {start_date} to {end_date}",
+                                },
+                                "unit_amount": int(
+                                    round(total_amount_eur * 100)
+                                ),  # Stripe expects cents
                             },
-                            "unit_amount": int(round(total_amount_eur * 100)),  # Stripe expects cents
-                        },
-                        "quantity": 1,
-                    }],
+                            "quantity": 1,
+                        }
+                    ],
                     mode="payment",
                     success_url=f"{base_url}/marketing?status=success&campaign_id={campaign_id}",
                     cancel_url=f"{base_url}/marketing?status=cancel",
@@ -143,24 +170,32 @@ async def create_ad_checkout(
                 session_id = session.id
                 checkout_url = session.url
             except Exception as stripe_err:
-                log.error(f"[marketing] Stripe checkout session creation failed: {stripe_err}")
-                raise HTTPException(status_code=500, detail="Payment gateway session creation failed")
+                log.error(
+                    f"[marketing] Stripe checkout session creation failed: {stripe_err}"
+                )
+                raise HTTPException(
+                    status_code=500, detail="Payment gateway session creation failed"
+                )
         else:
             # Sandbox bypass is strictly forbidden in production to prevent fraud
             if os.environ.get("ENV") == "production":
-                log.error("[marketing] Stripe API key missing in production environment!")
+                log.error(
+                    "[marketing] Stripe API key missing in production environment!"
+                )
                 raise HTTPException(
                     status_code=500,
-                    detail="Payment gateway is misconfigured. Please contact support."
+                    detail="Payment gateway is misconfigured. Please contact support.",
                 )
 
             # Development/Testing Sandbox fallback
-            log.info("[marketing] No Stripe API Key configured. Emulating booking checkout bypass.")
+            log.info(
+                "[marketing] No Stripe API Key configured. Emulating booking checkout bypass."
+            )
             session_id = f"mock_session_{campaign_id}"
             # Automatically set status to 'paid' for developer sandbox if Stripe isn't configured
             status = "paid"
             checkout_url = f"/marketing?status=success&campaign_id={campaign_id}"
-        
+
         status = "paid" if not STRIPE_API_KEY else "pending"
 
         # 5. Save pending campaign to database
@@ -183,12 +218,16 @@ async def create_ad_checkout(
                 start_dt,
                 end_dt,
                 status,
-                session_id
+                session_id,
             ),
-            fetch=False
+            fetch=False,
         )
 
-        return {"status": "success", "checkout_url": checkout_url, "campaign_id": campaign_id}
+        return {
+            "status": "success",
+            "checkout_url": checkout_url,
+            "campaign_id": campaign_id,
+        }
 
     except HTTPException:
         raise
@@ -196,13 +235,16 @@ async def create_ad_checkout(
         log.exception(f"[marketing] Booking creation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/marketing/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
     if not sig_header or not STRIPE_WEBHOOK_SECRET:
-        raise HTTPException(status_code=400, detail="Missing signature or webhook configuration")
+        raise HTTPException(
+            status_code=400, detail="Missing signature or webhook configuration"
+        )
 
     try:
         event = stripe.Webhook.construct_event(
@@ -223,23 +265,34 @@ async def stripe_webhook(request: Request):
             check_sql = "SELECT status FROM advertising_campaigns WHERE id = %s"
             row = await db.async_execute_one(check_sql, (campaign_id,))
             if row and row.get("status") == "paid":
-                log.info(f"[marketing] Ad campaign {campaign_id} already marked as paid (webhook call ignored).")
+                log.info(
+                    f"[marketing] Ad campaign {campaign_id} already marked as paid (webhook call ignored)."
+                )
             else:
                 sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE id = %s"
                 await db.async_execute(sql, (campaign_id,), fetch=False)
-                log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
+                log.info(
+                    f"[marketing] Ad campaign {campaign_id} successfully paid and activated."
+                )
         elif session_id:
             # Enforce webhook handler idempotency
-            check_sql = "SELECT status FROM advertising_campaigns WHERE stripe_session_id = %s"
+            check_sql = (
+                "SELECT status FROM advertising_campaigns WHERE stripe_session_id = %s"
+            )
             row = await db.async_execute_one(check_sql, (session_id,))
             if row and row.get("status") == "paid":
-                log.info(f"[marketing] Ad session {session_id} already marked as paid (webhook call ignored).")
+                log.info(
+                    f"[marketing] Ad session {session_id} already marked as paid (webhook call ignored)."
+                )
             else:
                 sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE stripe_session_id = %s"
                 await db.async_execute(sql, (session_id,), fetch=False)
-                log.info(f"[marketing] Ad session {session_id} successfully paid and activated.")
+                log.info(
+                    f"[marketing] Ad session {session_id} successfully paid and activated."
+                )
 
     return {"status": "ok"}
+
 
 @router.get("/marketing/ads/active")
 async def get_active_ads():
@@ -259,15 +312,18 @@ async def get_active_ads():
             slot = row["slot_id"]
             if slot not in ads_by_slot:
                 ads_by_slot[slot] = []
-            ads_by_slot[slot].append({
-                "id": row["id"],
-                "image_url": row["image_url"],
-                "target_url": row["target_url"],
-            })
+            ads_by_slot[slot].append(
+                {
+                    "id": row["id"],
+                    "image_url": row["image_url"],
+                    "target_url": row["target_url"],
+                }
+            )
         return {"status": "success", "ads": ads_by_slot}
     except Exception as e:
         log.exception(f"[marketing] Active ads fetch failed: {e}")
         return {"status": "error", "ads": {}}
+
 
 @router.post("/marketing/ads/{ad_id}/click")
 @custom_rate_limit("20/minute")
@@ -280,25 +336,31 @@ async def track_ad_click(request: Request, ad_id: str):
         log.error(f"[marketing] Click tracking failed for {ad_id}: {e}")
         return {"status": "error"}
 
+
 @router.post("/marketing/ads/{ad_id}/impression")
 @custom_rate_limit("60/minute")
 async def track_ad_impression(request: Request, ad_id: str):
     try:
         sql = "UPDATE advertising_campaigns SET impressions_delivered = impressions_delivered + 1 WHERE id = %s"
         await db.async_execute(sql, (ad_id,), fetch=False)
-        
+
         # Check if campaign target was reached to auto-complete
         check_sql = "SELECT impressions_delivered, target_impressions FROM advertising_campaigns WHERE id = %s"
         row = await db.async_execute_one(check_sql, (ad_id,))
         if row and row["impressions_delivered"] >= row["target_impressions"]:
-            update_status_sql = "UPDATE advertising_campaigns SET status = 'completed' WHERE id = %s"
+            update_status_sql = (
+                "UPDATE advertising_campaigns SET status = 'completed' WHERE id = %s"
+            )
             await db.async_execute(update_status_sql, (ad_id,), fetch=False)
-            log.info(f"[marketing] Ad campaign {ad_id} has reached its impression target and is completed.")
-            
+            log.info(
+                f"[marketing] Ad campaign {ad_id} has reached its impression target and is completed."
+            )
+
         return {"status": "success"}
     except Exception as e:
         log.error(f"[marketing] Impression tracking failed for {ad_id}: {e}")
         return {"status": "error"}
+
 
 @router.get("/marketing/campaign/{campaign_id}")
 async def get_campaign_status(campaign_id: str):
@@ -312,7 +374,7 @@ async def get_campaign_status(campaign_id: str):
         row = await db.async_execute_one(sql, (campaign_id,))
         if not row:
             raise HTTPException(status_code=404, detail="Campaign not found")
-            
+
         return {
             "status": "success",
             "campaign": {
@@ -326,14 +388,15 @@ async def get_campaign_status(campaign_id: str):
                 "end_date": row["end_date"].isoformat(),
                 "status": row["status"],
                 "image_url": row["image_url"],
-                "target_url": row["target_url"]
-            }
+                "target_url": row["target_url"],
+            },
         }
     except HTTPException:
         raise
     except Exception as e:
         log.exception(f"[marketing] Get campaign status failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
 
 @router.post("/marketing/request-access")
 @custom_rate_limit("3/minute")
@@ -342,44 +405,55 @@ async def request_campaigns_access(request: Request, email: str = Form(...)):
         # Validate email
         if not EMAIL_REGEX.match(email):
             raise HTTPException(status_code=400, detail="Invalid email address format")
-            
+
         # Find all campaigns for this email
         sql = "SELECT id, slot_id, status FROM advertising_campaigns WHERE buyer_email = %s"
         rows = await db.async_execute(sql, (email,))
         if not rows:
             # Return generic success to avoid email enumeration
-            return {"status": "success", "message": "If campaigns exist for this email, an access link has been sent."}
-            
+            return {
+                "status": "success",
+                "message": "If campaigns exist for this email, an access link has been sent.",
+            }
+
         # Build access link overview
         host = request.headers.get("host") or "presek.live"
-        proto = "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+        proto = (
+            "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
+        )
         base_url = f"{proto}://{host}"
-        
+
         email_content = "<h2>Presek Marketing Access Link</h2>"
         email_content += "<p>Hello, you requested access links to your advertising campaigns on Presek.</p>"
         email_content += "<p>Below are your registered campaigns:</p><ul>"
-        
+
         for row in rows:
             camp_id = row["id"]
-            slot = row["slot_id"].replace('_', ' ').title()
+            slot = row["slot_id"].replace("_", " ").title()
             status = row["status"].upper()
             link = f"{base_url}/marketing/status?id={camp_id}"
             email_content += f"<li><strong>{slot}</strong> (Status: {status}) - <a href='{link}'>{link}</a></li>"
-            
+
         email_content += "</ul><br/><p>If you did not request this email, you can safely ignore it.</p>"
-        
+
         smtp_user = os.environ.get("SMTP_USER", "")
         smtp_pass = os.environ.get("SMTP_PASS", "")
-        
+
         if smtp_user and smtp_pass:
             from tasks.utils import send_email
+
             subject = "Your Presek Ad Campaigns Access Links"
             send_email(email_content, subject, smtp_user, smtp_pass, email)
             log.info(f"[marketing] Sent access email successfully to {email}")
         else:
-            log.warning("[marketing] SMTP credentials not set. Cannot send access email.")
-            
-        return {"status": "success", "message": "Access links have been sent to your email."}
+            log.warning(
+                "[marketing] SMTP credentials not set. Cannot send access email."
+            )
+
+        return {
+            "status": "success",
+            "message": "Access links have been sent to your email.",
+        }
     except HTTPException:
         raise
     except Exception as e:
