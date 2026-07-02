@@ -212,7 +212,10 @@ mint_admin_jwt() {
   local release_root="$APP_DIR"
 
   if [ -n "${APP_ROOT:-}" ]; then
-    if [ -x "$APP_ROOT/venv/bin/python3" ]; then
+    # Prefer venv-api (production API venv) — it has all auth dependencies.
+    if [ -x "$APP_ROOT/venv-api/bin/python3" ]; then
+      python_bin="$APP_ROOT/venv-api/bin/python3"
+    elif [ -x "$APP_ROOT/venv/bin/python3" ]; then
       python_bin="$APP_ROOT/venv/bin/python3"
     fi
     if [ -d "$APP_ROOT/current" ]; then
