@@ -118,7 +118,7 @@ def post_crawl_invalidation_task(article_id):
         log.debug(f"Invalidated caches for article {article_id}")
 
 
-@celery_app.task(acks_late=True, reject_on_worker_lost=True, time_limit=300, soft_time_limit=240)
+@celery_app.task(acks_late=True, reject_on_worker_lost=True, time_limit=540, soft_time_limit=480)
 def run_ingestion():
     """
     Main ingestion orchestrator.

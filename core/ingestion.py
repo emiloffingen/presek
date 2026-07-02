@@ -1172,6 +1172,8 @@ async def ingest_all_sources_async():
 
     # 4. Clustering & DB Preparation
     # (Rest of the logic remains mostly same but wrapped in async orchestration)
+    from billiard.exceptions import SoftTimeLimitExceeded
+
     new_count = 0
     with db.connection() as conn:
         cur = conn.cursor()
@@ -1190,6 +1192,7 @@ async def ingest_all_sources_async():
 
         prepared_rows = []
         batch_clusters = []
+        _soft_limit_hit = False
 
         for i, c in enumerate(candidates):
             if i > 0 and i % 50 == 0:
@@ -1318,6 +1321,13 @@ async def ingest_all_sources_async():
                 if len(recent_articles) > CLUSTER_LOOKBACK:
                     recent_articles.pop()
 
+            except SoftTimeLimitExceeded:
+                # Time limit approaching — stop processing candidates and flush what we have.
+                log.warning(
+                    f"[ingestion] SoftTimeLimitExceeded after {i} candidates; flushing {len(prepared_rows)} prepared rows"
+                )
+                _soft_limit_hit = True
+                break
             except Exception as e:
                 log.error(f"[ingest] error processing {c['source']}: {e}")
 
