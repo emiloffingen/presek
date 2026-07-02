@@ -41,14 +41,20 @@ try:
 
     RateLimitExceeded = errors.RateLimitExceeded
     _rate_limiter_enabled = True
+    _slowapi_redis_url = (
+        "memory://"
+        if "pytest" in sys.modules
+        else os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    )
+    # Append ?protocol=2 to force RESP2 so slowapi/limits works with Redis 8.
+    if _slowapi_redis_url and not _slowapi_redis_url.startswith("memory://"):
+        _sep = "&" if "?" in _slowapi_redis_url else "?"
+        if "protocol=" not in _slowapi_redis_url:
+            _slowapi_redis_url = _slowapi_redis_url + _sep + "protocol=2"
     limiter = Limiter(
         key_func=get_custom_client_ip,
         default_limits=["1000/minute", "12000/hour"],
-        storage_uri=(
-            "memory://"
-            if "pytest" in sys.modules
-            else os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-        ),
+        storage_uri=_slowapi_redis_url,
     )
 except ImportError as exc:
     if os.environ.get("ENV") == "production" and "pytest" not in sys.modules:

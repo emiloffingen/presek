@@ -5,6 +5,31 @@ _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
+# ---------------------------------------------------------------------------
+# Redis 8 / redis-py 8 compatibility patch
+# redis-py 8.0 defaults to RESP3 and requires the HELLO command to carry
+# AUTH credentials simultaneously.  kombu 5.6 builds a ConnectionPool via
+# redis.ConnectionPool(**params) without a `protocol` kwarg, so the pool
+# defaults to RESP3 and hits "HELLO must be called with the client already
+# authenticated" on startup.  We patch _get_pool to inject protocol=2
+# (RESP2) before the pool is constructed.  This must happen before the
+# `Celery(broker=...)` call below.
+# ---------------------------------------------------------------------------
+import redis as _redis
+import kombu.transport.redis as _kombu_redis
+
+_orig_get_pool = _kombu_redis.Channel._get_pool
+
+
+def _resp2_get_pool(self, asynchronous=False):
+    params = self._connparams(asynchronous=asynchronous)
+    params.setdefault('protocol', 2)
+    return _redis.ConnectionPool(**params)
+
+
+_kombu_redis.Channel._get_pool = _resp2_get_pool
+# ---------------------------------------------------------------------------
+
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
