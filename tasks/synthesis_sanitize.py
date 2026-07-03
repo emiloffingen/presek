@@ -70,7 +70,7 @@ def sanitize_text_field(text: str) -> str:
 
 
 def _clean_macedonian(text: str) -> str:
-    from tasks.intelligence import _clean_macedonian_spelling_and_script
+    from tasks.intelligence.synthesis_mk_cleanup import _clean_macedonian_spelling_and_script
 
     return _clean_macedonian_spelling_and_script(text)
 
