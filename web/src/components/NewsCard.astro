@@ -234,7 +234,7 @@ function getTimeStr(dateStr: string) {
                             <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
                         </div>
                         <div class="article-image-placeholder-icon-badge" aria-hidden="true">
-                            <IconComponent size={15} strokeWidth={2.0} />
+                            <IconComponent size={14} strokeWidth={2.0} />
                         </div>
                         <h3 set:html={sanitizeHtml(displayTitle)}></h3>
                         <p class="article-image-placeholder-source">{main.source}</p>
@@ -597,9 +597,9 @@ function getTimeStr(dateStr: string) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 2.1rem;
-        min-height: 2.1rem;
-        margin-bottom: 0.75rem;
+        min-width: 1.85rem;
+        min-height: 1.85rem;
+        margin-bottom: 0.55rem;
         border: 1px solid color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 28%, var(--border));
         background: color-mix(in srgb, var(--background) 72%, var(--placeholder-bg, var(--presek-mark)) 28%);
         border-radius: 50%;
