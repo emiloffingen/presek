@@ -735,14 +735,18 @@
     }
 
     .lead-media-fallback-title {
-        max-width: 17ch;
+        max-width: 100%;
         margin: 0;
         color: color-mix(in srgb, var(--foreground) 84%, var(--muted-foreground));
         font-family: var(--font-serif);
         font-size: clamp(1.25rem, 2.4vw, 1.85rem);
         font-weight: 900;
-        line-height: 1.08;
+        line-height: 1.15;
         text-wrap: balance;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .lead-media-frame-fallback .lead-media-kicker,

@@ -184,7 +184,9 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: var(--presek-mark);">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={42} className="text-current opacity-25" />
+                            <div class="lead-media-loading-icon-badge mb-3">
+                                <IconComponent size={20} strokeWidth={2.0} />
+                            </div>
                             <p class="lead-media-kicker">{mediaLabel}</p>
                             <h2 class:list={["lead-media-fallback-title", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                             <p class="lead-media-source-row">{primaryArticle.source}</p>
@@ -366,7 +368,9 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                     <div class="lead-media-placeholder lead-media-placeholder-error design-card absolute inset-0" style="display: none; --placeholder-bg: var(--presek-mark);">
                         <div class="design-card-pattern opacity-5"></div>
                         <div class="design-card-main p-8 flex items-center justify-center h-full">
-                            <Newspaper size={42} className="text-current opacity-25" />
+                            <div class="lead-media-loading-icon-badge mb-3">
+                                <IconComponent size={20} strokeWidth={2.0} />
+                            </div>
                             <p class="lead-media-kicker">{mediaLabel}</p>
                             <h2 class:list={["lead-media-fallback-title", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h2>
                             <p class="lead-media-source-row">{primaryArticle.source}</p>
