@@ -354,7 +354,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
 
     conn = _Conn()
     m_db_manager = MagicMock()
-    m_db_manager.execute.side_effect = (lambda sql, params=None, **kwargs: ()
+    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: (
         recent_rows if "SELECT link" in sql else None
     )
 
@@ -377,8 +377,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
             ingestion,
             "httpx",
             types.SimpleNamespace(
-                def AsyncClient(**_kwargs):
-    return _AsyncClient(),
+                AsyncClient=lambda **_kwargs: _AsyncClient(),
                 Timeout=MagicMock(),
                 Limits=MagicMock(),
                 TimeoutException=Exception,

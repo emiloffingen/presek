@@ -1,12 +1,8 @@
 from nlp.generation import synthesize_cluster_fallback
-from tasks.intelligence import (
-    _build_source_comparison_prompt_block,
-    _clean_macedonian_spelling_and_script,
-    _is_fact_grounded_synthesis,
-    _is_grounded_synthesis,
-    _score_editorial_summary,
-    _score_synthesis_quality,
-)
+from tasks.intelligence.synthesis_prompt import _build_source_comparison_prompt_block
+from tasks.intelligence.synthesis_mk_cleanup import _clean_macedonian_spelling_and_script
+from tasks.intelligence.synthesis_grounding import _is_fact_grounded_synthesis, _is_grounded_synthesis
+from tasks.intelligence.synthesis_scoring import _score_editorial_summary, _score_synthesis_quality
 from tasks.synthesis_sanitize import sanitize_synthesis_outputs
 
 

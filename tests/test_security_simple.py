@@ -85,8 +85,7 @@ async def test_security_headers_middleware():
     
     print("Testing security headers middleware...")
 
-    middleware = SecurityHeadersMiddleware(def app(scope, receive, send):
-    return None)
+    middleware = SecurityHeadersMiddleware(lambda scope, receive, send: None)
     request = type(
         "Request",
         (),

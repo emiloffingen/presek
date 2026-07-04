@@ -178,6 +178,21 @@ else:
         ]
     )
 
+class APIVersionMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path.startswith("/api/v1/"):
+                scope["path"] = "/api/" + path[len("/api/v1/"):]
+                if "raw_path" in scope:
+                    scope["raw_path"] = b"/api/" + path[len("/api/v1/"):].encode("utf-8")
+        await self.app(scope, receive, send)
+
+app.add_middleware(APIVersionMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,

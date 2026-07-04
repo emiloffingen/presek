@@ -1065,7 +1065,7 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
                     "last_article": "2026-04-27T12:00:00Z",
                 },
             ]
-        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+        if "FROM articles WHERE cluster_id = ANY" in query:
             return [
                 {
                     "id": 1,
@@ -1133,7 +1133,7 @@ def test_news_category_response_filters_mixed_cluster_articles(mock_all):
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM articles a" in query and "WHERE a.category = %s" in query:
             return [{"cluster_id": "mixed-geo", "last_article": "2026-04-22T20:00:00Z"}]
-        if "SELECT * FROM articles WHERE cluster_id = ANY" in query:
+        if "FROM articles WHERE cluster_id = ANY" in query:
             return [
                 {
                     "id": 1,

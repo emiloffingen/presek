@@ -22,6 +22,7 @@ from tasks.intelligence.synthesis_pipeline import _generate_synthesis_via_cascad
 from tasks.intelligence.synthesis_prompt import (
     _build_source_comparison_prompt_block,
     _build_cluster_synthesis_prompt,
+    _fetch_synthesis_history_context,
 )
 from tasks.utils import (
     acquire_task_lock,

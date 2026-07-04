@@ -88,7 +88,7 @@ class TestAstroFrontendIntegrity:
 
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/admin/status.astro")
-        assert "fetch(`${API_URL}/health`)" in status_page
+        assert "fetch(`${API_URL}/health`" in status_page
         assert "Sostojba na sistemot" in status_page
 
     def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):

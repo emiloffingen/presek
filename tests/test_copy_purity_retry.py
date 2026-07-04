@@ -1,6 +1,6 @@
 from unittest.mock import patch
-
 from tasks.intelligence import synthesis as synthesis_mod
+from tasks.intelligence.synthesis_scheduling import _COPY_PURITY_RETRY_DELAY_SECONDS
 
 
 def test_schedule_copy_purity_retry_uses_synthesis_queue():
@@ -15,7 +15,7 @@ def test_schedule_copy_purity_retry_uses_synthesis_queue():
     mock_schedule.assert_called_once()
     kwargs = mock_schedule.call_args.kwargs
     assert kwargs["queue"] == "synthesis"
-    assert kwargs["countdown"] == synthesis_mod._COPY_PURITY_RETRY_DELAY_SECONDS
+    assert kwargs["countdown"] == _COPY_PURITY_RETRY_DELAY_SECONDS
 
 
 def test_schedule_copy_purity_retry_uses_fast_track_when_fast_mode():

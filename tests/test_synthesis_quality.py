@@ -26,7 +26,7 @@ def test_synthesis_needs_upgrade():
 
 
 def test_fact_grounding_diagnostics_reports_ungrounded_numbers():
-    from tasks.intelligence.synthesis import _fact_grounding_diagnostics
+    from tasks.intelligence.synthesis_grounding import _fact_grounding_diagnostics
 
     articles = [{"title": "Vest", "description": "Cena je 100 dinara.", "full_content": ""}]
     diagnostics = _fact_grounding_diagnostics(

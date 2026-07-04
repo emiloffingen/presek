@@ -3,15 +3,18 @@ import json
 from unittest.mock import patch
 
 import tasks
-from tasks.intelligence import (
+from tasks.intelligence.synthesis_prompt import (
     _langs_for_cluster_articles,
     _order_synthesis_langs,
+)
+from tasks.intelligence.synthesis_merge import (
     _split_cluster_merge_score,
 )
 from tasks.synthesis_sanitize import (
     polish_generated_article,
     sanitize_synthesis_outputs,
 )
+from tasks.delivery.briefing_alerts import _classify_alert_candidate
 
 
 class TestBackfillCoverArtTask:
@@ -138,7 +141,7 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
-            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.cluster_ops.db") as mock_db,
             patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches") as mock_invalidate,
             patch("tasks.utils.record_task_event"),
@@ -200,7 +203,7 @@ class TestRepairSplitClustersTask:
         ]
 
         with (
-            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.cluster_ops.db") as mock_db,
             patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches"),
             patch("tasks.utils.record_task_event"),
@@ -253,7 +256,7 @@ class TestRepairSplitClustersTask:
     def test_backfill_single_skips_when_queue_backlog_is_high(self):
 
         with (
-            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=150),
+            patch("tasks.intelligence.backfill.get_celery_queue_depth", return_value=150),
             patch("tasks.intelligence.cluster_ops.generate_cover_art") as mock_cover_art,
         ):
             tasks.backfill_cover_art_single_task("cluster-1", "Prompt")
@@ -263,7 +266,7 @@ class TestRepairSplitClustersTask:
 
 class TestSynthesizeClusterTaskQuality:
     def test_generate_synthesis_via_cascade_retries_after_quality_failure(self):
-        from tasks.intelligence import _generate_synthesis_via_cascade
+        from tasks.intelligence.synthesis_generation import _generate_synthesis_via_cascade
 
         article_rows = [
             {"title": "Vest 1", "description": "Opis 1", "source": "MIA"},
@@ -314,7 +317,8 @@ class TestSynthesizeClusterTaskQuality:
         ]
 
     def test_schedule_fast_synthesis_upgrade_uses_task_once_lock(self):
-        from tasks.intelligence import _schedule_fast_synthesis_upgrade, upgrade_fast_synthesis_task
+        from tasks.intelligence.synthesis_scheduling import _schedule_fast_synthesis_upgrade
+        from tasks.intelligence import upgrade_fast_synthesis_task
 
         with patch("tasks.intelligence.synthesis_scheduling.schedule_task_once", return_value=True) as mock_schedule:
             assert _schedule_fast_synthesis_upgrade("cluster-9", "legacy") is True
@@ -564,7 +568,7 @@ class TestReclusterRecentArticlesTask:
 
         with (
             patch("tasks.intelligence.cluster_ops._skip_when_intel_full", return_value=False),
-            patch("tasks.intelligence.cluster_ops.get_celery_queue_depth", return_value=0),
+            patch("tasks.intelligence._queue.get_celery_queue_depth", return_value=0),
             patch("tasks.intelligence.cluster_ops.db") as mock_db,
             patch("core.clustering.find_or_create_cluster", return_value="old-a"),
             patch("tasks.intelligence.cluster_ops.invalidate_public_data_caches") as mock_invalidate,
@@ -1757,7 +1761,7 @@ class TestProfileDeliveryTasks:
         self,
     ):
 
-        candidate = tasks.delivery.briefing._classify_alert_candidate(
+        candidate = _classify_alert_candidate(
             {"cluster_id": "weak-1", "score": 2.8},
             {"freshness_score": 1.2, "reasons": ["multiple_new_reports"]},
             ["Politika"],
@@ -1773,7 +1777,7 @@ class TestProfileDeliveryTasks:
         self,
     ):
 
-        candidate = tasks.delivery.briefing._classify_alert_candidate(
+        candidate = _classify_alert_candidate(
             {"cluster_id": "strong-1", "score": 5.9},
             {"freshness_score": 2.2, "reasons": ["new_numbers"]},
             ["Politika"],
@@ -1787,7 +1791,7 @@ class TestProfileDeliveryTasks:
 
     def test_classify_alert_candidate_boosts_topic_with_strong_engagement_history(self):
 
-        candidate = tasks.delivery.briefing._classify_alert_candidate(
+        candidate = _classify_alert_candidate(
             {"cluster_id": "topic-strong", "score": 5.1},
             {"freshness_score": 1.9, "reasons": ["new_angle"]},
             ["Politika"],
@@ -1805,7 +1809,7 @@ class TestProfileDeliveryTasks:
 
     def test_classify_alert_candidate_slows_weak_source_with_no_clicks(self):
 
-        candidate = tasks.delivery.briefing._classify_alert_candidate(
+        candidate = _classify_alert_candidate(
             {"cluster_id": "source-weak", "score": 3.2},
             {"freshness_score": 1.3, "reasons": ["multiple_new_reports"]},
             [],

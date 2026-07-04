@@ -43,8 +43,7 @@ async def test_security_headers_middleware():
     from starlette.datastructures import Headers
     from starlette.responses import JSONResponse
 
-    middleware = SecurityHeadersMiddleware(def app(scope, receive, send):
-    return None)
+    middleware = SecurityHeadersMiddleware(lambda scope, receive, send: None)
     request = type(
         "Request",
         (),

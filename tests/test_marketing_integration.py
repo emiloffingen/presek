@@ -10,7 +10,9 @@ from core.database import db_manager as db
 @pytest.fixture
 def client():
     from core.api_fast import app
-    test_client = TestClient(app)
+    from routes.security import generate_csrf_token
+    token = generate_csrf_token()
+    test_client = TestClient(app, cookies={"csrf_token": token}, headers={"X-CSRF-Token": token})
     try:
         yield test_client
     finally:

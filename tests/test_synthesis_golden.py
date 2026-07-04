@@ -1,4 +1,4 @@
-from tasks.intelligence.synthesis import _evaluate_synthesis_candidate
+from tasks.intelligence.synthesis_generation import _evaluate_synthesis_candidate
 
 
 def test_golden_sr_candidate_passes_quality_and_copy_gates():
