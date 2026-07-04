@@ -85,9 +85,10 @@ class TestDatabaseManagerExecute:
         manager._pool = primary
         manager._read_pool = read
 
-        with patch.object(manager, "_init_pool") as mock_init_primary, patch.object(
-            manager, "_init_read_pool"
-        ) as mock_init_read:
+        with (
+            patch.object(manager, "_init_pool") as mock_init_primary,
+            patch.object(manager, "_init_read_pool") as mock_init_read,
+        ):
             manager._reset_pool()
 
         primary.close.assert_called_once()
@@ -176,10 +177,88 @@ class TestGetDb:
         assert manager.search_articles("x" * 501) == []
 
 
+class TestAsyncSearchArticles:
+    """Tests for async_search_articles SQL generation."""
+
+    async def test_async_search_articles_country_only_generates_valid_sql(self):
+        """When country is provided without a timespan, SQL must not contain a
+        leading 'AND' that produces 'WHERE  AND country = ...' syntax errors."""
+        from core.database import SQL_ARTICLE_SEARCH
+
+        manager = _fresh_database_manager()
+        captured = {}
+
+        async def fake_execute(sql, params, read_only=None):
+            captured["sql"] = sql
+            captured["params"] = params
+            captured["read_only"] = read_only
+            return []
+
+        manager.async_execute = fake_execute
+
+        await manager.async_search_articles("test", limit=10, country="RS")
+
+        assert captured["sql"] == SQL_ARTICLE_SEARCH.format(time_filter="country = %s AND")
+        assert captured["params"] == ("test", "test", None, "RS", 10)
+        assert captured["read_only"] is True
+        # Confirm the rendered query is syntactically valid (no double WHERE/AND)
+        assert "WHERE  AND" not in captured["sql"]
+        assert "WHERE country = %s AND (" in captured["sql"]
+
+    async def test_async_search_articles_timespan_only_generates_valid_sql(self):
+        manager = _fresh_database_manager()
+        captured = {}
+
+        async def fake_execute(sql, params, read_only=None):
+            captured["sql"] = sql
+            captured["params"] = params
+            return []
+
+        manager.async_execute = fake_execute
+
+        await manager.async_search_articles("test", limit=10, timespan="24h")
+
+        assert captured["params"] == ("test", "test", None, 10)
+        assert "created_at >= NOW() - INTERVAL '24 hours' AND (" in captured["sql"]
+        assert "WHERE  AND" not in captured["sql"]
+
+    async def test_async_search_articles_country_and_timespan_generates_valid_sql(self):
+        manager = _fresh_database_manager()
+        captured = {}
+
+        async def fake_execute(sql, params, read_only=None):
+            captured["sql"] = sql
+            captured["params"] = params
+            return []
+
+        manager.async_execute = fake_execute
+
+        await manager.async_search_articles("test", limit=10, timespan="7d", country="MK")
+
+        assert captured["params"] == ("test", "test", None, "MK", 10)
+        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND (" in captured["sql"]
+        assert "WHERE  AND" not in captured["sql"]
+
+    async def test_async_search_articles_no_filters_generates_valid_sql(self):
+        manager = _fresh_database_manager()
+        captured = {}
+
+        async def fake_execute(sql, params, read_only=None):
+            captured["sql"] = sql
+            captured["params"] = params
+            return []
+
+        manager.async_execute = fake_execute
+
+        await manager.async_search_articles("test", limit=10)
+
+        assert captured["params"] == ("test", "test", None, 10)
+        assert "WHERE  (" in captured["sql"] or "WHERE (" in captured["sql"]
+
+
 class TestSchemaMigrations:
     def test_init_schema_calls_alembic_upgrade(self):
         from unittest.mock import patch
-
 
         manager = _fresh_database_manager()
 
@@ -188,7 +267,6 @@ class TestSchemaMigrations:
             patch("alembic.config.Config") as mock_config,
             patch("os.path.exists", return_value=True),
         ):
-
             manager.init_schema()
 
             assert mock_upgrade.called

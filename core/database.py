@@ -82,6 +82,7 @@ def _read_replica_is_fresh() -> bool:
 async def _read_replica_is_fresh_async() -> bool:
     """Non-blocking wrapper around _read_replica_is_fresh for async callers."""
     import asyncio as _aio
+
     return await _aio.to_thread(_read_replica_is_fresh)
 
 
@@ -109,6 +110,7 @@ async def _select_read_pool_async(read_only: bool, read_pool):
 def _record_db_query(*, read_only: bool, used_replica: bool) -> None:
     pool = "replica" if read_only and used_replica else "primary"
     _DB_QUERY_TOTAL.labels(pool=pool).inc()
+
 
 # --- Security: Input Validation for SQL ---
 
@@ -151,7 +153,7 @@ def _validate_sort_by(sort_by: str) -> str:
 # --- SQL Query Catalog ---
 
 DB_SESSION_OPTIONS = (
-    "-c statement_timeout=120000 " "-c idle_in_transaction_session_timeout=60000 " "-c timezone=Europe/Skopje"
+    "-c statement_timeout=120000 -c idle_in_transaction_session_timeout=60000 -c timezone=Europe/Skopje"
 )
 
 SQL_SEMANTIC_SEARCH = """
@@ -251,6 +253,7 @@ except ImportError:
     pass
 
 log = logging.getLogger("presek")
+
 
 def _load_database_url() -> str:
     try:
@@ -374,6 +377,7 @@ class AsyncDatabaseManager:
 
             # Initialize async read replica pool if configured and not yet open
             from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA
+
             if USE_READ_REPLICA and DATABASE_READ_REPLICA_URL and getattr(self, "_read_pool", None) is None:
                 try:
                     self._read_pool = psycopg_pool.AsyncConnectionPool(
@@ -536,17 +540,17 @@ class DatabaseManager:
         if self._pool:
             try:
                 # Use attribute access with fallbacks for different psycopg_pool versions
-                stats['current_connections'] = getattr(self._pool, 'getnconn', lambda: 0)()
-                stats['max_connections'] = getattr(self._pool, 'max_size', 10)
-                stats['idle_connections'] = getattr(self._pool, 'getnidle', lambda: 0)()
-                stats['waiting_requests'] = getattr(self._pool, 'getnwaiting', lambda: 0)()
-                stats['queue_size'] = getattr(self._pool, 'getnwaiting', lambda: 0)()
-                
+                stats["current_connections"] = getattr(self._pool, "getnconn", lambda: 0)()
+                stats["max_connections"] = getattr(self._pool, "max_size", 10)
+                stats["idle_connections"] = getattr(self._pool, "getnidle", lambda: 0)()
+                stats["waiting_requests"] = getattr(self._pool, "getnwaiting", lambda: 0)()
+                stats["queue_size"] = getattr(self._pool, "getnwaiting", lambda: 0)()
+
                 # Fallback to direct attribute access if methods don't exist
-                if stats['current_connections'] == 0 and hasattr(self._pool, '_conn_q'):
-                    stats['current_connections'] = len(getattr(self._pool, '_conn_q', []))
-                if stats['max_connections'] == 10 and hasattr(self._pool, '_max_size'):
-                    stats['max_connections'] = getattr(self._pool, '_max_size', 10)
+                if stats["current_connections"] == 0 and hasattr(self._pool, "_conn_q"):
+                    stats["current_connections"] = len(getattr(self._pool, "_conn_q", []))
+                if stats["max_connections"] == 10 and hasattr(self._pool, "_max_size"):
+                    stats["max_connections"] = getattr(self._pool, "_max_size", 10)
             except Exception as e:
                 log.warning(f"Failed to get pool stats: {e}")
                 # Return empty stats instead of failing completely
@@ -557,12 +561,12 @@ class DatabaseManager:
         """Resize the connection pool."""
         if not self._pool:
             return False
-        
+
         try:
             current_size = self._pool.max_size
             if new_size == current_size:
                 return True
-            
+
             # Close current pool and create new one with new size
             self._pool.close()
             self._pool = psycopg_pool.ConnectionPool(
@@ -692,9 +696,7 @@ class DatabaseManager:
 
     async def async_get_articles_by_ids(self, ids):
         return await self.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
-            (ids,),
-            read_only=True
+            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,), read_only=True
         )
 
     async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
@@ -712,23 +714,23 @@ class DatabaseManager:
     ):
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
-        
+
         # Security: Use parameter binding for country if provided
         params = [query_text, query_text]
         if country:
             # We need to add the parameter twice because time_filter is used twice in the hybrid search SQL
             time_filter += " AND country = %s"
             params.append(country)
-            
+
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         params.append(vec_str)
-        
+
         if country:
             # Second occurrence of time_filter in semantic_results
             params.append(country)
-            
+
         params.append(limit)
-        
+
         validated_sort_by = _validate_sort_by(sort_by)
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
         return await self.async_execute(sql, tuple(params), read_only=True)
@@ -743,16 +745,24 @@ class DatabaseManager:
         # Validate timespan to prevent SQL injection
         time_filter = _validate_timespan(timespan)
         params = [query, query, None]
-        
+
+        # Build WHERE clause fragments cleanly so they concatenate with the
+        # trailing search condition in SQL_ARTICLE_SEARCH without producing
+        # syntax like "WHERE  AND country = $4 (...)".
+        clauses = []
+        if time_filter:
+            clauses.append(time_filter[4:] if time_filter.startswith("AND ") else time_filter)
         if country:
-            time_filter += " AND country = %s"
+            clauses.append("country = %s")
             params.append(country)
-            
+
         params.append(limit)
 
-        # Remove leading "AND " for this query format if it's the only filter
-        if time_filter.startswith("AND "):
-            time_filter = time_filter[4:]
+        time_filter = " AND ".join(clauses)
+        if time_filter:
+            # SQL_ARTICLE_SEARCH has a space before the trailing condition, so
+            # append " AND" without an extra space for clean rendered SQL.
+            time_filter = time_filter + " AND"
 
         sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
         return await self.async_execute(sql, tuple(params), read_only=True)
