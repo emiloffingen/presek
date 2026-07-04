@@ -154,7 +154,12 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-proxy-fallback": leadVisual?.isWeak }]}>
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
-	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                        <div class="lead-media-loading-topline flex items-center justify-between w-full mb-1">
+	                            <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                            <div class="lead-media-loading-icon-badge">
+	                                <IconComponent size={14} strokeWidth={2.0} />
+	                            </div>
+	                        </div>
 	                        <h2 class:list={["lead-media-loading-title", { "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
 	                    </div>
 	                    <img
@@ -332,7 +337,12 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         <div class:list={["lead-media-frame shadow-editorial", { "lead-media-frame-proxy-fallback": leadVisual?.isWeak }]}>
 	                <Fragment>
 	                    <div class="lead-media-loading-shell" aria-hidden="true">
-	                        <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                        <div class="lead-media-loading-topline flex items-center justify-between w-full mb-1">
+	                            <div class="lead-media-loading-kicker">{mediaLabel}</div>
+	                            <div class="lead-media-loading-icon-badge">
+	                                <IconComponent size={14} strokeWidth={2.0} />
+	                            </div>
+	                        </div>
 	                        <h2 class:list={["lead-media-loading-title", { "headline-cyrillic": leadTitleIsCyrillic }]}>{finalLeadTitle}</h2>
 	                    </div>
 	                    <img

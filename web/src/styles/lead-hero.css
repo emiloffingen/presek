@@ -602,15 +602,32 @@
 			color: var(--presek-mark);
 		}
 
+		.lead-media-loading-icon-badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 1.85rem;
+			min-height: 1.85rem;
+			border: 1px solid color-mix(in srgb, var(--dominant-color, var(--presek-mark)) 28%, var(--border));
+			background: color-mix(in srgb, var(--background) 72%, var(--dominant-color, var(--presek-mark)) 28%);
+			border-radius: 50%;
+			color: color-mix(in srgb, var(--foreground) 82%, var(--dominant-color, var(--presek-mark)));
+			transition: all 0.3s ease;
+		}
+
 		.lead-media-loading-title {
 			margin: 0;
-			max-width: 18ch;
+			max-width: 100%;
 			font-family: var(--font-serif);
 			font-size: clamp(1.4rem, 4vw, 2.2rem);
 			font-weight: 900;
 			line-height: 1.18;
 			color: var(--foreground);
 			text-wrap: balance;
+			display: -webkit-box;
+			-webkit-line-clamp: 4;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
 		}
 
 		.lead-media-frame-fallback,
@@ -667,7 +684,7 @@
 	    }
 
 	    .lead-media-frame-proxy-fallback .lead-media-loading-title {
-	        max-width: 20ch;
+	        max-width: 100%;
 	        color: color-mix(in srgb, var(--foreground) 78%, var(--muted-foreground));
 	    }
 
