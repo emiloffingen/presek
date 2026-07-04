@@ -35,8 +35,7 @@ def test_run_cluster_synthesis_persists_successful_sr_cascade():
         ),
         patch(
             "tasks.intelligence.synthesis_pipeline._sanitize_synthesis_outputs",
-            def side_effect(summary, article, perspectives, *_args, **_kwargs):
-    return (
+            side_effect=lambda summary, article, perspectives, *_args, **_kwargs: (
                 summary,
                 article,
                 perspectives,
@@ -78,8 +77,7 @@ def test_run_cluster_synthesis_schedules_fast_upgrade_on_fast_mode():
         ),
         patch(
             "tasks.intelligence.synthesis_pipeline._sanitize_synthesis_outputs",
-            def side_effect(summary, article, perspectives, *_args, **_kwargs):
-    return (
+            side_effect=lambda summary, article, perspectives, *_args, **_kwargs: (
                 summary,
                 article,
                 perspectives,
@@ -124,8 +122,7 @@ def test_run_cluster_synthesis_schedules_copy_purity_retry_when_gate_fails():
         ),
         patch(
             "tasks.intelligence.synthesis_pipeline._sanitize_synthesis_outputs",
-            def side_effect(summary, article, perspectives, *_args, **_kwargs):
-    return (
+            side_effect=lambda summary, article, perspectives, *_args, **_kwargs: (
                 summary,
                 article,
                 perspectives,
@@ -185,8 +182,7 @@ def test_run_cluster_synthesis_uses_enhanced_fallback_when_cascade_exhausted():
         ) as mock_fallback,
         patch(
             "tasks.intelligence.synthesis_pipeline._sanitize_synthesis_outputs",
-            def side_effect(summary, article, perspectives, *_args, **_kwargs):
-    return (
+            side_effect=lambda summary, article, perspectives, *_args, **_kwargs: (
                 summary,
                 article,
                 perspectives,

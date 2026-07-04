@@ -7,6 +7,11 @@ from collections import OrderedDict
 
 log = logging.getLogger("presek")
 
+
+def paragraph_fingerprint(text: str) -> str:
+    return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
+
+
 _CLEAN_ARTIFACTS = [
     re.compile(r"Read\s+More\s*[»\>\-]*\s*$", re.I),
     re.compile(r"Procitaj\s+povece\s*$", re.I),

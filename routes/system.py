@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import re
@@ -753,7 +754,7 @@ def _allowed_static_roots() -> list[Path]:
         if shared_root.exists():
             roots.append(shared_root)
     except Exception:
-        pass
+        log.debug("System route fallback")
 
     app_root_env = os.environ.get("APP_ROOT")
     if app_root_env:
@@ -762,7 +763,7 @@ def _allowed_static_roots() -> list[Path]:
             if env_shared.exists():
                 roots.append(env_shared)
         except Exception:
-            pass
+            log.debug("System route fallback")
 
     home_dir = os.environ.get("HOME") or "/home/emiloffingen"
     try:
@@ -772,7 +773,7 @@ def _allowed_static_roots() -> list[Path]:
         if runtime_shared.exists():
             roots.append(runtime_shared)
     except Exception:
-        pass
+        log.debug("System route fallback")
 
     unique: list[Path] = []
     for root in roots:
@@ -888,7 +889,7 @@ async def proxy_image(
 
         cache_key = f"proxy:bin:v4:{target_w}:{url}"
         try:
-            cached_bin = binary_redis_client.get(cache_key)
+            cached_bin = await asyncio.to_thread(binary_redis_client.get, cache_key)
             if cached_bin:
                 return Response(
                     cached_bin,
@@ -962,10 +963,10 @@ async def proxy_image(
             return serve_fallback("no_data")
 
         # Process image
-        try:
+        def _process_image(data: bytes) -> bytes:
             from PIL import Image
 
-            img = Image.open(BytesIO(img_data))
+            img = Image.open(BytesIO(data))
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
 
@@ -977,13 +978,16 @@ async def proxy_image(
 
             out = BytesIO()
             quality = 30 if target_w <= 80 else 75
-            img.save(out, "WEBP", quality=quality, method=4)
-            optimized = out.getvalue()
+            img.save(out, "WEBP", quality=quality, method=2)
+            return out.getvalue()
+
+        try:
+            optimized = await asyncio.to_thread(_process_image, img_data)
 
             try:
-                binary_redis_client.set(cache_key, optimized, ex=86400)
+                await asyncio.to_thread(binary_redis_client.set, cache_key, optimized, 86400)
             except Exception:
-                pass
+                log.debug("System route fallback")
 
             return Response(
                 optimized,

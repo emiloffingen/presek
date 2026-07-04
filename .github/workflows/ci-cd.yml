@@ -79,8 +79,22 @@ jobs:
       - name: pip-audit
         run: uv run pip-audit
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install Python
+        run: uv python install 3.13
+      - name: Install deps
+        run: uv sync --group dev
+      - name: Ruff check
+        run: uv run ruff check core/ routes/ tasks/ nlp/ utils/
+      - name: Ruff format check
+        run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
+
   deploy:
-    needs: [backend-tests, frontend-tests, security-scan]
+    needs: [backend-tests, frontend-tests, security-scan, lint]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:

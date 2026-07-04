@@ -41,11 +41,20 @@ try {
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
 
+  const ac1 = new AbortController();
+  const ac2 = new AbortController();
+  const ac3 = new AbortController();
+  const at1 = setTimeout(() => ac1.abort(), 10000);
+  const at2 = setTimeout(() => ac2.abort(), 10000);
+  const at3 = setTimeout(() => ac3.abort(), 10000);
   const [res, briefRes, otdRes] = await Promise.all([
-    fetch(archiveUrl),
-    fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=${lang}`),
-    fetch(`${API_URL}/archive/on-this-day?date=${date}&lang=${lang}`)
+    fetch(archiveUrl, { signal: ac1.signal }),
+    fetch(`${API_URL}/archive/daily-briefing?date=${date}&lang=${lang}`, { signal: ac2.signal }),
+    fetch(`${API_URL}/archive/on-this-day?date=${date}&lang=${lang}`, { signal: ac3.signal })
   ]);
+  clearTimeout(at1);
+  clearTimeout(at2);
+  clearTimeout(at3);
 
   if (res.ok) archive = await res.json();
   if (briefRes.ok) briefingData = await briefRes.json();

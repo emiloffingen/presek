@@ -5,6 +5,7 @@ import {
   withMkPrefix,
 } from './lib/localePaths';
 import { buildCspPolicy, generateCspNonce } from './lib/csp';
+import { timingSafeEqual } from 'node:crypto';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -36,8 +37,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const attachFrameAncestors = async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      // Overwrite the build-time CSP with our custom unified CSP policy
-      response.headers.set('Content-Security-Policy', buildCspPolicy());
+      response.headers.set('Content-Security-Policy', buildCspPolicy(cspNonce));
     }
     return response;
   };
@@ -66,11 +66,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     && pathname.startsWith('/admin')
     && pathname !== '/admin/status'
   ) {
-    const provided =
-      url.searchParams.get('token')
-      || context.request.headers.get('x-admin-page-token')
-      || '';
-    if (provided !== adminPageToken) {
+    const provided = context.request.headers.get('x-admin-page-token') || '';
+    const expected = Buffer.from(adminPageToken);
+    const actual = Buffer.from(provided);
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
       return new Response('Not found', { status: 404 });
     }
   }

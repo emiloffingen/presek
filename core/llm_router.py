@@ -237,7 +237,7 @@ class SmartModelRouter:
             if status in ("warn", "critical"):
                 return status
         except Exception:
-            pass
+            log.debug("LLM router fallback")
         return "ok"
 
     @staticmethod

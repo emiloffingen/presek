@@ -43,7 +43,10 @@ export const GET: APIRoute = async ({ params }) => {
 	}
 
 	try {
-		const res = await fetch(`${API_URL}/cluster/${clusterId}`);
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 10000);
+		const res = await fetch(`${API_URL}/cluster/${clusterId}`, { signal: controller.signal });
+		clearTimeout(timer);
 		if (!res.ok) {
 			return new Response('Not found', { status: 404 });
 		}

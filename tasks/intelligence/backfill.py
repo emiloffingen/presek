@@ -113,7 +113,7 @@ def backfill_cover_art_task():
         log.warning(f"[tasks] Cover art backfill failed: {e}")
 
 
-@celery_app.task(name="tasks.intelligence.generate_embeddings_task")
+@celery_app.task(name="tasks.intelligence.generate_embeddings_task", soft_time_limit=600, time_limit=660)
 def generate_embeddings_task():
     """Generate pgvector embeddings for articles that don't have one yet."""
     try:

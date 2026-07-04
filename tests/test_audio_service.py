@@ -81,8 +81,7 @@ def test_serbian_edge_failure_falls_back_like_macedonian_without_gtts(monkeypatc
     import core.audio_service as audio_service
 
     soundfile = types.ModuleType("soundfile")
-    soundfile.def write(*args, **kwargs):
-    return None
+    soundfile.write = lambda *args, **kwargs: None
     monkeypatch.setitem(sys.modules, "soundfile", soundfile)
 
     gtts_calls = []

@@ -873,7 +873,7 @@ async def get_stats_full(
         try:
             redis_client.delete(lock_key)
         except Exception:
-            pass
+            log.debug("Stats fallback")
 
 
 @router.get("/sources")

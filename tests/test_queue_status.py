@@ -22,8 +22,7 @@ class TestQueueStatus:
         assert get_intel_backlog_status(INTEL_QUEUE_FULL_DEFER_LIMIT) == "backlogged"
 
     def test_get_all_queue_depths_uses_monitored_queues(self):
-        with patch("core.queue_status.redis_client.llen", def side_effect(name):
-    return {"intel-heavy": 12}.get(name, 0)):
+        with patch("core.queue_status.redis_client.llen", side_effect=lambda name: {"intel-heavy": 12}.get(name, 0)):
             depths = get_all_queue_depths()
         assert depths["intel-heavy"] == 12
         assert "ingestion" in depths

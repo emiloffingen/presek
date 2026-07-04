@@ -25,7 +25,10 @@ from tasks.utils import (
 def summarize_articles_batch_task(article_ids):
     """Batch processes AI summarization for articles."""
     for article_id in article_ids:
-        summarize_article_task(article_id)
+        try:
+            summarize_article_task.delay(article_id)
+        except Exception as e:
+            log.warning(f"[tasks] Failed to dispatch summarize for {article_id}: {e}")
 
 
 @celery_app.task(
@@ -36,7 +39,10 @@ def summarize_articles_batch_task(article_ids):
 def summarize_articles_local_batch_task(article_ids):
     """Batch summarize using local Gemma only (no paid/limited API providers)."""
     for article_id in article_ids:
-        summarize_article_task(article_id, local_only=True)
+        try:
+            summarize_article_task.delay(article_id, local_only=True)
+        except Exception as e:
+            log.warning(f"[tasks] Failed to dispatch local summarize for {article_id}: {e}")
 
 
 @celery_app.task(name="tasks.intelligence.detect_global_stories_batch_task")

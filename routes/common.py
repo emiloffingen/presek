@@ -219,7 +219,7 @@ def _extract_sync_token(request: Request) -> str:
         if auth.lower().startswith("bearer "):
             return auth[7:].strip()
     except Exception:
-        pass
+        log.debug("Common helper fallback")
     return ""
 
 

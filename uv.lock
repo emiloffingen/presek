@@ -2637,15 +2637,6 @@ wheels = [
 ]
 
 [[package]]
-name = "passlib"
-version = "1.7.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b6/06/9da9ee59a67fae7761aab3ccc84fa4f3f33f125b370f1ccdb915bf967c11/passlib-1.7.4.tar.gz", hash = "sha256:defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04", size = 689844, upload-time = "2020-10-08T19:00:52.121Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/a4/ab6b7589382ca3df236e03faa71deac88cae040af60c071a78d254a62172/passlib-1.7.4-py2.py3-none-any.whl", hash = "sha256:aa6bca462b8d8bda89c70b382f0c298a20b5560af6cbfa2dce410c0a2fb669f1", size = 525554, upload-time = "2020-10-08T19:00:49.856Z" },
-]
-
-[[package]]
 name = "pathspec"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2927,7 +2918,6 @@ dependencies = [
     { name = "humanize" },
     { name = "idna" },
     { name = "numpy" },
-    { name = "passlib" },
     { name = "pgvector" },
     { name = "pillow" },
     { name = "pillow-avif-plugin" },
@@ -3062,7 +3052,6 @@ requires-dist = [
     { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'api'", specifier = ">=1.27.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'api'", specifier = ">=1.27.0" },
     { name = "opentelemetry-sdk", marker = "extra == 'api'", specifier = ">=1.27.0" },
-    { name = "passlib", specifier = ">=1.7.4" },
     { name = "pgvector", specifier = ">=0.4.1" },
     { name = "pillow", specifier = ">=11.0.0,<12.0.0" },
     { name = "pillow-avif-plugin", specifier = ">=1.5.5" },
@@ -3117,7 +3106,7 @@ dev = [
     { name = "pip-audit", specifier = ">=2.9.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=0.23.0" },
-    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "pytest-mock", specifier = ">=3.14.0" },
     { name = "pytest-timeout", specifier = ">=2.3.1" },
     { name = "ruff", specifier = ">=0.15.12" },
 ]

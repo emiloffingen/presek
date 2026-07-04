@@ -1,4 +1,4 @@
-from core.mk_copy_quality import assess_mk_copy_purity, mk_bundle_passes_publish_gate
+from core.copy_quality import assess_mk_copy_purity, mk_bundle_passes_publish_gate
 
 
 def test_mk_copy_rejects_serbian_latin_sports_leak():

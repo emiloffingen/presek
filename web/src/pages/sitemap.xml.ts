@@ -24,7 +24,10 @@ export const GET: APIRoute = async ({ request }) => {
         let page = 0;
         let hasMore = true;
         while (hasMore && page < 10) {
-            const res = await fetch(`${API_URL}/news?page_size=50&page=${page}`);
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(`${API_URL}/news?page_size=50&page=${page}`, { signal: controller.signal });
+            clearTimeout(timer);
             if (res.ok) {
                 const data = await res.json();
                 if (data && Array.isArray(data.clusters)) {

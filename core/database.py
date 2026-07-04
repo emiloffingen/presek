@@ -79,12 +79,29 @@ def _read_replica_is_fresh() -> bool:
     return ok
 
 
+async def _read_replica_is_fresh_async() -> bool:
+    """Non-blocking wrapper around _read_replica_is_fresh for async callers."""
+    import asyncio as _aio
+    return await _aio.to_thread(_read_replica_is_fresh)
+
+
 def _select_read_pool(read_only: bool, read_pool):
     if not read_only or read_pool is None:
         return None
     if read_pool.__class__.__module__.startswith("unittest.mock"):
         return read_pool
     if _read_replica_is_fresh():
+        return read_pool
+    return None
+
+
+async def _select_read_pool_async(read_only: bool, read_pool):
+    """Async version of _select_read_pool that uses non-blocking freshness check."""
+    if not read_only or read_pool is None:
+        return None
+    if read_pool.__class__.__module__.startswith("unittest.mock"):
+        return read_pool
+    if await _read_replica_is_fresh_async():
         return read_pool
     return None
 
@@ -288,7 +305,7 @@ def _return_connection(pool, conn, fallback_put=None) -> None:
             try:
                 conn.close()
             except Exception:
-                pass
+                log.debug("DB pool check failed")
         return
     try:
         if _connection_is_usable(conn):
@@ -300,13 +317,13 @@ def _return_connection(pool, conn, fallback_put=None) -> None:
         try:
             conn.close()
         except Exception:
-            pass
+            log.debug("DB pool check failed")
     except Exception as e:
         log.warning("Failed to return connection to pool: %s", e)
         try:
             conn.close()
         except Exception:
-            pass
+            log.debug("DB pool check failed")
 
 
 class AsyncDatabaseManager:
@@ -385,7 +402,7 @@ class AsyncDatabaseManager:
                 read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
             read_pool = getattr(self, "_read_pool", None)
-            selected_read_pool = _select_read_pool(read_only, read_pool)
+            selected_read_pool = await _select_read_pool_async(read_only, read_pool)
             pool = selected_read_pool if selected_read_pool is not None else self._pool
             used_replica = pool is read_pool and read_pool is not None
             _record_db_query(read_only=read_only, used_replica=used_replica)
@@ -621,6 +638,28 @@ class DatabaseManager:
     def execute_one(self, sql, params=None, read_only=None):
         results = self.execute(sql, params, read_only=read_only)
         return results[0] if results else None
+
+    def executemany(self, sql, params_list, read_only=False):
+        """Execute a statement with multiple parameter sets (batch insert/update)."""
+        conn = None
+        pool = None
+        try:
+            read_pool = getattr(self, "_read_pool", None)
+            selected_read_pool = _select_read_pool(read_only, read_pool)
+            pool = selected_read_pool if selected_read_pool is not None else self._pool
+            conn = pool.getconn() if pool else self.get_conn()
+            with conn.cursor() as cur:
+                cur.executemany(sql, params_list)
+                conn.commit()
+                return cur.rowcount
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            log.error(f"Presek {APP_VERSION_LABEL} DB executemany Error: {e}")
+            raise
+        finally:
+            if conn:
+                _return_connection(pool, conn)
 
     def get_db_size(self):
         """Return current database size in megabytes."""

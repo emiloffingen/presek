@@ -6,7 +6,10 @@ const API_URL = apiBaseUrl();
 
 export const GET: APIRoute = async () => {
 	try {
-		const res = await fetch(`${API_URL}/news?lang=sr`);
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), 10000);
+		const res = await fetch(`${API_URL}/news?lang=sr`, { signal: controller.signal });
+		clearTimeout(timer);
 		const data = res.ok ? await res.json() : null;
 		const count = Array.isArray(data?.clusters) ? data.clusters.length : 0;
 		const subtitle = count > 0

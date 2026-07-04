@@ -27,7 +27,7 @@ try:
 
             ip = _client_ip_for_request(request)
         except Exception:
-            pass
+            log.debug("Rate limiter check failed")
 
         if not ip:
             try:

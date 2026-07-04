@@ -29,7 +29,10 @@ export const GET: APIRoute = async ({ request }) => {
     const lang = isMk ? 'mk' : 'sr';
 
     try {
-        const res = await fetch(`${API_URL}/news?page_size=50&page=0&lang=${lang}`);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(`${API_URL}/news?page_size=50&page=0&lang=${lang}`, { signal: controller.signal });
+        clearTimeout(timer);
         if (res.ok) {
             const data = await res.json();
             if (data && Array.isArray(data.clusters)) {

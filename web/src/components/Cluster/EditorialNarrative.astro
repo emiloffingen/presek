@@ -2,6 +2,7 @@
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
+import { sanitizeHtml } from '../../lib/sanitize';
 import {
     isSynthesisMetaParagraph,
     prepareSynthesisParagraph,
@@ -134,14 +135,14 @@ const renderSynthesisHtml = (text: string) => {
 	{generatedArticle ? (
 		<div class="narrative-body font-serif">
 			{displayStoryParagraphs.map((paragraph: string, idx: number) => (
-				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={renderSynthesisHtml(paragraph)}></p>
+				<p class:list={["narrative-p", idx === 0 ? "drop-cap" : ""]} set:html={sanitizeHtml(renderSynthesisHtml(paragraph))}></p>
 			))}
 			{metaParagraphs.length > 0 && storyParagraphs.length > 0 && (
 				<details class="narrative-meta-panel">
 					<summary>{sourceNotesLabel}</summary>
 					<div class="narrative-meta-body">
 						{metaParagraphs.map((paragraph: string) => (
-							<p class="narrative-p narrative-p-meta" set:html={renderSynthesisHtml(paragraph)}></p>
+							<p class="narrative-p narrative-p-meta" set:html={sanitizeHtml(renderSynthesisHtml(paragraph))}></p>
 						))}
 					</div>
 				</details>

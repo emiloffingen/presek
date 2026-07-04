@@ -238,7 +238,7 @@ def _cleanup_shared_client():
         try:
             _SHARED_HTTP_CLIENT.close()
         except Exception:
-            pass
+            log.debug("AI engine cleanup failed")
         _SHARED_HTTP_CLIENT = None
 
 
@@ -1030,13 +1030,13 @@ def clean_json_response(text: str) -> dict | str | None:
                 if repaired != candidate:
                     return json.loads(repaired)
             except Exception:
-                pass
+                log.debug("AI engine fallback")
             
             try:
                 repaired = repair_json_syntax(candidate)
                 return json.loads(repaired)
             except Exception:
-                pass
+                log.debug("AI engine fallback")
             raise
 
     # 2. Try direct JSON parse

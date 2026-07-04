@@ -2,6 +2,7 @@
 import { ShieldCheck, TriangleAlert, Search } from 'lucide-react';
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { sanitizeHtml } from '../../lib/sanitize';
 import EditorialSectionLockup from '../editorial/EditorialSectionLockup.astro';
 
 interface Props {
@@ -137,7 +138,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 					</header>
 					<ul class="fact-list">
 						{verificationReport.agreements.map((item: string) => (
-							<li class="fact-item green" set:html={renderSynthesisHtml(item)}></li>
+							<li class="fact-item green" set:html={sanitizeHtml(renderSynthesisHtml(item))}></li>
 						))}
 					</ul>
 				</div>
@@ -149,7 +150,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 					</header>
 					<ul class="fact-list">
 						{verificationReport.conflicts.map((item: string) => (
-							<li class="fact-item red" set:html={renderSynthesisHtml(item)}></li>
+							<li class="fact-item red" set:html={sanitizeHtml(renderSynthesisHtml(item))}></li>
 						))}
 					</ul>
 				</div>
@@ -163,7 +164,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 						<p class="fact-omission-label">{t('cluster.factcheck.omission')}</p>
 						<ul class="fact-list">
 							{verificationReport.missing_info.map((item: string) => (
-								<li class="fact-item amber" set:html={renderSynthesisHtml(item)}></li>
+								<li class="fact-item amber" set:html={sanitizeHtml(renderSynthesisHtml(item))}></li>
 							))}
 						</ul>
 					</div>
@@ -172,7 +173,7 @@ const signalSummary = pluralismLabel && objectivityLabel
 
 			{verificationReport.context && (
 				<div class="factcheck-context p-4 bg-muted/30 border border-border/40 mt-4 italic text-sm text-muted-foreground">
-					<p set:html={renderSynthesisHtml(verificationReport.context)}></p>
+					<p set:html={sanitizeHtml(renderSynthesisHtml(verificationReport.context))}></p>
 				</div>
 			)}
 		</div>
@@ -224,8 +225,8 @@ const signalSummary = pluralismLabel && objectivityLabel
                             <div class="perspective-grid-v2">
                                 {displayPerspectives.map((p: any) => (
                                     <div class="editorial-angle-card">
-                                        <h5 class="angle-title" set:html={renderSynthesisHtml(p.angle)}></h5>
-                                        <p class="angle-content" set:html={renderSynthesisHtml(p.content)}></p>
+                                        <h5 class="angle-title" set:html={sanitizeHtml(renderSynthesisHtml(p.angle))}></h5>
+                                        <p class="angle-content" set:html={sanitizeHtml(renderSynthesisHtml(p.content))}></p>
                                     </div>
                                 ))}
                             </div>

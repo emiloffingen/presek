@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import os
+
+log = logging.getLogger("presek")
 
 from core.runtime_limits import (
     SYNTHESIS_QUALITY_MIN_LOCAL,
@@ -77,7 +80,7 @@ def build_synthesis_meta(
             meta["copy_purity_score"] = diagnostics.get("score")
             meta["copy_purity_reason"] = diagnostics.get("reason")
         except Exception:
-            pass
+            log.debug("Synthesis quality check failed")
     return meta
 
 
@@ -227,7 +230,7 @@ def mark_fast_synthesis_pending(cluster_id: str) -> None:
     try:
         redis_client.set(f"presek:fast_synthesis_pending:{cluster_id}", "1", ex=ttl)
     except Exception:
-        pass
+        log.debug("Synthesis quality check failed")
 
 
 def clear_fast_synthesis_pending(cluster_id: str) -> None:
@@ -238,7 +241,7 @@ def clear_fast_synthesis_pending(cluster_id: str) -> None:
     try:
         redis_client.delete(f"presek:fast_synthesis_pending:{cluster_id}")
     except Exception:
-        pass
+        log.debug("Synthesis quality check failed")
 
 
 def count_stuck_fast_syntheses(max_age_hours: int) -> int:

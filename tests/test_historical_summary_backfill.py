@@ -91,10 +91,8 @@ class TestLocalOnlySummarize:
         with (
             patch("tasks.intelligence.summarization.db") as mock_db,
             patch("tasks.intelligence.summarization._call_ai", return_value=({"summary": "Rezime."}, "local")) as mock_call,
-            patch("tasks.intelligence.summarization.clean_json_response", def side_effect(value):
-    return value),
-            patch("tasks.intelligence.summarization.validate_person_names", def side_effect(value):
-    return value),
+            patch("tasks.intelligence.summarization.clean_json_response", side_effect=lambda value: value),
+            patch("tasks.intelligence.summarization.validate_person_names", side_effect=lambda value: value),
             patch("tasks.intelligence.summarization.invalidate_public_data_caches"),
         ):
             mock_db.execute_one.return_value = {

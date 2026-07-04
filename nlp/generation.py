@@ -833,7 +833,7 @@ def _comparison_terms(text: str) -> set[str]:
         try:
             text_val = transliterate_cyr_to_lat(text_val)
         except Exception:
-            pass
+            log.debug("Generation fallback")
     return {term for term in _extract_terms(text_val) if term not in SOURCE_NOISE_WORDS}
 
 

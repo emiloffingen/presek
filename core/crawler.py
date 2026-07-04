@@ -133,7 +133,7 @@ def prune_boilerplate_html(html_str: str) -> str:
                     try:
                         elem.getparent().remove(elem)
                     except Exception:
-                        pass
+                        log.debug("Crawler fallback")
 
         return html.tostring(doc, encoding="utf-8").decode("utf-8")
     except Exception as e:

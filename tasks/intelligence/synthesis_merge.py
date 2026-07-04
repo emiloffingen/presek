@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from core.embeddings import average_embeddings, parse_embedding_value
+
+log = logging.getLogger("presek")
 
 
 def _compute_centroid_from_values(values):
@@ -60,7 +64,7 @@ def _split_cluster_merge_score(left, right, lang="mk"):
             if abs((left_latest - right_latest).total_seconds()) > 36 * 3600:
                 return 0.0
         except Exception:
-            pass
+            log.debug("Synthesis merge fallback")
 
     lexical, phrase = _cluster_text_similarity(left.get("titles"), right.get("titles"), lang=lang)
     shared_tags = _cluster_tag_set(left) & _cluster_tag_set(right)

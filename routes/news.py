@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import json
 import logging
@@ -133,6 +134,13 @@ _PUBLIC_ARTICLE_FIELDS = {
     "is_global",
     "coverage_balance",
 }
+
+_ARTICLE_LIST_COLUMNS = (
+    "id, cluster_id, source, link, title, original_title, description, summary, "
+    "category, subcategory, topic, country, created_at, ingested_at, image_url, "
+    "image_caption, clicks, original_description, is_translated, is_fact_check, "
+    "is_redundant, reading_time, entity_names, source_signal, is_global, coverage_balance"
+)
 
 
 def _public_article_payload(article, lang="sr", include_full_content: bool = False):
@@ -424,9 +432,9 @@ async def fetch_news_data(
             category = None
 
         if q:
-            from core.embeddings import generate_query_embedding
+            from core.embeddings import get_query_embedding_async
 
-            query_vec = generate_query_embedding(q)
+            query_vec = await get_query_embedding_async(q)
             sort_by = "recent" if sort == "recent" else "hybrid"
             rows = (
                 await db.async_hybrid_search(
@@ -458,7 +466,7 @@ async def fetch_news_data(
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
-                    "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
                     read_only=True,
                 )
@@ -503,7 +511,7 @@ async def fetch_news_data(
 
             rows = (
                 await db.async_execute(
-                    "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
                     read_only=True,
                 )
@@ -565,7 +573,7 @@ async def fetch_news_data(
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
-                    "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
                     read_only=True,
                 )
@@ -595,7 +603,7 @@ async def fetch_news_data(
             cids = [r["cluster_id"] for r in rows]
             rows = (
                 await db.async_execute(
-                    "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
                     (cids,),
                     read_only=True,
                 )
@@ -675,8 +683,8 @@ async def fetch_news_data(
         # --- NEW: Fetch Global Clusters (America & Europe) for homepage highlights ---
         global_clusters_raw = []
         if not q and not category and not topic and not entity and page == 0:
-            g_query = """
-                SELECT * FROM articles
+            g_query = f"""
+                SELECT {_ARTICLE_LIST_COLUMNS} FROM articles
                 WHERE category IN ('Amerika', 'Evropa')
                   AND created_at >= NOW() - INTERVAL '48 hours'
             """
@@ -816,9 +824,9 @@ async def semantic_search(
         return cached
 
     try:
-        from core.embeddings import generate_query_embedding
+        from core.embeddings import get_query_embedding_async
 
-        query_vec = generate_query_embedding(q)
+        query_vec = await get_query_embedding_async(q)
         if not query_vec:
             detail = (
                 "Neuspešno generisanje vektora za pretraživanje"
@@ -1050,7 +1058,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         # Map language to country for article filtering
         country_filter = "MK" if lang == "mk" else "RS"
         rows = await db.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",
+            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",
             (cluster_id, country_filter),
             read_only=True,
         )
@@ -1642,7 +1650,6 @@ async def get_live_route(request: Request):
 @router.get("/cluster/{cluster_id}/audio")
 async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
-    import asyncio
     validate_cluster_id(cluster_id)
     
     s_row = await db.async_execute_one(

@@ -24,21 +24,14 @@ class TestRecordRefresh:
     def _make_redis(self):
         store = {}
         r = MagicMock()
-        r.set.def side_effect(k, v, **kw):
-    return store.update({k: v})
-        r.get.def side_effect(k):
-    return store.get(k)
+        r.set.side_effect = (lambda k, v, **kw: store.update({k: v}))
+        r.get.side_effect = (lambda k: store.get(k))
         hash_store = {}
-        r.hset.def side_effect(k, field, value):
-    return hash_store.setdefault(k, {}).update({field: value})
-        r.hgetall.def side_effect(k):
-    return hash_store.get(k, {})
-        r.hget.def side_effect(k, field):
-    return hash_store.get(k, {}).get(field)
-        r.hdel.def side_effect(k, field):
-    return hash_store.get(k, {}).pop(field, None)
-        r.expire.def side_effect(*args, **kwargs):
-    return True
+        r.hset.side_effect = (lambda k, field, value: hash_store.setdefault(k, {}).update({field: value}))
+        r.hgetall.side_effect = (lambda k: hash_store.get(k, {}))
+        r.hget.side_effect = (lambda k, field: hash_store.get(k, {}).get(field))
+        r.hdel.side_effect = (lambda k, field: hash_store.get(k, {}).pop(field, None))
+        r.expire.side_effect = (lambda *args, **kwargs: True)
         r._hash_store = hash_store
         return r, store
 

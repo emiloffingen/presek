@@ -183,7 +183,7 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "X-CSRF-Token", "X-Admin-Token", "X-Sync-Token", "Content-Type", "Accept", "Accept-Language"],
     max_age=600,
 )
 
@@ -224,7 +224,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
         capture_exception(exc, {"path": request.url.path, "method": request.method})
     except Exception:
-        pass
+        log.debug("Exception handler fallback")
     return JSONResponse(
         status_code=500,
         content=normalize_http_exception_content("Internal server error"),
@@ -879,7 +879,7 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
         return {"status": "error", "error": str(e)}
 
 
-# Include routers with /api prefix (for Nginx/Public, legacy support)
+# Include routers with /api prefix
 app.include_router(news.router, prefix="/api")
 app.include_router(home.router, prefix="/api")
 app.include_router(intelligence.router, prefix="/api")
@@ -889,14 +889,3 @@ app.include_router(system.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(marketing.router, prefix="/api")
 app.include_router(monitoring.router, prefix="/api")
-
-# Also include v1-prefixed routers for API versioning
-app.include_router(news.router, prefix=f"/api/{API_VERSION}")
-app.include_router(home.router, prefix=f"/api/{API_VERSION}")
-app.include_router(intelligence.router, prefix=f"/api/{API_VERSION}")
-app.include_router(profile.router, prefix=f"/api/{API_VERSION}")
-app.include_router(stats.router, prefix=f"/api/{API_VERSION}")
-app.include_router(system.router, prefix=f"/api/{API_VERSION}")
-app.include_router(admin.router, prefix=f"/api/{API_VERSION}")
-app.include_router(marketing.router, prefix=f"/api/{API_VERSION}")
-app.include_router(monitoring.router, prefix=f"/api/{API_VERSION}")

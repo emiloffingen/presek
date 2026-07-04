@@ -959,7 +959,7 @@ def image_url_reachable(client, url: str) -> bool:
         if resp.status_code not in (403, 404, 405, 501):
             return False
     except Exception:
-        pass
+        log.debug("Maintenance task fallback")
     try:
         resp = client.get(url, headers={"Range": "bytes=0-0"})
         return resp.status_code in (200, 206)

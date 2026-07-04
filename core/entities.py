@@ -611,7 +611,7 @@ def normalize_entity_name(name: str) -> str:
         try:
             clean = transliterate_cyr_to_lat(clean)
         except Exception:
-            pass
+            log.debug("Entity extraction fallback")
 
     res = _ENTITY_ALIASES_CASEFOLDED.get(clean.casefold())
     if res:

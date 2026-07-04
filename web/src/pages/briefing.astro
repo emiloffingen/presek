@@ -44,19 +44,35 @@ try {
     const briefingUrl = dateParam
             ? `${API_URL}/intelligence/briefing?date=${dateParam}&lang=${lang}`
             : `${API_URL}/intelligence/briefing?lang=${lang}`;
-    const [briefRes, homeRes, statsRes] = await Promise.all([
-        fetch(briefingUrl),
-        fetch(`${API_URL}/home?lang=${lang}`),
-        fetch(`${API_URL}/stats/summary?lang=${lang}`)
+    const c1 = new AbortController();
+    const c2 = new AbortController();
+    const c3 = new AbortController();
+    const t1 = setTimeout(() => c1.abort(), 10000);
+    const t2 = setTimeout(() => c2.abort(), 10000);
+    const t3 = setTimeout(() => c3.abort(), 10000);
+    const [briefRes, homeRes, statsRes] = await Promise.allSettled([
+        fetch(briefingUrl, { signal: c1.signal }),
+        fetch(`${API_URL}/home?lang=${lang}`, { signal: c2.signal }),
+        fetch(`${API_URL}/stats/summary?lang=${lang}`, { signal: c3.signal })
     ]);
+    clearTimeout(t1);
+    clearTimeout(t2);
+    clearTimeout(t3);
 
-    if (briefRes.ok) briefingData = normalizeBriefingPayload(await briefRes.json(), lang);
-    if (homeRes.ok) homeData = await homeRes.json();
-    if (statsRes.ok) stats = await statsRes.json();
+    const briefVal = briefRes.status === 'fulfilled' ? briefRes.value : null;
+    const homeVal = homeRes.status === 'fulfilled' ? homeRes.value : null;
+    const statsVal = statsRes.status === 'fulfilled' ? statsRes.value : null;
+
+    if (briefVal?.ok) briefingData = normalizeBriefingPayload(await briefVal.json(), lang);
+    if (homeVal?.ok) homeData = await homeVal.json();
+    if (statsVal?.ok) stats = await statsVal.json();
 
     if (briefingData?.date) {
         const audioParams = new URLSearchParams({ lang, date: briefingData.date });
-        const audioRes = await fetch(`${API_URL}/intelligence/briefing/audio?${audioParams.toString()}`);
+        const audioController = new AbortController();
+        const audioTimer = setTimeout(() => audioController.abort(), 10000);
+        const audioRes = await fetch(`${API_URL}/intelligence/briefing/audio?${audioParams.toString()}`, { signal: audioController.signal });
+        clearTimeout(audioTimer);
         if (audioRes.ok) {
             const audioData = await audioRes.json();
             if (audioData?.status === 'success' && audioData.audio_url) {

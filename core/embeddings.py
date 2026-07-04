@@ -131,25 +131,22 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
     texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
     vectors = generate_embeddings_batch(texts)
 
+    valid_pairs = [
+        ("[" + ",".join(map(str, vec)) + "]", row["id"])
+        for row, vec in zip(rows, vectors)
+        if vec is not None
+    ]
+
     embedded = 0
-    for row, vec in zip(rows, vectors):
-        if vec is None:
-            continue
+    if valid_pairs:
         try:
-            # pgvector accepts the textual "[v1,v2,...]" form. We don't register
-            # a typecaster, so format the list explicitly here (matches the
-            # pattern used by database.search_semantic / hybrid_search).
-            vec_str = "[" + ",".join(map(str, vec)) + "]"
-            db.execute(
+            db.executemany(
                 "UPDATE articles SET embedding = %s::vector WHERE id = %s",
-                (vec_str, row["id"]),
-                fetch=False,
+                valid_pairs,
             )
-            embedded += 1
+            embedded = len(valid_pairs)
         except Exception as e:
-            log.warning(
-                f"[embeddings] Failed to store embedding for article {row['id']}: {e}"
-            )
+            log.warning(f"[embeddings] Batch embedding store failed: {e}")
 
     log.info(f"[embeddings] Embedded {embedded}/{len(rows)} recent articles")
     return embedded

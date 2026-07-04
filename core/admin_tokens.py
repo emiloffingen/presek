@@ -9,6 +9,7 @@ Provides a secure admin token system with:
 """
 
 import datetime
+import hmac
 import os
 import secrets
 from dataclasses import dataclass
@@ -264,7 +265,7 @@ def verify_admin_token(token: str) -> Optional[AdminToken]:
             return None
 
         # Verify that the SHA256 of the token matches the stored token_hash
-        if admin_token.token_hash != _hash_token(token):
+        if not hmac.compare_digest(admin_token.token_hash, _hash_token(token)):
             return None
 
         # Update last used time

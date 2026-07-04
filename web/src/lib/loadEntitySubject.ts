@@ -9,7 +9,12 @@ export async function loadEntitySubject(
 ) {
   const lang = getLangFromUrl(url, hostHeader);
   const t = useTranslations(lang);
-  const decodedName = decodeURIComponent(params.name || '');
+  let decodedName: string;
+  try {
+    decodedName = decodeURIComponent(params.name || '');
+  } catch {
+    decodedName = params.name || '';
+  }
   const API_URL = apiBaseUrl();
 
   let entityData: Record<string, unknown> | null = null;

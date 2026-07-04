@@ -7,11 +7,12 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import stripe
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from PIL import Image
 
 from core.database import db_manager as db
 from core.limiter import custom_rate_limit
+from routes.security import verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -46,6 +47,7 @@ async def create_ad_checkout(
     start_date: str = Form(...),
     end_date: str = Form(...),
     file: UploadFile = File(...),
+    csrf_valid: bool = Depends(verify_csrf_token),
 ):
     try:
         # 1. Validation
@@ -136,14 +138,7 @@ async def create_ad_checkout(
 
         if STRIPE_API_KEY:
             try:
-                # Retrieve host to build callback URLs
-                host = request.headers.get("host") or "presek.mk"
-                proto = (
-                    "https"
-                    if request.headers.get("x-forwarded-proto") == "https"
-                    else "http"
-                )
-                base_url = f"{proto}://{host}"
+                base_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.mk").rstrip("/")
 
                 session = stripe.checkout.Session.create(
                     payment_method_types=["card"],
@@ -327,7 +322,7 @@ async def get_active_ads():
 
 @router.post("/marketing/ads/{ad_id}/click")
 @custom_rate_limit("20/minute")
-async def track_ad_click(request: Request, ad_id: str):
+async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         sql = "UPDATE advertising_campaigns SET clicks = clicks + 1 WHERE id = %s"
         await db.async_execute(sql, (ad_id,), fetch=False)
@@ -339,7 +334,7 @@ async def track_ad_click(request: Request, ad_id: str):
 
 @router.post("/marketing/ads/{ad_id}/impression")
 @custom_rate_limit("60/minute")
-async def track_ad_impression(request: Request, ad_id: str):
+async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         sql = "UPDATE advertising_campaigns SET impressions_delivered = impressions_delivered + 1 WHERE id = %s"
         await db.async_execute(sql, (ad_id,), fetch=False)
@@ -400,7 +395,7 @@ async def get_campaign_status(campaign_id: str):
 
 @router.post("/marketing/request-access")
 @custom_rate_limit("3/minute")
-async def request_campaigns_access(request: Request, email: str = Form(...)):
+async def request_campaigns_access(request: Request, email: str = Form(...), csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         # Validate email
         if not EMAIL_REGEX.match(email):
@@ -417,11 +412,7 @@ async def request_campaigns_access(request: Request, email: str = Form(...)):
             }
 
         # Build access link overview
-        host = request.headers.get("host") or "presek.live"
-        proto = (
-            "https" if request.headers.get("x-forwarded-proto") == "https" else "http"
-        )
-        base_url = f"{proto}://{host}"
+        base_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.live").rstrip("/")
 
         email_content = "<h2>Presek Marketing Access Link</h2>"
         email_content += "<p>Hello, you requested access links to your advertising campaigns on Presek.</p>"

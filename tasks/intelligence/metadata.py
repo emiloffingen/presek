@@ -1,4 +1,5 @@
 import datetime
+from collections import defaultdict
 
 from core.entities import extract_entities
 from nlp import (
@@ -84,14 +85,16 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
             if entities:
                 from core.entities import update_knowledge_graph
 
-                # update_knowledge_graph calculates local sentiment automatically
                 update_knowledge_graph(entities, context_text=text)
 
-                for ent in entities:
-                    db.execute(
+                entity_rows = [
+                    (r["cluster_id"], ent.get("name"), ent.get("type"))
+                    for ent in entities
+                ]
+                if entity_rows:
+                    db.executemany(
                         "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                        (r["cluster_id"], ent.get("name"), ent.get("type")),
-                        fetch=False,
+                        entity_rows,
                     )
 
         invalidate_public_data_caches()
@@ -197,12 +200,17 @@ def generate_cluster_metadata_task(*args, hours=24, target_clusters=None, **kwar
             has_more = len(rows) > _METADATA_BATCH_SIZE
             rows = rows[:_METADATA_BATCH_SIZE]
             pending_ids = None
+        cluster_ids_batch = [row["cluster_id"] for row in rows]
+        all_entities = db.execute(
+            "SELECT cluster_id, entity_name, entity_type FROM cluster_entities WHERE cluster_id = ANY(%s)",
+            (cluster_ids_batch,),
+        )
+        entities_by_cluster = defaultdict(list)
+        for e in all_entities:
+            entities_by_cluster[e["cluster_id"]].append(dict(e))
+
         for r in rows:
-            entities = db.execute(
-                "SELECT entity_name, entity_type FROM cluster_entities WHERE cluster_id = %s",
-                (r["cluster_id"],),
-            )
-            entity_candidates = [dict(e) for e in entities]
+            entity_candidates = entities_by_cluster.get(r["cluster_id"], [])
             final_tags = extract_cluster_tags_locally(
                 titles=r["titles"],
                 entity_names=entity_candidates,

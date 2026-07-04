@@ -60,6 +60,8 @@ def invalidate_public_data_caches():
     delete_cache_prefix("api:stats:summary:")
     delete_cache_prefix("stats:intel_summary:")
     delete_cache_prefix("api:trending:")
+    delete_cache_prefix("api:search:semantic:")
+    delete_cache_prefix("api:cluster:")
 
 
 def invalidate_public_data_caches_debounced(force: bool = False) -> bool:

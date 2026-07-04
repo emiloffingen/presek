@@ -8,11 +8,7 @@ from core.api_helpers import normalize_perspectives, normalize_summary_text
 from core.editorial_quality import normalize_serbian_editorial_text
 from core.entities import validate_person_names
 from nlp.generation import synthesize_cluster_fallback
-from nlp.utils import extract_clean_summary_text, looks_like_leaked_json_fragment
-
-
-def _paragraph_fingerprint(text: str) -> str:
-    return re.sub(r"\W+", " ", str(text or "").casefold()).strip()
+from nlp.utils import extract_clean_summary_text, looks_like_leaked_json_fragment, paragraph_fingerprint as _paragraph_fingerprint
 
 
 def dedupe_generated_article(text: str) -> str:

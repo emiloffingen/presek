@@ -8,11 +8,11 @@ export function buildFrameAncestorsPolicy(): string {
   return "frame-ancestors 'none'";
 }
 
-export function buildCspPolicy(): string {
+export function buildCspPolicy(nonce: string): string {
   return (
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
+    `script-src 'self' 'nonce-${nonce}' https://www.googletagmanager.com; ` +
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; ` +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; " +
     "connect-src 'self' https://presek.live https://www.presek.live https://presek.mk https://www.presek.mk https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://region1.google-analytics.com wss://presek.live wss://presek.mk; " +

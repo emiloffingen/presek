@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from core.api_errors import soft_error
 from core.database import db_manager as db
-from core.embeddings import generate_query_embedding
+from core.embeddings import get_query_embedding_async
 from core.entities import normalize_entity_name, normalize_person_surface_name
 from core.language import transliterate_lat_to_cyr
 from core.limiter import custom_rate_limit
@@ -1017,7 +1017,8 @@ async def synthesize_nodes(
     )
 
     try:
-        synthesis_text = analyst.analyze(
+        synthesis_text = await asyncio.to_thread(
+            analyst.analyze,
             prompt, system_prompt, max_tokens=768, lang=lang, lock_timeout=15
         )
     except Exception as e:
@@ -1242,7 +1243,7 @@ async def get_personalized_recommendations(
                     else list(r["embedding"])
                 )
     for t in followed:
-        vec = generate_query_embedding(t)
+        vec = await get_query_embedding_async(t)
         if vec:
             user_vectors.append(vec)
     if not user_vectors:

@@ -96,7 +96,7 @@ async def verify_csrf_token(request: Request):
             form_data = await request.form()
             csrf_token = form_data.get("csrf_token")
         except Exception:
-            pass
+            log.debug("CSRF form parse failed")
 
     if header_token and cookie_token and header_token != cookie_token:
         raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
@@ -485,7 +485,7 @@ async def admin_auth(request: Request) -> str:
         if payload and "sub" in payload:
             return payload["sub"]
     except Exception:
-        pass
+        log.debug("Security middleware fallback")
     return "admin"
 
 
