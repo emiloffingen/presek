@@ -13,7 +13,7 @@ WorkingDirectory=/home/emiloffingen/presek-runtime/current/web
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
 ExecStartPre=/bin/bash -lc 'test -f ./dist/server/entry.mjs'
-ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current/web && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec node ./dist/server/entry.mjs'
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current/web && set -a && source /home/emiloffingen/presek/.env && set +a && exec node ./dist/server/entry.mjs'
 Restart=always
 RestartSec=5
 TimeoutStartSec=90

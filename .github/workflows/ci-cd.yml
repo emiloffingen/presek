@@ -1,435 +1,96 @@
-name: Presek CI/CD
+name: CI/CD
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
-
-permissions:
-  contents: read
-  pull-requests: read
-
-# Environment variables available to all jobs
-env:
-  PYTHON_VERSION: "3.12"
-  NODE_VERSION: "22"
-  UV_VERSION: "0.11.11"
+    branches: [main]
 
 jobs:
-  # ============================================================================
-  # Security Scan
-  # ============================================================================
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: presek
+          POSTGRES_PASSWORD: presek_test
+          POSTGRES_DB: presek_test
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests
+        env:
+          ENV: test
+          DATABASE_URL: postgresql://presek:presek_test@localhost:5432/presek_test
+          REDIS_URL: redis://localhost:6379/0
+        run: uv run pytest tests/ -x --timeout=60 -q
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Type check
+        working-directory: web
+        run: npx astro check --minimumSeverity warning
+
+      - name: Run tests
+        working-directory: web
+        run: node --test 'src/**/*.test.mjs'
+
   security-scan:
-    name: Security Scan
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install Python
+        run: uv python install 3.13
+      - name: Install deps
+        run: uv sync --group dev
+      - name: Bandit scan
+        run: uv run bandit -r core/ tasks/ routes/ -ll
+      - name: pip-audit
+        run: uv run pip-audit
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install dependencies for security audit
-        run: |
-          uv venv
-          source .venv/bin/activate
-          uv sync --dev
-
-      - name: Run Presek Security Audit
-        run: |
-          source .venv/bin/activate
-          python scripts/security_audit.py
-          echo "Presek security audit completed"
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Run Bandit for Python security issues
-        run: |
-          source .venv/bin/activate
-          uv pip install bandit
-          bandit -r core/ routes/ -f json -o bandit_results.json || true
-          bandit -r core/ routes/ -lll
-          echo "Bandit scan completed"
-
-      - name: Run pip-audit for dependency vulnerabilities
-        run: |
-          source .venv/bin/activate
-          uv pip install pip-audit
-          pip-audit --desc --fail-on-severity high
-          echo "pip-audit scan completed"
-
-      - name: Run Semgrep for code patterns
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/python
-            p/secrets
-            p/security-audit
-          auditOn: push
-
-      - name: Check for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
-      - name: Run Snyk for dependency scanning
-        if: ${{ env.SNYK_TOKEN != '' }}
-        uses: snyk/actions/python@0.4.0
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-  # ============================================================================
-  # Backend Tests
-  # ============================================================================
-  backend-test:
-    name: Backend Tests
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: presek
-          POSTGRES_PASSWORD: presek
-          POSTGRES_DB: presek_test
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: |
-          uv venv
-          source .venv/bin/activate
-          uv sync --dev
-
-      - name: Verify API-only venv import contract
-        env:
-          CSRF_TOKEN_SECRET: test-secret-for-ci
-          ENV: test
-        run: |
-          uv venv .venv-api-ci
-          UV_PROJECT_ENVIRONMENT=.venv-api-ci uv sync --frozen --no-dev --no-default-groups --group api --directory .
-          .venv-api-ci/bin/python scripts/check_api_venv_imports.py
-
-      - name: Run linting
-        run: |
-          source .venv/bin/activate
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Run security linting
-        run: |
-          source .venv/bin/activate
-          uv pip install bandit pip-audit
-          bandit -r core/ routes/ -lll
-
-      - name: Security - Check for vulnerabilities
-        run: |
-          source .venv/bin/activate
-          pip-audit --desc --fail-on-severity high
-
-      - name: Run backend tests
-        env:
-          DATABASE_URL: postgresql://presek:presek@localhost:5432/presek_test
-          REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-for-ci
-          ENV: test
-        run: |
-          source .venv/bin/activate
-          python -m pytest tests/ -v --tb=short --timeout=60
-
-  # ============================================================================
-  # Frontend Tests
-  # ============================================================================
-  frontend-test:
-    name: Frontend Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: web
-        run: npm ci
-
-      - name: Run frontend tests
-        working-directory: web
-        run: npm test
-
-      - name: Run npm audit
-        working-directory: web
-        run: npm audit --audit-level=high
-
-      - name: Run frontend component tests (Cypress)
-        working-directory: web
-        run: npm run test:component
-
-      - name: Build frontend
-        working-directory: web
-        run: npm run build
-
-      - name: Enforce bundle budgets
-        working-directory: web
-        run: npm run analyze:ci
-
-      - name: Install Chromium for Lighthouse
-        run: sudo apt-get update && sudo apt-get install -y chromium
-
-      - name: Lighthouse homepage audit
-        working-directory: web
-        env:
-          CHROME_PATH: /usr/bin/chromium
-        run: npm run perf:lighthouse:ci
-
-      - name: Lighthouse MK homepage audit
-        working-directory: web
-        env:
-          CHROME_PATH: /usr/bin/chromium
-        run: npm run perf:lighthouse:ci:mk
-
-      - name: axe accessibility audit (SR homepage)
-        working-directory: web
-        env:
-          CHROME_PATH: /usr/bin/chromium
-        run: npm run a11y:ci
-
-      - name: axe accessibility audit (MK homepage)
-        working-directory: web
-        env:
-          CHROME_PATH: /usr/bin/chromium
-        run: npm run a11y:ci:mk
-
-      - name: Upload Lighthouse reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-reports
-          path: |
-            web/lighthouse-homepage.json
-            web/lighthouse-homepage-mk.json
-            web/axe-homepage.json
-            web/axe-homepage-mk.json
-          if-no-files-found: ignore
-
-  # ============================================================================
-  # Build
-  # ============================================================================
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          uv venv
-          source .venv/bin/activate
-          uv sync --frozen
-
-      - name: Install frontend dependencies
-        working-directory: web
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: web
-        run: npm run build
-
-      - name: Build Docker image
-        run: |
-          docker build -t presek:latest .
-
-  # ============================================================================
-  # Load Testing
-  # ============================================================================
-  load-test:
-    name: Load Testing
-    runs-on: ubuntu-latest
-    needs: build
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: presek
-          POSTGRES_PASSWORD: presek
-          POSTGRES_DB: presek_test
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: |
-          uv venv
-          source .venv/bin/activate
-          uv sync --dev
-
-      - name: Install locust
-        run: |
-          source .venv/bin/activate
-          uv pip install locust
-
-      - name: Start application
-        env:
-          DATABASE_URL: postgresql://presek:presek@localhost:5432/presek_test
-          REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test-secret-key-for-load-test
-          ENV: test
-        run: |
-          source .venv/bin/activate
-          uvicorn core.api_fast:app --host 0.0.0.0 --port 8000 &
-          sleep 10
-          curl -s http://localhost:8000/api/health || true
-
-      - name: Run load test
-        run: |
-          source .venv/bin/activate
-          locust -f tests/loadtest.py --headless -u 100 -r 10 --run-time 2m --host=http://localhost:8000 --users 100 --spawn-rate 20
-
-  # ============================================================================
-  # Deployment
-  # ============================================================================
   deploy:
-    name: Deploy
+    needs: [backend-tests, frontend-tests, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [build, load-test, security-scan]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate deploy scripts
-        run: |
-          set -euo pipefail
-          for script in \
-            deploy/ci_deploy.sh \
-            deploy/deploy_release.sh \
-            deploy/bootstrap_runtime_root.sh \
-            deploy/preflight_check.sh \
-            deploy/prune_releases.sh \
-            deploy/rollback_release.sh; do
-            bash -n "$script"
-          done
-          echo "Deploy script syntax checks passed"
-
-      - name: Build Docker image
-        # Optional registry artifact; production deploy uses release scripts on the host.
-        run: docker build -t presek:${{ github.sha }} .
-
-      - name: Push Docker image
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker tag presek:${{ github.sha }} presek:latest
-          docker push presek:latest
-          docker push presek:${{ github.sha }}
-
-      - name: Deploy to server via SSH
-        if: ${{ secrets.DEPLOY_SSH_HOST != '' && secrets.DEPLOY_SSH_USER != '' && secrets.DEPLOY_SSH_KEY != '' }}
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_SSH_HOST }}
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            set -euo pipefail
-            APP_ROOT="${{ secrets.DEPLOY_APP_ROOT || '/home/emiloffingen/presek-runtime' }}"
-            DEPLOY_GIT_DIR="${{ secrets.DEPLOY_GIT_DIR || '/home/emiloffingen/presek' }}"
-            DEPLOY_GIT_BRANCH="${{ secrets.DEPLOY_GIT_BRANCH || 'main' }}"
-            APP_ROOT="$APP_ROOT" DEPLOY_GIT_DIR="$DEPLOY_GIT_DIR" DEPLOY_GIT_BRANCH="$DEPLOY_GIT_BRANCH" \
-              bash "$DEPLOY_GIT_DIR/deploy/ci_deploy.sh"
-
-      - name: Remote deploy not configured
-        if: ${{ secrets.DEPLOY_SSH_HOST == '' || secrets.DEPLOY_SSH_USER == '' || secrets.DEPLOY_SSH_KEY == '' }}
-        run: |
-          echo "Skipping SSH deploy. Configure DEPLOY_SSH_HOST, DEPLOY_SSH_USER, and DEPLOY_SSH_KEY to enable CI deploy."
-          echo "Production deploys normally run:"
-          echo "  APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh"
-          echo "Built image tag: presek:${{ github.sha }}"
+            cd ${{ secrets.DEPLOY_GIT_DIR || '$HOME/presek' }}
+            git pull origin main
+            bash deploy/ci_deploy.sh

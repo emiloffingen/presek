@@ -300,6 +300,8 @@ class OpenAICompatibleProvider(AIProvider):
                 resp.raise_for_status()
                 data = resp.json()
                 return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            log.warning(f"[ai/{self.provider_name}] Unexpected response format from {self.model}: {e}")
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
@@ -502,7 +504,49 @@ class GroqProvider(OpenAICompatibleProvider):
         )
 
 
+class MistralProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "mistral",
+            api_key,
+            "https://api.mistral.ai/v1/chat/completions",
+            model,
+        )
+
+
+class OpenRouterProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "openrouter",
+            api_key,
+            "https://openrouter.ai/api/v1/chat/completions",
+            model,
+        )
+
+
+class CerebrasProvider(OpenAICompatibleProvider):
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "cerebras",
+            api_key,
+            "https://api.cerebras.ai/v1/chat/completions",
+            model,
+        )
+
+
 PROVIDERS = {
+    "openrouter": OpenRouterProvider(
+        api_key=os.environ.get("OPENROUTER_API_KEY", ""),
+        model=os.environ.get("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"),
+    ),
+    "cerebras": CerebrasProvider(
+        api_key=os.environ.get("CEREBRAS_API_KEY", ""),
+        model=os.environ.get("CEREBRAS_MODEL", "gpt-oss-120b"),
+    ),
+    "mistral": MistralProvider(
+        api_key=os.environ.get("MISTRAL_API_KEY", ""),
+        model=os.environ.get("MISTRAL_MODEL", "mistral-small-latest"),
+    ),
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),

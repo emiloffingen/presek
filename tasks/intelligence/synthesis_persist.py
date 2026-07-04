@@ -305,7 +305,7 @@ def finalize_cluster_synthesis(
 
         all_titles = " ".join([a.get("title") or "" for a in article_rows])
         if detect_topic(all_titles) == "Sport":
-            from notifier import BreakingNewsNotifier
+            from core.services.notifier import BreakingNewsNotifier
 
             from core.config import NTFY_TOPIC
             from nlp.generation import _extract_sports_scores

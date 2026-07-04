@@ -2,14 +2,28 @@ import { apiBaseUrl } from './apiBase';
 
 const API_URL = apiBaseUrl();
 
-async function fetchJson(url: string) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        const err: any = new Error(`Request failed: ${response.status} ${url}`);
-        err.status = response.status;
-        throw err;
+async function fetchJson(url: string, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 30000);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timer);
+            if (!response.ok) {
+                const err: any = new Error(`Request failed: ${response.status} ${url}`);
+                err.status = response.status;
+                throw err;
+            }
+            return response.json();
+        } catch (err: any) {
+            if (attempt < retries && (err.cause?.code === 'UND_ERR_SOCKET' || err.name === 'AbortError')) {
+                await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
+                continue;
+            }
+            throw err;
+        }
     }
-    return response.json();
+    throw new Error(`fetchJson exhausted retries: ${url}`);
 }
 
 // Module-level cache maps that persist across requests

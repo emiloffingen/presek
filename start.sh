@@ -260,11 +260,17 @@ wait_for_http() {
 start_window() {
   local title="$1"
   local command="$2"
+  # Source .env inside each screen window so API keys and config
+  # are available — bash -lc does not inherit the parent's exports.
+  local env_prelude=""
+  if [ -f "$APP_DIR/.env" ]; then
+    env_prelude="set -a && source '$APP_DIR/.env' && set +a && "
+  fi
 
   if ! screen_session_exists; then
-    screen -dmS "$SESSION" -t "$title" bash -lc "$command"
+    screen -dmS "$SESSION" -t "$title" bash -lc "${env_prelude}${command}"
   else
-    screen -S "$SESSION" -X screen -t "$title" bash -lc "$command"
+    screen -S "$SESSION" -X screen -t "$title" bash -lc "${env_prelude}${command}"
   fi
 }
 
