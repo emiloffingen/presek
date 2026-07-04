@@ -233,7 +233,9 @@ function getTimeStr(dateStr: string) {
                             <p class="article-image-placeholder-label">{cardLabel || main.category || t('news.ongoing')}</p>
                             <span class="article-image-placeholder-chip">{cardSub || `${uniqueSources} ${uniqueSources === 1 ? t('news.source') : t('news.sources')}`}</span>
                         </div>
-                        <IconComponent size={28} strokeWidth={1.8} className="article-image-placeholder-icon" aria-hidden="true" />
+                        <div class="article-image-placeholder-icon-badge" aria-hidden="true">
+                            <IconComponent size={15} strokeWidth={2.0} />
+                        </div>
                         <h3 set:html={sanitizeHtml(displayTitle)}></h3>
                         <p class="article-image-placeholder-source">{main.source}</p>
                     </div>
@@ -589,11 +591,20 @@ function getTimeStr(dateStr: string) {
             linear-gradient(145deg, color-mix(in srgb, var(--background) 92%, var(--placeholder-bg, var(--presek-mark)) 8%), color-mix(in srgb, var(--secondary) 82%, var(--placeholder-bg, var(--presek-mark)) 18%));
     }
 
-    .article-image-placeholder-icon {
+    .article-image-placeholder-icon-badge {
         position: relative;
         z-index: 1;
-        margin-bottom: 0.5rem;
-        color: color-mix(in srgb, var(--muted-foreground) 74%, var(--placeholder-bg, var(--presek-mark)));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.1rem;
+        min-height: 2.1rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid color-mix(in srgb, var(--placeholder-bg, var(--presek-mark)) 28%, var(--border));
+        background: color-mix(in srgb, var(--background) 72%, var(--placeholder-bg, var(--presek-mark)) 28%);
+        border-radius: 50%;
+        color: color-mix(in srgb, var(--foreground) 82%, var(--placeholder-bg, var(--presek-mark)));
+        transition: all 0.3s ease;
     }
 
     .topic-fallback-scrim {
