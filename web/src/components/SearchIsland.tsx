@@ -183,7 +183,8 @@ export default function SearchIsland({
     if (initialQuery !== undefined && initialQuery !== null && query !== initialQuery) {
       setQuery(initialQuery);
     }
-  }, [initialQuery, query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
