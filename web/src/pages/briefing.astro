@@ -129,6 +129,20 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                             currentDate={briefingData.date}
                         />
 
+                        <div class="briefing-status-deck">
+                            <div class="briefing-status-inner">
+                                <div class="briefing-status-item">
+                                    <span class="briefing-pulse-emerald"></span>
+                                    <span class="briefing-status-label">{lang === 'mk' ? 'СИСТЕМ' : 'SISTEM'}:</span>
+                                    <span class="briefing-status-value uppercase">{lang === 'mk' ? 'АКТИВЕН' : 'AKTIVAN'}</span>
+                                </div>
+                                <div class="briefing-status-item divider-left">
+                                    <span class="briefing-status-label">{lang === 'mk' ? 'ИЗДАНИЕ' : 'IZDANJE'}:</span>
+                                    <span class="briefing-status-value">{displayDate}</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="briefing-hero-stack mb-8 flex flex-col gap-6">
                             <BriefingHeader
                                 currentDate={displayDate}

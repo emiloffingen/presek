@@ -47,14 +47,18 @@ const dateline = t('briefing.stats_dateline', {
 
 <aside class="briefing-stats-strip" aria-label={t('briefing.stats_aria')}>
 	<p class="briefing-stats-strip__dateline">{dateline}</p>
-	<div class="briefing-stats-strip__grid">
+	<div class="briefing-premium-deck">
 		{items.map((item) => (
-			<div class:list={['briefing-stats-strip__item', item.accent && `is-${item.accent}`]}>
-				<span class="briefing-stats-strip__label">{item.label}</span>
-				<span class="briefing-stats-strip__value">
-					{item.value}
-					{item.suffix && <span class="briefing-stats-strip__suffix">{item.suffix}</span>}
-				</span>
+			<div class:list={[
+				'briefing-deck-item',
+				item.accent === 'pluralism' && 'accent-pluralism',
+				item.accent === 'intl' && 'accent-intl'
+			]}>
+				<span class="briefing-deck-label">{item.label}</span>
+				<div class="flex items-baseline gap-1 mt-2.5">
+					<span class="text-3xl font-serif font-black tracking-tight">{item.value}</span>
+					{item.suffix && <span class="text-[10px] font-sans font-bold text-muted-foreground tracking-normal uppercase select-none">{item.suffix}</span>}
+				</div>
 			</div>
 		))}
 	</div>

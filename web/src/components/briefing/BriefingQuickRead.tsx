@@ -8,6 +8,8 @@ import {
 import { useClientTranslations } from '../../i18n/clientTranslations';
 import { briefing } from '../../i18n/namespaces/briefing';
 
+import NarrativeList from './NarrativeList';
+
 type Narrative = {
   text: string;
   sentiment?: string;
@@ -142,10 +144,8 @@ export default function BriefingQuickRead({
         </div>
 
         {mergedNarratives.length > 0 && (
-          <div className="briefing-quick-narratives">
-            {mergedNarratives.slice(0, 4).map((item, index) => (
-              <blockquote key={`${index}-${item.text.slice(0, 24)}`}>{item.text}</blockquote>
-            ))}
+          <div className="my-6">
+            <NarrativeList narratives={mergedNarratives as any} lang={lang} />
           </div>
         )}
 
