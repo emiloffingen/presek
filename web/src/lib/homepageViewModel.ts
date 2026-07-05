@@ -290,14 +290,6 @@ export function buildHomepageViewModel(options: {
             count: displayedSynthesisPicks.length,
         });
     }
-    if (displayedTrendingClusters.length > 0) {
-        analizaNavItems.push({
-            target: '[data-trending-strip]',
-            kicker: t('home.trending'),
-            label: t('home.nav_quick_preview'),
-            count: displayedTrendingClusters.length,
-        });
-    }
     if (analysisBands.perspectives && perspectivesClusters.length > 0) {
         analizaNavItems.push({
             target: '[data-perspectives-band]',

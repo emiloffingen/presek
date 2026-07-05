@@ -26,9 +26,7 @@ import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
-import HomeLiveStrip from './HomeLiveStrip.astro';
 import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
-import TrendingPreviewRail from './TrendingPreviewRail.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import HomeStartHere from './HomeStartHere.astro';
@@ -99,7 +97,6 @@ const {
     feedClusters,
     wireClusters,
     excludedClusterIds,
-    displayedTrendingClusters,
     supportingFeatured,
     supportingCompact,
     consensusClusters,
@@ -516,17 +513,7 @@ if (analizaNavItems.length > 0) {
                     </div>
                 )}
 
-                {!error && isHomepage && showAnalysisLayers && (
-                    <div class="home-mobile-order-trending home-analiza-deferred">
-                        <TrendingPreviewRail clusters={displayedTrendingClusters} lang={lang} />
-                    </div>
-                )}
 
-                {!error && isHomepage && showAnalysisLayers && (
-                    <div class="home-mobile-order-live home-analiza-deferred">
-                        <HomeLiveStrip articles={topWireArticles} getTimeStr={getTimeStr} lang={lang} />
-                    </div>
-                )}
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
 			<div class={`w-full mt-16 pt-12 ${isHomepage ? 'homepage-analiza-only' : 'hidden'}`}>
