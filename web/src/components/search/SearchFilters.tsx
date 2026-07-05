@@ -1,4 +1,24 @@
+import {
+  Globe,
+  Flag,
+  Building2,
+  TrendingUp,
+  Trophy,
+  Film,
+  Cpu,
+  type LucideIcon,
+} from 'lucide-react';
 import type { CategoryOption, TimespanOption, TFunction } from './types';
+
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  all: Globe,
+  country: Flag,
+  politics: Building2,
+  economy: TrendingUp,
+  sports: Trophy,
+  culture: Film,
+  technology: Cpu,
+};
 
 type SearchFiltersProps = {
   showFilters: boolean;
@@ -29,21 +49,25 @@ export function SearchFilters({
       <div className="flex-1">
         <span className="ui-kicker text-muted-foreground block mb-2">{t('search.topic_label')}</span>
         <div className="flex flex-wrap gap-1.5">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              data-testid="search-category-chip"
-              data-category={cat.id}
-              onClick={() => onCategoryChange(cat.id)}
-              className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
-                categoryFilter === cat.id
-                  ? 'bg-foreground text-background border-foreground shadow-sm'
-                  : 'bg-background hover:bg-secondary border-border text-foreground'
-              }`}
-            >
-              {t(cat.labelKey)}
-            </button>
-          ))}
+          {categories.map((cat) => {
+            const Icon = CATEGORY_ICONS[cat.id] || Globe;
+            return (
+              <button
+                key={cat.id}
+                data-testid="search-category-chip"
+                data-category={cat.id}
+                onClick={() => onCategoryChange(cat.id)}
+                className={`search-cmd-chip px-3 py-1 sm:py-1.5 rounded-none transition-all border flex items-center gap-1.5 ${
+                  categoryFilter === cat.id
+                    ? 'bg-foreground text-background border-foreground shadow-sm'
+                    : 'bg-background hover:bg-secondary border-border text-foreground'
+                }`}
+              >
+                <Icon size={13} />
+                <span>{t(cat.labelKey)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

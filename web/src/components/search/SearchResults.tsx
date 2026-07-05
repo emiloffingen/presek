@@ -1,5 +1,5 @@
 import { navigate } from 'astro:transitions/client';
-import { History, Search, TrendingUp, Zap, ArrowUpRight, X } from 'lucide-react';
+import { History, Search, TrendingUp, Zap, ArrowUpRight, X, Trash2 } from 'lucide-react';
 import React from 'react';
 import { SearchSkeleton } from './SearchSkeleton';
 import { SearchResultItem } from './SearchResultItem';
@@ -28,6 +28,8 @@ type SearchResultsProps = {
   onNavigateToQuery: (q: string) => void;
   onSetQuery: (q: string) => void;
   onRemoveRecentSearch: (q: string) => void;
+  onClearRecentSearches?: () => void;
+  searchTime?: number | null;
   closeSearch: () => void;
   t: TFunction;
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -49,6 +51,8 @@ export const SearchResults = React.memo(function SearchResults({
   onNavigateToQuery,
   onSetQuery,
   onRemoveRecentSearch,
+  onClearRecentSearches,
+  searchTime,
   closeSearch,
   t,
   scrollRef,
@@ -68,9 +72,21 @@ export const SearchResults = React.memo(function SearchResults({
         <div className="space-y-6 sm:space-y-10">
           {recentSearches.length > 0 && (
             <section>
-              <h3 className="ui-kicker mb-3 sm:mb-4 flex items-center gap-[var(--grid-gap)]">
-                <History size={12} /> {t('search.recent_searches')}
-              </h3>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="ui-kicker flex items-center gap-[var(--grid-gap)] mb-0">
+                  <History size={12} /> {t('search.recent_searches')}
+                </h3>
+                {onClearRecentSearches && (
+                  <button
+                    onClick={onClearRecentSearches}
+                    className="text-[10px] font-bold text-muted-foreground/60 hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer"
+                    type="button"
+                  >
+                    <Trash2 size={10} />
+                    {t('search.clear_all')}
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((s, i) => (
                   <div
@@ -168,6 +184,17 @@ export const SearchResults = React.memo(function SearchResults({
       {/* Results List */}
       {trimmedQuery.length >= 2 && (
         <div className="space-y-6 sm:space-y-8">
+          {!isLoading && searchTime !== undefined && searchTime !== null && suggestions.length > 0 && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground/80 px-1 border-b border-border/20 pb-2">
+              <span className="font-serif italic">
+                {t('search.stats_timing', { count: suggestions.length + (entityResult ? 1 : 0), time: searchTime })}
+              </span>
+              <span className="text-[10px] opacity-60 font-bold uppercase tracking-wider">
+                {t('search.global_search')}
+              </span>
+            </div>
+          )}
+
           {!isLoading && (
             <button
               type="button"

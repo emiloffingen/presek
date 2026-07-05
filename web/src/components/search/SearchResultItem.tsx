@@ -75,7 +75,14 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
             {entity.type} · {entity.total_mentions} {props.t?.('search.mentions')}
           </p>
         </div>
-        <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
+        {isActive ? (
+          <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-secondary/80 px-1.5 py-0.5 border border-border shadow-sm shrink-0 self-center animate-in fade-in duration-200">
+            <span>{props.t?.('search.shortcut_select') || 'Select'}</span>
+            <kbd className="font-mono text-[9px]">↵</kbd>
+          </span>
+        ) : (
+          <ArrowUpRight size={16} className="ml-auto text-muted-foreground shrink-0" />
+        )}
       </button>
     );
   }
@@ -106,36 +113,44 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
             />
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span
-              className={`ui-label-min ${
-                item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
-              }`}
-            >
-              {item.category}
-            </span>
-            {item.has_synthesis && (
-              <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 ui-label-min">
-                <Sparkles size={8} fill="currentColor" />
-                {t('search.synthesis')}
+        <div className="min-w-0 flex-1 flex items-start gap-4 justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span
+                className={`ui-label-min ${
+                  item.has_synthesis ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
+                }`}
+              >
+                {item.category}
               </span>
-            )}
-          </div>
-          <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-foreground transition-colors">
-            <HighlightMatch text={item.title} query={query} />
-          </p>
-          {item.description && (
-            <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug">
-              <HighlightMatch text={item.description} query={query} />
+              {item.has_synthesis && (
+                <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 ui-label-min">
+                  <Sparkles size={8} fill="currentColor" />
+                  {t('search.synthesis')}
+                </span>
+              )}
+            </div>
+            <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-foreground transition-colors">
+              <HighlightMatch text={item.title} query={query} />
             </p>
-          )}
-          <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
-            <span>{item.source}</span>
-            <span>
-              {item.sourceCount} {item.sourceCount === 1 ? t('news.source') : t('news.sources')}
-            </span>
+            {item.description && (
+              <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug">
+                <HighlightMatch text={item.description} query={query} />
+              </p>
+            )}
+            <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
+              <span>{item.source}</span>
+              <span>
+                {item.sourceCount} {item.sourceCount === 1 ? t('news.source') : t('news.sources')}
+              </span>
+            </div>
           </div>
+          {isActive && (
+            <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-secondary/80 px-1.5 py-0.5 border border-border shadow-sm shrink-0 self-center animate-in fade-in duration-200">
+              <span>{t('search.shortcut_select')}</span>
+              <kbd className="font-mono text-[9px]">↵</kbd>
+            </span>
+          )}
         </div>
       </button>
     );
@@ -156,9 +171,16 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
         <action.icon size={16} />
       </div>
       <span className="search-cmd-action-title">{action.label}</span>
-      <span className="hidden sm:inline ui-label-min text-muted-foreground opacity-60">
-        → {action.href}
-      </span>
+      {isActive ? (
+        <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-secondary/80 px-1.5 py-0.5 border border-border shadow-sm shrink-0 self-center animate-in fade-in duration-200">
+          <span>{props.t?.('search.shortcut_select') || 'Select'}</span>
+          <kbd className="font-mono text-[9px]">↵</kbd>
+        </span>
+      ) : (
+        <span className="hidden sm:inline ui-label-min text-muted-foreground opacity-60 ml-auto">
+          → {action.href}
+        </span>
+      )}
     </button>
   );
 });

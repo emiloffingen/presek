@@ -287,3 +287,41 @@
   background: color-mix(in srgb, var(--presek-mark) 18%, transparent);
   color: inherit;
 }
+
+.search-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--presek-mark, var(--nyt-accent, #e53e3e)), transparent);
+  background-size: 200% 100%;
+  animation: searchLoadingGlow 1.5s infinite linear;
+  z-index: 100;
+}
+
+@keyframes searchLoadingGlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Premium micro-interactions and command palette list selections */
+.search-page-scope button[data-active-nav] {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.search-page-scope button[data-active-nav]:hover {
+  background: color-mix(in srgb, var(--foreground) 3%, var(--secondary)/30) !important;
+}
+
+.search-page-scope button[data-active-nav].bg-secondary\/80 {
+  border-color: var(--presek-mark, var(--nyt-accent, #e53e3e)) !important;
+  background: color-mix(in srgb, var(--presek-mark) 5%, var(--secondary)) !important;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--presek-mark) 8%, transparent) !important;
+  transform: translateX(4px);
+}

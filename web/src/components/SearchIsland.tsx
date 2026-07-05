@@ -73,10 +73,20 @@ export default function SearchIsland({
   const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTime, setSearchTime] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListening, setIsListening] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleClearRecentSearches = useCallback(() => {
+    setRecentSearches([]);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(RECENT_SEARCHES_KEY);
+      } catch (e) {}
+    }
+  }, []);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const queryCacheRef = useRef<Record<string, { suggestions: Suggestion[]; entity: EntityResult | null }>>({});
@@ -378,6 +388,7 @@ export default function SearchIsland({
     const trimmed = query.trim();
     if (trimmed.length < 2) {
       setSuggestions([]);
+      setSearchTime(null);
       setIsLoading(false);
       setActiveIndex(-1);
       return;
@@ -393,12 +404,14 @@ export default function SearchIsland({
       const cached = queryCacheRef.current[cacheKey];
       setSuggestions(cached.suggestions);
       setEntityResult(cached.entity);
+      setSearchTime(1);
       setIsLoading(false);
       setActiveIndex(-1);
       return;
     }
 
     let cancelled = false;
+    const startTime = performance.now();
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       setError(null);
@@ -432,6 +445,8 @@ export default function SearchIsland({
 
         if (!cancelled) {
           const entity = isEntityResult(data.entity) ? data.entity : null;
+          const duration = Math.round(performance.now() - startTime);
+          setSearchTime(duration);
           // Save in cache
           queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity };
           setSuggestions(nextSuggestions);
@@ -442,6 +457,7 @@ export default function SearchIsland({
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
+          setSearchTime(null);
           setError(err instanceof Error ? err.message : t('search.error'));
         }
       } finally {
@@ -635,10 +651,12 @@ export default function SearchIsland({
       />
       <div
         ref={dialogRef}
-        className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-card/85 backdrop-blur-xl border-x border-border/50 sm:border sm:border-border/50 shadow-premium sm:rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4"
+        className="search-page-scope w-full max-w-6xl h-[100dvh] sm:h-[92vh] md:h-[80vh] bg-card/85 backdrop-blur-xl border-x border-border/50 sm:border sm:border-border/50 shadow-premium sm:rounded-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 mx-0 sm:mx-4 relative"
         data-page-scope="search"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Flows loading bar at the top */}
+        {isLoading && <div className="search-loading-bar" />}
         {/* Command Header */}
         <div className="flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/10">
           <Search className="hidden sm:block text-muted-foreground" size={24} />
@@ -704,6 +722,8 @@ export default function SearchIsland({
             onNavigateToQuery={navigateToQuery}
             onSetQuery={setQuery}
             onRemoveRecentSearch={handleRemoveRecentSearch}
+            onClearRecentSearches={handleClearRecentSearches}
+            searchTime={searchTime}
             closeSearch={closeSearch}
             t={t}
             scrollRef={scrollRef}
@@ -712,6 +732,7 @@ export default function SearchIsland({
           <SearchPreview
             item={selectedItem}
             t={t}
+            lang={lang}
             onOpenCluster={navigateToCluster}
             onOpenEntity={navigateToQuery}
             onOpenAction={handleOpenAction}
