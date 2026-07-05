@@ -32,6 +32,8 @@ def _install_fake_fastapi():
     fake_fastapi.APIRouter = _FakeRouter
     fake_fastapi.Request = _FakeRequest
     fake_fastapi.HTTPException = _FakeHTTPException
+    fake_fastapi.Path = _FakeRouter  # Use a dummy or mock object
+    fake_fastapi.Query = _FakeRouter
     fake_responses.JSONResponse = _FakeJSONResponse
 
     original = {

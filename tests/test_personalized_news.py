@@ -8,11 +8,7 @@ import pytest
 # --- Robust Global FastAPI Mocks ---
 
 
-class _FakeHTTPException(Exception):
-    def __init__(self, status_code, detail=None):
-        super().__init__(detail)
-        self.status_code = status_code
-        self.detail = detail
+from fastapi import HTTPException as _FakeHTTPException
 
 
 def _get_fake_fastapi_modules():
@@ -47,6 +43,7 @@ def _get_fake_fastapi_modules():
     f.Depends = MagicMock
     f.Header = MagicMock
     f.Query = MagicMock
+    f.Path = MagicMock
     f.BackgroundTasks = MagicMock
     f.Form = MagicMock
 

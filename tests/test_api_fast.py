@@ -9,17 +9,14 @@ import pytest
 # --- Robust Global FastAPI Mocks ---
 
 
-class _FakeHTTPException(Exception):
-    def __init__(self, status_code, detail=None):
-        super().__init__(detail)
-        self.status_code = status_code
-        self.detail = detail
+from fastapi import HTTPException as _FakeHTTPException
 
 
 class _FakeFastAPI:
     def __init__(self, *args, **kwargs):
         self.user_middleware = []
         self.http_middlewares = []
+        self.state = types.SimpleNamespace()
 
     def add_middleware(self, cls, **options):
         self.user_middleware.append(types.SimpleNamespace(cls=cls, options=options))
@@ -38,6 +35,12 @@ class _FakeFastAPI:
         return decorator
 
     def post(self, _path, **_kwargs):
+        def decorator(fn):
+            return fn
+
+        return decorator
+
+    def api_route(self, _path, **_kwargs):
         def decorator(fn):
             return fn
 

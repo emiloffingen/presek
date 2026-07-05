@@ -267,12 +267,37 @@ _MODULES_TO_RELOAD = (
 @pytest.fixture(autouse=True)
 def _restore_runtime_modules(request):
     module_name = getattr(request.module, "__name__", "")
+
+    # Self-healing check: clean up fake fastapi modules if we are not in a mocking test module
+    is_mocking_module = (
+        module_name.endswith("test_api_fast") or
+        module_name.endswith("test_personalized_news") or
+        module_name.endswith("test_home")
+    )
+    if not is_mocking_module:
+        fastapi_mod = sys.modules.get("fastapi")
+        if fastapi_mod is not None:
+            is_fake = (
+                not hasattr(fastapi_mod, "__file__") or
+                getattr(fastapi_mod, "FastAPI", None) is None or
+                getattr(fastapi_mod, "FastAPI", None).__name__ == "_FakeFastAPI" or
+                fastapi_mod.__class__.__name__ == "MagicMock"
+            )
+            if is_fake:
+                for name in list(sys.modules):
+                    if name == "fastapi" or name.startswith("fastapi."):
+                        sys.modules.pop(name, None)
+
     preserve_fake_database = module_name.endswith("test_personalized_news") or module_name.endswith("test_api_fast")
 
+    fake_modules = {}
     if hasattr(request.module, "_get_fake_fastapi_modules"):
-        for name, mod in request.module._get_fake_fastapi_modules().items():
-            sys.modules[name] = mod
+        fake_modules = request.module._get_fake_fastapi_modules()
 
+    original_modules = {name: sys.modules.get(name) for name in fake_modules}
+    sys.modules.update(fake_modules)
+
+    original_db = sys.modules.get("database")
     if module_name.endswith("test_personalized_news") and hasattr(request.module, "mock_db_manager"):
         sys.modules["database"] = MagicMock(db_manager=request.module.mock_db_manager)
     elif not preserve_fake_database:
@@ -281,4 +306,15 @@ def _restore_runtime_modules(request):
     for name in _MODULES_TO_RELOAD:
         sys.modules.pop(name, None)
 
-    yield
+    try:
+        yield
+    finally:
+        for name, original in original_modules.items():
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
+        if original_db is None:
+            sys.modules.pop("database", None)
+        else:
+            sys.modules["database"] = original_db
