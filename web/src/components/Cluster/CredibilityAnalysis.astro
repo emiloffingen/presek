@@ -19,6 +19,7 @@ interface Props {
 		objectivity: number;
 		emotional_charge?: number;
 	};
+	narrativeDiversity?: any;
 }
 
 const {
@@ -31,6 +32,7 @@ const {
 	lang: propLang,
 	pluralismScore,
 	toneAnalysis,
+	narrativeDiversity,
 } = Astro.props;
 
 const requestUrl = Astro.request ? new URL(Astro.request.url) : Astro.url;

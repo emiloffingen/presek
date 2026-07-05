@@ -3,7 +3,7 @@ import { useClientTranslations } from '../i18n/clientTranslations';
 import { search } from '../i18n/namespaces/search';
 import { news } from '../i18n/namespaces/news';
 import { common } from '../i18n/namespaces/common';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { navigate } from 'astro:transitions/client';
 import {
@@ -138,6 +138,11 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
+// Memoized wrapper so highlighting is not recomputed for unchanged items/queries
+const HighlightMatch = React.memo(function HighlightMatch({ text, query }: { text: string; query: string }) {
+  return <>{highlightMatch(text, query)}</>;
+});
+
 function SearchSkeleton({ lang = 'sr' }: { lang?: string }) {
   return (
     <div className="space-y-6 animate-pulse">
@@ -257,15 +262,19 @@ export default function SearchIsland({
   const dialogRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const sessionStorageDebounceRef = useRef<number | null>(null);
 
-  const SEARCH_ACTIONS: SearchAction[] = [
+  // Memoize translation-derived constants by lang only; the t() identity changes
+  // every render but its output is fully determined by lang.
+  const SEARCH_ACTIONS: SearchAction[] = useMemo(() => [
     { id: 'act-briefing', label: t('search.action_briefing_label'), icon: Zap, href: localePathForLang('/briefing', lang), category: 'NAVIGATION', desc: t('search.action_briefing_desc') },
     { id: 'act-foryou', label: t('search.action_foryou_label'), icon: Compass, href: localePathForLang('/for-you', lang), category: 'NAVIGATION', desc: t('search.action_foryou_desc') },
     { id: 'act-pulse', label: t('search.action_pulse_label'), icon: Activity, href: localePathForLang('/pulse', lang), category: 'NAVIGATION', desc: t('search.action_pulse_desc') },
     { id: 'act-archive', label: t('search.action_archive_label'), icon: Archive, href: localePathForLang('/archive', lang), category: 'NAVIGATION', desc: t('search.action_archive_desc') },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [lang]);
 
-  const CATEGORIES = [
+  const CATEGORIES = useMemo(() => [
     { id: 'all', label: t('search.category_all'), color: 'bg-foreground' },
     { id: t('search.category_country_value'), label: t('search.category_country'), color: 'bg-nyt-red' },
     { id: 'Politika', label: t('search.category_politika'), color: 'bg-blue-600' },
@@ -273,7 +282,8 @@ export default function SearchIsland({
     { id: 'Sport', label: t('search.category_sport'), color: 'bg-orange-500' },
     { id: 'Kultura', label: t('search.category_kultura'), color: 'bg-purple-600' },
     { id: 'Tehnologija', label: t('search.category_tehnologija'), color: 'bg-cyan-600' },
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [lang]);
 
   useEffect(() => {
     if (initialQuery !== undefined && initialQuery !== null && query !== initialQuery) {
@@ -539,24 +549,38 @@ export default function SearchIsland({
     };
   }, [query, isOpen, timespan, categoryFilter, lang, t]);
 
-  // Persist search session state to sessionStorage
+  // Persist search session state to sessionStorage (debounced to avoid blocking
+  // the main thread on every keystroke).
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (isOpen) {
-      sessionStorage.setItem('presek_search_session_state', JSON.stringify({
-        query,
-        timespan,
-        categoryFilter,
-        isOpen
-      }));
-    } else {
-      sessionStorage.removeItem('presek_search_session_state');
+    if (sessionStorageDebounceRef.current) {
+      window.clearTimeout(sessionStorageDebounceRef.current);
     }
+    sessionStorageDebounceRef.current = window.setTimeout(() => {
+      sessionStorageDebounceRef.current = null;
+      if (isOpen) {
+        sessionStorage.setItem('presek_search_session_state', JSON.stringify({
+          query,
+          timespan,
+          categoryFilter,
+          isOpen
+        }));
+      } else {
+        sessionStorage.removeItem('presek_search_session_state');
+      }
+    }, 250);
+    return () => {
+      if (sessionStorageDebounceRef.current) {
+        window.clearTimeout(sessionStorageDebounceRef.current);
+      }
+    };
   }, [query, timespan, categoryFilter, isOpen]);
 
-  // Auto-scroll highlighted keyboard navigation element into view
+  // Auto-scroll highlighted keyboard navigation element into view. Skip the
+  // default "search all" selection (activeIndex === -1) to avoid smooth-scroll
+  // jank while typing.
   useEffect(() => {
-    if (!scrollRef.current) return;
+    if (!scrollRef.current || activeIndex < 0) return;
     const container = scrollRef.current;
     const activeEl = container.querySelector(`[data-active-nav="${activeIndex}"]`) as HTMLElement;
     if (activeEl) {
@@ -618,22 +642,32 @@ export default function SearchIsland({
     }
   };
 
-  const filteredActions = SEARCH_ACTIONS.filter(a =>
-    a.label.toLowerCase().includes(query.toLowerCase()) ||
-    a.desc.toLowerCase().includes(query.toLowerCase())
+  const filteredActions = useMemo(() =>
+    SEARCH_ACTIONS.filter(a =>
+      a.label.toLowerCase().includes(query.toLowerCase()) ||
+      a.desc.toLowerCase().includes(query.toLowerCase())
+    ),
+    [SEARCH_ACTIONS, query]
   );
 
-  const previewIndex = (activeIndex === -1 && query.trim().length >= 2)
-    ? 0
-    : activeIndex;
+  const previewIndex = useMemo(() =>
+    (activeIndex === -1 && query.trim().length >= 2) ? 0 : activeIndex,
+    [activeIndex, query]
+  );
 
-  const selectedItem = (entityResult && previewIndex === 0)
-    ? { type: 'ENTITY' as const, data: entityResult }
-    : (previewIndex >= (entityResult ? 1 : 0) && previewIndex < (entityResult ? 1 : 0) + suggestions.length)
-      ? { type: 'CLUSTER' as const, data: suggestions[entityResult ? previewIndex - 1 : previewIndex] }
-      : (previewIndex >= (entityResult ? 1 : 0) + suggestions.length && previewIndex < (entityResult ? 1 : 0) + suggestions.length + filteredActions.length)
-        ? { type: 'ACTION' as const, data: filteredActions[previewIndex - (entityResult ? 1 : 0) - suggestions.length] }
-        : null;
+  const selectedItem = useMemo(() => {
+    const entityOffset = entityResult ? 1 : 0;
+    if (entityResult && previewIndex === 0) {
+      return { type: 'ENTITY' as const, data: entityResult };
+    }
+    if (previewIndex >= entityOffset && previewIndex < entityOffset + suggestions.length) {
+      return { type: 'CLUSTER' as const, data: suggestions[previewIndex - entityOffset] };
+    }
+    if (previewIndex >= entityOffset + suggestions.length && previewIndex < entityOffset + suggestions.length + filteredActions.length) {
+      return { type: 'ACTION' as const, data: filteredActions[previewIndex - entityOffset - suggestions.length] };
+    }
+    return null;
+  }, [entityResult, previewIndex, suggestions, filteredActions]);
 
   const overlayContent = isOpen && (
     <div
@@ -923,7 +957,7 @@ export default function SearchIsland({
                             )}
                           </div>
                           <div>
-                            <p className="font-serif font-black text-lg sm:text-xl">{highlightMatch(entityResult.name, query)}</p>
+                            <p className="font-serif font-black text-lg sm:text-xl"><HighlightMatch text={entityResult.name} query={query} /></p>
                             <p className="ui-label-min text-muted-foreground">{entityResult.type} · {entityResult.total_mentions} {t('search.mentions')}</p>
                           </div>
                           <ArrowUpRight size={16} className="ml-auto text-muted-foreground" />
@@ -962,9 +996,9 @@ export default function SearchIsland({
                                       </span>
                                     )}
                                   </div>
-                                  <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-foreground transition-colors">{highlightMatch(item.title, query)}</p>
+                                  <p className="font-serif font-black text-base sm:text-lg leading-tight line-clamp-2 group-hover:text-foreground transition-colors"><HighlightMatch text={item.title} query={query} /></p>
                                   {item.description && (
-                                    <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug">{highlightMatch(item.description, query)}</p>
+                                    <p className="mt-1 text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 leading-snug"><HighlightMatch text={item.description} query={query} /></p>
                                   )}
                                   <div className="flex items-center gap-2 sm:gap-[var(--grid-gap)] mt-1.5 sm:mt-2 ui-label-min text-muted-foreground/60">
                                     <span>{item.source}</span>
