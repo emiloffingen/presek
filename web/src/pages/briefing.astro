@@ -32,7 +32,6 @@ const t = useTranslations(lang);
 const url = new URL(Astro.request.url);
 const dateParam = url.searchParams.get('date');
 const modeParam = url.searchParams.get('mode');
-const quickMode = modeParam !== 'full';
 
 let briefingData: any = null;
 let homeData: any = null;
@@ -90,6 +89,13 @@ try {
 
 const formattedBriefing = briefingData?.content ? formatBriefing(briefingData.content, lang, hostHeader) : "";
 const briefingSections = briefingData?.content ? extractBriefingSections(briefingData.content) : [];
+
+const hasQuickRead = Boolean(
+    briefingData?.quick_read &&
+    ((briefingData.quick_read.bullets && briefingData.quick_read.bullets.length > 0) ||
+     (briefingData.quick_read.narratives && briefingData.quick_read.narratives.length > 0))
+);
+const quickMode = hasQuickRead && modeParam !== 'full';
 
 const displayDate = briefingData?.date
     ? new Date(briefingData.date).toLocaleDateString(dateLocaleForLang(lang), {
@@ -165,7 +171,7 @@ const leadVisualTitle = briefingData?.lead_cluster?.synthetic_headline || briefi
                             )}
                         </div>
 
-                        {briefingData.quick_read && (
+                        {hasQuickRead && briefingData.quick_read && (
                             <BriefingQuickRead
                                 lang={lang as 'sr' | 'mk'}
                                 quickRead={briefingData.quick_read}
