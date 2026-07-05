@@ -4,7 +4,7 @@ import SimpleThemeToggle from './SimpleThemeToggle.astro';
 import TextScaleIsland from './TextScaleIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
-import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search } from 'lucide-react';
+import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search, Clock, Calendar } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
 import { fetchJsonCached } from '../lib/apiCache';
 import { getEditionStr } from '../utils/textUtils';
@@ -207,6 +207,22 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                 </span>
                 <span class="ticker-label">{t('header.live')}</span>
             </div>
+            {hasDispatchStats && (
+            <div class="dispatch-stats hidden lg:flex">
+                <span class="stat-badge animate-in fade-in duration-300" title={t('header.verified_facts_desc')}>
+                    <span>{t('header.verified_facts')}: </span>
+                    <strong class="ml-1">{confirmedFacts}</strong>
+                </span>
+                <span class="stat-badge animate-in fade-in duration-300" title={t('header.pluralism_index_desc')}>
+                    <span>{t('header.pluralism_index')}: </span>
+                    <strong class="ml-1">{pluralismPct}%</strong>
+                </span>
+                <span class="stat-badge animate-in fade-in duration-300" title={t('header.monitored_sources_desc')}>
+                    <span>{t('header.monitored_sources')}: </span>
+                    <strong class="ml-1">{totalFeeds}</strong>
+                </span>
+            </div>
+            )}
             <div class="mobile-ticker-compact">
                 {breakingItems[0] && (
                     <a href={breakingItems[0].href} class="mobile-live-ticker-headline">
@@ -265,10 +281,25 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                 )}
             </div>
 
-            <div class="topbar-branding">
+            <div class="topbar-branding flex flex-col items-center">
                 <a href={l('/')} class="brand-link">
                     <Branding mode="full" />
                 </a>
+                <div class="topbar-metadata-strip hidden md:flex items-center gap-3 mt-1.5 text-[9px] uppercase tracking-widest font-bold text-muted-foreground/60 select-none">
+                    <span class="dateline flex items-center gap-1.5">
+                        <Calendar size={11} className="opacity-75" />
+                        <span>{currentDate}</span>
+                    </span>
+                    {currentEdition && (
+                        <>
+                            <span class="w-1 h-1 rounded-full bg-border"></span>
+                            <span class="edition flex items-center gap-1.5">
+                                <Sparkles size={11} className="opacity-75 text-amber-500/80" />
+                                <span>{currentEdition}</span>
+                            </span>
+                        </>
+                    )}
+                </div>
             </div>
 
             <div class="topbar-actions">
