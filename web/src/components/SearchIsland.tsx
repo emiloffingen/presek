@@ -189,7 +189,12 @@ export default function SearchIsland({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
+    let saved = null;
+    try {
+      saved = localStorage.getItem(RECENT_SEARCHES_KEY);
+    } catch (e) {
+      console.warn('localStorage not accessible:', e);
+    }
     if (saved) {
       try {
         const parsed: unknown = JSON.parse(saved);
@@ -482,7 +487,9 @@ export default function SearchIsland({
       ];
       setRecentSearches(newRecent);
       if (typeof window !== 'undefined') {
-        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newRecent));
+        try {
+          localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newRecent));
+        } catch (e) {}
       }
     },
     [recentSearches]
@@ -582,7 +589,9 @@ export default function SearchIsland({
       const newRecent = recentSearches.filter((item) => item.query !== searchQuery);
       setRecentSearches(newRecent);
       if (typeof window !== 'undefined') {
-        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newRecent));
+        try {
+          localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newRecent));
+        } catch (e) {}
       }
     },
     [recentSearches]

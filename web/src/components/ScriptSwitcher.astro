@@ -74,7 +74,9 @@ const initialToggleLabel = lang === 'mk' ? 'LAT/CYR' : 'CYR/LAT';
         } else {
             document.body.classList.remove('script-cyrillic');
         }
-        localStorage.setItem('scriptPreference', state.isCyrillic ? 'cyrillic' : 'latin');
+        try {
+            localStorage.setItem('scriptPreference', state.isCyrillic ? 'cyrillic' : 'latin');
+        } catch (e) {}
         syncToggleLabels(state);
         if (convertDom) {
             traverseBody(state.isCyrillic);
@@ -84,7 +86,10 @@ const initialToggleLabel = lang === 'mk' ? 'LAT/CYR' : 'CYR/LAT';
     function readState(): ScriptState {
         const initialLang = document.documentElement.lang || 'sr';
         const isServerCyrillic = initialLang.startsWith('mk');
-        const savedPreference = localStorage.getItem('scriptPreference');
+        let savedPreference = null;
+        try {
+            savedPreference = localStorage.getItem('scriptPreference');
+        } catch (e) {}
         const isCyrillic = savedPreference ? savedPreference === 'cyrillic' : isServerCyrillic;
         return { isCyrillic, isServerCyrillic };
     }

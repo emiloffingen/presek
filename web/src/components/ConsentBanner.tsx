@@ -11,7 +11,12 @@ const DISMISS_COOLDOWN_MS = 1000 * 60 * 60 * 24 * 3;
 
 function readConsentState(): boolean {
   if (typeof window === 'undefined') return true;
-  const raw = localStorage.getItem(CONSENT_KEY);
+  let raw = null;
+  try {
+    raw = localStorage.getItem(CONSENT_KEY);
+  } catch (e) {
+    return false;
+  }
   if (!raw) return false;
 
   if (raw === 'accepted') return true;
@@ -26,17 +31,19 @@ function readConsentState(): boolean {
 
 function writeConsentState(status: 'accepted' | 'dismissed') {
   if (typeof window === 'undefined') return;
-  if (status === 'accepted') {
-    localStorage.setItem(CONSENT_KEY, 'accepted');
-  } else {
-    localStorage.setItem(
-      CONSENT_KEY,
-      JSON.stringify({
-        status,
-        ts: Date.now(),
-      })
-    );
-  }
+  try {
+    if (status === 'accepted') {
+      localStorage.setItem(CONSENT_KEY, 'accepted');
+    } else {
+      localStorage.setItem(
+        CONSENT_KEY,
+        JSON.stringify({
+          status,
+          ts: Date.now(),
+        })
+      );
+    }
+  } catch (e) {}
 }
 
 export const ConsentBanner: React.FC = () => {
@@ -56,7 +63,10 @@ export const ConsentBanner: React.FC = () => {
     }
 
     if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem(CONSENT_KEY);
+      let raw = null;
+      try {
+        raw = localStorage.getItem(CONSENT_KEY);
+      } catch (e) {}
       if (raw && raw !== 'accepted') {
         try {
           const parsed = JSON.parse(raw);

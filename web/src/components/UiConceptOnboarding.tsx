@@ -17,7 +17,11 @@ const STEPS = [
 
 function isFeedEngaged() {
   if (typeof localStorage === 'undefined') return false;
-  return localStorage.getItem(FEED_ENGAGED_KEY) === '1';
+  try {
+    return localStorage.getItem(FEED_ENGAGED_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
 }
 
 function isFeedFilterActive() {
@@ -43,13 +47,17 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, '1');
+    try {
+      localStorage.setItem(STORAGE_KEY, '1');
+    } catch (e) {}
     setVisible(false);
   }, []);
 
   useEffect(() => {
     const onFeedEngage = () => {
-      localStorage.setItem(FEED_ENGAGED_KEY, '1');
+      try {
+        localStorage.setItem(FEED_ENGAGED_KEY, '1');
+      } catch (e) {}
       setVisible(false);
     };
     window.addEventListener('presek:feed-filter-used', onFeedEngage);
@@ -61,12 +69,17 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   }, []);
 
   useEffect(() => {
-    if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem(STORAGE_KEY) === '1') return;
+    let isDismissed = '0';
+    let visits = 0;
+    try {
+      isDismissed = localStorage.getItem(STORAGE_KEY) || '0';
+      visits = Number(localStorage.getItem(FIRST_SESSION_KEY) || '0');
+    } catch (e) {
+      return;
+    }
+    if (isDismissed === '1') return;
     if (!document.querySelector('[data-home-session-root]')) return;
     if (isFeedEngaged() || isFeedFilterActive()) return;
-
-    const visits = Number(localStorage.getItem(FIRST_SESSION_KEY) || '0');
     if (visits > 4) return;
 
     setLeadHref(document.querySelector<HTMLAnchorElement>('.lead-copy a[data-testid="cluster-link"]')?.href || '');
@@ -149,7 +162,9 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
   }, [visible]);
 
   const openAnalysis = () => {
-    localStorage.setItem(STORAGE_KEY, '1');
+    try {
+      localStorage.setItem(STORAGE_KEY, '1');
+    } catch (e) {}
     setVisible(false);
     window.location.assign(localePathForLang('/pregled', lang as 'sr' | 'mk'));
   };

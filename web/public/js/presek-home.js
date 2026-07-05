@@ -32,13 +32,20 @@
     if (!root) return;
     var visitKey = 'homepage-visit-count';
     var expandedKey = 'homepage-analysis-expanded';
-    var visits = Number(localStorage.getItem(visitKey) || '0');
+    var visits = 0;
+    var expanded = '0';
+    try {
+      visits = Number(localStorage.getItem(visitKey) || '0');
+      expanded = localStorage.getItem(expandedKey);
+    } catch (_) {}
     if (visits < 1) root.classList.add('home-first-session');
-    if (localStorage.getItem(expandedKey) === '1') {
+    if (expanded === '1') {
       root.classList.add('home-analysis-expanded');
     }
     syncHomeModeDock(root);
-    localStorage.setItem(visitKey, String(visits + 1));
+    try {
+      localStorage.setItem(visitKey, String(visits + 1));
+    } catch (_) {}
   }
 
   function expandHomeAnalysis() {

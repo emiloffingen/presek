@@ -5,10 +5,17 @@ const LEGACY_READER_KEY = 'readerMode';
 
 export function loadReadingMode(): ReadingMode {
   if (typeof localStorage === 'undefined') return 'standard';
-  const stored = localStorage.getItem(STORAGE_KEY);
+  let stored = null;
+  let legacyStored = null;
+  try {
+    stored = localStorage.getItem(STORAGE_KEY);
+    legacyStored = localStorage.getItem(LEGACY_READER_KEY);
+  } catch (e) {
+    console.warn('localStorage not accessible:', e);
+  }
   if (stored === 'standard' || stored === 'focus' || stored === 'compare') return stored;
   if (stored === 'zen') return 'focus';
-  if (!stored && localStorage.getItem(LEGACY_READER_KEY) === 'true') return 'focus';
+  if (!stored && legacyStored === 'true') return 'focus';
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search);
     if (params.get('reader') === '1') return 'focus';
@@ -18,8 +25,10 @@ export function loadReadingMode(): ReadingMode {
 
 export function saveReadingMode(mode: ReadingMode): ReadingMode {
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, mode);
-    localStorage.setItem(LEGACY_READER_KEY, mode === 'focus' ? 'true' : 'false');
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+      localStorage.setItem(LEGACY_READER_KEY, mode === 'focus' ? 'true' : 'false');
+    } catch (e) {}
   }
   return mode;
 }

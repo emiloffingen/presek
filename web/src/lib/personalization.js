@@ -12,6 +12,28 @@ export const SYNC_TOKEN_UPDATED_EVENT = 'presek:sync-token-updated';
 export const DELIVERY_PREFS_UPDATED_EVENT = 'presek:delivery-prefs-updated';
 export const ONBOARDING_STATE_UPDATED_EVENT = 'presek:onboarding-updated';
 
+const memoryStorage = {};
+const dummyStorage = {
+  getItem: (key) => memoryStorage[key] || null,
+  setItem: (key, val) => { memoryStorage[key] = String(val); },
+  removeItem: (key) => { delete memoryStorage[key]; },
+  clear: () => { for (const k in memoryStorage) delete memoryStorage[k]; },
+  key: (i) => Object.keys(memoryStorage)[i] || null,
+  length: 0
+};
+
+function getSafeLocalStorage() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.getItem('__test_access__');
+      return window.localStorage;
+    }
+  } catch (e) {}
+  return dummyStorage;
+}
+
+const safeStorage = getSafeLocalStorage();
+
 const FOLLOW_RECOMMENDATION_MIN_SIGNAL = 1.25;
 const HOME_RAIL_TOPIC_MIN_SIGNAL = 1.8;
 const HOME_RAIL_SOURCE_MIN_SIGNAL = 3;
@@ -120,7 +142,7 @@ export function createDefaultSuggestionAnalytics() {
   };
 }
 
-export function loadSuggestionAnalytics(storage = globalThis?.localStorage) {
+export function loadSuggestionAnalytics(storage = safeStorage) {
   if (!storage) return createDefaultSuggestionAnalytics();
   const parsed = safeParse(storage.getItem(SUGGESTION_ANALYTICS_KEY));
   const next = createDefaultSuggestionAnalytics();
@@ -129,7 +151,7 @@ export function loadSuggestionAnalytics(storage = globalThis?.localStorage) {
   return next;
 }
 
-export function saveSuggestionAnalytics(analytics, storage = globalThis?.localStorage) {
+export function saveSuggestionAnalytics(analytics, storage = safeStorage) {
   const normalized = createDefaultSuggestionAnalytics();
   normalized.surfaces = analytics?.surfaces && typeof analytics.surfaces === 'object' ? analytics.surfaces : {};
   normalized.impressionKeys = Array.isArray(analytics?.impressionKeys)
@@ -156,7 +178,7 @@ function ensureSurfaceBuckets(analytics, surface) {
   return analytics.surfaces[surface];
 }
 
-export function recordSuggestionImpressions(surface, suggestions, storage = globalThis?.localStorage) {
+export function recordSuggestionImpressions(surface, suggestions, storage = safeStorage) {
   const cleanSurface = normalizeSurface(surface);
   if (!storage || !cleanSurface) return { analytics: loadSuggestionAnalytics(storage), recorded: [] };
   const items = (Array.isArray(suggestions) ? suggestions : [])
@@ -189,7 +211,7 @@ export function recordSuggestionImpressions(surface, suggestions, storage = glob
   return { analytics: saveSuggestionAnalytics(analytics, storage), recorded };
 }
 
-export function recordSuggestionFollow(surface, kind, value, storage = globalThis?.localStorage) {
+export function recordSuggestionFollow(surface, kind, value, storage = safeStorage) {
   const cleanSurface = normalizeSurface(surface);
   const cleanValue = normalizeValue(value);
   if (!storage || !cleanSurface || !cleanValue) return { analytics: loadSuggestionAnalytics(storage), recorded: false };
@@ -199,7 +221,7 @@ export function recordSuggestionFollow(surface, kind, value, storage = globalThi
   return { analytics: saveSuggestionAnalytics(analytics, storage), recorded: true };
 }
 
-export function recordSuggestionDismiss(surface, storage = globalThis?.localStorage) {
+export function recordSuggestionDismiss(surface, storage = safeStorage) {
   const cleanSurface = normalizeSurface(surface);
   if (!storage || !cleanSurface) return { analytics: loadSuggestionAnalytics(storage), recorded: false };
   const analytics = loadSuggestionAnalytics(storage);
@@ -209,7 +231,7 @@ export function recordSuggestionDismiss(surface, storage = globalThis?.localStor
   return { analytics: saveSuggestionAnalytics(analytics, storage), recorded: true };
 }
 
-export function sendSuggestionEvents(events, storage = globalThis?.localStorage) {
+export function sendSuggestionEvents(events, storage = safeStorage) {
   const fetchImpl = globalThis?.fetch;
   if (!storage || typeof fetchImpl !== 'function') return;
 
@@ -240,7 +262,7 @@ export function sendSuggestionEvents(events, storage = globalThis?.localStorage)
   }).catch(console.error);
 }
 
-export function getSuggestionConversionSummary(storage = globalThis?.localStorage, lang = 'sr') {
+export function getSuggestionConversionSummary(storage = safeStorage, lang = 'sr') {
   const analytics = loadSuggestionAnalytics(storage);
   const surfaceLabels = SUGGESTION_SURFACE_LABELS[lang] || SUGGESTION_SURFACE_LABELS.sr;
   const surfaces = Object.entries(analytics.surfaces || {})
@@ -304,12 +326,12 @@ export function createEmptyProfile() {
   };
 }
 
-export function loadSyncToken(storage = globalThis?.localStorage) {
+export function loadSyncToken(storage = safeStorage) {
   if (!storage) return '';
   return normalizeValue(storage.getItem(SYNC_TOKEN_KEY));
 }
 
-export function getOrCreateClientId(storage = globalThis?.localStorage) {
+export function getOrCreateClientId(storage = safeStorage) {
   if (!storage) return '';
   const existing = normalizeValue(storage.getItem(CLIENT_ID_KEY));
   if (existing) return existing;
@@ -318,7 +340,7 @@ export function getOrCreateClientId(storage = globalThis?.localStorage) {
   return next;
 }
 
-export function saveSyncToken(token, storage = globalThis?.localStorage) {
+export function saveSyncToken(token, storage = safeStorage) {
   const clean = normalizeValue(token);
   if (!storage) return clean;
   if (!clean) {
@@ -386,7 +408,7 @@ export async function buildCsrfHeadersAsync() {
   return token ? { 'X-CSRF-Token': token } : {};
 }
 
-export function loadReaderProfile(storage = globalThis?.localStorage) {
+export function loadReaderProfile(storage = safeStorage) {
   if (!storage) return createEmptyProfile();
   const parsed = safeParse(storage.getItem(PROFILE_KEY));
   return {
@@ -396,7 +418,7 @@ export function loadReaderProfile(storage = globalThis?.localStorage) {
   };
 }
 
-export function saveReaderProfile(profile, storage = globalThis?.localStorage) {
+export function saveReaderProfile(profile, storage = safeStorage) {
   if (!storage) return profile;
   const normalized = {
     recentClusters: Array.isArray(profile?.recentClusters) ? profile.recentClusters.slice(0, MAX_RECENT_CLUSTERS) : [],
@@ -489,7 +511,7 @@ export function normalizeServerDeliverySettings(settings) {
   };
 }
 
-export function loadDeliveryPreferences(storage = globalThis?.localStorage) {
+export function loadDeliveryPreferences(storage = safeStorage) {
   if (!storage) return createDefaultDeliveryPreferences();
   const parsed = safeParse(storage.getItem(DELIVERY_KEY));
   return {
@@ -499,7 +521,7 @@ export function loadDeliveryPreferences(storage = globalThis?.localStorage) {
   };
 }
 
-export function saveDeliveryPreferences(prefs, storage = globalThis?.localStorage) {
+export function saveDeliveryPreferences(prefs, storage = safeStorage) {
   if (!storage) return prefs;
   const normalized = {
     morningBriefing: prefs?.morningBriefing !== false,
@@ -511,7 +533,7 @@ export function saveDeliveryPreferences(prefs, storage = globalThis?.localStorag
   return normalized;
 }
 
-export function toggleDeliveryPreference(field, storage = globalThis?.localStorage) {
+export function toggleDeliveryPreference(field, storage = safeStorage) {
   const prefs = loadDeliveryPreferences(storage);
   if (field !== 'morningBriefing' && field !== 'breakingAlerts') {
     return prefs;
@@ -520,13 +542,13 @@ export function toggleDeliveryPreference(field, storage = globalThis?.localStora
   return saveDeliveryPreferences(prefs, storage);
 }
 
-export function setBrowserPermissionStatus(status, storage = globalThis?.localStorage) {
+export function setBrowserPermissionStatus(status, storage = safeStorage) {
   const prefs = loadDeliveryPreferences(storage);
   prefs.browserPermission = normalizeValue(status) || 'default';
   return saveDeliveryPreferences(prefs, storage);
 }
 
-export function toggleFollowedValue(kind, value, storage = globalThis?.localStorage) {
+export function toggleFollowedValue(kind, value, storage = safeStorage) {
   const cleanValue = normalizeValue(value);
   if (!cleanValue) return { profile: loadReaderProfile(storage), isFollowing: false };
 
@@ -548,7 +570,7 @@ export function toggleFollowedValue(kind, value, storage = globalThis?.localStor
   return { profile: saved, isFollowing };
 }
 
-export function isFollowingValue(kind, value, storage = globalThis?.localStorage) {
+export function isFollowingValue(kind, value, storage = safeStorage) {
   const cleanValue = normalizeValue(value);
   if (!cleanValue) return false;
   const profile = loadReaderProfile(storage);
@@ -556,7 +578,7 @@ export function isFollowingValue(kind, value, storage = globalThis?.localStorage
   return (profile[field] || []).includes(cleanValue);
 }
 
-export function recordClusterView(record, storage = globalThis?.localStorage) {
+export function recordClusterView(record, storage = safeStorage) {
   const profile = loadReaderProfile(storage);
   const normalized = {
     cluster_id: normalizeValue(record?.cluster_id),
@@ -845,7 +867,7 @@ export function createDefaultOnboardingState() {
   };
 }
 
-export function loadOnboardingState(storage = globalThis?.localStorage) {
+export function loadOnboardingState(storage = safeStorage) {
   if (!storage) return createDefaultOnboardingState();
   const parsed = safeParse(storage.getItem(ONBOARDING_KEY));
   return {
@@ -854,7 +876,7 @@ export function loadOnboardingState(storage = globalThis?.localStorage) {
   };
 }
 
-export function saveOnboardingState(state, storage = globalThis?.localStorage) {
+export function saveOnboardingState(state, storage = safeStorage) {
   const normalized = {
     dismissed: Boolean(state?.dismissed),
     completedAt: normalizeValue(state?.completedAt),
@@ -866,11 +888,11 @@ export function saveOnboardingState(state, storage = globalThis?.localStorage) {
   return normalized;
 }
 
-export function dismissOnboarding(storage = globalThis?.localStorage) {
+export function dismissOnboarding(storage = safeStorage) {
   return saveOnboardingState({ ...loadOnboardingState(storage), dismissed: true }, storage);
 }
 
-export function completeOnboarding(storage = globalThis?.localStorage) {
+export function completeOnboarding(storage = safeStorage) {
   return saveOnboardingState(
     {
       dismissed: true,
@@ -880,7 +902,7 @@ export function completeOnboarding(storage = globalThis?.localStorage) {
   );
 }
 
-export function getOnboardingProgress(storage = globalThis?.localStorage, lang = 'sr') {
+export function getOnboardingProgress(storage = safeStorage, lang = 'sr') {
   const profile = loadReaderProfile(storage);
   const delivery = loadDeliveryPreferences(storage);
   const syncToken = loadSyncToken(storage);
@@ -1029,7 +1051,7 @@ export function buildSurfaceFollowSuggestions(profile, surface, options = {}) {
   return { topics, sources };
 }
 
-export function exportSyncPayload(storage = globalThis?.localStorage) {
+export function exportSyncPayload(storage = safeStorage) {
   return {
     followedTopics: loadReaderProfile(storage).followedTopics,
     followedSources: loadReaderProfile(storage).followedSources,
@@ -1038,7 +1060,7 @@ export function exportSyncPayload(storage = globalThis?.localStorage) {
   };
 }
 
-export function clearAllData(storage = globalThis?.localStorage) {
+export function clearAllData(storage = safeStorage) {
   if (!storage) return;
   const keys = [
     PROFILE_KEY,
@@ -1053,7 +1075,7 @@ export function clearAllData(storage = globalThis?.localStorage) {
   }
 }
 
-export function mergeSyncPayload(remoteProfile, storage = globalThis?.localStorage) {
+export function mergeSyncPayload(remoteProfile, storage = safeStorage) {
   const localProfile = loadReaderProfile(storage);
   const localPrefs = loadDeliveryPreferences(storage);
   const incomingProfile = remoteProfile || {};

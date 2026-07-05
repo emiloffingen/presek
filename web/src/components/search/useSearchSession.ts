@@ -20,11 +20,13 @@ export function useSearchSession(state: SearchSessionState) {
 
     debounceRef.current = window.setTimeout(() => {
       debounceRef.current = null;
-      if (state.isOpen) {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-      } else {
-        sessionStorage.removeItem(SESSION_KEY);
-      }
+      try {
+        if (state.isOpen) {
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+        } else {
+          sessionStorage.removeItem(SESSION_KEY);
+        }
+      } catch (e) {}
     }, DEBOUNCE_MS);
 
     return () => {
@@ -37,7 +39,10 @@ export function useSearchSession(state: SearchSessionState) {
 
 export function loadSearchSession(): Partial<SearchSessionState> | null {
   if (typeof window === 'undefined') return null;
-  const raw = sessionStorage.getItem(SESSION_KEY);
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(SESSION_KEY);
+  } catch (e) {}
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);

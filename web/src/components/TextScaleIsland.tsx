@@ -19,7 +19,12 @@ export default function TextScaleIsland({ lang = 'sr' }: { lang?: string }) {
     if (typeof document === 'undefined') return;
 
     // Load initial scale from localStorage
-    const savedScale = localStorage.getItem('text-scale') || '1';
+    let savedScale = '1';
+    try {
+      savedScale = localStorage.getItem('text-scale') || '1';
+    } catch (e) {
+      console.warn('localStorage not accessible:', e);
+    }
     setScale(savedScale);
     document.documentElement.style.setProperty('--text-scale', savedScale);
 
@@ -38,7 +43,9 @@ export default function TextScaleIsland({ lang = 'sr' }: { lang?: string }) {
     setIsOpen(false);
     if (typeof document !== 'undefined') {
       document.documentElement.style.setProperty('--text-scale', value);
-      localStorage.setItem('text-scale', value);
+      try {
+        localStorage.setItem('text-scale', value);
+      } catch (e) {}
     }
   };
 

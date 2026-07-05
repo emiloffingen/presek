@@ -13,8 +13,14 @@ export default function ClusterMobileFocusIsland({ lang = 'sr' }: { lang?: strin
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.matchMedia('(max-width: 768px)').matches) return;
-    if (sessionStorage.getItem(SESSION_KEY) === '1') return;
-    if (localStorage.getItem('reading-mode')) return;
+    let dismissed = '0';
+    let storedMode = null;
+    try {
+      dismissed = sessionStorage.getItem(SESSION_KEY) || '0';
+      storedMode = localStorage.getItem('reading-mode');
+    } catch (e) {}
+    if (dismissed === '1') return;
+    if (storedMode) return;
     if (loadReadingMode() !== 'standard') return;
 
     applyReadingMode('focus');
@@ -22,7 +28,9 @@ export default function ClusterMobileFocusIsland({ lang = 'sr' }: { lang?: strin
   }, []);
 
   const dismiss = () => {
-    sessionStorage.setItem(SESSION_KEY, '1');
+    try {
+      sessionStorage.setItem(SESSION_KEY, '1');
+    } catch (e) {}
     saveReadingMode('standard');
     applyReadingMode('standard');
     setVisible(false);

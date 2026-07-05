@@ -131,7 +131,9 @@ export const $theme = atom<'light' | 'dark'>('light');
 export function updateTheme(newTheme: 'light' | 'dark') {
     $theme.set(newTheme);
     if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('theme', newTheme);
+        try {
+            localStorage.setItem('theme', newTheme);
+        } catch (e) {}
     }
 }
 

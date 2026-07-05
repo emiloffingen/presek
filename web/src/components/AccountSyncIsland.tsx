@@ -47,7 +47,13 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
         },
         body: JSON.stringify({
           token: nextToken,
-          profile: JSON.parse(localStorage.getItem('presek_profile_v2') || '{}'),
+          profile: (() => {
+            try {
+              return JSON.parse(localStorage.getItem('presek_profile_v2') || '{}');
+            } catch (e) {
+              return {};
+            }
+          })(),
         })
       });
       if (res.ok) {
@@ -72,7 +78,9 @@ export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
       });
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem('presek_profile_v2', JSON.stringify(data.profile));
+        try {
+          localStorage.setItem('presek_profile_v2', JSON.stringify(data.profile));
+        } catch (e) {}
         updateSyncToken(nextToken);
         setStatus('success');
         setMessage(lang === 'sr'

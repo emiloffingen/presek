@@ -193,7 +193,13 @@ const steps = [
         const strip = document.querySelector<HTMLElement>('[data-home-start-here]');
         if (!strip) return;
 
-        if (localStorage.getItem(DISMISS_KEY) === '1') {
+        let dismissed = '0';
+        try {
+            dismissed = localStorage.getItem(DISMISS_KEY) || '0';
+        } catch (e) {
+            console.warn('localStorage not accessible:', e);
+        }
+        if (dismissed === '1') {
             strip.remove();
             return;
         }
@@ -207,7 +213,9 @@ const steps = [
         dismiss.addEventListener('click', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            localStorage.setItem(DISMISS_KEY, '1');
+            try {
+                localStorage.setItem(DISMISS_KEY, '1');
+            } catch (e) {}
             strip.remove();
         });
     }
