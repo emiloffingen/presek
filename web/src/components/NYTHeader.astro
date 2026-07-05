@@ -262,7 +262,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             label={t('home.nav_more')}
                             lang={lang}
                             compact
-                            client:media="(max-width: 768px)"
+                            client:load
                         />
                     </div>
                 )}
@@ -374,7 +374,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                     items={overflowNavItems}
                     label={t('home.nav_more')}
                     lang={lang}
-                    client:media="(min-width: 769px)"
+                    client:load
                 />
             )}
             <div class="nav-scroll-cue" aria-hidden="true">

@@ -62,9 +62,10 @@
 
   const bindSearchFab = () => {
     document.querySelectorAll('[data-presek-search-fab]').forEach((fab) => {
-      if (!(fab instanceof HTMLButtonElement) || fab.dataset.bound === '1') return;
+      if (!(fab instanceof HTMLElement) || fab.dataset.bound === '1') return;
       fab.dataset.bound = '1';
-      fab.addEventListener('click', () => {
+      fab.addEventListener('click', (e) => {
+        e.preventDefault();
         window.dispatchEvent(new CustomEvent('presek:open-search'));
       });
     });
