@@ -1,11 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { search } from '../i18n/namespaces/search';
 import { common } from '../i18n/namespaces/common';
 import type { Locale } from '../lib/localePaths';
-
-const SearchIsland = lazy(() => import('./SearchIsland'));
+import SearchIsland from './SearchIsland';
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -55,18 +54,6 @@ export default function SearchEntryIsland({
   const close = useCallback(() => setActive(false), []);
 
   useEffect(() => {
-    // Preload SearchIsland when idle to eliminate lazy load network latency
-    if (typeof window !== 'undefined') {
-      const preload = () => import('./SearchIsland');
-      if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(preload);
-      } else {
-        setTimeout(preload, 1000);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,14 +83,12 @@ export default function SearchEntryIsland({
   }
 
   return (
-    <Suspense fallback={<SearchTriggerButton onClick={open} lang={lang} />}>
-      <SearchIsland
-        initialQuery={initialQuery}
-        lang={lang}
-        startOpen
-        hideTrigger
-        onClose={close}
-      />
-    </Suspense>
+    <SearchIsland
+      initialQuery={initialQuery}
+      lang={lang}
+      startOpen
+      hideTrigger
+      onClose={close}
+    />
   );
 }

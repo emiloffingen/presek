@@ -26,17 +26,21 @@ import { SearchPreview } from './search/SearchPreview';
 import { SearchFooter } from './search/SearchFooter';
 import { VoiceSearchOverlay } from './search/VoiceSearchOverlay';
 import { useSearchSession, loadSearchSession } from './search/useSearchSession';
-import type {
-  Suggestion,
-  EntityResult,
-  TrendingItem,
-  SearchAction,
-  CategoryOption,
-  TimespanOption,
-  RecentSearch,
-  SelectedItem,
-  SearchIslandProps,
-  SpeechRecognition,
+import {
+  type Suggestion,
+  type EntityResult,
+  type TrendingItem,
+  type SearchAction,
+  type CategoryOption,
+  type TimespanOption,
+  type RecentSearch,
+  type SelectedItem,
+  type SearchIslandProps,
+  type SearchApiResponse,
+  type SpeechRecognition,
+  isEntityResult,
+  isTrendingItem,
+  isRecentSearch,
 } from './search/types';
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -187,12 +191,16 @@ export default function SearchIsland({
     const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        const loaded =
-          Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string'
-            ? parsed.map((q: string) => ({ query: q, timestamp: Date.now() }))
-            : parsed;
-        setRecentSearches(loaded.slice(0, 5) || []);
+        const parsed: unknown = JSON.parse(saved);
+        let loaded: RecentSearch[] = [];
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && parsed.every((q): q is string => typeof q === 'string')) {
+            loaded = parsed.map((q) => ({ query: q, timestamp: Date.now() }));
+          } else {
+            loaded = parsed.filter(isRecentSearch);
+          }
+        }
+        setRecentSearches(loaded.slice(0, 5));
       } catch {
         setRecentSearches([]);
       }
@@ -345,9 +353,9 @@ export default function SearchIsland({
       try {
         const res = await fetch(`/api/trending?lang=${lang}`);
         if (!res.ok) return;
-        const data = await res.json();
+        const data: unknown = await res.json();
         if (!cancelled && Array.isArray(data)) {
-          setTrendingItems(data.filter((item) => typeof item?.word === 'string').slice(0, 10));
+          setTrendingItems(data.filter(isTrendingItem).slice(0, 10));
         }
       } catch {
         if (!cancelled) setTrendingItems([]);
@@ -390,8 +398,8 @@ export default function SearchIsland({
       setError(null);
       try {
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
-        const data = await fetchJsonCached(url + timespanPart + categoryPart, 120_000);
-        const nextSuggestions = Array.isArray(data?.clusters)
+        const data = (await fetchJsonCached(url + timespanPart + categoryPart, 120_000)) as SearchApiResponse;
+        const nextSuggestions = Array.isArray(data.clusters)
           ? data.clusters.map((cluster: unknown) => {
               const clusterRecord = cluster as Record<string, unknown>;
               const articles = Array.isArray(clusterRecord.articles) ? clusterRecord.articles : [];
@@ -417,10 +425,11 @@ export default function SearchIsland({
           : [];
 
         if (!cancelled) {
+          const entity = isEntityResult(data.entity) ? data.entity : null;
           // Save in cache
-          queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity: (data.entity as EntityResult) || null };
+          queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity };
           setSuggestions(nextSuggestions);
-          setEntityResult((data.entity as EntityResult) || null);
+          setEntityResult(entity);
           setActiveIndex(-1);
         }
       } catch (err) {
@@ -633,6 +642,7 @@ export default function SearchIsland({
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
             <button
               onClick={() => setShowFilters(!showFilters)}
+              data-testid="search-filter-toggle"
               className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-muted-foreground' : 'text-muted-foreground'}`}
               title={t('search.filters_title')}
             >

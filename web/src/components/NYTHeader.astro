@@ -251,8 +251,8 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry-wrap search-entry-wrap--desktop">
-                    <ErrorBoundary client:idle lang={lang}>
-                        <SearchEntryIsland initialQuery={q} client:idle lang={lang} />
+                    <ErrorBoundary client:load lang={lang}>
+                        <SearchEntryIsland initialQuery={q} client:load lang={lang} />
                     </ErrorBoundary>
                 </div>
                 {overflowNavItems.length > 0 && (

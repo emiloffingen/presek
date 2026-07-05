@@ -109,6 +109,43 @@ function ClusterPreview({
   );
 }
 
+function EntitySentiment({
+  data,
+  t,
+}: {
+  data: EntityResult;
+  t: TFunction;
+}) {
+  const score = data.sentiment_score;
+  let sentimentKey: string;
+  let colorClass: string;
+  let iconColorClass: string;
+
+  if (score >= 0.1) {
+    sentimentKey = 'search.sentiment_positive';
+    colorClass = 'text-emerald-600';
+    iconColorClass = 'text-emerald-500';
+  } else if (score <= -0.1) {
+    sentimentKey = 'search.sentiment_negative';
+    colorClass = 'text-red-600';
+    iconColorClass = 'text-red-500';
+  } else {
+    sentimentKey = 'search.sentiment_neutral';
+    colorClass = 'text-muted-foreground';
+    iconColorClass = 'text-muted-foreground';
+  }
+
+  return (
+    <div className="p-4 bg-background border border-border rounded-none flex items-center justify-between">
+      <div>
+        <p className="ui-kicker text-muted-foreground mb-1">{t('search.sentiment_label')}</p>
+        <p className={`font-serif font-black text-lg ${colorClass}`}>{t(sentimentKey)}</p>
+      </div>
+      <Activity size={24} className={iconColorClass} />
+    </div>
+  );
+}
+
 function EntityPreview({
   data,
   t,
@@ -141,26 +178,20 @@ function EntityPreview({
 
       <div className="space-y-4">
         <div className="p-4 bg-background border border-border rounded-none">
-          <p className="ui-kicker text-muted-foreground mb-4">{t('search.media_presence')}</p>
-          <div className="flex items-end gap-1 h-12 mb-2">
-            {[30, 50, 40, 80, 60, 90, 75, 85].map((h, i) => (
-              <div key={i} className="flex-1 bg-muted rounded-t-sm group relative" style={{ height: `${h}%` }}>
-                <div className="absolute inset-0 bg-foreground opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm" />
-              </div>
-            ))}
+          <p className="ui-kicker text-muted-foreground mb-3">{t('search.media_presence')}</p>
+          <p className="text-3xl font-black mb-3">{data.total_mentions}</p>
+          <div className="w-full h-2 bg-muted rounded-sm overflow-hidden">
+            <div
+              className="h-full bg-foreground rounded-sm"
+              style={{ width: `${Math.min(100, Math.max(5, (data.total_mentions / 1000) * 100))}%` }}
+            />
           </div>
-          <p className="text-xs font-bold">
+          <p className="text-xs font-bold mt-3 text-muted-foreground">
             {data.total_mentions} {t('search.mentions_in_archive')}
           </p>
         </div>
 
-        <div className="p-4 bg-background border border-border rounded-none flex items-center justify-between">
-          <div>
-            <p className="ui-kicker text-muted-foreground mb-1">{t('search.sentiment_label')}</p>
-            <p className="font-serif font-black text-lg text-emerald-600">{t('search.sentiment_positive')}</p>
-          </div>
-          <Activity size={24} className="text-emerald-500" />
-        </div>
+        <EntitySentiment data={data} t={t} />
       </div>
 
       <button

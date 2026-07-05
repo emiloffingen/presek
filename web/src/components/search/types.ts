@@ -79,6 +79,39 @@ export type SearchIslandProps = {
   onClose?: () => void;
 };
 
+export type SearchApiResponse = {
+  clusters?: unknown[];
+  entity?: unknown;
+};
+
+export function isEntityResult(value: unknown): value is EntityResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).name === 'string' &&
+    typeof (value as Record<string, unknown>).type === 'string' &&
+    typeof (value as Record<string, unknown>).total_mentions === 'number' &&
+    typeof (value as Record<string, unknown>).sentiment_score === 'number'
+  );
+}
+
+export function isTrendingItem(value: unknown): value is TrendingItem {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).word === 'string'
+  );
+}
+
+export function isRecentSearch(value: unknown): value is RecentSearch {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).query === 'string' &&
+    typeof (value as Record<string, unknown>).timestamp === 'number'
+  );
+}
+
 // Minimal typed wrappers for the Web Speech API so we avoid `any`.
 export interface SpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;

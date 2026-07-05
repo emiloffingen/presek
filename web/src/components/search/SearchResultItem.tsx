@@ -51,6 +51,7 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
         ref={itemRef}
         onClick={onClick}
         data-active-nav={navIndex}
+        data-testid="search-result-entity"
         className={`${baseClass} ${activeClass}`}
         style={{ animationDelay: '20ms' }}
       >
@@ -87,6 +88,7 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
         ref={itemRef}
         onClick={onClick}
         data-active-nav={navIndex}
+        data-testid="search-result-cluster"
         className={`${baseClass} group ${
           item.has_synthesis
             ? 'bg-amber-500/5 border-amber-500/10 hover:border-amber-500/30'
@@ -146,6 +148,7 @@ export const SearchResultItem = React.memo(function SearchResultItem(props: Sear
       ref={itemRef}
       onClick={onClick}
       data-active-nav={navIndex}
+      data-testid="search-result-action"
       className={`${baseClass} ${activeClass}`}
       style={{ animationDelay: `${navIndex * 20}ms` }}
     >

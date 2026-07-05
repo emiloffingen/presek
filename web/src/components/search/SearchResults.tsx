@@ -60,6 +60,7 @@ export const SearchResults = React.memo(function SearchResults({
   return (
     <div
       ref={scrollRef}
+      data-testid="search-results"
       className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 scroll-smooth lg:border-r lg:border-border/40 custom-scrollbar"
     >
       {/* Empty State / Initial View */}

@@ -32,6 +32,8 @@ export function SearchFilters({
           {categories.map((cat) => (
             <button
               key={cat.id}
+              data-testid="search-category-chip"
+              data-category={cat.id}
               onClick={() => onCategoryChange(cat.id)}
               className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
                 categoryFilter === cat.id
@@ -54,6 +56,8 @@ export function SearchFilters({
           {timespans.map((option) => (
             <button
               key={option.id}
+              data-testid="search-timespan-chip"
+              data-timespan={option.id}
               onClick={() => onTimespanChange(option.id)}
               className={`search-cmd-chip px-3 py-1 rounded-none transition-all border ${
                 timespan === option.id

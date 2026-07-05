@@ -40,7 +40,18 @@ export function loadSearchSession(): Partial<SearchSessionState> | null {
   const raw = sessionStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as Partial<SearchSessionState>;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const v = parsed as Record<string, unknown>;
+    if (
+      (v.query !== undefined && typeof v.query !== 'string') ||
+      (v.timespan !== undefined && typeof v.timespan !== 'string') ||
+      (v.categoryFilter !== undefined && typeof v.categoryFilter !== 'string') ||
+      (v.isOpen !== undefined && typeof v.isOpen !== 'boolean')
+    ) {
+      return null;
+    }
+    return v as Partial<SearchSessionState>;
   } catch {
     return null;
   }
