@@ -31,7 +31,7 @@ const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
-const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-MK', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
