@@ -3,7 +3,6 @@ import SearchEntryIsland from './SearchEntryIsland';
 import SimpleThemeToggle from './SimpleThemeToggle.astro';
 import TextScaleIsland from './TextScaleIsland';
 import NavOverflowMenu from './NavOverflowMenu.tsx';
-import { ErrorBoundary } from './ui/ErrorBoundary.tsx';
 import ScriptSwitcher from './ScriptSwitcher.astro';
 import { ArrowLeftRight, Sparkles, BarChart3, Radio, ShieldCheck, Compass, Search } from 'lucide-react';
 import { apiBaseUrl } from '../lib/apiBase';
@@ -251,9 +250,7 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
         <div class="topbar-main">
             <div class="topbar-left-stack">
                 <div class="search-entry-wrap search-entry-wrap--desktop">
-                    <ErrorBoundary client:load lang={lang}>
-                        <SearchEntryIsland initialQuery={q} client:load lang={lang} />
-                    </ErrorBoundary>
+                    <SearchEntryIsland initialQuery={q} client:load lang={lang} />
                 </div>
                 {overflowNavItems.length > 0 && (
                     <div class="topbar-mobile-overflow">

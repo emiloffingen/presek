@@ -11,6 +11,9 @@ const maskId = `moon-mask-${Math.random().toString(36).substring(2, 9)}`;
   type="button"
   class="header-utility-button theme-toggle-button simple-theme-toggle-btn flex items-center justify-center transition-all duration-300 group relative text-muted-foreground hover:text-foreground h-9 w-9 shrink-0 hover:bg-secondary active:scale-95 overflow-hidden"
   aria-label="Toggle theme"
+  data-theme-toggle
+  data-label-light="Switch to light mode"
+  data-label-dark="Switch to dark mode"
 >
   <svg
     class="theme-toggle-svg w-5 h-5 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
@@ -39,63 +42,6 @@ const maskId = `moon-mask-${Math.random().toString(36).substring(2, 9)}`;
     </g>
   </svg>
 </button>
-
-<script>
-  function initThemeToggle() {
-    const htmlElement = document.documentElement;
-    const toggles = document.querySelectorAll('.simple-theme-toggle-btn');
-    if (toggles.length === 0) return;
-
-    // Check for saved theme preference
-    let savedTheme = null;
-    try {
-      savedTheme = localStorage.getItem('theme');
-    } catch (e) {
-      console.warn('localStorage not accessible:', e);
-    }
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Apply saved theme or system preference
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      htmlElement.classList.add('dark');
-      htmlElement.classList.remove('light');
-    } else {
-      htmlElement.classList.remove('dark');
-      htmlElement.classList.add('light');
-    }
-    
-    // Toggle theme on click for all toggles on the page
-    toggles.forEach(toggleButton => {
-      if (toggleButton.getAttribute('data-has-listener') === 'true') return;
-      toggleButton.setAttribute('data-has-listener', 'true');
-
-      toggleButton.addEventListener('click', function() {
-        const isDark = htmlElement.classList.contains('dark');
-        if (isDark) {
-          htmlElement.classList.remove('dark');
-          htmlElement.classList.add('light');
-          try {
-            localStorage.setItem('theme', 'light');
-          } catch (e) {}
-        } else {
-          htmlElement.classList.add('dark');
-          htmlElement.classList.remove('light');
-          try {
-            localStorage.setItem('theme', 'dark');
-          } catch (e) {}
-        }
-      });
-    });
-  }
-
-  // Initialize on DOM load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initThemeToggle);
-  } else {
-    initThemeToggle();
-  }
-  document.addEventListener('astro:page-load', initThemeToggle);
-</script>
 
 <style>
   .theme-toggle-svg {

@@ -41,7 +41,9 @@ function SearchTriggerButton({ onClick, lang }: { onClick: () => void; lang: Loc
   );
 }
 
-export default function SearchEntryIsland({
+import { ErrorBoundary } from './ui/ErrorBoundary';
+
+function SearchEntryIslandContent({
   initialQuery = '',
   lang = 'sr',
 }: {
@@ -90,5 +92,19 @@ export default function SearchEntryIsland({
       hideTrigger
       onClose={close}
     />
+  );
+}
+
+export default function SearchEntryIsland({
+  initialQuery = '',
+  lang = 'sr',
+}: {
+  initialQuery?: string | null;
+  lang?: Locale;
+}) {
+  return (
+    <ErrorBoundary lang={lang}>
+      <SearchEntryIslandContent initialQuery={initialQuery} lang={lang} />
+    </ErrorBoundary>
   );
 }
