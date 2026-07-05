@@ -66,6 +66,7 @@
       fab.dataset.bound = '1';
       fab.addEventListener('click', (e) => {
         e.preventDefault();
+        window.__presek_search_open_requested = true;
         window.dispatchEvent(new CustomEvent('presek:open-search'));
       });
     });

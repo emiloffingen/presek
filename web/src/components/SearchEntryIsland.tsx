@@ -58,6 +58,11 @@ function SearchEntryIslandContent({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if ((window as any).__presek_search_open_requested) {
+      open();
+      (window as any).__presek_search_open_requested = false;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
