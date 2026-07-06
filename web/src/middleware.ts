@@ -4,7 +4,7 @@ import {
   stripMkPrefix,
   withMkPrefix,
 } from './lib/localePaths';
-import { buildCspPolicy, generateCspNonce } from './lib/csp';
+import { buildCspPolicy, computeInlineHashes, generateCspNonce } from './lib/csp';
 import { timingSafeEqual } from 'node:crypto';
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -37,7 +37,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const attachFrameAncestors = async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
-      response.headers.set('Content-Security-Policy', buildCspPolicy(cspNonce));
+      const body = await response.text();
+      const hashes = computeInlineHashes(body);
+      response.headers.set('Content-Security-Policy', buildCspPolicy(cspNonce, hashes));
+      // Preserve any other headers; clone the body into a new Response so the
+      // consumed stream remains readable downstream.
+      const { status, statusText } = response;
+      const init: ResponseInit = { status, statusText, headers: response.headers };
+      return new Response(body, init);
     }
     return response;
   };

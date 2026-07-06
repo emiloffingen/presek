@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 /** Per-request nonce for optional inline scripts (e.g. gtag bootstrap). */
 export function generateCspNonce(): string {
   return crypto.randomUUID().replace(/-/g, '');
@@ -8,11 +10,56 @@ export function buildFrameAncestorsPolicy(): string {
   return "frame-ancestors 'none'";
 }
 
-export function buildCspPolicy(nonce: string): string {
+export interface CspHashes {
+  scripts: string[];
+  styles: string[];
+}
+
+/**
+ * Compute `'sha256-...'` CSP hashes for inline `<script>` and `<style>` blocks
+ * that were emitted without a nonce (e.g. Astro's `astro-island` definition,
+ * client-directive bootstraps, and Astro component scoped styles). Without
+ * these hashes the browser blocks the inline content under our nonce-only CSP,
+ * which prevents `astro-island` from being registered as a custom element —
+ * and therefore prevents every React island (search overlay, theme toggle,
+ * text-scale, etc.) from hydrating.
+ */
+export function computeInlineHashes(html: string): CspHashes {
+  const scripts: string[] = [];
+  const styles: string[] = [];
+  const hash = (content: string): string => {
+    const digest = createHash('sha256').update(content, 'utf8').digest('base64');
+    return `'sha256-${digest}'`;
+  };
+
+  for (const match of html.matchAll(/<script\b([^>]*?)>([\s\S]*?)<\/script>/gi)) {
+    const attrs = match[1] || '';
+    const body = match[2] || '';
+    if (/\snonce\s*=/.test(attrs)) continue;
+    if (/\ssrc\s*=/.test(attrs)) continue;
+    if (!body.trim()) continue;
+    if (/type\s*=\s*["']application\/ld\+json["']/.test(attrs)) continue;
+    scripts.push(hash(body));
+  }
+
+  for (const match of html.matchAll(/<style\b([^>]*?)>([\s\S]*?)<\/style>/gi)) {
+    const attrs = match[1] || '';
+    const body = match[2] || '';
+    if (/\snonce\s*=/.test(attrs)) continue;
+    if (!body.trim()) continue;
+    styles.push(hash(body));
+  }
+
+  return { scripts, styles };
+}
+
+export function buildCspPolicy(nonce: string, hashes: CspHashes = { scripts: [], styles: [] }): string {
+  const scriptHashes = hashes.scripts.length ? ' ' + hashes.scripts.join(' ') : '';
+  const styleHashes = hashes.styles.length ? ' ' + hashes.styles.join(' ') : '';
   return (
     "default-src 'self'; " +
-    `script-src 'self' 'nonce-${nonce}' https://www.googletagmanager.com; ` +
-    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com https://cdn.jsdelivr.net; ` +
+    `script-src 'self' 'nonce-${nonce}'${scriptHashes} https://www.googletagmanager.com; ` +
+    `style-src 'self' 'nonce-${nonce}'${styleHashes} https://fonts.googleapis.com https://cdn.jsdelivr.net; ` +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; " +
     "connect-src 'self' https://presek.live https://www.presek.live https://presek.mk https://www.presek.mk https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://region1.google-analytics.com wss://presek.live wss://presek.mk; " +
