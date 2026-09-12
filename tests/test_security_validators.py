@@ -13,6 +13,12 @@ from routes.security import (
 
 def test_validate_cluster_id():
     # Must be 6-64 hex chars (now supports dashes)
+    import sys as _sys
+
+    _fm = _sys.modules.get("fastapi")
+    print(f"DIAG fastapi mod={_fm!r} file={getattr(_fm, '__file__', None)!r}")
+    print(f"DIAG test HTTPException={HTTPException!r}")
+    print(f"DIAG func HTTPException={validate_cluster_id.__globals__.get('HTTPException')!r}")
     assert validate_cluster_id("123456") == "123456"
     assert validate_cluster_id("abcdef123456") == "abcdef123456"
     assert validate_cluster_id("fe0486f7-9bf") == "fe0486f7-9bf"
