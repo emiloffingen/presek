@@ -1,8 +1,6 @@
 import os
 import sys
 
-import httpx
-
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:

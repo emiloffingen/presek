@@ -31,7 +31,6 @@ def _ensure_model_file() -> str | None:
     try:
         os.makedirs(_CACHE_DIR, exist_ok=True)
         log.info(f"[language] Downloading fastText lid.176.ftz (~917 KB) to {_MODEL_PATH}")
-        import httpx
         from core.http_pool import get_shared_client
         client = get_shared_client()
         with open(_MODEL_PATH, "wb") as f:

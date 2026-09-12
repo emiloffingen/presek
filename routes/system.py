@@ -242,13 +242,12 @@ async def get_weather(lang: Optional[str] = "sr"):
     if cached:
         return cached
     try:
-        import httpx
-
+        from core.http_pool import get_shared_async_client
         # Lat/Lon: Skopje (41.99, 21.43), Belgrade (44.78, 20.44)
         lat = 41.9965 if lang == "mk" else 44.7866
         lon = 21.4314 if lang == "mk" else 20.4489
 
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with get_shared_async_client(timeout=3.0) as client:
             response = await client.get(
                 f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
             )
@@ -641,11 +640,9 @@ async def get_cluster_share_card(cluster_id: str):
 
             if not bg_img and bg_url and bg_url.startswith("http"):
                 safe_ips = _resolve_public_ips(bg_url)
-                import httpx
+                from core.http_pool import get_shared_async_client
 
-                async with httpx.AsyncClient(
-                    timeout=3.0, follow_redirects=True
-                ) as client:
+                async with get_shared_async_client(timeout=3.0, follow_redirects=True) as client:
                     async with client.stream("GET", bg_url) as resp:
                         p_ip = _peer_ip(resp)
                         ctype = str(resp.headers.get("Content-Type", ""))
@@ -933,11 +930,9 @@ async def proxy_image(
             }
 
             try:
-                import httpx
+                from core.http_pool import get_shared_async_client
 
-                async with httpx.AsyncClient(
-                    timeout=8.0, follow_redirects=True
-                ) as client:
+                async with get_shared_async_client(timeout=8.0, follow_redirects=True) as client:
                     async with client.stream("GET", url, headers=headers) as resp:
                         p_ip = _peer_ip(resp)
                         if not p_ip or p_ip not in safe_ips:

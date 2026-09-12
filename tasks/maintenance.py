@@ -1036,8 +1036,6 @@ def repair_cluster_representative_images(
     check_reachability: bool = True,
     dry_run: bool = False,
 ) -> dict[str, int]:
-    import httpx
-
     from nlp.image_quality import classify_image_url
 
     stats = {"checked": 0, "replaced": 0, "cleared": 0, "unchanged": 0, "skipped": 0}

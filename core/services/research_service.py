@@ -4,7 +4,6 @@ import re
 import time
 from urllib.parse import parse_qs, unquote, urlparse
 
-import httpx
 from lxml import html
 from prometheus_client import Histogram
 

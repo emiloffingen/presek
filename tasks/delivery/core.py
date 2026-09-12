@@ -2,8 +2,6 @@ import datetime
 import json
 import urllib.parse
 
-import httpx
-
 from core.config import NTFY_TOKEN
 from core.database import db_manager as db
 from tasks.utils import _PUBLIC_SITE_URL, log

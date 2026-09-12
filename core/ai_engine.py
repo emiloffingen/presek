@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, AsyncGenerator
 
-import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
 from core.config import (

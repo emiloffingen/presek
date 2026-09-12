@@ -2,8 +2,6 @@ import logging
 import os
 from typing import Optional
 
-import httpx
-
 from tasks.utils import send_email
 from utils.cache import redis_client
 
