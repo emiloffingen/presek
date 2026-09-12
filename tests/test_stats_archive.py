@@ -6,18 +6,6 @@ from fastapi import HTTPException
 
 @pytest.mark.anyio
 async def test_archive_invalid_date_returns_400_not_500():
-    import sys as _sys
-
-    _fm = _sys.modules.get("fastapi")
-    print(f"DIAG fastapi_in_sys={_fm is not None} file={getattr(_fm, '__file__', 'ABSENT')}")
-    print(f"DIAG test_exc={id(HTTPException)}")
-    _rs = _sys.modules.get("routes.security")
-    print(f"DIAG routes.security cached={_rs is not None}")
-    if _rs is not None:
-        print(f"DIAG rs_global_exc={id(_rs.HTTPException)}")
-    import fastapi as _fresh
-
-    print(f"DIAG fresh_exc={id(_fresh.HTTPException)} fresh_is_sys={_fresh is _fm}")
     from routes.stats import get_archive
 
     with pytest.raises(HTTPException) as exc:
