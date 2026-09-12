@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import importlib
 import logging
 import os
 import re
@@ -23,13 +22,11 @@ log = logging.getLogger("presek")
 
 
 def _raise_http_error(status_code: int, detail: str):
-    try:
-        fastapi_mod = importlib.import_module("fastapi")
-        exc_cls = getattr(fastapi_mod, "HTTPException", HTTPException)
-    except Exception as e:
-        log.debug(f"Failed to import fastapi: {e}")
-        exc_cls = HTTPException
-    raise exc_cls(status_code=status_code, detail=detail)
+    # Raise the module-global HTTPException directly. Re-resolving fastapi
+    # via importlib here creates a *second* HTTPException class object
+    # whenever sys.modules was pruned mid-session (test module isolation),
+    # which then escapes callers' pytest.raises(HTTPException) checks.
+    raise HTTPException(status_code=status_code, detail=detail)
 
 
 # =============================================================================
