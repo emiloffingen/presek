@@ -5,6 +5,8 @@ _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
+import kombu.transport.redis as _kombu_redis
+
 # ---------------------------------------------------------------------------
 # Redis 8 / redis-py 8 compatibility patch
 # redis-py 8.0 defaults to RESP3 and requires the HELLO command to carry
@@ -16,14 +18,13 @@ if _PROJECT_ROOT not in sys.path:
 # `Celery(broker=...)` call below.
 # ---------------------------------------------------------------------------
 import redis as _redis
-import kombu.transport.redis as _kombu_redis
 
 _orig_get_pool = _kombu_redis.Channel._get_pool
 
 
 def _resp2_get_pool(self, asynchronous=False):
     params = self._connparams(asynchronous=asynchronous)
-    params.setdefault('protocol', 2)
+    params.setdefault("protocol", 2)
     return _redis.ConnectionPool(**params)
 
 
@@ -35,10 +36,7 @@ from celery.schedules import crontab
 from celery.signals import task_failure, worker_process_init
 from kombu import Queue
 
-from core.config import (
-    HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
-    HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT,
-)
+from core.config import HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS, HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT
 from core.logging_config import get_logger
 
 log = get_logger("presek_celery")
@@ -122,43 +120,66 @@ celery_app.conf.update(
     timezone="UTC",
     task_default_queue="celery",
     # Memory protection: restart workers after processing N tasks or M memory
-    worker_max_memory_per_child=2_000_000,  # 2GB memory limit per worker process
-    worker_max_tasks_per_child=1000,  # Increased from 100 to 1000 to minimize model reload overhead
-    task_default_rate_limit="100/m",  # Global rate limit: 100 tasks per minute
+    # Reduced from 2GB to 500MB to prevent OOM from LLM model accumulation
+    worker_max_memory_per_child=500_000_000,  # 500MB memory limit per worker process
+    worker_max_tasks_per_child=100,  # Reduced from 1000 to 100 to prevent memory bloat
+    # Remove global rate limit - use per-queue limits instead
+    task_default_rate_limit=None,
     task_queues=(
         Queue("celery", routing_key="celery"),
-        Queue("ingestion", routing_key="ingestion"),
-        Queue("ingestion-crawl", routing_key="ingestion-crawl"),
-        Queue("fast-track", routing_key="fast-track"),
-        Queue("synthesis", routing_key="synthesis"),
-        Queue("intel-heavy", routing_key="intel-heavy"),
-        Queue("delivery", routing_key="delivery"),
-        Queue("maintenance", routing_key="maintenance"),
+        Queue("ingestion", routing_key="ingestion", queue_arguments={"max_length": 10000}),
+        Queue("ingestion-crawl", routing_key="ingestion-crawl", queue_arguments={"max_length": 5000}),
+        Queue("fast-track", routing_key="fast-track", queue_arguments={"max_length": 2000, "priority": 10}),
+        Queue("synthesis", routing_key="synthesis", queue_arguments={"max_length": 5000}),
+        Queue("intel-heavy", routing_key="intel-heavy", queue_arguments={"max_length": 2000}),
+        Queue("delivery", routing_key="delivery", queue_arguments={"max_length": 5000}),
+        Queue("maintenance", routing_key="maintenance", queue_arguments={"max_length": 1000}),
     ),
     task_routes={
-        "tasks.ingestion_task.run_ingestion": {"queue": "ingestion"},
-        "tasks.ingestion_task.auto_repair_sources_task": {"queue": "maintenance"},
-        "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance"},
-        "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion-crawl"},
-        "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion-crawl"},
-        "tasks.ingestion_task.post_crawl_invalidation_task": {
-            "queue": "ingestion-crawl"
+        "tasks.ingestion_task.run_ingestion": {"queue": "ingestion", "rate_limit": "200/m"},
+        "tasks.ingestion_task.auto_repair_sources_task": {"queue": "maintenance", "rate_limit": "20/m"},
+        "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance", "rate_limit": "20/m"},
+        "tasks.ingestion_task.crawl_article_task": {
+            "queue": "ingestion-crawl",
+            "rate_limit": "100/m",
+            "time_limit": 120,
+            "soft_time_limit": 90,
         },
-        "tasks.intelligence.synthesize_cluster_task": {"queue": "synthesis"},
-        "tasks.intelligence.synthesize_urgent_task": {"queue": "fast-track"},
-        "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
-        "tasks.intelligence.refresh_cluster_centroid_task": {"queue": "maintenance"},
-        "tasks.intelligence.generate_embeddings_task": {"queue": "maintenance"},
-        "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance"},
-        "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "synthesis"},
-        "tasks.intelligence.*": {"queue": "intel-heavy"},
-        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {
-            "queue": "fast-track"
+        "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion-crawl", "rate_limit": "50/m"},
+        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion-crawl", "rate_limit": "100/m"},
+        "tasks.intelligence.synthesize_cluster_task": {
+            "queue": "synthesis",
+            "rate_limit": "60/m",
+            "time_limit": 300,
+            "soft_time_limit": 240,
         },
-        "tasks.delivery.email.*": {"queue": "delivery"},
-        "tasks.delivery.briefing.*": {"queue": "delivery"},
-        "tasks.delivery.*": {"queue": "delivery"},
-        "tasks.maintenance.*": {"queue": "maintenance"},
+        "tasks.intelligence.synthesize_urgent_task": {
+            "queue": "fast-track",
+            "rate_limit": "100/m",
+            "time_limit": 180,
+            "soft_time_limit": 120,
+        },
+        "tasks.intelligence.auto_summarize_task": {"queue": "fast-track", "rate_limit": "80/m"},
+        "tasks.intelligence.refresh_cluster_centroid_task": {"queue": "maintenance", "rate_limit": "10/m"},
+        "tasks.intelligence.generate_embeddings_task": {
+            "queue": "maintenance",
+            "rate_limit": "10/m",
+            "time_limit": 600,
+            "soft_time_limit": 480,
+        },
+        "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance", "rate_limit": "10/m"},
+        "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "synthesis", "rate_limit": "40/m"},
+        "tasks.intelligence.*": {
+            "queue": "intel-heavy",
+            "rate_limit": "50/m",
+            "time_limit": 600,
+            "soft_time_limit": 480,
+        },
+        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track", "rate_limit": "100/m"},
+        "tasks.delivery.email.*": {"queue": "delivery", "rate_limit": "30/m"},
+        "tasks.delivery.briefing.*": {"queue": "delivery", "rate_limit": "30/m"},
+        "tasks.delivery.*": {"queue": "delivery", "rate_limit": "30/m"},
+        "tasks.maintenance.*": {"queue": "maintenance", "rate_limit": "20/m"},
     },
     beat_schedule={
         "ingest-regular-feeds": {
@@ -240,9 +261,7 @@ celery_app.conf.update(
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
             "schedule": HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
             "kwargs": {"limit": HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT},
-            "options": {
-                "expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)
-            },
+            "options": {"expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)},
         },
         "boost-homepage-cluster-supply": {
             "task": "tasks.maintenance.boost_homepage_cluster_supply_task",

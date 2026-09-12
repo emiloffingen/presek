@@ -2,6 +2,7 @@
 # pylint: disable=unused-import
 from .cache import (
     cached_response,
+    cached_route,
     check_rate_limit,
     delete_cache,
     delete_cache_prefix,
@@ -36,6 +37,7 @@ from .time import DateTimeEncoder, _coerce_datetime
 
 __all__ = [
     "cached_response",
+    "cached_route",
     "check_rate_limit",
     "delete_cache",
     "delete_cache_prefix",

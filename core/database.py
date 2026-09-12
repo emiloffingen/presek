@@ -30,12 +30,16 @@ def _get_db_query_counter() -> Counter:
 _DB_QUERY_TOTAL = _get_db_query_counter()
 
 _REPLICA_FRESHNESS_CACHE = {"ok": True, "checked_at": 0.0}
-_REPLICA_FRESHNESS_TTL_SECONDS = int(os.environ.get("REPLICA_FRESHNESS_TTL_SECONDS", "30"))
+_REPLICA_FRESHNESS_TTL_SECONDS = int(os.environ.get("REPLICA_FRESHNESS_TTL_SECONDS", "60"))  # Increased from 30 to 60
 _REPLICA_MAX_LAG_SECONDS = int(os.environ.get("REPLICA_MAX_LAG_SECONDS", "120"))
+_REPLICA_CHECK_LOCK = asyncio.Lock()  # Prevent concurrent freshness checks
 
 
 def _read_replica_is_fresh() -> bool:
-    """Return False when the read replica is missing or materially behind primary."""
+    """Return False when the read replica is missing or materially behind primary.
+
+    Optimized: Uses cached result for 60 seconds to avoid repeated DB connections.
+    """
     from core.config import DATABASE_READ_REPLICA_URL, USE_READ_REPLICA, resolve_primary_database_url
 
     if not USE_READ_REPLICA or not DATABASE_READ_REPLICA_URL:
@@ -157,7 +161,8 @@ DB_SESSION_OPTIONS = (
 )
 
 SQL_SEMANTIC_SEARCH = """
-    SELECT *, (1 - (embedding <=> %s::vector)) as similarity
+    SELECT id, title, cluster_id, source, link, created_at,
+           (1 - (embedding <=> %s::vector)) as similarity
     FROM articles
     WHERE embedding IS NOT NULL
       AND created_at >= NOW() - INTERVAL '7 days'
@@ -211,7 +216,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             WHERE search_vector @@ websearch_to_tsquery('simple', %s)
             {time_filter}
             ORDER BY rank DESC
-            LIMIT 300
+            LIMIT 100
         ),
         semantic_results AS (
             SELECT id, (1 - (embedding <=> %s::vector)) AS similarity
@@ -219,8 +224,8 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             WHERE embedding IS NOT NULL
               AND created_at >= NOW() - INTERVAL '30 days'
               {time_filter}
-            ORDER BY similarity DESC
-            LIMIT 300
+            ORDER BY embedding <=> %s::vector
+            LIMIT 100
         ),
         scored_articles AS (
             SELECT a.*,

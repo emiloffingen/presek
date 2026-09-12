@@ -15,25 +15,16 @@ from core.crawler import crawler
 from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
 from core.image_service import image_service
-from core.ingestion_lock import (
-    break_stale_ingestion_lock,
-    release_ingestion_lock,
-    try_acquire_ingestion_lock,
-)
+from core.ingestion_lock import break_stale_ingestion_lock, release_ingestion_lock, try_acquire_ingestion_lock
 from core.services.notifier import SystemNotifier as Notifier
 from core.version import APP_VERSION_LABEL
-from tasks.utils import (
-    invalidate_public_data_caches,
-    invalidate_public_data_caches_debounced,
-    log,
-    safe_async_run,
-)
+from tasks.utils import invalidate_public_data_caches, invalidate_public_data_caches_debounced, log, safe_async_run
 
 # Whitelist of allowed columns for dynamic UPDATE to prevent SQL injection
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
 
 
-@celery_app.task(rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2, time_limit=60, soft_time_limit=45)
+@celery_app.task(autoretry_for=(Exception,), retry_backoff=True, max_retries=2, time_limit=120, soft_time_limit=90)
 def crawl_article_task(article_id, url):
     """
     Main crawler orchestrator.

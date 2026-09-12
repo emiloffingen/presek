@@ -1,11 +1,13 @@
 import asyncio
 import datetime
+import functools
+import hashlib
 import json
 import logging
 import os
 import sys
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional, TypeVar
 
 import redis
 
@@ -169,3 +171,97 @@ async def event_stream(channel: str, request=None):
             pubsub.close()
         except Exception as e:
             log.debug(f"Error closing pubsub: {e}")
+
+
+# =============================================================================
+# Response Caching Decorator for Route Handlers
+# =============================================================================
+
+T = TypeVar("T")
+
+
+def cached_route(ttl: int = 60, prefix: str = "route") -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """
+    Decorator to cache route responses in Redis.
+
+    Generates cache key from function arguments (typically request path and query params).
+    Works with both sync and async functions.
+
+    Args:
+        ttl: Cache time-to-live in seconds (default: 60)
+        prefix: Key prefix for namespace isolation (default: "route")
+
+    Usage:
+        @router.get("/api/news")
+        async def get_news(request: Request, page: int = 1):
+            # ... expensive query
+            return {"data": results}
+    """
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs) -> T:
+            return _cached_route_impl(func, args, kwargs, ttl, prefix, is_async=False)
+
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs) -> T:
+            return await _cached_route_impl(func, args, kwargs, ttl, prefix, is_async=True)
+
+        # Return async wrapper if function is async, otherwise sync
+        if asyncio.iscoroutinefunction(func):
+            return async_wrapper
+        return sync_wrapper
+
+    return decorator
+
+
+def _generate_cache_key(prefix: str, args, kwargs) -> str:
+    """Generate a consistent cache key from function arguments."""
+    key_parts = [prefix]
+
+    # Add positional args
+    for arg in args:
+        if hasattr(arg, "__dict__"):
+            # For objects like Request, extract relevant attributes
+            if hasattr(arg, "url"):
+                key_parts.append(str(arg.url))
+            elif hasattr(arg, "path"):
+                key_parts.append(str(arg.path))
+        else:
+            key_parts.append(str(arg))
+
+    # Add keyword args sorted by key for consistency
+    for k, v in sorted(kwargs.items()):
+        key_parts.append(f"{k}={v}")
+
+    # Create hash of the key parts for consistent length
+    key_string = "|".join(key_parts)
+    return f"cache:{hashlib.md5(key_string.encode()).hexdigest()}"
+
+
+async def _cached_route_impl(func, args, kwargs, ttl: int, prefix: str, is_async: bool):
+    """Implementation of cached route logic."""
+    cache_key = _generate_cache_key(prefix, args, kwargs)
+
+    # Try to get from cache
+    cached = cached_response(cache_key)
+    if cached is not None:
+        log.debug(f"[cache] HIT for {cache_key}")
+        return cached
+
+    log.debug(f"[cache] MISS for {cache_key}")
+
+    # Execute the function
+    if is_async:
+        result = await func(*args, **kwargs)
+    else:
+        result = func(*args, **kwargs)
+
+    # Cache the result
+    if result is not None:
+        try:
+            set_cache(cache_key, result, ttl)
+        except Exception as e:
+            log.warning(f"[cache] Failed to cache result for {cache_key}: {e}")
+
+    return result
