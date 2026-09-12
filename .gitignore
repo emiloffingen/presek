@@ -87,6 +87,8 @@ digests/
 # Application specific
 celerybeat-schedule
 *.log
+*.pid
+logs/
 node_modules/
 static/generated/
 static/uploads/
