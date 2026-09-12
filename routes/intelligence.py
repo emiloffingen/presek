@@ -21,7 +21,7 @@ from core.research_helpers import (
     build_gemma_research_context,
 )
 from nlp import normalize_focus_entity_surface, normalize_tag_name
-from utils import cached_response, score_cluster, set_cache
+from utils import cached_response, cached_route, score_cluster, set_cache
 
 from .common import _is_valid_focus_entity, cleanAndDecode
 from .security import (
@@ -111,6 +111,7 @@ def _compact_focus_entities(items: list[dict], limit: int) -> list[dict]:
 
 
 @router.get("/intelligence/pulse-overview")
+@cached_route(ttl=300, prefix="pulse_overview")
 async def get_pulse_overview():
     """Provides a high-level summary of the media landscape (free, token-less)."""
     cache_key = "api:intelligence:pulse-overview"
@@ -169,6 +170,7 @@ async def get_pulse_overview():
 
 
 @router.get("/intelligence/cluster/{cluster_id}/history")
+@cached_route(ttl=600, prefix="cluster_history")
 async def get_cluster_storyline_history(cluster_id: str):
     """Finds related clusters from the past weeks to build a storyline (free, token-less)."""
     validate_cluster_id(cluster_id)
@@ -573,6 +575,7 @@ async def get_entity_profile(name: str, lang: Optional[str] = "sr"):
 
 
 @router.get("/intelligence/global-pulse", response_model=GlobalPulseResponse)
+@cached_route(ttl=120, prefix="global_pulse")
 async def get_global_pulse(category: Optional[str] = None, lang: Optional[str] = "sr"):
     """Public high-level intelligence stats for the Pulse page."""
     cat_id = f"cat-{category}-{lang}" if category else f"all-{lang}"

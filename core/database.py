@@ -881,7 +881,9 @@ class DatabaseManager:
         if not q or len(q) > 500:
             return []
 
-        # Generate embedding for semantic search
+        # Generate embedding for semantic search - use async version
+        # Note: This method is called from sync context, so we use the sync version
+        # For async contexts, use generate_query_embedding_async
         from core.embeddings import generate_query_embedding
 
         vector = generate_query_embedding(q)

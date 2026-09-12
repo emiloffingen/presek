@@ -23,6 +23,7 @@ from utils import (
     build_editor_analytics_payload,
     build_source_reputation_rows,
     cached_response,
+    cached_route,
     calculate_reading_time,
     is_balanced,
     rank_articles_in_cluster,
@@ -287,9 +288,9 @@ async def get_archive(
         if q:
             import numpy as np
 
-            from core.embeddings import generate_query_embedding, parse_embedding_value
+            from core.embeddings import generate_query_embedding_async, parse_embedding_value
 
-            query_vec = generate_query_embedding(q)
+            query_vec = await generate_query_embedding_async(q)
             if query_vec:
                 for arts in ranked:
                     best_sim = 0
@@ -465,11 +466,13 @@ async def get_archive_on_this_day(date: str = Query(...), lang: str = "sr"):
 
 
 @router.get("/stats")
+@cached_route(ttl=60, prefix="stats")
 async def get_stats_route():
     return {"status": "success", "data": await asyncio.to_thread(db.get_stats)}
 
 
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
+@cached_route(ttl=120, prefix="stats_summary")
 async def get_stats_summary(lang: Optional[str] = "sr"):
     cache_key = f"api:stats:summary:v4:{lang}"
     cached = cached_response(cache_key)
@@ -715,6 +718,7 @@ from routes.security import admin_auth
 
 
 @router.get("/stats/full")
+@cached_route(ttl=300, prefix="stats_full")
 async def get_stats_full(
     request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)
 ):

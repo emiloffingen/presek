@@ -67,9 +67,10 @@ class BreakingNewsNotifier:
                     else "https://presek.live"
                 ),
             }
-            with httpx.Client(timeout=5.0) as client:
-                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
-                resp.raise_for_status()
+            from core.http_pool import get_shared_client
+            client = get_shared_client()
+            resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
+            resp.raise_for_status()
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[notifier] ntfy error: {e}")
 
@@ -97,9 +98,10 @@ class BreakingNewsNotifier:
             ),
         }
         try:
-            with httpx.Client(timeout=5.0) as client:
-                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
-                resp.raise_for_status()
+            from core.http_pool import get_shared_client
+            client = get_shared_client()
+            resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
+            resp.raise_for_status()
             self._mark_as_notified(score_key)
             log.info(f"[notifier] Sent score update for {cluster_id}: {score}")
         except Exception as e:

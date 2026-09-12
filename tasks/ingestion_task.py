@@ -237,8 +237,9 @@ def repair_single_source_task(name):
 
         for feed_url in potential_feeds:
             try:
-                with httpx.Client(timeout=10.0) as client:
-                    resp = client.get(feed_url, follow_redirects=True)
+                from core.http_pool import get_feed_client
+                client = get_feed_client()
+                resp = client.get(feed_url, follow_redirects=True)
                     if resp.status_code == 200:
                         f = feedparser.parse(resp.content)
                         if not f.bozo and len(f.entries) > 0:

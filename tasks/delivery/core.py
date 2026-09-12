@@ -159,7 +159,8 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
 
     url = f"https://ntfy.sh/{urllib.parse.quote(clean_topic, safe='')}"
     try:
-        with httpx.Client(timeout=10.0) as client:
+        from core.http_pool import get_shared_client
+        client = get_shared_client()
             resp = client.post(
                 url,
                 content=clean_message.encode("utf-8"),
