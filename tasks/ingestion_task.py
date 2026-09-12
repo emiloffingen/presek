@@ -33,7 +33,9 @@ from tasks.utils import (
 _ALLOWED_ARTICLE_COLUMNS = {"full_content", "image_url"}
 
 
-@celery_app.task(rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2, time_limit=60, soft_time_limit=45)
+@celery_app.task(
+    rate_limit="100/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2, time_limit=60, soft_time_limit=45
+)
 def crawl_article_task(article_id, url):
     """
     Main crawler orchestrator.
@@ -64,7 +66,7 @@ def crawl_article_task(article_id, url):
 
         if updates:
             params.append(article_id)
-            sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"
+            sql = f"UPDATE articles SET {', '.join(updates)} WHERE id = %s"  # nosec B608 - allowlisted columns with bound params
             db.execute(sql, tuple(params), fetch=False)
             log.info(f"Updated article {article_id} with crawled content.")
 

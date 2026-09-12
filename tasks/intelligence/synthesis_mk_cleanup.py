@@ -11,11 +11,32 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
 
     # Direct homoglyph map (lookalikes swap) for mixed words
     homoglyphs = {
-        'a': 'а', 'c': 'ц', 'e': 'е', 'o': 'о', 'p': 'п', 'x': 'х', 'y': 'у',
-        'j': 'ј', 's': 'с', 'i': 'и',
-        'A': 'А', 'C': 'Ц', 'E': 'Е', 'O': 'О', 'P': 'П', 'X': 'Х', 'Y': 'У',
-        'J': 'Ј', 'S': 'С', 'I': 'И', 'K': 'К', 'M': 'М', 'T': 'Т', 'B': 'В',
-        'H': 'Н', 'R': 'Р'
+        "a": "а",
+        "c": "ц",
+        "e": "е",
+        "o": "о",
+        "p": "п",
+        "x": "х",
+        "y": "у",
+        "j": "ј",
+        "s": "с",
+        "i": "и",
+        "A": "А",
+        "C": "Ц",
+        "E": "Е",
+        "O": "О",
+        "P": "П",
+        "X": "Х",
+        "Y": "У",
+        "J": "Ј",
+        "S": "С",
+        "I": "И",
+        "K": "К",
+        "M": "М",
+        "T": "Т",
+        "B": "В",
+        "H": "Н",
+        "R": "Р",
     }
 
     # Serbian to Macedonian leak mappings (both Cyrillic and Latin versions)
@@ -71,7 +92,6 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
         "решење": "решение",
         "односи": "односи",
         "већ": "веќе",
-        
         # Latin leaks
         "tokom": "во текот на",
         "između": "меѓу",
@@ -121,45 +141,78 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
 
     # Helper for full Latin phonetic transliteration
     phonetic = {
-        "Lj": "Љ", "lj": "љ",
-        "Nj": "Њ", "nj": "њ",
-        "Dž": "Џ", "dž": "џ",
-        "Gj": "Ѓ", "gj": "ѓ",
-        "Kj": "Ќ", "kj": "ќ",
-        "Dz": "Ѕ", "dz": "ѕ",
-        "A": "А", "a": "а",
-        "B": "Б", "b": "б",
-        "V": "В", "v": "в",
-        "G": "Г", "g": "г",
-        "D": "Д", "d": "д",
-        "Đ": "Ѓ", "đ": "ѓ",
-        "E": "Е", "e": "е",
-        "Ž": "Ж", "ž": "ж",
-        "Z": "З", "z": "з",
-        "I": "И", "i": "и",
-        "J": "Ј", "j": "ј",
-        "K": "К", "k": "к",
-        "L": "Л", "l": "л",
-        "M": "М", "m": "м",
-        "N": "Н", "n": "н",
-        "O": "О", "o": "о",
-        "P": "П", "p": "п",
-        "R": "Р", "r": "р",
-        "S": "С", "s": "с",
-        "T": "Т", "t": "т",
-        "Ć": "Ќ", "ć": "ќ",
-        "U": "У", "u": "у",
-        "F": "Ф", "f": "ф",
-        "H": "Х", "h": "х",
-        "C": "Ц", "c": "ц",
-        "Č": "Ч", "č": "ч",
-        "Š": "Ш", "š": "ш",
+        "Lj": "Љ",
+        "lj": "љ",
+        "Nj": "Њ",
+        "nj": "њ",
+        "Dž": "Џ",
+        "dž": "џ",
+        "Gj": "Ѓ",
+        "gj": "ѓ",
+        "Kj": "Ќ",
+        "kj": "ќ",
+        "Dz": "Ѕ",
+        "dz": "ѕ",
+        "A": "А",
+        "a": "а",
+        "B": "Б",
+        "b": "б",
+        "V": "В",
+        "v": "в",
+        "G": "Г",
+        "g": "г",
+        "D": "Д",
+        "d": "д",
+        "Đ": "Ѓ",
+        "đ": "ѓ",
+        "E": "Е",
+        "e": "е",
+        "Ž": "Ж",
+        "ž": "ж",
+        "Z": "З",
+        "z": "з",
+        "I": "И",
+        "i": "и",
+        "J": "Ј",
+        "j": "ј",
+        "K": "К",
+        "k": "к",
+        "L": "Л",
+        "l": "л",
+        "M": "М",
+        "m": "м",
+        "N": "Н",
+        "n": "н",
+        "O": "О",
+        "o": "о",
+        "P": "П",
+        "p": "п",
+        "R": "Р",
+        "r": "р",
+        "S": "С",
+        "s": "с",
+        "T": "Т",
+        "t": "т",
+        "Ć": "Ќ",
+        "ć": "ќ",
+        "U": "У",
+        "u": "у",
+        "F": "Ф",
+        "f": "ф",
+        "H": "Х",
+        "h": "х",
+        "C": "Ц",
+        "c": "ц",
+        "Č": "Ч",
+        "č": "ч",
+        "Š": "Ш",
+        "š": "ш",
     }
 
     def clean_word(word: str) -> str:
-        if word.startswith('[') and word.endswith(']'):
+        if word.startswith("[") and word.endswith("]"):
             return word
-        
+
         w_lower = word.lower()
         if w_lower in leaks:
             replacement = leaks[w_lower]
@@ -167,9 +220,9 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
                 replacement = replacement[0].upper() + replacement[1:]
             return replacement
 
-        has_cyrillic = any('\u0400' <= char <= '\u04FF' for char in word)
-        has_latin = any(('a' <= char.lower() <= 'z') for char in word)
-        
+        has_cyrillic = any("\u0400" <= char <= "\u04ff" for char in word)
+        has_latin = any(("a" <= char.lower() <= "z") for char in word)
+
         if has_cyrillic and has_latin:
             chars = []
             for c in word:
@@ -182,7 +235,7 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
         if has_latin and not has_cyrillic:
             if word.isupper() and len(word) in (2, 3, 4, 5):
                 return word
-            
+
             res = word
             for lat, cyr in sorted(phonetic.items(), key=lambda x: len(x[0]), reverse=True):
                 res = res.replace(lat, cyr)
@@ -195,10 +248,9 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
     for token in tokens:
         if not token:
             continue
-        if re.match(r'^[a-zA-Z\u0400-\u04FF\u0160\u0161\u0106\u0107\u010C\u010D\u0110\u0111\u017D\u017E]+$', token):
+        if re.match(r"^[a-zA-Z\u0400-\u04FF\u0160\u0161\u0106\u0107\u010C\u010D\u0110\u0111\u017D\u017E]+$", token):
             cleaned_tokens.append(clean_word(token))
         else:
             cleaned_tokens.append(token)
 
     return "".join(cleaned_tokens)
-

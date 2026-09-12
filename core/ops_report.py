@@ -65,8 +65,7 @@ async def build_weekly_ops_report() -> dict:
     fallback = sum(
         int(row.get("count") or 0)
         for row in synthesis_rows
-        if str(row.get("provider") or "").lower()
-        in ("enhanced_fallback", "local", "unknown")
+        if str(row.get("provider") or "").lower() in ("enhanced_fallback", "local", "unknown")
     )
 
     return {
@@ -74,19 +73,12 @@ async def build_weekly_ops_report() -> dict:
         "window_days": 7,
         "ops": ops,
         "synthesis": {
-            "providers_7d": {
-                row["provider"]: int(row["count"]) for row in synthesis_rows
-            },
+            "providers_7d": {row["provider"]: int(row["count"]) for row in synthesis_rows},
             "total_7d": total_providers,
-            "fallback_ratio_7d": (
-                round(fallback / total_providers, 4) if total_providers else 0.0
-            ),
+            "fallback_ratio_7d": (round(fallback / total_providers, 4) if total_providers else 0.0),
         },
-        "tag_noise_samples": [
-            {"tag": row["tag"], "count": int(row["count"])} for row in tag_noise
-        ],
+        "tag_noise_samples": [{"tag": row["tag"], "count": int(row["count"])} for row in tag_noise],
         "single_hit_sources_7d": [
-            {"source": row["source"], "articles": int(row["articles_7d"])}
-            for row in source_gaps
+            {"source": row["source"], "articles": int(row["articles_7d"])} for row in source_gaps
         ],
     }

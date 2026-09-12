@@ -109,23 +109,13 @@ def assess_mk_copy_purity(text: str) -> dict:
     cyrillic, latin = _count_letters(clean)
     total = cyrillic + latin
     latin_share = (latin / total) if total else 1.0
-    leaks = sorted(
-        {
-            word.casefold()
-            for word in _WORD_RE.findall(clean)
-            if word.casefold() in _SERBIAN_LATIN_LEAKS
-        }
-    )
+    leaks = sorted({word.casefold() for word in _WORD_RE.findall(clean) if word.casefold() in _SERBIAN_LATIN_LEAKS})
 
     min_cyrillic = int(os.environ.get("MK_COPY_MIN_CYRILLIC_LETTERS", "24"))
     max_latin_share = float(os.environ.get("MK_COPY_MAX_LATIN_SHARE", "0.28"))
     max_leaks = int(os.environ.get("MK_COPY_MAX_SERBIAN_LEAKS", "0"))
 
-    ok = (
-        cyrillic >= min_cyrillic
-        and latin_share <= max_latin_share
-        and len(leaks) <= max_leaks
-    )
+    ok = cyrillic >= min_cyrillic and latin_share <= max_latin_share and len(leaks) <= max_leaks
     reason = "ok"
     if cyrillic < min_cyrillic:
         reason = "low_cyrillic"
@@ -172,23 +162,13 @@ def assess_sr_copy_purity(text: str) -> dict:
     cyrillic, latin = _count_letters(clean, exempt_latin=True)
     total = cyrillic + latin
     cyrillic_share = (cyrillic / total) if total else 0.0
-    leaks = sorted(
-        {
-            word.casefold()
-            for word in _WORD_RE.findall(clean)
-            if word.casefold() in _SERBIAN_CYRILLIC_LEAKS
-        }
-    )
+    leaks = sorted({word.casefold() for word in _WORD_RE.findall(clean) if word.casefold() in _SERBIAN_CYRILLIC_LEAKS})
 
     min_latin = int(os.environ.get("SR_COPY_MIN_LATIN_LETTERS", "24"))
     max_cyrillic_share = float(os.environ.get("SR_COPY_MAX_CYRILLIC_SHARE", "0.22"))
     max_leaks = int(os.environ.get("SR_COPY_MAX_CYRILLIC_LEAKS", "1"))
 
-    ok = (
-        latin >= min_latin
-        and cyrillic_share <= max_cyrillic_share
-        and len(leaks) <= max_leaks
-    )
+    ok = latin >= min_latin and cyrillic_share <= max_cyrillic_share and len(leaks) <= max_leaks
     reason = "ok"
     if latin < min_latin:
         reason = "low_latin"

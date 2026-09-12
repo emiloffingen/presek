@@ -133,7 +133,8 @@ def _merge_synced_profiles(left, right):
     right = _normalize_synced_profile(right)
     merged_recent = _normalize_recent_clusters(
         sorted(
-            left["recentClusters"] + right["recentClusters"], key=lambda item: str(item.get("viewedAt") or ""),
+            left["recentClusters"] + right["recentClusters"],
+            key=lambda item: str(item.get("viewedAt") or ""),
             reverse=True,
         )
     )
@@ -370,7 +371,7 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         WHERE similarity > 0.55
         ORDER BY cluster_id, similarity DESC
         LIMIT 100
-    """,
+    """,  # nosec B608 - static freshness fragment with bound params
         (vec_str, country_filter, recent_ids),
     )
 
@@ -389,7 +390,7 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         return []
 
     all_articles = await db.async_execute(
-        f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",
+        f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",  # nosec B608 - static column constant with bound params
         (cids,),
     )
     meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))

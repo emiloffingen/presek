@@ -143,7 +143,6 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                     fallback_reason = fallback_reason or "fast_mode_provisional"
                 elif fallback_reason == "fast_mode_provisional":
                     fallback_reason = None
-            raw = cascade.get("raw")
             res_data = cascade.get("res_data") or {}
 
             if cascade["status"] == "success":
@@ -198,7 +197,7 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                     fallback_reason=fallback_reason,
                     cascade_depth=cascade.get("cascade_depth"),
                 )
-                
+
                 if provider and quality_score is not None:
                     from core.llm_router import SmartModelRouter
 
@@ -358,4 +357,3 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
         synthesis_persisted=synthesis_persisted,
         shared_computed=shared_computed,
     )
-

@@ -23,7 +23,7 @@ _orig_get_pool = _kombu_redis.Channel._get_pool
 
 def _resp2_get_pool(self, asynchronous=False):
     params = self._connparams(asynchronous=asynchronous)
-    params.setdefault('protocol', 2)
+    params.setdefault("protocol", 2)
     return _redis.ConnectionPool(**params)
 
 
@@ -141,9 +141,7 @@ celery_app.conf.update(
         "tasks.ingestion_task.repair_single_source_task": {"queue": "maintenance"},
         "tasks.ingestion_task.crawl_article_task": {"queue": "ingestion-crawl"},
         "tasks.ingestion_task.process_article_image_task": {"queue": "ingestion-crawl"},
-        "tasks.ingestion_task.post_crawl_invalidation_task": {
-            "queue": "ingestion-crawl"
-        },
+        "tasks.ingestion_task.post_crawl_invalidation_task": {"queue": "ingestion-crawl"},
         "tasks.intelligence.synthesize_cluster_task": {"queue": "synthesis"},
         "tasks.intelligence.synthesize_urgent_task": {"queue": "fast-track"},
         "tasks.intelligence.auto_summarize_task": {"queue": "fast-track"},
@@ -152,9 +150,7 @@ celery_app.conf.update(
         "tasks.intelligence.generate_cluster_metadata_task": {"queue": "maintenance"},
         "tasks.intelligence.upgrade_fast_synthesis_task": {"queue": "synthesis"},
         "tasks.intelligence.*": {"queue": "intel-heavy"},
-        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {
-            "queue": "fast-track"
-        },
+        "tasks.delivery.briefing.send_profile_breaking_alerts_task": {"queue": "fast-track"},
         "tasks.delivery.email.*": {"queue": "delivery"},
         "tasks.delivery.briefing.*": {"queue": "delivery"},
         "tasks.delivery.*": {"queue": "delivery"},
@@ -240,9 +236,7 @@ celery_app.conf.update(
             "task": "tasks.maintenance.prioritize_homepage_syntheses_task",
             "schedule": HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS,
             "kwargs": {"limit": HOMEPAGE_SYNTHESIS_PRIORITIZE_LIMIT},
-            "options": {
-                "expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)
-            },
+            "options": {"expires": max(60, HOMEPAGE_SYNTHESIS_PRIORITIZE_INTERVAL_SECONDS - 30)},
         },
         "boost-homepage-cluster-supply": {
             "task": "tasks.maintenance.boost_homepage_cluster_supply_task",

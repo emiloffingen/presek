@@ -392,8 +392,6 @@ def _select_profile_brief_clusters(profile, limit=4, _cached_clusters=None):
     return _dedupe_briefing_candidates(ranked, limit=min(limit, 3))
 
 
-
-
 @celery_app.task
 def generate_daily_brief_task(
     retry_attempt=0,
@@ -402,7 +400,6 @@ def generate_daily_brief_task(
     provider_override=None,
 ):
     target_date = _resolve_briefing_date(briefing_date)
-    now = datetime.datetime.now()
     lock_key = f"lock:daily_brief:{lang}:{target_date.isoformat()}"
     try:
         if not redis_client.set(lock_key, "1", nx=True, ex=7200):
@@ -448,7 +445,7 @@ def generate_daily_brief_task(
         clusters = _load_daily_brief_clusters(limit=10, lang=lang, briefing_date=target_date)
         content_context = _build_daily_brief_context(clusters, lang=lang)
         system_insight = f"\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: {total_24h}\n- Udeo svetskih vest: {intl_pct}%\n- Indeks pluralizma (raznovrsni izvori): {diverse_pct}%\n- Najzastupljeni akteri: {top_subjects or 'Nema'}\n- U focusu lokacije: {top_locations or 'Nema'}\n- Naziv izvestaja: {dispatch_name}"
-        
+
         # Chronological RAG context loop
         history_context = ""
         try:
@@ -474,7 +471,9 @@ def generate_daily_brief_task(
         except Exception as e:
             log.warning(f"Failed to fetch historical briefing context: {e}")
 
-        full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
+        full_context = (
+            f"<briefing_context>\n{content_context}\n{system_insight}\n{history_context}\n</briefing_context>"
+        )
         prompt = DAILY_BRIEF_SYSTEM_PROMPT if lang == "sr" else DAILY_BRIEF_SYSTEM_PROMPT_MK
         from core.runtime_limits import resolve_briefing_ai_providers
 
@@ -561,18 +560,25 @@ def generate_daily_brief_task(
                 fetch=False,
             )
             delete_cache(f"daily_brief:latest:{lang}")
-            record_task_event("daily_brief", "ok" if brief else "fallback", f"lang:{lang},date:{target_date.isoformat()}")
+            record_task_event(
+                "daily_brief", "ok" if brief else "fallback", f"lang:{lang},date:{target_date.isoformat()}"
+            )
             if target_date == datetime.date.today():
                 notify_daily_briefing_ready_task.apply_async(kwargs={"lang": lang}, countdown=20)
 
             # Automatically pre-generate the briefing audio in the background
             try:
                 from core.audio_service import AudioService
+
                 target_date_str = target_date.isoformat()
-                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date_str} ({lang})...")
+                log.info(
+                    f"[tasks] Auto-generating OmniVoice briefing audio in background for {target_date_str} ({lang})..."
+                )
                 AudioService.generate_briefing_audio(target_date_str, final_brief, lang)
             except Exception as audio_err:
-                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}")
+                log.error(
+                    f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}"
+                )
             if not brief and retry_attempt < 2 and target_date == datetime.date.today():
                 generate_daily_brief_task.apply_async(
                     kwargs={"retry_attempt": retry_attempt + 1, "lang": lang, "briefing_date": target_date.isoformat()},
@@ -594,11 +600,16 @@ def generate_daily_brief_task(
             # Automatically pre-generate the briefing audio (fallback) in the background
             try:
                 from core.audio_service import AudioService
+
                 target_date_str = target_date.isoformat()
-                log.info(f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date_str} ({lang})...")
+                log.info(
+                    f"[tasks] Auto-generating OmniVoice briefing audio in background (fallback) for {target_date_str} ({lang})..."
+                )
                 AudioService.generate_briefing_audio(target_date_str, fallback, lang)
             except Exception as audio_err:
-                log.error(f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}")
+                log.error(
+                    f"[tasks] Failed to auto-generate briefing audio for {target_date.isoformat()} ({lang}): {audio_err}"
+                )
             if retry_attempt < 2 and target_date == datetime.date.today():
                 generate_daily_brief_task.apply_async(
                     kwargs={"retry_attempt": retry_attempt + 1, "lang": lang, "briefing_date": target_date.isoformat()},

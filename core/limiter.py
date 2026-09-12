@@ -33,9 +33,9 @@ try:
             try:
                 ip = get_remote_address(request)
             except Exception:
-                ip = "0.0.0.0"
+                ip = "0.0.0.0"  # nosec B104 - fallback IP literal, not a socket bind
 
-        if ip in ("127.0.0.1", "::1", "localhost", "0.0.0.0"):
+        if ip in ("127.0.0.1", "::1", "localhost", "0.0.0.0"):  # nosec B104 - IP literals for local check, not a bind
             return "local"
         return ip
 

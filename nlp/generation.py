@@ -167,12 +167,8 @@ def _build_briefing_intro_line(clusters, lang="mk"):
         second_label = _briefing_story_label(clusters[1], lang=lang)
         if lead_label and second_label:
             if lang == "sr":
-                return (
-                    f"Danas se izdvajaju dve teme: {lead_label} i {second_label}."
-                )
-            return (
-                f"Денес се издвојуваат две теми: {lead_label} и {second_label}."
-            )
+                return f"Danas se izdvajaju dve teme: {lead_label} i {second_label}."
+            return f"Денес се издвојуваат две теми: {lead_label} и {second_label}."
 
     lead_update = _condense_briefing_update(_extract_briefing_update(clusters[0], lang=lang), max_chars=220)
     if _is_incomplete_briefing_fragment(lead_update):
@@ -200,8 +196,7 @@ def _extract_briefing_watch_signal(cluster, lang="mk"):
     if source_count >= 2:
         if lang == "sr":
             return (
-                f"Tražiti sledeću zvaničnu potvrdu ili novu brojku; temu trenutno potvrđuje "
-                f"{source_count} redakcija."
+                f"Tražiti sledeću zvaničnu potvrdu ili novu brojku; temu trenutno potvrđuje {source_count} redakcija."
             )
         return (
             f"Следниот сигнал е официјална потврда или нова бројка; темата моментално ја потврдуваат "
@@ -282,9 +277,7 @@ def _extract_briefing_update(cluster, lang="mk"):
         return clean_title  # Fallback if no description
 
     title_terms = set(_extract_terms(clean_title))
-    description_sentences = [
-        s.strip() for s in _split_briefing_sentences(clean_description) if len(s.strip()) > 20
-    ]
+    description_sentences = [s.strip() for s in _split_briefing_sentences(clean_description) if len(s.strip()) > 20]
 
     for sentence in description_sentences:
         sent_terms = set(_extract_terms(sentence))
@@ -543,27 +536,48 @@ def _topic_stakes_sentence(text, lang="mk", topic="", category=""):
     lowered = str(text or "").casefold()
     topic_context = f"{topic or ''} {category or ''}".casefold()
     is_sr = lang == "sr"
-    if any(term in lowered for term in ("izbor", "glasanje", "vlada", "sobranie", "skupština", "парламент", "избор", "влада", "собрание")):
+    if any(
+        term in lowered
+        for term in ("izbor", "glasanje", "vlada", "sobranie", "skupština", "парламент", "избор", "влада", "собрание")
+    ):
         return (
             "Politički značaj je u tome što razvoj može pomeriti odnose među institucijama, partijama ili javnim očekivanjima."
             if is_sr
             else "Политичкото значење е во тоа што развојот може да ги помести односите меѓу институциите, партиите или јавните очекувања."
         )
-    if any(term in lowered for term in ("cena", "inflacija", "budzet", "plata", "tržište", "ekonom", "цена", "инфлација", "буџет", "плата", "пазар")):
+    if any(
+        term in lowered
+        for term in (
+            "cena",
+            "inflacija",
+            "budzet",
+            "plata",
+            "tržište",
+            "ekonom",
+            "цена",
+            "инфлација",
+            "буџет",
+            "плата",
+            "пазар",
+        )
+    ):
         return (
             "Ekonomska težina priče je u mogućem uticaju na troškove, budžete ili poslovne odluke."
             if is_sr
             else "Економската тежина на приказната е во можниот ефект врз трошоците, буџетите или деловните одлуки."
         )
-    if any(term in lowered for term in ("policija", "sud", "tužila", "istraga", "uhap", "полиција", "суд", "обвинител", "истрага", "уапс")):
+    if any(
+        term in lowered
+        for term in ("policija", "sud", "tužila", "istraga", "uhap", "полиција", "суд", "обвинител", "истрага", "уапс")
+    ):
         return (
             "Institucionalni značaj zavisi od toga koliko će postupak biti potkrepljen proverljivim činjenicama i daljim odlukama nadležnih."
             if is_sr
             else "Институционалното значење зависи од тоа колку постапката ќе биде поткрепена со проверливи факти и понатамошни одлуки на надлежните."
         )
-    if (
-        any(term in topic_context for term in ("sport", "спорт"))
-        and any(term in lowered for term in ("gol", "utakmica", "liga", "fudbal", "košarka", "натпревар", "гол", "лига", "фудбал", "кошарка"))
+    if any(term in topic_context for term in ("sport", "спорт")) and any(
+        term in lowered
+        for term in ("gol", "utakmica", "liga", "fudbal", "košarka", "натпревар", "гол", "лига", "фудбал", "кошарка")
     ):
         return (
             "Sportski značaj se meri kroz posledice po rezultat, poredak i pritisak pred naredne mečeve."
@@ -865,7 +879,7 @@ def _clean_common_line(line: str, lang: str, exclude_text: str = "") -> str:
     ]
     for prefix in common_prefixes:
         if clean.startswith(prefix):
-            clean = clean[len(prefix):]
+            clean = clean[len(prefix) :]
             break
     common_suffixes = [
         " kao tema u fokusu.",
@@ -1028,9 +1042,7 @@ def compare_cluster_sources(articles, lang="mk"):
             )
 
     unique_entities = [
-        (entity, sorted(sources))
-        for entity, sources in entity_map.items()
-        if len(sources) == 1 and len(entity) >= 4
+        (entity, sorted(sources)) for entity, sources in entity_map.items() if len(sources) == 1 and len(entity) >= 4
     ]
     if unique_entities:
         entity, sources = unique_entities[0]
@@ -1098,7 +1110,9 @@ def compare_cluster_sources(articles, lang="mk"):
     from nlp.categories import detect_topic
 
     all_titles = " ".join([a.get("title") or "" for a in articles])
-    is_sport = (detect_topic(all_titles) == "Sport") or any(_extract_sports_scores(a.get("title") or "") for a in articles)
+    is_sport = (detect_topic(all_titles) == "Sport") or any(
+        _extract_sports_scores(a.get("title") or "") for a in articles
+    )
 
     if is_sport:
         scores = [
@@ -1161,7 +1175,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         }
 
     t = _T.get(lang, _T["mk"])
-    
+
     # Try to find a lead article in the target language (represented by country)
     lead = None
     target_country = "MK" if lang == "mk" else "RS"
@@ -1193,10 +1207,10 @@ def synthesize_cluster_fallback(articles, lang="mk"):
 
         art_country = art.get("country", "")
         is_target_country = art_country and str(art_country).upper() == target_country
-        
+
         # Extract sentences from description
         raw_sents = [s.strip() for s in re.split(r"(?<=[.!?])\s+", art_desc) if s.strip()]
-        
+
         for idx, s in enumerate(raw_sents):
             normalized = _normalize_briefing_line(s)
             if (
@@ -1206,7 +1220,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
                 or _is_incomplete_briefing_fragment(normalized)
             ):
                 continue
-            
+
             # Sentence scoring logic
             score = len(normalized.split()) * 0.1
             if idx == 0:
@@ -1215,15 +1229,17 @@ def synthesize_cluster_fallback(articles, lang="mk"):
                 score += 0.5  # contains numbers / statistics
             if is_target_country:
                 score += 0.8  # matches target country/language
-                
-            candidate_sentences.append({
-                "text": normalized,
-                "score": score,
-                "source": art.get("source"),
-            })
-            
+
+            candidate_sentences.append(
+                {
+                    "text": normalized,
+                    "score": score,
+                    "source": art.get("source"),
+                }
+            )
+
     candidate_sentences.sort(key=lambda x: x["score"], reverse=True)
-    
+
     selected_sentences = []
     for cand in candidate_sentences:
         # Avoid duplicating the key update point
@@ -1234,7 +1250,7 @@ def synthesize_cluster_fallback(articles, lang="mk"):
         selected_sentences.append(cand)
         if len(selected_sentences) >= 3:
             break
-            
+
     if not selected_sentences:
         fallback_sents = [_normalize_briefing_line(s) for s in re.split(r"(?<=[.!?])\s+", desc) if len(s.strip()) > 20]
         fallback_sents = [s for s in fallback_sents if s and not _is_noisy_summary_sentence(s)]
@@ -1255,7 +1271,9 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     else:
         summary_lines.append(f"• {lead_sentence or _sentence(lead_title)}")
 
-    if selected_sentences and not (update_point and _jaccard_similarity(selected_sentences[0]["text"], update_point) > 0.28):
+    if selected_sentences and not (
+        update_point and _jaccard_similarity(selected_sentences[0]["text"], update_point) > 0.28
+    ):
         detail_sentence = _fallback_sentence(selected_sentences[0]["text"])
         if detail_sentence:
             summary_lines.append(f"• {detail_sentence}")
@@ -1340,19 +1358,24 @@ def synthesize_cluster_fallback(articles, lang="mk"):
     details = [sentence for sentence in (_fallback_sentence(s.get("text")) for s in selected_sentences) if sentence]
     if details:
         non_duplicate_details = [
-            detail for detail in details
+            detail
+            for detail in details
             if all(_jaccard_similarity(detail, existing) <= 0.28 for existing in article_body)
         ]
         if non_duplicate_details:
             article_body.append(" ".join(non_duplicate_details[:2]))
 
     context_basis = " ".join([lead_title, desc, " ".join(details)])
-    article_body.append(_sentence(_topic_stakes_sentence(
-        context_basis,
-        lang=lang,
-        topic=lead.get("topic") or "",
-        category=lead.get("category") or "",
-    )))
+    article_body.append(
+        _sentence(
+            _topic_stakes_sentence(
+                context_basis,
+                lang=lang,
+                topic=lead.get("topic") or "",
+                category=lead.get("category") or "",
+            )
+        )
+    )
 
     source_paragraph_parts = []
     existing_text = " ".join(article_body)
@@ -1413,7 +1436,8 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     if not clusters:
         return f"# {t['dneven_brifing']}\n\n## {t['golemata_slika']}\n\n{t['nema_vesti']}"
     display_clusters = sorted(
-        clusters[:4], key=lambda item: (
+        clusters[:4],
+        key=lambda item: (
             -int(bool(str(item.get("cluster_summary") or "").strip())),
             int(_is_penalized_briefing_title(item.get("title"))),
             -int(item.get("source_count") or 0),
@@ -1445,7 +1469,11 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
             title_line = f"{title_line} [[{cluster_id}]]"
         lines.append(f"### {index}. {title_line}")
 
-        if summary and summary.casefold() != (clean_title or title).casefold() and not _is_incomplete_briefing_fragment(summary):
+        if (
+            summary
+            and summary.casefold() != (clean_title or title).casefold()
+            and not _is_incomplete_briefing_fragment(summary)
+        ):
             lines.append(f"- {t['klucen_aspekt']}: {summary.rstrip('.')}.")
 
         lines.append(f"- {t['zosto_vazno']}: {importance.rstrip('.')}.")
@@ -1463,7 +1491,7 @@ def generate_daily_brief_fallback(clusters, lang="mk"):
     if not difference_added and display_clusters[:3]:
         fallback_cluster = display_clusters[0]
         short_t = _condense_briefing_update(fallback_cluster.get("title"), max_chars=80)
-        lines.append(f"• {short_t}: " f"{_extract_briefing_importance(fallback_cluster, lang=lang)}.")
+        lines.append(f"• {short_t}: {_extract_briefing_importance(fallback_cluster, lang=lang)}.")
     lines.append("")
 
     lines.append(f"## {t['sto_da_se_sledi']}")
@@ -1617,13 +1645,7 @@ def _build_minimum_cluster_summary(articles, comparison=None, lang="mk"):
 
 
 def _placeholder_svg_escape(text: str) -> str:
-    return (
-        str(text or "")
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
 def _placeholder_paint_tokens(
@@ -1765,10 +1787,24 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
     elif any(token in category_l for token in ("svet", "свет", "world", "global")):
         category_key = "Svet"
     else:
-        category_key = category_raw if category_raw in {
-            "Srbija", "Makedonija", "Balkan", "Evropa", "Amerika", "Svet",
-            "Sport", "Tehnologija", "Ekonomija", "Hronika", "Zabava",
-        } else "default"
+        category_key = (
+            category_raw
+            if category_raw
+            in {
+                "Srbija",
+                "Makedonija",
+                "Balkan",
+                "Evropa",
+                "Amerika",
+                "Svet",
+                "Sport",
+                "Tehnologija",
+                "Ekonomija",
+                "Hronika",
+                "Zabava",
+            }
+            else "default"
+        )
 
     # Warm editorial palettes aligned with presek-identity.css (paper + mark accent).
     colors_dark, colors_light = category_palette_pair(category_key)
@@ -1786,10 +1822,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
         c_accent_light,
     )
 
-    # Deterministic geometric adjustments
-    angle = seed % 360
-    shift_x = seed % 40
-    shift_y = seed % 30
+    # Deterministic geometric adjustments (reserved for future use)
 
     # Auto text wrap logic for asymmetrical editorial layout
     def wrap_text(text, max_chars=28):
@@ -1892,7 +1925,7 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
             <circle cx="645" cy="260" r="6" class="ph-accent-fill" opacity="0.6"/>
             <line x1="535" y1="185" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
             <line x1="645" y1="260" x2="590" y2="225" class="ph-stroke-line" stroke-width="1.5"/>
-        """
+        """,
     }
 
     art_svg = art_templates.get(category_key, art_templates["default"])
@@ -1938,69 +1971,60 @@ def generate_local_placeholder(cluster_id, title, category="vesti", theme=None, 
     # 3. Construct premium editorial dynamic SVG
     svg = [
         f'<svg viewBox="0 0 800 450" {color_scheme_style} xmlns="http://www.w3.org/2000/svg">',
-        '<defs>',
+        "<defs>",
         # Embed the dynamic styling rule-sets
-        f'<style>{style_content}</style>',
+        f"<style>{style_content}</style>",
         # Main Linear Background Gradient using styles
         f'  <linearGradient id="bg_{cluster_id}" x1="0%" y1="0%" x2="100%" y2="100%">',
         '    <stop class="bg-stop-start" offset="0%" style="stop-opacity:1" />',
         '    <stop class="bg-stop-end" offset="100%" style="stop-opacity:1" />',
-        '  </linearGradient>',
+        "  </linearGradient>",
         # Soft Neon Spotlight Glowing Mesh
-        f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed%20)}%" cy="{40 + (seed%20)}%" r="70%">',
+        f'  <radialGradient id="mesh_{cluster_id}" cx="{60 + (seed % 20)}%" cy="{40 + (seed % 20)}%" r="70%">',
         '    <stop class="mesh-stop-start" offset="0%" />',
         '    <stop class="mesh-stop-end" offset="100%" />',
-        '  </radialGradient>',
+        "  </radialGradient>",
         # Transparent Gradient for Art Fills
         f'  <linearGradient id="art_glow_{cluster_id}" x1="0%" y1="0%" x2="0%" y2="100%">',
         '    <stop class="art-glow-start" offset="0%" />',
         '    <stop class="art-glow-end" offset="100%" />',
-        '  </linearGradient>',
+        "  </linearGradient>",
         # High-end paper-grain/noise texture filter
         '  <filter id="grain" x="0" y="0" width="100%" height="100%">',
         '    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch" />',
         '    <feColorMatrix type="saturate" values="0" />',
         '    <feComponentTransfer><feFuncA type="linear" slope="0.035" /></feComponentTransfer>',
         '    <feComposite operator="in" in2="SourceGraphic" />',
-        '  </filter>',
-        '</defs>',
-        
+        "  </filter>",
+        "</defs>",
         # 1. Base Gradient Backgrounds
         f'<rect width="100%" height="100%" fill="url(#bg_{cluster_id})" />',
         f'<rect width="100%" height="100%" fill="url(#mesh_{cluster_id})" />',
-        
         # 2. Tactile Grain Overlay
         '<rect width="100%" height="100%" class="ph-grain" filter="url(#grain)" />',
-        
         # 3. Editorial panel (paper card + brand cut)
         '<rect x="40" y="40" width="720" height="370" rx="2" class="ph-glass" stroke-width="1" />',
         '<rect x="40" y="40" width="5" height="370" class="ph-accent-fill" opacity="0.92" />',
-        
         # 4. Editorial Layout Grid Lines
         '<g class="ph-grid" stroke-width="1" stroke-dasharray="6 8">',
         '  <line x1="120" y1="40" x2="120" y2="410" />',
         '  <line x1="460" y1="40" x2="460" y2="410" />',
         '  <line x1="40" y1="110" x2="760" y2="110" />',
         '  <line x1="40" y1="340" x2="760" y2="340" />',
-        '</g>',
-        
+        "</g>",
         # 5. Editorial status
         '<circle cx="80" cy="75" r="4" class="ph-accent-fill" opacity="0.72" />',
         f'<text x="96" y="79" class="ph-meta" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="900" letter-spacing="2">{status_label}</text>',
-        
         # 6. Beautiful Category Vector Art
-        f'{art_svg}',
-        
+        f"{art_svg}",
         # 7. Asymmetric Headline Typography
         f'<text class="ph-headline" font-family="Georgia, \'Times New Roman\', serif" font-size="{font_size}" font-weight="900">',
-        f'  {tspans}',
-        '</text>',
-        
+        f"  {tspans}",
+        "</text>",
         # 8. Premium Branding Metadata
         f'<text x="80" y="378" class="ph-meta" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="4">{site_label}</text>',
         f'<text x="720" y="378" text-anchor="end" class="ph-category" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" letter-spacing="2">{category_label}</text>',
-        
-        '</svg>'
+        "</svg>",
     ]
 
     return "".join(svg)

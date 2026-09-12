@@ -21,10 +21,32 @@ log = logging.getLogger("presek.image_service")
 
 # Use absolute path linked to shared storage to persist across releases
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+def _resolve_upload_root() -> str:
+    """Resolve upload dir without crashing CI/containers.
+
+    Prefers explicit env override, then the production shared path when it
+    exists, otherwise falls back to repo-local static/uploads so imports
+    never raise PermissionError (e.g. /home/emiloffingen on CI runners).
+    """
+    env_root = os.environ.get("PRESEK_UPLOAD_ROOT")
+    if env_root:
+        return env_root
+    static_root = os.environ.get("STATIC_ROOT")
+    if static_root:
+        return os.path.join(static_root, "uploads")
+    default = os.path.join("/home/emiloffingen/presek-runtime", "shared", "static", "uploads")
+    try:
+        if os.path.isdir(default) or os.path.isdir(os.path.dirname(default)):
+            return default
+    except Exception:
+        pass
+    return os.path.normpath(os.path.join(_PROJECT_ROOT, "..", "static", "uploads"))
+
+
 # Use shared directory for uploads since release directory is read-only
-_UPLOAD_ROOT = os.path.join(
-    "/home/emiloffingen/presek-runtime", "shared", "static", "uploads"
-)
+_UPLOAD_ROOT = _resolve_upload_root()
 
 _MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
 _MIN_DIMENSION = 200  # Skip tiny logos/icons
@@ -33,7 +55,10 @@ _TARGET_WIDTH = 1200  # High-res "master" for the proxy to use
 
 class ImageService:
     def __init__(self):
-        os.makedirs(_UPLOAD_ROOT, exist_ok=True)
+        try:
+            os.makedirs(_UPLOAD_ROOT, exist_ok=True)
+        except OSError as e:
+            log.warning(f"Upload dir not writable ({_UPLOAD_ROOT}): {e}")
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
@@ -58,9 +83,7 @@ class ImageService:
 
         try:
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(
-                headers=self.headers, follow_redirects=True, timeout=10.0
-            ) as client:
+            async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
@@ -95,16 +118,12 @@ class ImageService:
 
                 if img.width > _TARGET_WIDTH:
                     new_height = int(img.height * (_TARGET_WIDTH / img.width))
-                    img = img.resize(
-                        (_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS
-                    )
+                    img = img.resize((_TARGET_WIDTH, new_height), Image.Resampling.LANCZOS)
 
                 # Save as optimized WebP
                 img.save(local_path, "WEBP", quality=80, method=4)
 
-                log.info(
-                    f"Saved optimized image for article {article_id} to {local_path}"
-                )
+                log.info(f"Saved optimized image for article {article_id} to {local_path}")
                 return f"/static/uploads/{filename}"
 
         except Exception as e:
@@ -134,9 +153,7 @@ class ImageService:
                                 continue
 
                             # Check if still in DB
-                            art_id = int(
-                                filename.replace("art_", "").replace(".webp", "")
-                            )
+                            art_id = int(filename.replace("art_", "").replace(".webp", ""))
                             if art_id not in valid_article_ids:
                                 os.remove(file_path)
                                 log.info(f"Removed orphaned image: {filename}")
@@ -148,10 +165,7 @@ class ImageService:
             if os.path.exists(log_dir):
                 for log_file in os.listdir(log_dir):
                     path = os.path.join(log_dir, log_file)
-                    if (
-                        os.path.isfile(path)
-                        and os.path.getsize(path) > 10 * 1024 * 1024
-                    ):
+                    if os.path.isfile(path) and os.path.getsize(path) > 10 * 1024 * 1024:
                         # Simple truncate: keep last 1MB
                         try:
                             with open(path, "rb+") as f:

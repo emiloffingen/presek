@@ -109,6 +109,7 @@ worker = [
     "numba>=0.60.0",
 ]
 dev = [
+    "bandit>=1.9.0",
     "black>=26.3.1",
     "mypy>=1.11.2",
     "pip-audit>=2.9.0",
@@ -134,3 +135,14 @@ line-length = 120
 "migrations/*.py" = ["E402"]
 "scripts/*.py" = ["E402"]
 "tests/test_optimization.py" = ["E402"]
+# Re-export facade for tests/scripts/patch targets — imports are intentional
+"tasks/intelligence/__init__.py" = ["F401"]
+# Intentional star-imports from tasks.intelligence._constants (has __all__);
+# F405 is reported at use sites, so ignore per file rather than noqa spam
+"tasks/intelligence/backfill.py" = ["F405"]
+"tasks/intelligence/metadata.py" = ["F405"]
+"tasks/intelligence/summarization.py" = ["F405"]
+"tasks/intelligence/cluster_ops.py" = ["F405"]
+"tasks/intelligence/_queue.py" = ["F405"]
+"tasks/intelligence/style.py" = ["F405"]
+"tasks/intelligence/synthesis.py" = ["F405"]

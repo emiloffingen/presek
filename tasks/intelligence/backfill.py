@@ -10,7 +10,7 @@ from nlp import (
     generate_local_placeholder,
     synthesize_cluster_fallback,
 )
-from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.intelligence._queue import (
     _dispatch_batched,
     _historical_summary_dispatch_limit,
@@ -138,6 +138,7 @@ def discover_storylines_task():
     except Exception as e:
         log.warning(f"[tasks] Storyline discovery failed: {e}")
 
+
 @celery_app.task(name="tasks.intelligence.schedule_backfill_historical_summaries_task")
 def schedule_backfill_historical_summaries_task():
     """Beat entrypoint for Gemma-only historical article summary backfill."""
@@ -179,17 +180,20 @@ def backfill_historical_article_summaries_task(limit=None):
         return {"skipped": True, "reason": "local_model_missing"}
 
     dispatch_limit = _historical_summary_dispatch_limit(limit)
-    rows = db.execute(
-        """
+    rows = (
+        db.execute(
+            """
         SELECT id
         FROM articles
         WHERE summary IS NULL
         ORDER BY id ASC
         LIMIT %s
         """,
-        (dispatch_limit,),
-        read_only=True,
-    ) or []
+            (dispatch_limit,),
+            read_only=True,
+        )
+        or []
+    )
     article_ids = [int(row["id"]) for row in rows]
     if not article_ids:
         log.info("[tasks] Historical summary backfill complete.")
@@ -360,9 +364,17 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                                 if fallback_result["synthetic_standfirst"]
                                 else ""
                             ),
-                            json.dumps(fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else []),
-                            json.dumps(fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else []),
-                            json.dumps(fallback_result.get("analyst_entities")[:1000] if fallback_result.get("analyst_entities") else []),
+                            json.dumps(
+                                fallback_result["perspectives"][:2000] if fallback_result["perspectives"] else []
+                            ),
+                            json.dumps(
+                                fallback_result.get("key_facts")[:1000] if fallback_result.get("key_facts") else []
+                            ),
+                            json.dumps(
+                                fallback_result.get("analyst_entities")[:1000]
+                                if fallback_result.get("analyst_entities")
+                                else []
+                            ),
                             generation_provider,
                             generation_model,
                             fallback_reason,
@@ -421,7 +433,7 @@ def refine_knowledge_graph_sentiment_task():
             """,
             (cutoff,),
         )
-        
+
         if not rows:
             log.info("[sentiment-refinement] No active clusters to refine sentiment for.")
             return
@@ -432,19 +444,20 @@ def refine_knowledge_graph_sentiment_task():
         refined_count = 0
         for r in rows:
             text = f"{' '.join(r['titles'])} {r['desc'] or ''}"
-            
+
             # Extract the unique entities
             entities = extract_entities(text, max_entities=8)
             if not entities:
                 continue
-                
+
             # Run deep context-aware LLM sentiment analysis (bypass_llm=False)
             deep_sentiment = analyze_sentiment_locally(text, bypass_llm=False)
-            
+
             for ent in entities:
                 from core.entities import normalize_entity_name
+
                 canonical_name = normalize_entity_name(ent["name"])
-                
+
                 # Blend the deep sentiment score into the existing database score
                 db.execute(
                     """
@@ -457,17 +470,58 @@ def refine_knowledge_graph_sentiment_task():
                     fetch=False,
                 )
                 refined_count += 1
-                
+
         log.info(f"[sentiment-refinement] Successfully refined deep sentiment for {refined_count} entities.")
-        
+
     except Exception as e:
         log.error(f"[sentiment-refinement] Failed to refine knowledge graph sentiment: {e}")
 
-_DELEGATED = frozenset({'CLUSTER_LOOKBACK', '_call_ai', '_sanitize_synthesis_outputs', 'acquire_task_lock', 'analyst', 'average_embeddings', 'celery_app', 'clean_extracted_article_text', 'clean_json_response', 'db', 'deShout', 'detect_category', 'detect_topic', 'extract_clean_summary_text', 'extract_cluster_tags_locally', 'extract_entities', 'filter_cluster_tags', 'generate_cover_art', 'generate_local_placeholder', 'get_celery_queue_depth', 'get_dominant_color', 'invalidate_cluster_caches', 'invalidate_public_data_caches', 'log', 'normalize_citation_sources', 'normalize_headline', 'normalize_perspectives', 'normalize_summary_text', 'parse_embedding_value', 'record_runtime_event', 'redis_client', 'release_task_lock', 'schedule_task_once', 'summarize_article_fallback', 'synthesize_cluster_fallback', 'validate_person_names'})
+
+_DELEGATED = frozenset(
+    {
+        "CLUSTER_LOOKBACK",
+        "_call_ai",
+        "_sanitize_synthesis_outputs",
+        "acquire_task_lock",
+        "analyst",
+        "average_embeddings",
+        "celery_app",
+        "clean_extracted_article_text",
+        "clean_json_response",
+        "db",
+        "deShout",
+        "detect_category",
+        "detect_topic",
+        "extract_clean_summary_text",
+        "extract_cluster_tags_locally",
+        "extract_entities",
+        "filter_cluster_tags",
+        "generate_cover_art",
+        "generate_local_placeholder",
+        "get_celery_queue_depth",
+        "get_dominant_color",
+        "invalidate_cluster_caches",
+        "invalidate_public_data_caches",
+        "log",
+        "normalize_citation_sources",
+        "normalize_headline",
+        "normalize_perspectives",
+        "normalize_summary_text",
+        "parse_embedding_value",
+        "record_runtime_event",
+        "redis_client",
+        "release_task_lock",
+        "schedule_task_once",
+        "summarize_article_fallback",
+        "synthesize_cluster_fallback",
+        "validate_person_names",
+    }
+)
+
 
 def __getattr__(name: str):
     if name in _DELEGATED:
         from tasks.intelligence import _constants
+
         return getattr(_constants, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-

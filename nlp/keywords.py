@@ -51,7 +51,7 @@ from core.localization import (
 )
 
 # Latin diacritics + Cyrillic used across MK/SR newswire text.
-_SR_LATIN_LETTERS = "A-Za-z\u0106\u0107\u010C\u010D\u0110\u0111\u017D\u017E\u0160\u0161"
+_SR_LATIN_LETTERS = "A-Za-z\u0106\u0107\u010c\u010d\u0110\u0111\u017d\u017e\u0160\u0161"
 _CYRILLIC_LETTERS = r"\u0400-\u04FF"
 WORD_CHAR_CLASS = rf"{_SR_LATIN_LETTERS}{_CYRILLIC_LETTERS}"
 WORD_TOKEN_RE = re.compile(rf"[{WORD_CHAR_CLASS}]{{3,}}", re.UNICODE)
@@ -310,20 +310,14 @@ def is_valid_focus_entity(name, entity_type=None):
         return False
     if len(words) > 1 and any(len(word) < 3 for word in words):
         return False
-    if (
-        len(words) == 2
-        and words[1] in _DIACRITIC_SPLIT_SUFFIXES
-        and not any(ch in "čćšžđ" for ch in lowered)
-    ):
+    if len(words) == 2 and words[1] in _DIACRITIC_SPLIT_SUFFIXES and not any(ch in "čćšžđ" for ch in lowered):
         return False
     # Single-token headline verbs / truncated verbal nouns scraped from titles.
     if len(words) == 1:
         token = words[0]
         if re.search(r"(?:nj|нj)$", token, re.IGNORECASE):
             return False
-        if len(token) >= 6 and re.search(
-            r"(?:ao|ala|alo|ali|ала|ало|али|ао)$", token, re.IGNORECASE
-        ):
+        if len(token) >= 6 and re.search(r"(?:ao|ala|alo|ali|ала|ало|али|ао)$", token, re.IGNORECASE):
             return False
         if len(token) >= 6 and re.search(r"(?:aj|ajte|ај|ајте)$", token, re.IGNORECASE):
             return False
@@ -552,9 +546,9 @@ def extract_keyphrases_locally(text, top_n=5):
             w for w in sent_words if w not in STOPWORDS and w not in SOURCE_NOISE_WORDS and w not in TAG_NOISE_WORDS
         ]
         for i in range(len(sent_words) - 1):
-            bigrams.append(f"{sent_words[i]} {sent_words[i+1]}")
+            bigrams.append(f"{sent_words[i]} {sent_words[i + 1]}")
         for i in range(len(sent_words) - 2):
-            trigrams.append(f"{sent_words[i]} {sent_words[i+1]} {sent_words[i+2]}")
+            trigrams.append(f"{sent_words[i]} {sent_words[i + 1]} {sent_words[i + 2]}")
 
     word_counts = Counter(words)
     bigram_counts = Counter(bigrams)

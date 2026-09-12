@@ -8,7 +8,7 @@ from nlp import (
     generate_local_placeholder,
 )
 from nlp.categories import detect_category, detect_topic
-from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.intelligence._queue import _queue_backlog_high, _skip_when_intel_backlog
 from tasks.intelligence.synthesis_scheduling import _compute_centroid_from_values
 from tasks.utils import (
@@ -87,10 +87,7 @@ def extract_entities_task(*args, hours=24, target_clusters=None, **kwargs):
 
                 update_knowledge_graph(entities, context_text=text)
 
-                entity_rows = [
-                    (r["cluster_id"], ent.get("name"), ent.get("type"))
-                    for ent in entities
-                ]
+                entity_rows = [(r["cluster_id"], ent.get("name"), ent.get("type")) for ent in entities]
                 if entity_rows:
                     db.executemany(
                         "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
@@ -293,11 +290,52 @@ def generate_cluster_metadata_task(*args, hours=24, target_clusters=None, **kwar
         utils.record_task_event("cluster_metadata", "error", "clusters:recent")
         log.error(f"[tasks] Cluster metadata generation failed: {e}")
 
-_DELEGATED = frozenset({'CLUSTER_LOOKBACK', '_call_ai', '_sanitize_synthesis_outputs', 'acquire_task_lock', 'analyst', 'average_embeddings', 'celery_app', 'clean_extracted_article_text', 'clean_json_response', 'db', 'deShout', 'detect_category', 'detect_topic', 'extract_clean_summary_text', 'extract_cluster_tags_locally', 'extract_entities', 'filter_cluster_tags', 'generate_cover_art', 'generate_local_placeholder', 'get_celery_queue_depth', 'get_dominant_color', 'invalidate_cluster_caches', 'invalidate_public_data_caches', 'log', 'normalize_citation_sources', 'normalize_headline', 'normalize_perspectives', 'normalize_summary_text', 'parse_embedding_value', 'record_runtime_event', 'redis_client', 'release_task_lock', 'schedule_task_once', 'summarize_article_fallback', 'synthesize_cluster_fallback', 'validate_person_names'})
+
+_DELEGATED = frozenset(
+    {
+        "CLUSTER_LOOKBACK",
+        "_call_ai",
+        "_sanitize_synthesis_outputs",
+        "acquire_task_lock",
+        "analyst",
+        "average_embeddings",
+        "celery_app",
+        "clean_extracted_article_text",
+        "clean_json_response",
+        "db",
+        "deShout",
+        "detect_category",
+        "detect_topic",
+        "extract_clean_summary_text",
+        "extract_cluster_tags_locally",
+        "extract_entities",
+        "filter_cluster_tags",
+        "generate_cover_art",
+        "generate_local_placeholder",
+        "get_celery_queue_depth",
+        "get_dominant_color",
+        "invalidate_cluster_caches",
+        "invalidate_public_data_caches",
+        "log",
+        "normalize_citation_sources",
+        "normalize_headline",
+        "normalize_perspectives",
+        "normalize_summary_text",
+        "parse_embedding_value",
+        "record_runtime_event",
+        "redis_client",
+        "release_task_lock",
+        "schedule_task_once",
+        "summarize_article_fallback",
+        "synthesize_cluster_fallback",
+        "validate_person_names",
+    }
+)
+
 
 def __getattr__(name: str):
     if name in _DELEGATED:
         from tasks.intelligence import _constants
+
         return getattr(_constants, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-

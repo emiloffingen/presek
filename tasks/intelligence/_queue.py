@@ -1,7 +1,7 @@
 import os
 import sys
 
-from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.utils import (
     get_celery_queue_depth,
     log,
@@ -60,8 +60,8 @@ def _dispatch_batched(task, ids, batch_size=_ARTICLE_BATCH_SIZE):
     for start in range(0, len(ids), batch_size):
         task.delay(ids[start : start + batch_size])
 
+
 # Ensure project root is in path for Celery workers
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
-

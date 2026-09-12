@@ -106,9 +106,7 @@ class StoryDiscoveryEngine:
             # Update storyline metadata to cross-lingual if languages differ
             try:
                 cluster_lang = "mk"
-                art_rows = db.execute(
-                    "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,)
-                )
+                art_rows = db.execute("SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,))
                 if art_rows and art_rows[0].get("country") == "RS":
                     cluster_lang = "sr"
 
@@ -129,9 +127,7 @@ class StoryDiscoveryEngine:
                         fetch=False,
                     )
             except Exception as e:
-                log.warning(
-                    f"Failed to update cross-lingual metadata for storyline {sid}: {e}"
-                )
+                log.warning(f"Failed to update cross-lingual metadata for storyline {sid}: {e}")
         else:
             # 3. Create a new storyline if it has sufficient momentum
             if cluster["source_count"] >= 3 or velocity >= 2:
@@ -168,9 +164,7 @@ class StoryDiscoveryEngine:
         # Determine dominant language based on articles in this cluster
         lang = "mk"
         try:
-            art_rows = db.execute(
-                "SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,)
-            )
+            art_rows = db.execute("SELECT country FROM articles WHERE cluster_id = %s LIMIT 1", (cid,))
             if art_rows and art_rows[0].get("country") == "RS":
                 lang = "sr"
         except Exception as e:
@@ -270,9 +264,7 @@ class StoryDiscoveryEngine:
             if not rows:
                 continue
 
-            combined_text = "\n".join(
-                [f"• {r['title']}: {r.get('summary','')}" for r in rows]
-            )
+            combined_text = "\n".join([f"• {r['title']}: {r.get('summary', '')}" for r in rows])
 
             if is_cross_lingual:
                 system_prompt = (

@@ -50,10 +50,7 @@ def _is_primary_developing_cluster(cluster: Dict[str, Any]) -> bool:
     source_count = _cluster_source_count(cluster)
     story_state = str(cluster.get("story_state") or "")
     articles = cluster.get("articles") or []
-    return (
-        (story_state in {"breaking", "developing", "confirmed"} and source_count >= 2)
-        or len(articles) >= 2
-    )
+    return (story_state in {"breaking", "developing", "confirmed"} and source_count >= 2) or len(articles) >= 2
 
 
 def _fill_developing_clusters(
@@ -92,9 +89,7 @@ def _fill_developing_clusters(
 
     if len(developing) < backfill_min:
         fallback = [
-            cluster
-            for cluster in feed_clusters
-            if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
+            cluster for cluster in feed_clusters if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
         ]
         fallback.sort(key=_homepage_developing_sort_key, reverse=True)
         for cluster in fallback:
@@ -125,9 +120,7 @@ def _fill_for_you_pool(
     seen = {cluster.get("cluster_id") for cluster in pool if cluster.get("cluster_id")}
     seen |= set(exclude_ids)
     scored = [
-        cluster
-        for cluster in clusters[start:]
-        if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
+        cluster for cluster in clusters[start:] if cluster.get("cluster_id") and cluster.get("cluster_id") not in seen
     ]
     scored.sort(
         key=lambda cluster: (
@@ -209,9 +202,7 @@ def _apply_synthesis_lead_tiebreak(
     if not synth_pick or synth_pick.get("cluster_id") == clusters[0].get("cluster_id"):
         return clusters
 
-    return [synth_pick] + [
-        cluster for cluster in clusters if cluster.get("cluster_id") != synth_pick.get("cluster_id")
-    ]
+    return [synth_pick] + [cluster for cluster in clusters if cluster.get("cluster_id") != synth_pick.get("cluster_id")]
 
 
 def _cluster_has_full_synthesis(cluster: Dict[str, Any]) -> bool:
@@ -284,9 +275,7 @@ def _select_homepage_hero_clusters(
 
     for _ in range(max(0, hero_count - len(hero))):
         remaining = [
-            cluster
-            for cluster in pool
-            if cluster.get("cluster_id") and cluster.get("cluster_id") not in used_ids
+            cluster for cluster in pool if cluster.get("cluster_id") and cluster.get("cluster_id") not in used_ids
         ]
         if not remaining:
             break
@@ -393,21 +382,21 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False)
     Check if cluster has synthesis and ensure audio is generated.
     Adds audio_url to cluster if available.
     """
-    if not cluster or not cluster.get('cluster_id'):
+    if not cluster or not cluster.get("cluster_id"):
         return cluster
-        
-    cluster_id = cluster['cluster_id']
-    lang = cluster.get('lang', 'sr')
-    
+
+    cluster_id = cluster["cluster_id"]
+    lang = cluster.get("lang", "sr")
+
     # Check if cluster already has audio info
-    if cluster.get('audio_url'):
+    if cluster.get("audio_url"):
         return cluster
-    
+
     try:
         filepath, urlpath = AudioService.get_cluster_audio_path_and_url(cluster_id, lang)
         if os.path.exists(filepath) and os.path.getsize(filepath) > 1000:
-            cluster['audio_url'] = urlpath
-            cluster['has_audio'] = True
+            cluster["audio_url"] = urlpath
+            cluster["has_audio"] = True
             log.info(f"[home] Audio already exists for cluster {cluster_id}: {urlpath}")
             return cluster
 
@@ -415,22 +404,22 @@ async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False)
             return cluster
 
         # Check if cluster has generated synthesis content
-        if cluster.get('generated_article') or cluster.get('synthesis') or cluster.get('summary'):
+        if cluster.get("generated_article") or cluster.get("synthesis") or cluster.get("summary"):
             from core.audio_service import select_cluster_audio_text
 
             content = select_cluster_audio_text(
-                cluster.get('generated_article') or cluster.get('synthesis'),
-                cluster.get('summary'),
+                cluster.get("generated_article") or cluster.get("synthesis"),
+                cluster.get("summary"),
             )
             if content and len(content.strip()) > 50:  # Only generate for substantial content
                 log.info(f"[home] Cluster {cluster_id} has synthesis, ensuring audio generation")
-                
+
                 # Generate audio in background (non-blocking)
                 _schedule_background_task(_generate_cluster_audio_background(cluster_id, content, lang))
                 log.info(f"[home] Audio will be generated for cluster {cluster_id} in background")
     except Exception as e:
         log.error(f"[home] Error checking cluster audio for {cluster_id}: {e}")
-    
+
     return cluster
 
 
@@ -572,7 +561,8 @@ def _is_live_now_candidate(cluster):
 
 def _clusters_sorted_by_recency(clusters):
     return sorted(
-        clusters or [], key=lambda cluster: _parse_time(_article_freshness_time(_primary_article(cluster))),
+        clusters or [],
+        key=lambda cluster: _parse_time(_article_freshness_time(_primary_article(cluster))),
         reverse=True,
     )
 
@@ -678,7 +668,7 @@ def _build_lead_display(cluster, lang: Optional[str] = "sr"):
 
     # Prefer the synthetic standfirst if it exists, otherwise fall back to article summary
     summary = cluster.get("synthetic_standfirst") or _extract_preview_summary(article)
-    
+
     return {
         "title": cluster.get("synthetic_headline") or cleanAndDecode(article.get("title") or ""),
         "summary": summary,
@@ -873,13 +863,14 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         request = None
 
     from routes.common import _extract_sync_token
+
     sync_token = _extract_sync_token(request) if request else ""
-    
+
     if sync_token:
         cache_key = f"api:home:v7:{lang}:personalized:{sync_token}"
     else:
         cache_key = f"api:home:v7:{lang}"
-        
+
     cached = cached_response(cache_key, ttl=300)
     if cached:
         return cached
@@ -929,6 +920,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
         if hasattr(stats, "body") and hasattr(stats, "status_code"):
             import json
+
             try:
                 stats = json.loads(stats.body.decode())
             except Exception as e:
@@ -945,9 +937,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         )
         hero_ids = {cluster.get("cluster_id") for cluster in hero if cluster.get("cluster_id")}
         clusters = hero + remainder
-        synthesis_picks = [
-            cluster for cluster in synthesis_hero_pool if cluster.get("cluster_id") not in hero_ids
-        ][:4]
+        synthesis_picks = [cluster for cluster in synthesis_hero_pool if cluster.get("cluster_id") not in hero_ids][:4]
 
         lead = hero[0] if hero else None
         supporting = hero[1:_HOMEPAGE_HERO_COUNT]
@@ -993,6 +983,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             try:
                 from core.database import db_manager as db
                 from routes.profile import _normalize_synced_profile, get_personalized_news_by_profile
+
                 row = await db.async_execute_one(
                     "SELECT profile_data FROM synced_reader_profiles WHERE sync_token = %s",
                     (sync_token,),
@@ -1048,7 +1039,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
                 or str(cluster.get("story_state") or "") == "singleton"
                 or len(cluster.get("articles") or []) < 2
             )
-        ][: _HOMEPAGE_WIRE_LIMIT]
+        ][:_HOMEPAGE_WIRE_LIMIT]
 
         excluded_cluster_ids = list(hero_cluster_ids)
         recent_clusters = _clusters_sorted_by_recency(clusters)
@@ -1058,9 +1049,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             limit=4,
         )
         for idx, cluster in enumerate(live_now):
-            should_generate = (
-                cluster.get("cluster_id") not in priority_audio_ids
-                and should_generate_priority_audio(cluster)
+            should_generate = cluster.get("cluster_id") not in priority_audio_ids and should_generate_priority_audio(
+                cluster
             )
             live_now[idx] = await _ensure_cluster_audio(cluster, generate=should_generate)
             priority_audio_ids.add(cluster.get("cluster_id"))

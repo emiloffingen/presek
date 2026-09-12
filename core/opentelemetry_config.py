@@ -63,10 +63,7 @@ def setup_tracing(
     # Determine configuration from environment
     env = os.environ.get("ENV", environment)
     endpoint = otlp_endpoint or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
-    insecure = (
-        otlp_insecure
-        or os.environ.get("OTEL_EXPORTER_OTLP_INSECURE", "").lower() == "true"
-    )
+    insecure = otlp_insecure or os.environ.get("OTEL_EXPORTER_OTLP_INSECURE", "").lower() == "true"
 
     # Create resource with service metadata
     resource = Resource.create(
@@ -104,18 +101,14 @@ def setup_tracing(
             # Log but don't fail if OTLP setup fails
             import logging
 
-            logging.getLogger("presek.opentelemetry").warning(
-                f"Failed to configure OTLP exporter: {e}"
-            )
+            logging.getLogger("presek.opentelemetry").warning(f"Failed to configure OTLP exporter: {e}")
 
     # Filter out None processors
     span_processors = [p for p in span_processors if p is not None]
 
     if span_processors:
         _tracer_provider.add_span_processor(
-            BatchSpanProcessor(*span_processors)
-            if len(span_processors) > 1
-            else span_processors[0]
+            BatchSpanProcessor(*span_processors) if len(span_processors) > 1 else span_processors[0]
         )
 
     # Set as global tracer provider

@@ -35,9 +35,7 @@ ADMIN_TOKEN_AUDIENCE = os.environ.get("ADMIN_TOKEN_AUDIENCE", "presek-api")
 
 # Token expiration settings
 DEFAULT_TOKEN_EXPIRY_HOURS = int(os.environ.get("ADMIN_TOKEN_EXPIRY_HOURS", "24"))
-MAX_TOKEN_EXPIRY_HOURS = int(
-    os.environ.get("MAX_ADMIN_TOKEN_EXPIRY_HOURS", "168")
-)  # 7 days
+MAX_TOKEN_EXPIRY_HOURS = int(os.environ.get("MAX_ADMIN_TOKEN_EXPIRY_HOURS", "168"))  # 7 days
 
 
 @dataclass

@@ -32,19 +32,11 @@ class ConnectionPoolStats:
 
     def is_healthy(self) -> bool:
         """Check if pool is in a healthy state."""
-        return (
-            self.utilization < 0.9
-            and self.waiting_requests < 5
-            and self.queue_size < 10
-        )
+        return self.utilization < 0.9 and self.waiting_requests < 5 and self.queue_size < 10
 
     def is_critical(self) -> bool:
         """Check if pool is in critical state."""
-        return (
-            self.utilization > 0.95
-            or self.waiting_requests > 10
-            or self.queue_size > 20
-        )
+        return self.utilization > 0.95 or self.waiting_requests > 10 or self.queue_size > 20
 
 
 class DatabaseMonitor:
@@ -147,16 +139,12 @@ class DatabaseMonitor:
             max_limit = int(os.environ.get("DB_POOL_MAX", "50"))
 
             if new_max > max_limit:
-                log.warning(
-                    f"Cannot resize pool: would exceed maximum limit of {max_limit}"
-                )
+                log.warning(f"Cannot resize pool: would exceed maximum limit of {max_limit}")
                 return False
 
             # Resize the pool
             db.resize_pool(new_max)
-            log.info(
-                f"Resized connection pool from {current_stats.max_connections} to {new_max}"
-            )
+            log.info(f"Resized connection pool from {current_stats.max_connections} to {new_max}")
             return True
 
         except Exception as e:
@@ -175,17 +163,13 @@ class DatabaseMonitor:
             health = self.check_pool_health()
 
             if health["status"] == "critical":
-                log.critical(
-                    f"Database connection pool in critical state: {health['stats']}"
-                )
+                log.critical(f"Database connection pool in critical state: {health['stats']}")
                 # Try to resize if needed
                 if self.should_resize_pool():
                     self.resize_pool()
 
             elif health["status"] == "warning":
-                log.warning(
-                    f"Database connection pool in warning state: {health['stats']}"
-                )
+                log.warning(f"Database connection pool in warning state: {health['stats']}")
 
             # Log healthy state periodically
             elif now % 300 < 10:  # Every ~5 minutes
@@ -233,9 +217,7 @@ class QueryPerformanceMonitor:
         if execution_time > self.slow_query_threshold:
             log.warning(f"Slow query ({execution_time:.3f}s): {query[:200]}")
 
-        self.query_history.append(
-            {"query": query, "time": execution_time, "timestamp": time.time()}
-        )
+        self.query_history.append({"query": query, "time": execution_time, "timestamp": time.time()})
 
         # Keep history size manageable
         if len(self.query_history) > self.max_history:
@@ -247,9 +229,7 @@ class QueryPerformanceMonitor:
             return {"average_time": 0, "slow_queries": 0, "total_queries": 0}
 
         total_time = sum(q["time"] for q in self.query_history)
-        slow_queries = sum(
-            1 for q in self.query_history if q["time"] > self.slow_query_threshold
-        )
+        slow_queries = sum(1 for q in self.query_history if q["time"] > self.slow_query_threshold)
 
         return {
             "average_time": total_time / len(self.query_history),
@@ -310,9 +290,7 @@ def init_db_monitoring():
                 time.sleep(10)
 
     # Start monitoring thread
-    monitoring_thread = threading.Thread(
-        target=monitoring_loop, daemon=True, name="db-monitoring"
-    )
+    monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True, name="db-monitoring")
     monitoring_thread.start()
 
 

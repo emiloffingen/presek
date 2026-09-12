@@ -121,18 +121,14 @@ async def build_cluster_synthesis_trace(cluster_id: str, lang: str = "sr") -> di
 
     summary_by_lang = {row.get("lang"): row for row in (summary_rows or [])}
     active = summary_by_lang.get(lang) or (summary_rows[0] if summary_rows else None)
-    freshness = assess_cluster_synthesis_freshness(
-        articles or [], (active or {}).get("created_at")
-    )
+    freshness = assess_cluster_synthesis_freshness(articles or [], (active or {}).get("created_at"))
 
     pending_upgrade = False
     if os.environ.get("REDIS_URL"):
         try:
             from utils import redis_client
 
-            pending_upgrade = bool(
-                redis_client.get(f"presek:fast_synthesis_pending:{cluster_id}")
-            )
+            pending_upgrade = bool(redis_client.get(f"presek:fast_synthesis_pending:{cluster_id}"))
         except Exception:
             pending_upgrade = False
 
@@ -150,9 +146,7 @@ async def build_cluster_synthesis_trace(cluster_id: str, lang: str = "sr") -> di
                 "generation_provider": row.get("generation_provider"),
                 "generation_model": row.get("generation_model"),
                 "fallback_reason": row.get("fallback_reason"),
-                "created_at": (
-                    row.get("created_at").isoformat() if row.get("created_at") else None
-                ),
+                "created_at": (row.get("created_at").isoformat() if row.get("created_at") else None),
                 "pulse_score": row.get("pulse_score"),
                 "pluralism_score": row.get("pluralism_score"),
                 "has_headline": bool(str(row.get("synthetic_headline") or "").strip()),
@@ -166,13 +160,7 @@ async def build_cluster_synthesis_trace(cluster_id: str, lang: str = "sr") -> di
         "lang": lang,
         "article_count": len(articles or []),
         "unique_sources": unique_sources,
-        "countries": sorted(
-            {
-                str(a.get("country") or "").upper()
-                for a in (articles or [])
-                if a.get("country")
-            }
-        ),
+        "countries": sorted({str(a.get("country") or "").upper() for a in (articles or []) if a.get("country")}),
         "freshness": freshness,
         "pending_fast_upgrade": pending_upgrade,
         "stuck_fast_upgrade": cluster_id in stuck_ids,
@@ -185,9 +173,7 @@ async def build_cluster_synthesis_trace(cluster_id: str, lang: str = "sr") -> di
                 "generation_model": row.get("generation_model"),
                 "quality_score": row.get("quality_score"),
                 "fallback_reason": row.get("fallback_reason"),
-                "created_at": (
-                    row.get("created_at").isoformat() if row.get("created_at") else None
-                ),
+                "created_at": (row.get("created_at").isoformat() if row.get("created_at") else None),
             }
             for row in (history_rows or [])
         ],
@@ -226,9 +212,7 @@ def _recommended_actions(
         actions.append("fast_upgrade_scheduled")
     if stuck:
         actions.append("force_stuck_fast_upgrade")
-    if (active.get("quality_score") or 0) and float(
-        active.get("quality_score") or 0
-    ) < 0.75:
+    if (active.get("quality_score") or 0) and float(active.get("quality_score") or 0) < 0.75:
         actions.append("refresh_low_score_synthesis")
     if not actions:
         actions.append("ok")

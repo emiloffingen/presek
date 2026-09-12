@@ -13,9 +13,7 @@ from core.runtime_limits import (
 )
 
 
-def synthesis_quality_threshold(
-    provider: str | None, *, fast_mode: bool = False
-) -> float | None:
+def synthesis_quality_threshold(provider: str | None, *, fast_mode: bool = False) -> float | None:
     """Minimum quality score for a provider; None skips the gate (fast mode)."""
     if fast_mode:
         return None
@@ -259,9 +257,7 @@ def list_stuck_fast_synthesis_cluster_ids(
     if not os.environ.get("REDIS_URL"):
         return []
 
-    ttl_seconds = int(
-        os.environ.get("FAST_SYNTHESIS_PENDING_TTL_SECONDS", str(48 * 3600))
-    )
+    ttl_seconds = int(os.environ.get("FAST_SYNTHESIS_PENDING_TTL_SECONDS", str(48 * 3600)))
     min_age_seconds = max(0, int(max_age_hours)) * 3600
     stuck: list[str] = []
     prefix = "presek:fast_synthesis_pending:"
@@ -321,10 +317,7 @@ def prune_stale_fast_synthesis_pending(*, limit: int = 200) -> int:
                 continue
             fallback_reason = (row.get("fallback_reason") or "").strip().lower()
             provider = (row.get("generation_provider") or "").strip().lower()
-            if (
-                fallback_reason != "fast_mode_provisional"
-                and provider != "enhanced_fallback"
-            ):
+            if fallback_reason != "fast_mode_provisional" and provider != "enhanced_fallback":
                 clear_fast_synthesis_pending(cluster_id)
                 cleared += 1
     except Exception:

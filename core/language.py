@@ -286,7 +286,7 @@ def transliterate_lat_to_cyr(text: str) -> str:
     """Standard Latin to Macedonian Cyrillic transliteration."""
     if not text:
         return ""
-    
+
     # Check if it already has significant Cyrillic
     cyr_chars = sum(1 for c in text if "\u0400" <= c <= "\u04ff")
     if cyr_chars > 0:
@@ -294,31 +294,58 @@ def transliterate_lat_to_cyr(text: str) -> str:
 
     # Standardize vecer to вечер (case-insensitive) to ensure correct transliteration to вечер instead of вецер
     import re
+
     def replace_vecer(match):
         m = match.group(0)
-        if m == 'VECER':
-            return 'ВЕЧЕР'
-        if m == 'Vecer':
-            return 'Вечер'
-        if m[0] == 'V':
-            return 'Вечер'
-        return 'вечер'
-    res = re.sub(r'vecer', replace_vecer, text, flags=re.IGNORECASE)
+        if m == "VECER":
+            return "ВЕЧЕР"
+        if m == "Vecer":
+            return "Вечер"
+        if m[0] == "V":
+            return "Вечер"
+        return "вечер"
+
+    res = re.sub(r"vecer", replace_vecer, text, flags=re.IGNORECASE)
 
     # Build reverse map, sorting by length descending to handle multi-char sequences like 'Dzh'
     lat_to_cyr_map = {v: k for k, v in _CYR_LAT_MAP.items()}
     digraphs = {
-        "sh": "ш", "Sh": "Ш", "SH": "Ш",
-        "zh": "ж", "Zh": "Ж", "ZH": "Ж",
-        "ch": "ч", "Ch": "Ч", "CH": "Ч",
-        "dj": "ѓ", "Dj": "Ѓ", "DJ": "Ѓ",
-        "dz": "ѕ", "Dz": "Ѕ", "DZ": "Ѕ",
-        "lj": "љ", "Lj": "Љ", "LJ": "Љ",
-        "nj": "њ", "Nj": "Њ", "NJ": "Њ"
+        "sh": "ш",
+        "Sh": "Ш",
+        "SH": "Ш",
+        "zh": "ж",
+        "Zh": "Ж",
+        "ZH": "Ж",
+        "ch": "ч",
+        "Ch": "Ч",
+        "CH": "Ч",
+        "dj": "ѓ",
+        "Dj": "Ѓ",
+        "DJ": "Ѓ",
+        "dz": "ѕ",
+        "Dz": "Ѕ",
+        "DZ": "Ѕ",
+        "lj": "љ",
+        "Lj": "Љ",
+        "LJ": "Љ",
+        "nj": "њ",
+        "Nj": "Њ",
+        "NJ": "Њ",
     }
     lat_to_cyr_map.update(digraphs)
-    
-    res = res.replace("ć", "c").replace("č", "ch").replace("š", "sh").replace("ž", "zh").replace("đ", "dj").replace("Ć", "C").replace("Č", "Ch").replace("Š", "Sh").replace("Ž", "Zh").replace("Đ", "Dj")
+
+    res = (
+        res.replace("ć", "c")
+        .replace("č", "ch")
+        .replace("š", "sh")
+        .replace("ž", "zh")
+        .replace("đ", "dj")
+        .replace("Ć", "C")
+        .replace("Č", "Ch")
+        .replace("Š", "Sh")
+        .replace("Ž", "Zh")
+        .replace("Đ", "Dj")
+    )
     for k in sorted(lat_to_cyr_map.keys(), key=len, reverse=True):
         res = res.replace(k, lat_to_cyr_map[k])
     return res

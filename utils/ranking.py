@@ -52,7 +52,7 @@ def get_source_trust_label(source: str, lang: str = "sr") -> str:
         if weight >= 1.3:
             return "Потврден извор"
         return "следен извор"
-    
+
     if weight >= 1.75:
         return "Visoko poverenje"
     if weight >= 1.3:
@@ -99,37 +99,49 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
         if idx == 0 and corrob_by >= 2:
             role, note, tone = (
                 "Najpotvrden izvor" if lang == "sr" else "Најпотврден извор",
-                "Ovoj izvor me nosi glavnata linija sto me potvrduvaat i povece drugi redakcii." if lang == "sr" else "Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции.",
+                "Ovoj izvor me nosi glavnata linija sto me potvrduvaat i povece drugi redakcii."
+                if lang == "sr"
+                else "Овој извор ја носи главната линија што ја потврдуваат и повеќе други редакции.",
                 "confirm",
             )
         elif idx == 0 and weight >= 1.6:
             role, note, tone = (
                 "Vodecki doverliv izvor" if lang == "sr" else "Водечки доверлив извор",
-                "Ovoj izvor stoi najvisoko po doverba i me dava najcelosnata vodecka ramka." if lang == "sr" else "Овој извор стои највисоко по доверба и ја дава најцелосната водечка рамка.",
+                "Ovoj izvor stoi najvisoko po doverba i me dava najcelosnata vodecka ramka."
+                if lang == "sr"
+                else "Овој извор стои највисоко по доверба и ја дава најцелосната водечка рамка.",
                 "lead",
             )
         elif art_dt and earliest_dt and art_dt <= earliest_dt and weight >= 1.3:
             role, note, tone = (
                 "Prv izvestaj" if lang == "sr" else "Прв извештај",
-                "Ovoj izvor bil medju prvite sto ga objavile razvojot." if lang == "sr" else "Овој извор бил меѓу првите што го објавиле развојот.",
+                "Ovoj izvor bil medju prvite sto ga objavile razvojot."
+                if lang == "sr"
+                else "Овој извор бил меѓу првите што го објавиле развојот.",
                 "lead",
             )
         elif overlap < 0.22:
             role, note, tone = (
                 "Razlicen ugao" if lang == "sr" else "Различен агол",
-                "Ovoj izvor me otvora prikaznata od drug aspekt, a ne samo me povtoruva vodeckata linija." if lang == "sr" else "Овој извор ја отвора приказната од друг аспект, а не само ја повторува водечката линија.",
+                "Ovoj izvor me otvora prikaznata od drug aspekt, a ne samo me povtoruva vodeckata linija."
+                if lang == "sr"
+                else "Овој извор ја отвора приказната од друг аспект, а не само ја повторува водечката линија.",
                 "contrast",
             )
         elif art_dt and lead_dt and art_dt > lead_dt + datetime.timedelta(minutes=90):
             role, note, tone = (
                 "Sledenje / reakcija" if lang == "sr" else "Следење / реакција",
-                "Ovoj izvor doadja podocna i povece nosi reakcija, posledica ili follow-up." if lang == "sr" else "Овој извор доаѓа подоцна и повеќе носи реакција, последица или follow-up.",
+                "Ovoj izvor doadja podocna i povece nosi reakcija, posledica ili follow-up."
+                if lang == "sr"
+                else "Овој извор доаѓа подоцна и повеќе носи реакција, последица или follow-up.",
                 "context",
             )
         else:
             role, note, tone = (
                 "Dopolnuva kontekst" if lang == "sr" else "Дополнува контекст",
-                "Ovoj izvor me potvrduva glavnata prica, no dodava i svoj kontekst ili detali." if lang == "sr" else "Овој извор ја потврдува главната приказна, но додава и свој контекст или детали.",
+                "Ovoj izvor me potvrduva glavnata prica, no dodava i svoj kontekst ili detali."
+                if lang == "sr"
+                else "Овој извор ја потврдува главната приказна, но додава и свој контекст или детали.",
                 "confirm" if overlap >= 0.4 else "context",
             )
 
@@ -360,7 +372,8 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
             }
         )
     return sorted(
-        results, key=lambda i: (
+        results,
+        key=lambda i: (
             i["effective_weight"],
             i["recent_volume"],
             i["speed_first_count"],

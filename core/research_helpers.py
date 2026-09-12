@@ -66,9 +66,7 @@ RESEARCH_MODE_PLAN = {
 }
 
 
-async def build_gemma_research_context(
-    cluster_id: str, mode: str = "custom", query: str = ""
-) -> tuple[str, list[str]]:
+async def build_gemma_research_context(cluster_id: str, mode: str = "custom", query: str = "") -> tuple[str, list[str]]:
     articles = await db.async_execute(
         """
         SELECT title, full_content, source, embedding, created_at
@@ -105,9 +103,7 @@ async def build_gemma_research_context(
                     if isinstance(summary_row["verification_report"], str)
                     else summary_row["verification_report"]
                 )
-                parts.append(
-                    f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}"
-                )
+                parts.append(f"PROVERKA NA FAKTI (Sistemska analiza):\n{json.dumps(vr, ensure_ascii=False, indent=2)}")
             except Exception as e:
                 log.debug(f"Failed to parse verification_report JSON: {e}")
         if summary_row.get("perspectives"):
@@ -129,20 +125,14 @@ async def build_gemma_research_context(
         if source and source not in sources:
             sources.append(source)
         text = article.get("full_content") or article.get("title") or ""
-        parts.append(
-            f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}"
-        )
+        parts.append(f"--- izvor: {source} ({article['created_at'].strftime('%H:%M %d.%m.%Y')}) ---\n{text}")
 
     if mode == "context":
         try:
             import numpy as np
 
             vecs = [
-                (
-                    json.loads(a["embedding"])
-                    if isinstance(a.get("embedding"), str)
-                    else list(a["embedding"])
-                )
+                (json.loads(a["embedding"]) if isinstance(a.get("embedding"), str) else list(a["embedding"]))
                 for a in articles
                 if a.get("embedding")
             ]
@@ -162,14 +152,9 @@ async def build_gemma_research_context(
                 )
                 if past_events:
                     history_list = "\n".join(
-                        [
-                            f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})"
-                            for p in past_events
-                        ]
+                        [f"- {p['title']} ({p['created_at'].strftime('%d.%m.%Y')})" for p in past_events]
                     )
-                    parts.append(
-                        f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}"
-                    )
+                    parts.append(f"POVRZANI PRETHODNI NASTANI OD BAZATA:\n{history_list}")
         except Exception as e:
             log.warning(f"Failed to fetch Gemma research history context: {e}")
 

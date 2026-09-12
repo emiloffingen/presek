@@ -321,7 +321,7 @@ def finalize_cluster_synthesis(
         log.warning(f"[tasks/sports] Score alert failed: {exc}")
 
     strong_img = db.execute_one(
-        f"SELECT 1 FROM articles WHERE cluster_id = %s AND {STRONG_IMAGE_SQL_FILTER} LIMIT 1",
+        f"SELECT 1 FROM articles WHERE cluster_id = %s AND {STRONG_IMAGE_SQL_FILTER} LIMIT 1",  # nosec B608 - static filter constant with bound params
         (cluster_id,),
     )
     if not strong_img:

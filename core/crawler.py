@@ -177,15 +177,11 @@ class CrawlerService:
         try:
             headers = self._get_headers()
             safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(
-                headers=headers, follow_redirects=True, timeout=15.0
-            ) as client:
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or p_ip not in safe_ips:
-                        log.warning(
-                            f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}"
-                        )
+                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
                         return {
                             "url": url,
                             "error": "Security block: peer IP mismatch",
@@ -206,9 +202,7 @@ class CrawlerService:
         extracted = self._parse_with_trafilatura(html_content, final_url)
 
         if not extracted.get("content") or len(extracted.get("content", "")) < 200:
-            log.info(
-                f"Low quality content from fast path for {url}, falling back to headless"
-            )
+            log.info(f"Low quality content from fast path for {url}, falling back to headless")
             return await self._extract_headless(url)
 
         result.update(extracted)
@@ -286,40 +280,20 @@ class CrawlerService:
                         "title": (
                             str(metadata.get("title"))
                             if metadata.get("title")
-                            else (
-                                str(extracted.get("title"))
-                                if extracted.get("title")
-                                else None
-                            )
+                            else (str(extracted.get("title")) if extracted.get("title") else None)
                         ),
-                        "content": (
-                            str(extracted.get("content"))
-                            if extracted.get("content")
-                            else None
-                        ),
+                        "content": (str(extracted.get("content")) if extracted.get("content") else None),
                         "image_url": (
                             str(metadata.get("ogImage"))
                             if metadata.get("ogImage")
-                            else (
-                                str(extracted.get("image_url"))
-                                if extracted.get("image_url")
-                                else None
-                            )
+                            else (str(extracted.get("image_url")) if extracted.get("image_url") else None)
                         ),
                         "author": (
                             str(metadata.get("author"))
                             if metadata.get("author")
-                            else (
-                                str(extracted.get("author"))
-                                if extracted.get("author")
-                                else None
-                            )
+                            else (str(extracted.get("author")) if extracted.get("author") else None)
                         ),
-                        "published_at": (
-                            str(extracted.get("published_at"))
-                            if extracted.get("published_at")
-                            else None
-                        ),
+                        "published_at": (str(extracted.get("published_at")) if extracted.get("published_at") else None),
                     }
                 )
         except Exception as e:
@@ -343,12 +317,8 @@ class CrawlerService:
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 try:
-                    page = await browser.new_page(
-                        user_agent=self._get_headers()["User-Agent"]
-                    )
-                    await page.goto(
-                        homepage_url, wait_until="networkidle", timeout=30000
-                    )
+                    page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
+                    await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
 
                     found = await page.evaluate("""() => {
                         const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
