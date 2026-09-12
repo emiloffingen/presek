@@ -161,14 +161,14 @@ def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     try:
         from core.http_pool import get_shared_client
         client = get_shared_client()
-            resp = client.post(
-                url,
-                content=clean_message.encode("utf-8"),
-                params=params,
-                headers=headers,
-            )
-            resp.raise_for_status()
-            return True
+        resp = client.post(
+            url,
+            content=clean_message.encode("utf-8"),
+            params=params,
+            headers=headers,
+        )
+        resp.raise_for_status()
+        return True
     except (httpx.RequestError, httpx.HTTPStatusError) as e:
         log.warning(f"[tasks] ntfy delivery failed for topic {clean_topic}: {e}")
         return False

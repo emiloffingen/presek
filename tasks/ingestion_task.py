@@ -240,7 +240,7 @@ def repair_single_source_task(name):
                 from core.http_pool import get_feed_client
                 client = get_feed_client()
                 resp = client.get(feed_url, follow_redirects=True)
-                    if resp.status_code == 200:
+                if resp.status_code == 200:
                         f = feedparser.parse(resp.content)
                         if not f.bozo and len(f.entries) > 0:
                             log.info(f"Source '{name}' repaired with new URL: {feed_url}")

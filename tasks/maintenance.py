@@ -1047,7 +1047,7 @@ def repair_cluster_representative_images(
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekHealthCheck/1.0"}
     from core.http_pool import get_feed_client
     client = get_feed_client()
-        for cluster in clusters:
+    for cluster in clusters:
             stats["checked"] += 1
             img_url = cluster.get("representative_image")
             if not img_url:
