@@ -26,6 +26,7 @@ from utils import (
     assess_cluster_synthesis_freshness,
     build_read_next_clusters,
     cached_response,
+    cached_route,
     calculate_reading_time,
     event_stream,
     get_source_effective_weight,
@@ -346,6 +347,7 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
 
 
 @router.get("/news", response_model=NewsResponse)
+@cached_route(ttl=30, prefix="news")
 async def get_news(
     q: Optional[str] = None,
     category: Optional[str] = None,

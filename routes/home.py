@@ -11,7 +11,7 @@ from core.api_errors import soft_error
 from core.audio_service import AudioService
 from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
-from utils import cached_response, set_cache
+from utils import cached_response, cached_route, set_cache
 
 from .common import cleanAndDecode
 from .intelligence import get_top_entities
@@ -866,6 +866,7 @@ async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
 
 
 @router.get("/home", response_model=HomeResponse)
+@cached_route(ttl=60, prefix="home")
 async def get_home(request: Request = None, lang: Optional[str] = "sr"):
     # Support legacy tests passing lang as a positional argument
     if isinstance(request, str):
@@ -1119,6 +1120,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
 
 @router.get("/home/live-now")
+@cached_route(ttl=60, prefix="home_live_now")
 async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
     cache_key = f"api:home:live-now:v3:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
@@ -1142,6 +1144,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
 
 
 @router.get("/home/latest-wire")
+@cached_route(ttl=120, prefix="home_latest_wire")
 async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
     bounded_limit = max(1, min(int(limit or 15), 30))
     cache_key = f"api:home:latest-wire:v3:{bounded_limit}:{lang}"
