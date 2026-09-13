@@ -192,14 +192,14 @@ SQL_ARTICLE_SEARCH = """
 
 
 def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
-    """Helper to build dynamic hybrid search SQL.
+    """Build dynamic hybrid search SQL with whitelisted fragment injection.
 
-    Security: time_filter and sort_by must be validated by caller to prevent SQL injection.
-    time_filter should only contain safe WHERE clause fragments (e.g., "AND created_at >= ...")
-    sort_by should only be "hybrid" or "recent"
+    Security: time_filter is validated by _validate_timespan (only predefined SQL fragments).
+    sort_by is validated against VALID_SORT_BY set. Both are re-checked here.
     """
-    # Validate sort_by to prevent SQL injection
-    if sort_by not in ("hybrid", "recent"):
+    if time_filter and time_filter not in VALID_TIMESPANS.values():
+        time_filter = ""
+    if sort_by not in VALID_SORT_BY:
         sort_by = "hybrid"
 
     order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
@@ -225,7 +225,6 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         scored_articles AS (
             SELECT a.*,
                    (COALESCE(f.rank, 0) * 0.45 + COALESCE(s.similarity, 0) * 0.55) AS base_score,
-                   -- Sharper recency decay: 1.0 for now, 0.2 after 7 days
                    GREATEST(0.1, 1.0 - (EXTRACT(EPOCH FROM (NOW() - a.created_at)) / 604800)) as recency_factor
             FROM articles a
             LEFT JOIN fts_results f ON a.id = f.id
@@ -242,7 +241,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         WHERE cluster_rank = 1
         ORDER BY {order_clause}
         LIMIT %s
-    """  # nosec B608 - validated time_filter/sort_by fragments with bound params
+    """
 
 
 try:

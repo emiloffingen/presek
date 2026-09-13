@@ -8,10 +8,9 @@ interface Props {
 }
 
 const { lang, cspNonce } = Astro.props;
-const skipLabel = lang === 'mk' ? 'Прескокни до содржина' : 'Preskoči na sadržaj';
 ---
 
-<a href="#main-content" class="skip-to-content">{skipLabel}</a>
+
 <div class="noise-overlay" aria-hidden="true"></div>
 <div id="loading-bar" class="fixed top-0 left-0 z-[9999] transition-all duration-300 opacity-0 w-0"></div>
 <slot />

@@ -9,8 +9,8 @@ StartLimitBurst=3
 [Service]
 Type=simple
 User=emiloffingen
-WorkingDirectory=/home/emiloffingen/presek
-ExecStart=/home/emiloffingen/presek/scripts/periodic_scheduler.sh
+WorkingDirectory=/home/emiloffingen/presek-runtime/current
+ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a && source /home/emiloffingen/presek-runtime/shared/.env && set +a && exec /home/emiloffingen/presek-runtime/venv/bin/python -m celery -A core.celery_app beat --loglevel=info'
 Restart=always
 RestartSec=10
 MemoryHigh=256M

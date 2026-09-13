@@ -18,6 +18,7 @@ ExecStart=/bin/bash -lc 'cd /home/emiloffingen/presek-runtime/current && set -a 
 Restart=always
 RestartSec=5
 TimeoutStartSec=240
+TimeoutStopSec=180
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=presek-worker-synthesis

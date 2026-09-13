@@ -1,4 +1,5 @@
----// Performance-optimized image component with lazy loading and responsive srcset---
+---
+// Performance-optimized image component with lazy loading and responsive srcset
 
 interface Props {
   src: string;
@@ -20,17 +21,15 @@ const {
   sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px'
 } = Astro.props;
 
-// Generate responsive srcset
-const srcset = [
-  { width: 400, descriptor: '400w' },
-  { width: 800, descriptor: '800w' },
-  { width: 1200, descriptor: '1200w' },
-  { width: 1600, descriptor: '1600w' }
-].map(({ width: w, descriptor }) => {
-  // In a real implementation, you would use an image CDN or build-time optimization
-  // For now, we'll just use the same src but this shows the pattern
-  return `${src}?w=${w} ${descriptor}`;
-}).join(', ');
+// Generate srcset with width-based URL params
+// Assumes the image server supports ?w=N query param for resizing
+const srcsetWidths = [400, 800, 1200, 1600];
+const srcset = srcsetWidths
+  .map((w) => {
+    const separator = src.includes('?') ? '&' : '?';
+    return `${src}${separator}w=${w} ${w}w`;
+  })
+  .join(', ');
 
 const loading = priority ? 'eager' : 'lazy';
 const fetchPriority = priority ? 'high' : 'auto';

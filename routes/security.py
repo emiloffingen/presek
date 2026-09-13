@@ -168,16 +168,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             max_age=300,  # 5 minutes - match typical page load time
         )
 
-        # Add CSRF token cookie for frontend use
-        csrf_token = generate_csrf_token()
-        response.set_cookie(
-            key="csrf_token",
-            value=csrf_token,
-            httponly=False,  # Must be accessible to JavaScript
-            secure=is_production,
-            samesite="lax",
-            max_age=CSRF_TOKEN_EXPIRY,
-        )
+        # Add CSRF token cookie for frontend use (only if not already set)
+        existing_csrf = request.cookies.get("csrf_token")
+        if not existing_csrf:
+            csrf_token = generate_csrf_token()
+            response.set_cookie(
+                key="csrf_token",
+                value=csrf_token,
+                httponly=False,  # Must be accessible to JavaScript
+                secure=is_production,
+                samesite="lax",
+                max_age=CSRF_TOKEN_EXPIRY,
+            )
 
         # Permissions Policy
         response.headers["Permissions-Policy"] = (

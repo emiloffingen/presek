@@ -33,8 +33,8 @@ const defaultLabel = label || 'Skip to main content';
     top: 16px;
   }
 
-  /* Ensure skip link is visible when focused */
   .skip-link:focus-visible {
-    outline: none; /* Remove default outline since we have custom styling */
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 </style>
