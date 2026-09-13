@@ -241,7 +241,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         WHERE cluster_rank = 1
         ORDER BY {order_clause}
         LIMIT %s
-    """
+    """  # nosec B608 - time_filter and order_clause come from validated whitelists (VALID_TIMESPANS, VALID_SORT_BY)
 
 
 try:
