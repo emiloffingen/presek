@@ -147,11 +147,7 @@ async def get_archive_heatmap(lang: str = "sr"):
     rows = await db.async_execute(sql, (country_filter,))
     fmt = [
         {
-            "day": (
-                r["day"].isoformat()
-                if hasattr(r["day"], "isoformat")
-                else str(r["day"])
-            ),
+            "day": (r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"])),
             "total_clusters": r["total_clusters"],
             "breaking_clusters": r["breaking_clusters"],
         }
@@ -175,22 +171,16 @@ async def get_archive(
         # Validate inputs
         validate_date(date)
         q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
-        source = validate_string_param(
-            source, "source", max_length=200, allow_empty=True
-        )
+        source = validate_string_param(source, "source", max_length=200, allow_empty=True)
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
 
         if page < 0 or page > 1000:
             raise HTTPException(status_code=400, detail="Nevaliden broj na stranica")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(
-                status_code=400, detail="Nevalidna golemina na stranica (1-50)"
-            )
+            raise HTTPException(status_code=400, detail="Nevalidna golemina na stranica (1-50)")
 
         # 1. Caching - Only for historical dates (older than today)
-        cache_key = (
-            f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
-        )
+        cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
         today_str = datetime.now().strftime("%Y-%m-%d")
         is_today = date == today_str
 
@@ -237,9 +227,7 @@ async def get_archive(
         metrics_sql = "SELECT COUNT(*) as total, COUNT(DISTINCT source) as source_count FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
         metrics_params = [d_start, d_end, country]
         if q:
-            metrics_sql += (
-                " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
-            )
+            metrics_sql += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
             metrics_params.extend([f"%{escaped_q}%", f"%{escaped_q}%"])
         if source:
             metrics_sql += " AND source = %s"
@@ -249,7 +237,9 @@ async def get_archive(
             metrics_params.append(topic)
 
         # Groupings
-        group_source_sql = "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_source_sql = (
+            "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        )
         group_source_params = [d_start, d_end, country]
         if source:
             group_source_sql += " AND source = %s"
@@ -259,7 +249,9 @@ async def get_archive(
             group_source_params.append(topic)
         group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
 
-        group_topic_sql = "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        group_topic_sql = (
+            "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+        )
         group_topic_params = [d_start, d_end, country]
         if source:
             group_topic_sql += " AND source = %s"
@@ -296,9 +288,7 @@ async def get_archive(
                     for a in arts:
                         if a.get("embedding"):
                             a_vec = parse_embedding_value(a["embedding"])
-                            sim = np.dot(query_vec, a_vec) / (
-                                np.linalg.norm(query_vec) * np.linalg.norm(a_vec)
-                            )
+                            sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
                             if sim > best_sim:
                                 best_sim = sim
                     arts[0]["match_score"] = best_sim
@@ -361,9 +351,7 @@ async def get_archive(
     except HTTPException:
         raise
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD"
-        )
+        raise HTTPException(status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD")
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Neuspešno učitavanje arhive")
@@ -479,13 +467,13 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
     target_country = "MK" if lang == "mk" else "RS"
 
     last_24h_res = await db.async_execute_one(
-        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' AND country = %s",
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' AND country = %s",  # nosec B608 - static freshness constant with bound params
         (target_country,),
     )
     last_24h = last_24h_res["count"] if last_24h_res else 0
 
     last_1h_res = await db.async_execute_one(
-        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour' AND country = %s",
+        f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '1 hour' AND country = %s",  # nosec B608 - static freshness constant with bound params
         (target_country,),
     )
     last_1h = last_1h_res["count"] if last_1h_res else 0
@@ -533,22 +521,15 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
         if hgetall.__class__.__module__.startswith("unittest.mock"):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             runtime_events = hgetall(f"presek:runtime_events:{bucket}") or {}
-        elif os.environ.get("REDIS_URL") and not os.environ.get(
-            "CODEX_SANDBOX_NETWORK_DISABLED"
-        ):
+        elif os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"):
             bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            runtime_events = (
-                await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}")
-                or {}
-            )
+            runtime_events = await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}") or {}
     except Exception as e:
         log.warning(f"[stats] runtime event read failed: {e}")
 
     from .common import build_intelligence_summary_payload
 
-    intelligence = await build_intelligence_summary_payload(
-        last_24h, runtime_events=runtime_events
-    )
+    intelligence = await build_intelligence_summary_payload(last_24h, runtime_events=runtime_events)
 
     res = {
         "status": "success",
@@ -565,9 +546,7 @@ async def get_stats_summary(lang: Optional[str] = "sr"):
 
 
 @router.post("/newsletter/subscribe")
-async def subscribe_newsletter(
-    request: Request, csrf_valid: bool = Depends(verify_csrf_token)
-):
+async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         body = await request.json()
     except Exception:
@@ -587,9 +566,7 @@ async def subscribe_newsletter(
     except Exception as e:
         err_msg = str(e).lower()
         if 'column "locale" does not exist' in err_msg:
-            log.warning(
-                f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}"
-            )
+            log.warning(f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}")
             try:
                 # Fallback to legacy schema (without locale)
                 await db.async_execute(
@@ -619,9 +596,7 @@ async def subscribe_newsletter(
             }
     return {
         "status": "success",
-        "message": (
-            "Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!"
-        ),
+        "message": ("Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!"),
     }
 
 
@@ -657,11 +632,7 @@ async def unsubscribe_newsletter(token: str, lang: str = "sr"):
         )
     except Exception as e:
         log.warning(f"[unsubscribe] DB error: {e}")
-        content = (
-            "<h1>Greška pri odjavljivanju.</h1>"
-            if locale == "sr"
-            else "<h1>Грешка при одјавување.</h1>"
-        )
+        content = "<h1>Greška pri odjavljivanju.</h1>" if locale == "sr" else "<h1>Грешка при одјавување.</h1>"
         return HTMLResponse(content=content, status_code=500)
 
     content = (
@@ -677,15 +648,9 @@ async def _fetch_stats_parallel():
     # Queries that don't depend on each other can run concurrently
     coroutines = [
         # Basic stats
-        db.async_execute_one(
-            f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"
-        ),
-        db.async_execute_one(
-            "SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"
-        ),
-        db.async_execute_one(
-            "SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"
-        ),
+        db.async_execute_one(f"SELECT COUNT(*) FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'"),  # nosec B608 - static freshness constant, no params
+        db.async_execute_one("SELECT ROUND(pg_database_size(current_database()) / 1048576.0, 1) AS mb"),
+        db.async_execute_one("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM articles"),
         db.async_execute_one("SELECT COUNT(*) FROM articles"),
         db.async_execute_one("SELECT COUNT(DISTINCT source) AS n FROM articles"),
         # Profile stats
@@ -715,9 +680,7 @@ from routes.security import admin_auth
 
 
 @router.get("/stats/full")
-async def get_stats_full(
-    request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)
-):
+async def get_stats_full(request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)):
     cached = cached_response("stats:full:sr", ttl=120)
     if cached:
         return cached
@@ -741,23 +704,15 @@ async def get_stats_full(
 
         # Assign results with error handling
         last_24h = (
-            (results[0] or {}).get("count")
-            if results and len(results) > 0 and isinstance(results[0], dict)
-            else 0
+            (results[0] or {}).get("count") if results and len(results) > 0 and isinstance(results[0], dict) else 0
         )
         db_size_res = results[1] if len(results) > 1 else {}
         db_size = float(db_size_res.get("mb")) if db_size_res else 0.0
         dates = results[2] if len(results) > 2 else {}
         total_articles_row = results[3] if len(results) > 3 else {}
-        total_articles = (
-            total_articles_row.get("count")
-            if isinstance(total_articles_row, dict)
-            else 0
-        )
+        total_articles = total_articles_row.get("count") if isinstance(total_articles_row, dict) else 0
         total_feeds_row = results[4] if len(results) > 4 else {}
-        total_feeds = (
-            total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
-        )
+        total_feeds = total_feeds_row.get("n") if isinstance(total_feeds_row, dict) else 0
         profile_stats = results[5] if len(results) > 5 else {}
         delivery_stats = results[6] if len(results) > 6 else {}
         tracking_stats = results[7] if len(results) > 7 else {}
@@ -775,16 +730,14 @@ async def get_stats_full(
         # These aggregation queries can also run in parallel with each other
         by_source, by_category_raw, velocity, speed_leaderboard = await asyncio.gather(
             db.async_execute(
-                f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"
+                f"SELECT source, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source ORDER BY n DESC LIMIT 10"  # nosec B608 - static freshness constant, no params
+            ),
+            db.async_execute("SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"),
+            db.async_execute(
+                f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"  # nosec B608 - static freshness constant, no params
             ),
             db.async_execute(
-                "SELECT category, COUNT(*) AS n FROM articles GROUP BY category ORDER BY n DESC LIMIT 8"
-            ),
-            db.async_execute(
-                f"SELECT date_trunc('hour', {_FRESHNESS_EXPR}) AS t, COUNT(*) AS n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY t ORDER BY t"
-            ),
-            db.async_execute(
-                f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"
+                f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC LIMIT 8"  # nosec B608 - static freshness constant, no params
             ),
             return_exceptions=True,
         )
@@ -842,8 +795,7 @@ async def get_stats_full(
             "new_article": dates.get("newest") if dates else None,
             "by_source": safe_result(by_source, []),
             "by_category": [
-                {"category": r["category"] or "Drugo", "n": r["n"]}
-                for r in safe_result(by_category_raw, [])
+                {"category": r["category"] or "Drugo", "n": r["n"]} for r in safe_result(by_category_raw, [])
             ],
             "velocity": [{"t": r["t"], "n": r["n"]} for r in safe_result(velocity, [])],
             "speed_leaderboard": safe_result(speed_leaderboard, []),
@@ -863,11 +815,7 @@ async def get_stats_full(
         return res
     except Exception as e:
         log.error(f"Full Stats Error: {e}")
-        detail = (
-            "Neuspešno generisanje statistika"
-            if lang == "sr"
-            else "Неуспешно генерирање на статистики"
-        )
+        detail = "Neuspešno generisanje statistika" if lang == "sr" else "Неуспешно генерирање на статистики"
         raise HTTPException(status_code=500, detail=detail)
     finally:
         try:
@@ -882,24 +830,22 @@ async def get_sources_route():
         "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC"
     )
     pulse = await db.async_execute(
-        f"SELECT source, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source"
+        f"SELECT source, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY source"  # nosec B608 - static freshness constant, no params
     )
     speed = await db.async_execute(
-        f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC"
+        f"SELECT source, COUNT(*) AS first_count FROM (SELECT DISTINCT ON (cluster_id) cluster_id, source FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC) first_articles GROUP BY source ORDER BY first_count DESC"  # nosec B608 - static freshness constant, no params
     )
     history = await db.async_execute(
-        f"WITH cluster_first AS (SELECT DISTINCT ON (cluster_id) cluster_id, source, {_FRESHNESS_EXPR} AS freshness_time FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC), cluster_counts AS (SELECT cluster_id, COUNT(DISTINCT source) AS source_count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY cluster_id), source_weeks AS (SELECT source, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days') AS recent_7d_volume, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' AND {_FRESHNESS_EXPR} < NOW() - INTERVAL '7 days') AS previous_7d_volume FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' GROUP BY source) SELECT cf.source, COUNT(*) AS lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume FROM cluster_first cf LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id LEFT JOIN source_weeks sw ON sw.source = cf.source GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"
+        f"WITH cluster_first AS (SELECT DISTINCT ON (cluster_id) cluster_id, source, {_FRESHNESS_EXPR} AS freshness_time FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC), cluster_counts AS (SELECT cluster_id, COUNT(DISTINCT source) AS source_count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY cluster_id), source_weeks AS (SELECT source, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '7 days') AS recent_7d_volume, COUNT(*) FILTER (WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' AND {_FRESHNESS_EXPR} < NOW() - INTERVAL '7 days') AS previous_7d_volume FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '14 days' GROUP BY source) SELECT cf.source, COUNT(*) AS lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count >= 2) AS corroborated_lead_count_30d, COUNT(*) FILTER (WHERE cc.source_count = 1) AS solo_lead_count_30d, COALESCE(sw.recent_7d_volume, 0) AS recent_7d_volume, COALESCE(sw.previous_7d_volume, 0) AS previous_7d_volume FROM cluster_first cf LEFT JOIN cluster_counts cc ON cc.cluster_id = cf.cluster_id LEFT JOIN source_weeks sw ON sw.source = cf.source GROUP BY cf.source, sw.recent_7d_volume, sw.previous_7d_volume"  # nosec B608 - static freshness constant, no params
     )
     cats = await db.async_execute(
-        f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"
+        f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"  # nosec B608 - static freshness constant, no params
     )
     return build_source_reputation_rows(rows, pulse, speed, history, cats)
 
 
 @router.post("/sources/{name}/control")
-async def control_source_route(
-    name: str, request: Request, csrf_valid: bool = Depends(verify_csrf_token)
-):
+async def control_source_route(name: str, request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     if not _source_admin_authorized(request):
         return _error_json("Unauthorized", 403)
     try:
@@ -907,9 +853,7 @@ async def control_source_route(
     except Exception:
         raise HTTPException(status_code=400, detail="Nevaliden JSON")
     action = str(payload.get("action", "")).strip().lower()
-    source = await db.async_execute_one(
-        "SELECT credibility FROM sources WHERE name = %s", (name,)
-    )
+    source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source:
         return _error_json("Source not found", 404)
     curr = float(source["credibility"])
@@ -992,11 +936,7 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
 
             data.append(
                 {
-                    "day": (
-                        r["day"].isoformat()
-                        if hasattr(r["day"], "isoformat")
-                        else str(r["day"])
-                    ),
+                    "day": (r["day"].isoformat() if hasattr(r["day"], "isoformat") else str(r["day"])),
                     "score": round(score, 2),
                     "label": label,
                     "objectivity": round(float(r["avg_objectivity"] or 0), 2),

@@ -110,7 +110,9 @@ def extract_clean_summary_text(text: str) -> str:
                             current = str(next_val)
                         continue
             except Exception:
-                extracted = _unwrap_jsonish_string_field(decoded, "summary") or _unwrap_jsonish_string_field(decoded, "text")
+                extracted = _unwrap_jsonish_string_field(decoded, "summary") or _unwrap_jsonish_string_field(
+                    decoded, "text"
+                )
                 if extracted:
                     current = extracted
                     continue

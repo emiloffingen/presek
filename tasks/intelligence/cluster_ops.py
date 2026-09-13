@@ -1,7 +1,7 @@
 import datetime
 
 from core.ingestion import cosine_dist
-from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.intelligence._queue import _skip_when_intel_full
 from tasks.intelligence.metadata import (
     auto_summarize_task,
@@ -147,7 +147,7 @@ def recluster_recent_articles_task(hours=24, limit=800):
             )
             for table in _ALLOWED_CLEANUP_TABLES:
                 db.execute(
-                    f"DELETE FROM {table} WHERE cluster_id = ANY(%s)",
+                    f"DELETE FROM {table} WHERE cluster_id = ANY(%s)",  # nosec B608 - allowlisted tables with bound params
                     (touched,),
                     fetch=False,
                 )
@@ -183,8 +183,9 @@ def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
         hours = max(1, int(hours or 48))
         limit = max(2, int(limit or 1200))
         cutoff = datetime.datetime.now() - datetime.timedelta(hours=hours)
-        rows = db.execute(
-            """
+        rows = (
+            db.execute(
+                """
             SELECT a.cluster_id,
                    mode() WITHIN GROUP (ORDER BY a.country) as country,
                    mode() WITHIN GROUP (ORDER BY a.category) as category,
@@ -203,8 +204,10 @@ def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
             ORDER BY latest_article DESC
             LIMIT %s
             """,
-            (cutoff, limit),
-        ) or []
+                (cutoff, limit),
+            )
+            or []
+        )
 
         candidates = []
         for i, left in enumerate(rows):
@@ -275,10 +278,12 @@ def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
         if canonical_merges and not dry_run:
             touched = sorted(touched_clusters)
             for table in ("cluster_summaries", "cluster_metadata", "cluster_entities", "reactions"):
-                db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)
+                db.execute(f"DELETE FROM {table} WHERE cluster_id = ANY(%s)", (touched,), fetch=False)  # nosec B608 - allowlisted tables with bound params
 
             extract_entities_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=5)
-            generate_cluster_metadata_task.apply_async(kwargs={"hours": hours, "target_clusters": touched}, countdown=10)
+            generate_cluster_metadata_task.apply_async(
+                kwargs={"hours": hours, "target_clusters": touched}, countdown=10
+            )
             auto_summarize_task.apply_async(args=(touched,), countdown=20)
             invalidate_public_data_caches()
 
@@ -293,11 +298,52 @@ def repair_split_clusters_task(hours=48, limit=1200, dry_run=False):
         log.error(f"[tasks] Split cluster repair failed: {e}")
         raise
 
-_DELEGATED = frozenset({'CLUSTER_LOOKBACK', '_call_ai', '_sanitize_synthesis_outputs', 'acquire_task_lock', 'analyst', 'average_embeddings', 'celery_app', 'clean_extracted_article_text', 'clean_json_response', 'db', 'deShout', 'detect_category', 'detect_topic', 'extract_clean_summary_text', 'extract_cluster_tags_locally', 'extract_entities', 'filter_cluster_tags', 'generate_cover_art', 'generate_local_placeholder', 'get_celery_queue_depth', 'get_dominant_color', 'invalidate_cluster_caches', 'invalidate_public_data_caches', 'log', 'normalize_citation_sources', 'normalize_headline', 'normalize_perspectives', 'normalize_summary_text', 'parse_embedding_value', 'record_runtime_event', 'redis_client', 'release_task_lock', 'schedule_task_once', 'summarize_article_fallback', 'synthesize_cluster_fallback', 'validate_person_names'})
+
+_DELEGATED = frozenset(
+    {
+        "CLUSTER_LOOKBACK",
+        "_call_ai",
+        "_sanitize_synthesis_outputs",
+        "acquire_task_lock",
+        "analyst",
+        "average_embeddings",
+        "celery_app",
+        "clean_extracted_article_text",
+        "clean_json_response",
+        "db",
+        "deShout",
+        "detect_category",
+        "detect_topic",
+        "extract_clean_summary_text",
+        "extract_cluster_tags_locally",
+        "extract_entities",
+        "filter_cluster_tags",
+        "generate_cover_art",
+        "generate_local_placeholder",
+        "get_celery_queue_depth",
+        "get_dominant_color",
+        "invalidate_cluster_caches",
+        "invalidate_public_data_caches",
+        "log",
+        "normalize_citation_sources",
+        "normalize_headline",
+        "normalize_perspectives",
+        "normalize_summary_text",
+        "parse_embedding_value",
+        "record_runtime_event",
+        "redis_client",
+        "release_task_lock",
+        "schedule_task_once",
+        "summarize_article_fallback",
+        "synthesize_cluster_fallback",
+        "validate_person_names",
+    }
+)
+
 
 def __getattr__(name: str):
     if name in _DELEGATED:
         from tasks.intelligence import _constants
+
         return getattr(_constants, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-

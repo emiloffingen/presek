@@ -466,7 +466,7 @@ async def fetch_news_data(
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
-                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
                     (cids,),
                     read_only=True,
                 )
@@ -511,7 +511,7 @@ async def fetch_news_data(
 
             rows = (
                 await db.async_execute(
-                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
                     (cids,),
                     read_only=True,
                 )
@@ -573,7 +573,7 @@ async def fetch_news_data(
             cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
-                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
                     (cids,),
                     read_only=True,
                 )
@@ -600,10 +600,10 @@ async def fetch_news_data(
             params.append(candidate_limit)
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
-            cids = [r["cluster_id"] for r in rows]
+            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
             rows = (
                 await db.async_execute(
-                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
                     (cids,),
                     read_only=True,
                 )
@@ -632,8 +632,7 @@ async def fetch_news_data(
                     cluster_relevance[cid] = score
 
         ranked_clusters = [
-            annotate_cluster_articles(arts, prefer_recent=(sort == "recent")) 
-            for arts in clusters.values() if arts
+            annotate_cluster_articles(arts, prefer_recent=(sort == "recent")) for arts in clusters.values() if arts
         ]
         if sort == "popular":
             ranked_clusters.sort(
@@ -658,7 +657,9 @@ async def fetch_news_data(
             )
         else:
             candidate_cids = [arts[0]["cluster_id"] for arts in ranked_clusters if arts]
-            candidate_synthesis_ids = set(await db.async_get_synthesis_ids(candidate_cids, lang=lang)) if candidate_cids else set()
+            candidate_synthesis_ids = (
+                set(await db.async_get_synthesis_ids(candidate_cids, lang=lang)) if candidate_cids else set()
+            )
 
             def homepage_sort_key(arts):
                 if not arts:
@@ -687,7 +688,7 @@ async def fetch_news_data(
                 SELECT {_ARTICLE_LIST_COLUMNS} FROM articles
                 WHERE category IN ('Amerika', 'Evropa')
                   AND created_at >= NOW() - INTERVAL '48 hours'
-            """
+            """  # nosec B608 - static column constant with bound params
             g_params = []
             if country:
                 g_query += " AND country = %s"
@@ -785,7 +786,13 @@ async def fetch_news_data(
                 "has_synthesis": cid in synthesis_ids,
                 "has_fact_check": any(a.get("is_fact_check") for a in arts),
                 "has_balanced": is_balanced(arts),
-                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])] if lang == "sr" else ([transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])] if lang == "mk" else main.get("entity_names", [])),
+                "entities": [transliterate_cyr_to_lat(e) for e in main.get("entity_names", [])]
+                if lang == "sr"
+                else (
+                    [transliterate_lat_to_cyr(e) for e in main.get("entity_names", [])]
+                    if lang == "mk"
+                    else main.get("entity_names", [])
+                ),
                 **editorial,
             }
 
@@ -877,6 +884,7 @@ async def semantic_search(
             raise e
         return _error_json("Internal server error", 500)
 
+
 def _looks_like_leaked_json_fragment(text: str) -> bool:
     from nlp.utils import looks_like_leaked_json_fragment
 
@@ -887,7 +895,7 @@ def _clean_leaked_json_string(text: str) -> dict:
     data = {}
     if not text:
         return data
-    
+
     clean = text.strip()
     lines = []
     for line in clean.splitlines():
@@ -896,7 +904,7 @@ def _clean_leaked_json_string(text: str) -> dict:
             line_s = line_s[1:].strip()
         lines.append(line_s)
     clean_lines = "\n".join(lines).strip()
-    
+
     try:
         parsed = json.loads(clean_lines)
         if isinstance(parsed, dict):
@@ -908,38 +916,46 @@ def _clean_leaked_json_string(text: str) -> dict:
         headline_match = re.search(r'"synthetic_headline"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if headline_match:
             try:
-                data["synthetic_headline"] = headline_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                data["synthetic_headline"] = (
+                    headline_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["synthetic_headline"] = headline_match.group(1)
-        
+
         standfirst_match = re.search(r'"synthetic_standfirst"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if standfirst_match:
             try:
-                data["synthetic_standfirst"] = standfirst_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                data["synthetic_standfirst"] = (
+                    standfirst_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["synthetic_standfirst"] = standfirst_match.group(1)
-            
+
         article_match = re.search(r'"generated_article"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if article_match:
             try:
-                data["generated_article"] = article_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                data["generated_article"] = (
+                    article_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["generated_article"] = article_match.group(1)
 
         summary_match = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if summary_match:
             try:
-                data["summary"] = summary_match.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                data["summary"] = summary_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
             except Exception:
                 data["summary"] = summary_match.group(1)
         else:
             truncated_summary = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', clean_lines)
             if truncated_summary:
                 try:
-                    data["summary"] = truncated_summary.group(1).encode('utf-8').decode('unicode-escape', errors='ignore')
+                    data["summary"] = (
+                        truncated_summary.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                    )
                 except Exception:
                     data["summary"] = truncated_summary.group(1)
-            
+
         summary_array_match = re.search(r'"summary"\s*:\s*\[(.*?)\]', clean_lines, re.DOTALL)
         if summary_array_match:
             array_content = summary_array_match.group(1)
@@ -947,7 +963,7 @@ def _clean_leaked_json_string(text: str) -> dict:
             bullets = []
             for b in bullet_matches:
                 try:
-                    bullets.append(b.encode('utf-8').decode('unicode-escape', errors='ignore'))
+                    bullets.append(b.encode("utf-8").decode("unicode-escape", errors="ignore"))
                 except Exception:
                     bullets.append(b)
             if bullets:
@@ -955,10 +971,10 @@ def _clean_leaked_json_string(text: str) -> dict:
 
     for k in data:
         if isinstance(data[k], str):
-            data[k] = data[k].replace('\\"', '"').replace('\\n', '\n').strip()
+            data[k] = data[k].replace('\\"', '"').replace("\\n", "\n").strip()
         elif isinstance(data[k], list):
-            data[k] = [str(item).replace('\\"', '"').replace('\\n', '\n').strip() for item in data[k]]
-            
+            data[k] = [str(item).replace('\\"', '"').replace("\\n", "\n").strip() for item in data[k]]
+
     return data
 
 
@@ -1023,11 +1039,7 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
     try:
         data = cached.get("data") or {}
         freshness = data.get("synthesis_freshness") or {}
-        sources = {
-            article.get("source")
-            for article in (data.get("articles") or [])
-            if article.get("source")
-        }
+        sources = {article.get("source") for article in (data.get("articles") or []) if article.get("source")}
         _maybe_enqueue_missing_synthesis(cluster_id, freshness, len(sources))
         synthesis_meta = data.get("synthesis_meta") or {}
         if synthesis_meta.get("needs_upgrade"):
@@ -1058,7 +1070,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         # Map language to country for article filtering
         country_filter = "MK" if lang == "mk" else "RS"
         rows = await db.async_execute(
-            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",
+            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
             (cluster_id, country_filter),
             read_only=True,
         )
@@ -1124,7 +1136,11 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         if leaked_data:
             if "synthetic_headline" in leaked_data and leaked_data["synthetic_headline"] and not synthetic_headline:
                 synthetic_headline = leaked_data["synthetic_headline"]
-            if "synthetic_standfirst" in leaked_data and leaked_data["synthetic_standfirst"] and not synthetic_standfirst:
+            if (
+                "synthetic_standfirst" in leaked_data
+                and leaked_data["synthetic_standfirst"]
+                and not synthetic_standfirst
+            ):
                 synthetic_standfirst = leaked_data["synthetic_standfirst"]
             if "generated_article" in leaked_data and leaked_data["generated_article"]:
                 generated_article = leaked_data["generated_article"]
@@ -1201,7 +1217,9 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 ORDER BY m.centroid <=> %s::vector
                 LIMIT 15
             """
-            related_results = await db.async_execute(related_query, (vec_str, cluster_id, country_filter, vec_str), read_only=True)
+            related_results = await db.async_execute(
+                related_query, (vec_str, cluster_id, country_filter, vec_str), read_only=True
+            )
 
             related_cids = []
             for r in related_results:
@@ -1283,10 +1301,10 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                     LEFT JOIN cluster_metadata m ON a.cluster_id = m.cluster_id
                     WHERE a.cluster_id != %s
                       AND COALESCE(a.ingested_at, a.created_at) >= NOW() - INTERVAL '14 days'
-                      AND ({' AND '.join(match_clauses[:1])} AND ({' OR '.join(match_clauses[1:])}))
+                      AND ({" AND ".join(match_clauses[:1])} AND ({" OR ".join(match_clauses[1:])}))
                     ORDER BY COALESCE(a.ingested_at, a.created_at) DESC
                     LIMIT 200
-                """,
+                """,  # nosec B608 - static clause list with bound params
                     tuple(fallback_params),
                     read_only=True,
                 )
@@ -1347,35 +1365,72 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 consolidated_chrono.append(a)
 
         timeline = []
-        
+
         from nlp.local_analyst import LocalAnalyst
+
         analyst = LocalAnalyst()
-        
+
         for i, a in enumerate(consolidated_chrono):
             is_major = (a.get("source_signal") or {}).get("trust_level", 0) >= 0.8
             title_text = a.get("title") or ""
             desc_text = a.get("description") or ""
-            
+
             # 1. Clean Title using Clickbait Scrubber
             clean_title = analyst.get_zero_token_normalized_headline(title_text, lang=lang)
-            
+
             # 2. Extract clean 1-sentence chronological event summary
             clean_desc = ""
             if desc_text:
-                sentences = re.split(r'(?<=[.!?])\s+', desc_text.strip())
+                sentences = re.split(r"(?<=[.!?])\s+", desc_text.strip())
                 if sentences and len(sentences[0]) > 10:
                     clean_desc = sentences[0]
             if not clean_desc or len(clean_desc) < 15:
                 clean_desc = clean_title
-            
+
             # 3. Dynamic Broadsheet Milestones
             lower_title = title_text.lower()
             lower_desc = desc_text.lower()
-            
-            official_keywords = {"vlada", "sobranie", "ministar", "mup", "policija", "skupština", "saopštenje", "soopstenie", "mvr", "srbije", "makedonije"}
-            reaction_keywords = {"protest", "strajk", "reaguje", "osudili", "kritika", "reakcija", "demant", "demantira", "odgovori", "obtozi", "optužio"}
-            escalation_keywords = {"napustio", "odbio", "sukob", "prekinuo", "incident", "uhapšen", "uapsen", "pretepan", "teško", "tesko", "kriza"}
-            
+
+            official_keywords = {
+                "vlada",
+                "sobranie",
+                "ministar",
+                "mup",
+                "policija",
+                "skupština",
+                "saopštenje",
+                "soopstenie",
+                "mvr",
+                "srbije",
+                "makedonije",
+            }
+            reaction_keywords = {
+                "protest",
+                "strajk",
+                "reaguje",
+                "osudili",
+                "kritika",
+                "reakcija",
+                "demant",
+                "demantira",
+                "odgovori",
+                "obtozi",
+                "optužio",
+            }
+            escalation_keywords = {
+                "napustio",
+                "odbio",
+                "sukob",
+                "prekinuo",
+                "incident",
+                "uhapšen",
+                "uapsen",
+                "pretepan",
+                "teško",
+                "tesko",
+                "kriza",
+            }
+
             if i == 0:
                 milestone = "ПОЧЕТОК НА МЕДИУМСКО ИЗВЕСТУВАЊЕ" if lang == "mk" else "POČETAK MEDIJSKOG IZVEŠTAVANJA"
             elif any(k in lower_title or k in lower_desc for k in official_keywords):
@@ -1388,7 +1443,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
                 milestone = "КОНСЕНЗУС НА МЕДИУМИТЕ" if lang == "mk" else "KONSENZUS MEDIJA"
             else:
                 milestone = "хронологија" if lang == "mk" else "hronologija"
-                
+
             sources_list = a.get("sources", [a["source"]])
             if len(sources_list) > 2:
                 formatted_source = f"{sources_list[0]}, {sources_list[1]} + {len(sources_list) - 2}"
@@ -1425,13 +1480,13 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             stance_vectors[src].append(score)
 
         # Average sentiment per source
-        avg_stance_vectors = {src: round(sum(scores)/len(scores), 2) for src, scores in stance_vectors.items()}
-        
+        avg_stance_vectors = {src: round(sum(scores) / len(scores), 2) for src, scores in stance_vectors.items()}
+
         # Calculate standard deviation/divergence
         if len(sentiments) > 1:
             mean = sum(sentiments) / len(sentiments)
             variance = sum((x - mean) ** 2 for x in sentiments) / len(sentiments)
-            editorial_divergence = round(variance ** 0.5, 2)
+            editorial_divergence = round(variance**0.5, 2)
         else:
             editorial_divergence = 0.0
 
@@ -1442,11 +1497,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         narrative_diversity = _parse_maybe_json(s_row.get("narrative_diversity")) if s_row else None
         unique_sources = len({a.get("source") for a in articles if a.get("source")})
         has_verification = bool(
-            verification_report
-            and (
-                verification_report.get("agreements")
-                or verification_report.get("conflicts")
-            )
+            verification_report and (verification_report.get("agreements") or verification_report.get("conflicts"))
         )
         trust_summary = build_trust_summary(
             sources_count=unique_sources,
@@ -1497,10 +1548,11 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             },
         }
 
-        cache_ttl = 120 if (
-            "missing_synthesis" in (freshness.get("reasons") or [])
-            or synthesis_meta.get("needs_upgrade")
-        ) else 3600
+        cache_ttl = (
+            120
+            if ("missing_synthesis" in (freshness.get("reasons") or []) or synthesis_meta.get("needs_upgrade"))
+            else 3600
+        )
         set_cache(cache_key, response, ttl=cache_ttl)
         return response
 
@@ -1583,6 +1635,7 @@ async def get_historical_events(cluster_id: str):
             return {"status": "success", "events": []}
 
         import sys
+
         if "numpy" in sys.modules:
             np = sys.modules["numpy"]
         else:
@@ -1651,7 +1704,7 @@ async def get_live_route(request: Request):
 async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
     validate_cluster_id(cluster_id)
-    
+
     s_row = await db.async_execute_one(
         "SELECT generated_article, summary FROM cluster_summaries WHERE cluster_id = %s AND lang = %s",
         (cluster_id, lang),
@@ -1661,10 +1714,10 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
             "SELECT generated_article, summary FROM cluster_summaries WHERE cluster_id = %s AND lang = 'sr'",
             (cluster_id,),
         )
-        
+
     if not s_row or (not s_row.get("generated_article") and not s_row.get("summary")):
         raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
-        
+
     from core.audio_service import AudioService, select_cluster_audio_text
 
     content = select_cluster_audio_text(
@@ -1674,11 +1727,9 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
     if not content:
         raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
     loop = asyncio.get_running_loop()
-    audio_url = await loop.run_in_executor(
-        None, AudioService.generate_cluster_audio, cluster_id, content, lang
-    )
-    
+    audio_url = await loop.run_in_executor(None, AudioService.generate_cluster_audio, cluster_id, content, lang)
+
     if not audio_url:
         return soft_error(message="Failed to synthesize cluster audio.")
-        
+
     return {"status": "success", "audio_url": audio_url}

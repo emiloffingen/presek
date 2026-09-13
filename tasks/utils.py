@@ -47,9 +47,7 @@ def send_email(
 
 _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
 _PUBLIC_CACHE_INVALIDATION_DEBOUNCE_KEY = "debounce:public_cache_invalidation"
-_PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS = int(
-    os.environ.get("PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS", "45")
-)
+_PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS = int(os.environ.get("PUBLIC_CACHE_INVALIDATION_DEBOUNCE_SECONDS", "45"))
 
 
 def invalidate_public_data_caches():
@@ -659,7 +657,6 @@ def reprioritize_maintenance_queue(*, groom_threshold: int = 80, dry_run: bool =
     removed = 0
     seen_singletons: set[str] = set()
     seen_heavy: set[str] = set()
-    seen_metadata_clusters: set[str] = set()
     seen_upgrade_clusters: set[str] = set()
 
     for raw in raw_items:

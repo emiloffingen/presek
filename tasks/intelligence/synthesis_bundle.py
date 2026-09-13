@@ -72,21 +72,18 @@ def _extract_one_quote_or_fact(text: str) -> str | None:
     if not text:
         return None
     # Look for quotes in text
-    quote_patterns = [
-        r'["“„»]([^"“„»]{15,})["”„«]',
-        r'\'([^\']{15,})\''
-    ]
+    quote_patterns = [r'["“„»]([^"“„»]{15,})["”„«]', r"\'([^\']{15,})\'"]
     for pattern in quote_patterns:
         matches = re.findall(pattern, text)
         if matches:
             return matches[0].strip()
-    
+
     # If no quotes, find a sentence containing a number/fact
-    sentences = re.split(r'[.!?]\s+', text)
+    sentences = re.split(r"[.!?]\s+", text)
     for s in sentences:
         if any(c.isdigit() for c in s) and len(s) > 20:
             return s.strip()
-            
+
     # Default to the first sentence
     if sentences:
         first = sentences[0].strip()
@@ -99,15 +96,15 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
     # Group and deduplicate by source, preserving order of first occurrence
     seen_sources = set()
     deduped_rows = []
-    for row in (article_rows or []):
+    for row in article_rows or []:
         source = str(row.get("source") or "").strip().lower()
         if source and source not in seen_sources:
             seen_sources.add(source)
             deduped_rows.append(row)
-            
+
     # Feed only top 4-6 articles (we use 5)
     top_rows = deduped_rows[:5]
-    
+
     blocks = []
     for idx, row in enumerate(top_rows, start=1):
         title = deShout(normalize_headline(str(row.get("title") or "").strip()))
@@ -117,12 +114,12 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
         topic = str(row.get("topic") or "").strip()
         description = clean_extracted_article_text(str(row.get("description") or "").strip())
         full_content = clean_extracted_article_text(str(row.get("full_content") or "").strip())
-        
+
         evidence = full_content if len(full_content or "") > len(description or "") else description
         evidence = evidence[:1600].strip()
-        
+
         extracted_fact = _extract_one_quote_or_fact(full_content or description)
-        
+
         parts = [f"[{idx}] {source}"]
         if created_at:
             parts.append(f"{'Objavljeno' if lang == 'sr' else 'Објавено'}: {created_at}")
@@ -136,9 +133,9 @@ def _build_synthesis_source_context(article_rows, lang: str = "sr"):
             parts.append(f"{'Opis' if lang == 'sr' else 'Опис'}:\n{evidence}")
         if extracted_fact:
             parts.append(f"{'Ključna izjava/činjenica' if lang == 'sr' else 'Клучна изјава/факт'}: {extracted_fact}")
-            
+
         blocks.append("\n".join(parts))
-        
+
     source_count = len(top_rows)
     if lang == "mk":
         header = (

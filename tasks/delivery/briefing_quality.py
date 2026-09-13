@@ -352,7 +352,7 @@ def _normalize_grounding_token(word: str) -> str:
         return ""
     for suffix in sorted(_GROUNDING_DEFINITE_SUFFIXES, key=len, reverse=True):
         if len(token) > len(suffix) + 3 and token.endswith(suffix):
-            token = token[:-len(suffix)]
+            token = token[: -len(suffix)]
             break
     token = token.replace("ij", "i").replace("iy", "i")
     return token
@@ -459,9 +459,7 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
             continue
 
         significant_words = [
-            word
-            for word in words
-            if len(word) >= 4 and transliterate(word).casefold() not in phrase_prefixes
+            word for word in words if len(word) >= 4 and transliterate(word).casefold() not in phrase_prefixes
         ]
         if significant_words and all(
             _grounding_word_in_context(word, source_latin, context_tokens) for word in significant_words
@@ -472,9 +470,11 @@ def _is_grounded_daily_brief(brief: str, context: str) -> bool:
         # in source copy while the named entities that follow still do.
         if len(significant_words) >= 2:
             tail_words = significant_words[1:]
-            if tail_words and all(
-                _grounding_word_in_context(word, source_latin, context_tokens) for word in tail_words
-            ) and not _grounding_word_in_context(significant_words[0], source_latin, context_tokens):
+            if (
+                tail_words
+                and all(_grounding_word_in_context(word, source_latin, context_tokens) for word in tail_words)
+                and not _grounding_word_in_context(significant_words[0], source_latin, context_tokens)
+            ):
                 continue
 
         log.warning(f"[briefing] Ungrounded entity in daily brief: {clean}")

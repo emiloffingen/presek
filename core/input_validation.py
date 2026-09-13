@@ -83,10 +83,7 @@ class SearchParams(BaseModel):
         if len(v) > 500:
             raise ValueError("Search query too long (max 500 characters)")
         # Basic XSS prevention
-        if any(
-            tag in v.lower()
-            for tag in ["<script>", "</script>", "javascript:", "onerror="]
-        ):
+        if any(tag in v.lower() for tag in ["<script>", "</script>", "javascript:", "onerror="]):
             raise ValueError("Invalid characters in search query")
         return v
 
@@ -215,19 +212,13 @@ def validate_search_query(q: str, max_length: int = 500) -> str:
         )
 
     # Basic XSS prevention
-    if any(
-        tag in q.lower() for tag in ["<script>", "</script>", "javascript:", "onerror="]
-    ):
-        raise HTTPException(
-            status_code=400, detail="Invalid characters in search query"
-        )
+    if any(tag in q.lower() for tag in ["<script>", "</script>", "javascript:", "onerror="]):
+        raise HTTPException(status_code=400, detail="Invalid characters in search query")
 
     return q
 
 
-def validate_pagination(
-    page: int = 1, limit: int = 20, max_page: int = 1000, max_limit: int = 100
-) -> tuple:
+def validate_pagination(page: int = 1, limit: int = 20, max_page: int = 1000, max_limit: int = 100) -> tuple:
     """Validate pagination parameters."""
     try:
         page = int(page)
@@ -236,14 +227,10 @@ def validate_pagination(
         raise HTTPException(status_code=400, detail="Invalid pagination parameters")
 
     if page < 1 or page > max_page:
-        raise HTTPException(
-            status_code=400, detail=f"Page must be between 1 and {max_page}"
-        )
+        raise HTTPException(status_code=400, detail=f"Page must be between 1 and {max_page}")
 
     if limit < 5 or limit > max_limit:
-        raise HTTPException(
-            status_code=400, detail=f"Limit must be between 5 and {max_limit}"
-        )
+        raise HTTPException(status_code=400, detail=f"Limit must be between 5 and {max_limit}")
 
     return page, limit
 
@@ -268,9 +255,7 @@ def validate_url(url: str, max_length: int = 2048) -> str:
         raise HTTPException(status_code=400, detail="Invalid URL")
 
     if len(url) > max_length:
-        raise HTTPException(
-            status_code=400, detail=f"URL too long (max {max_length} characters)"
-        )
+        raise HTTPException(status_code=400, detail=f"URL too long (max {max_length} characters)")
 
     if not URL_PATTERN.match(url):
         raise HTTPException(status_code=400, detail="Invalid URL format")
@@ -297,9 +282,7 @@ def validate_language_code(lang: str, allowed_languages: List[str] = None) -> st
     lang = lang.lower().strip()
 
     if len(lang) != 2:
-        raise HTTPException(
-            status_code=400, detail="Language code must be 2 characters"
-        )
+        raise HTTPException(status_code=400, detail="Language code must be 2 characters")
 
     if lang not in allowed_languages:
         raise HTTPException(
@@ -361,9 +344,7 @@ def sanitize_html_input(text: str, max_length: int = 1000) -> str:
         return text
 
     if len(text) > max_length:
-        raise HTTPException(
-            status_code=400, detail=f"Text too long (max {max_length} characters)"
-        )
+        raise HTTPException(status_code=400, detail=f"Text too long (max {max_length} characters)")
 
     # Basic HTML sanitization - remove script tags and dangerous attributes
     sanitized = text
@@ -406,9 +387,7 @@ def handle_validation_error(e: ValidationError) -> Dict[str, Any]:
         message = error.get("msg", "Invalid value")
         errors.append(f"{field}: {message}")
 
-    return ValidationErrorResponse(
-        message="Validation failed", details={"errors": errors}
-    ).dict()
+    return ValidationErrorResponse(message="Validation failed", details={"errors": errors}).dict()
 
 
 # Request validation decorators

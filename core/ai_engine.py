@@ -221,6 +221,7 @@ class AIProvider(ABC):
         log.debug(f"Abstract method stream_call() not implemented for {self.__class__.__name__}")
         yield ""
 
+
 _SHARED_HTTP_CLIENT = None
 
 
@@ -285,6 +286,7 @@ class OpenAICompatibleProvider(AIProvider):
         try:
             if task_type == "daily_brief":
                 from core.runtime_limits import NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS
+
                 timeout = float(NVIDIA_DAILY_BRIEF_TIMEOUT_SECONDS)
             else:
                 timeout = 120.0
@@ -322,6 +324,7 @@ class LocalProvider(AIProvider):
             import os
 
             from nlp.local_analyst import MODEL_PATH
+
             self.model = os.path.basename(MODEL_PATH)
         except ImportError:
             self.model = "gemma-4-E2B-it-Q4_K_M.gguf"
@@ -937,7 +940,6 @@ def sync_call_ai(
     )
 
 
-
 def _escape_json_string_control_chars(text: str) -> str:
     """Escape raw control characters that providers sometimes emit inside JSON strings."""
     result: list[str] = []
@@ -980,32 +982,33 @@ def repair_json_syntax(s: str) -> str:
     """Repair common LLM JSON syntax issues like trailing commas and raw newlines inside string literals."""
     if not isinstance(s, str):
         return s
-    
+
     # Extract string literals to avoid modifying them
     strings = []
+
     def replace_str(match):
         strings.append(match.group(0))
-        return f"__STR_PLACEHOLDER_{len(strings)-1}__"
-    
+        return f"__STR_PLACEHOLDER_{len(strings) - 1}__"
+
     # Match double quoted string literals, handling escaped quotes
     pattern = r'"(?:[^"\\]|\\.)*"'
     placeholder_s = re.sub(pattern, replace_str, s)
-    
+
     # Now we can safely perform repairs on placeholder_s
     # 1. Remove trailing commas before } or ]
-    placeholder_s = re.sub(r',\s*\}', '}', placeholder_s)
-    placeholder_s = re.sub(r',\s*\]', ']', placeholder_s)
-    
+    placeholder_s = re.sub(r",\s*\}", "}", placeholder_s)
+    placeholder_s = re.sub(r",\s*\]", "]", placeholder_s)
+
     # Restore the strings and escape any raw control characters inside them
     def restore_str(match):
         idx = int(match.group(1))
         val = strings[idx]
         inner = val[1:-1]
         # Escape raw control characters inside strings
-        inner = inner.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+        inner = inner.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         return f'"{inner}"'
-    
-    restored = re.sub(r'__STR_PLACEHOLDER_(\d+)__', restore_str, placeholder_s)
+
+    restored = re.sub(r"__STR_PLACEHOLDER_(\d+)__", restore_str, placeholder_s)
     return restored
 
 
@@ -1031,7 +1034,7 @@ def clean_json_response(text: str) -> dict | str | None:
                     return json.loads(repaired)
             except Exception:
                 log.debug("AI engine fallback")
-            
+
             try:
                 repaired = repair_json_syntax(candidate)
                 return json.loads(repaired)
@@ -1067,7 +1070,7 @@ def clean_json_response(text: str) -> dict | str | None:
         last_curly = text.rfind("}")
         first_bracket = text.find("[")
         last_bracket = text.rfind("]")
-        
+
         first = -1
         last = -1
         if first_curly != -1 and last_curly > first_curly:
@@ -1084,7 +1087,7 @@ def clean_json_response(text: str) -> dict | str | None:
         elif first_bracket != -1 and last_bracket > first_bracket:
             first = first_bracket
             last = last_bracket
-            
+
         if first != -1 and last > first:
             candidate = text[first : last + 1]
             data = _parse_json(candidate)
@@ -1121,7 +1124,7 @@ def clean_json_response(text: str) -> dict | str | None:
             sugg_match = re.search(r'"suggestions"\s*:\s*\[(.*?)\]', text, re.DOTALL | re.IGNORECASE)
             if sugg_match:
                 sugg_str = sugg_match.group(1)
-                suggestions = [s.strip().strip('"').strip("'") for s in sugg_str.split(',')]
+                suggestions = [s.strip().strip('"').strip("'") for s in sugg_str.split(",")]
             return {"answer": clean_text, "suggestions": [s for s in suggestions if s]}
 
     # 5. Final Fallback: Return the raw text but strip common JSON artifacts
@@ -1132,41 +1135,41 @@ def clean_json_response(text: str) -> dict | str | None:
 
     # 6. Additional cleanup for system prompt leakage and commands
     # Remove common system prompt patterns that might leak through
-    
+
     # First, try to remove complete system prompt blocks
     system_prompt_patterns = [
-        r'^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n',
-        r'^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n',
-        r'^\*\*\*\s*Presek.*?\*\*\*\s*\n\n',
-        r'^\*\*\*\s*Пресек.*?\*\*\*\s*\n\n',
-        r'^PRASANjE:\s*.*?\n\n',  # Fallback for partial matches
-        r'^PITANJE:\s*.*?\n\n'     # Fallback for partial matches
+        r"^PITANJE:\s*.*?\n\nKONTEKST ZA ANALIZU:\s*.*?\n\n",
+        r"^PRASANjE:\s*.*?\n\nKONTEKST ZA ANALIZA:\s*.*?\n\n",
+        r"^\*\*\*\s*Presek.*?\*\*\*\s*\n\n",
+        r"^\*\*\*\s*Пресек.*?\*\*\*\s*\n\n",
+        r"^PRASANjE:\s*.*?\n\n",  # Fallback for partial matches
+        r"^PITANJE:\s*.*?\n\n",  # Fallback for partial matches
     ]
-    
+
     for pattern in system_prompt_patterns:
         match = re.match(pattern, text, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            text = text[match.end():].strip()
+            text = text[match.end() :].strip()
             break
-    
+
     # Remove individual command patterns from the beginning (after system prompt removal)
-    text = re.sub(r'^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*', '', text, flags=re.IGNORECASE)
-    
+    text = re.sub(r"^(?:PITANJE|PRASANjE|KONTEKST|ODGOVOR|ANSWER|REPORT):\s*", "", text, flags=re.IGNORECASE)
+
     # Remove JSON-like structures that might have leaked
-    text = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', '', text)
-    
+    text = re.sub(r'\{\s*"[^"]+"\s*:\s*"[^"]*"\s*\}\s*', "", text)
+
     # Remove any remaining asterisk-delimited patterns
-    text = re.sub(r'^\*\*\*\s*[^\*]+\*\*\*\s*', '', text, flags=re.DOTALL)
-    
+    text = re.sub(r"^\*\*\*\s*[^\*]+\*\*\*\s*", "", text, flags=re.DOTALL)
+
     # Clean up any remaining command-like patterns at the start
-    text = re.sub(r'^[A-Z\s]+:\s*', '', text)
-    
+    text = re.sub(r"^[A-Z\s]+:\s*", "", text)
+
     # Also remove common answer prefixes in both languages
-    text = re.sub(r'^(?:ODGOVOR|ANSWER):\s*', '', text, flags=re.IGNORECASE)
-    
+    text = re.sub(r"^(?:ODGOVOR|ANSWER):\s*", "", text, flags=re.IGNORECASE)
+
     # Final cleanup: remove empty lines and trim
-    text = '\n'.join(line for line in text.split('\n') if line.strip())
-    
+    text = "\n".join(line for line in text.split("\n") if line.strip())
+
     return text.replace("\\n", "\n").replace('\\"', '"').strip()
 
 
@@ -1195,9 +1198,7 @@ def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
         from tasks.utils import get_celery_queue_depth, pipeline_backpressure_active, synthesis_dispatch_deferred
 
         if not target_cluster_ids and (
-            pipeline_backpressure_active()
-            or synthesis_dispatch_deferred()
-            or get_celery_queue_depth() >= 100
+            pipeline_backpressure_active() or synthesis_dispatch_deferred() or get_celery_queue_depth() >= 100
         ):
             log.info("[ai/auto_summarize] Skipping cycle while celery queue backlog is high.")
             return

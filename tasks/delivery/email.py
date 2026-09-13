@@ -285,15 +285,23 @@ def _build_profile_weekly_digest_message(profile, clusters):
 
 def _build_profile_weekly_digest_html(profile, sections, unsubscribe_url, lang="sr"):
     is_mk = lang == "mk"
-    
+
     t_masthead = "ПРЕСЕК" if is_mk else "PRESEK"
     t_tagline = "Персонализиран неделен опсерваториум" if is_mk else "Personalizovani nedeljni opservatorijum"
     t_fokus_temi = "Фокус теми" if is_mk else "Fokus teme"
     t_fokus_izvori = "Фокус извори" if is_mk else "Fokus izvori"
     t_razlika = "ГЛАВНА РАЗЛИКА ВО ИЗВЕСТУВАЊЕТО" if is_mk else "GLAVNA RAZLIKA U IZVEŠTAVANJU"
     t_otvoreno = "ОТВОРЕНО ПРАШАЊЕ" if is_mk else "OTVORENO PITANJE"
-    t_footer = "Пресек е дигитален сервис за медиумска транспарентност и јавен увид." if is_mk else "Presek je digitalni servis za medijsku transparentnost i javni uvid."
-    t_disclaimer = "Ја добивате оваа порака бидејќи сте претплатени на неделниот личен преглед." if is_mk else "Ovu poruku dobijate jer ste pretplaćeni na nedeljni lični pregled."
+    t_footer = (
+        "Пресек е дигитален сервис за медиумска транспарентност и јавен увид."
+        if is_mk
+        else "Presek je digitalni servis za medijsku transparentnost i javni uvid."
+    )
+    t_disclaimer = (
+        "Ја добивате оваа порака бидејќи сте претплатени на неделниот личен преглед."
+        if is_mk
+        else "Ovu poruku dobijate jer ste pretplaćeni na nedeljni lični pregled."
+    )
     t_unsub = "Ако сакате да се одјавите, кликнете" if is_mk else "Ako želite da se odjavite, kliknite"
     t_here = "овде" if is_mk else "ovde"
     t_rights = "Сите права се задржани" if is_mk else "Sva prava zadržana"
@@ -312,7 +320,7 @@ def _build_profile_weekly_digest_html(profile, sections, unsubscribe_url, lang="
 
     sections_html = ""
     rendered_cluster_ids = set()
-    
+
     for section in sections:
         section_clusters = []
         for cluster in section.get("clusters") or []:
@@ -321,7 +329,7 @@ def _build_profile_weekly_digest_html(profile, sections, unsubscribe_url, lang="
                 continue
             rendered_cluster_ids.add(cluster_id)
             section_clusters.append(cluster)
-        
+
         if not section_clusters:
             continue
 
@@ -367,7 +375,7 @@ def _build_profile_weekly_digest_html(profile, sections, unsubscribe_url, lang="
           <td style="padding:32px 0 12px">
             <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td class="text-title sans" style="font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111827;padding-bottom:6px">{section.get('title')}</td>
+                    <td class="text-title sans" style="font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111827;padding-bottom:6px">{section.get("title")}</td>
                 </tr>
                 <tr>
                     <td class="double-border" style="height:2px;background:#111827"></td>
@@ -547,7 +555,7 @@ def send_profile_weekly_digests_task():
             lang = str(row.get("locale") or "sr").strip().lower()
 
             primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
-            
+
             # Record send event for analytics and dynamic tracking redirects
             send_event_id = _record_delivery_tracking_event(
                 row["sync_token"],
@@ -562,7 +570,7 @@ def send_profile_weekly_digests_task():
                         if str(item.get("cluster_id") or "").strip()
                     ],
                     "focus_topics": profile.get("followedTopics") or [],
-                    "focus_sources": profile.get("followedSources") or []
+                    "focus_sources": profile.get("followedSources") or [],
                 },
             )
 
@@ -579,22 +587,27 @@ def send_profile_weekly_digests_task():
                     _load_weekly_source_engagement(),
                 )
                 html_message = _build_profile_weekly_digest_html(profile, sections, unsubscribe_url, lang)
-                
+
                 # Replace links with dynamic tracking click redirection URLs
                 for cluster in clusters:
                     c_id = cluster["cluster_id"]
                     c_redirect_path = f"/cluster/{c_id}" if lang == "sr" else f"/mk/cluster/{c_id}"
-                    track_url = _tracked_delivery_url(send_event_id, "click", c_redirect_path) if send_event_id else f"{_PUBLIC_SITE_URL}{c_redirect_path}"
+                    track_url = (
+                        _tracked_delivery_url(send_event_id, "click", c_redirect_path)
+                        if send_event_id
+                        else f"{_PUBLIC_SITE_URL}{c_redirect_path}"
+                    )
                     html_message = html_message.replace(f"{{{{CLUSTER_LINK_{c_id}}}}}", track_url)
 
                 subject = "Пресек: Вашиот неделен извештај" if lang == "mk" else "Presek: Vaš nedeljni izveštaj"
-                
+
                 # Deliver HTML email via SMTP
                 smtp_user = os.environ.get("SMTP_USER", "")
                 smtp_pass = os.environ.get("SMTP_PASS", "")
-                
+
                 if smtp_user and smtp_pass:
                     from tasks.utils import send_email
+
                     if send_email(html_message, subject, smtp_user, smtp_pass, target):
                         db.execute(
                             "UPDATE synced_delivery_subscriptions SET last_weekly_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
@@ -612,8 +625,10 @@ def send_profile_weekly_digests_task():
 
                 click_url = _tracked_delivery_url(send_event_id, "open", "/briefing") if send_event_id else None
                 click_track_url = _tracked_delivery_url(send_event_id, "click", "/briefing") if send_event_id else None
-                message_with_link = message if not click_track_url else f"{message}\n\nOtvori pregled: {click_track_url}"
-                
+                message_with_link = (
+                    message if not click_track_url else f"{message}\n\nOtvori pregled: {click_track_url}"
+                )
+
                 if _send_ntfy_message(
                     target,
                     "Presek · Nedelen pregled",

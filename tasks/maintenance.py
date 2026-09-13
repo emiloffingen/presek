@@ -115,7 +115,7 @@ def _fetch_homepage_payload(lang: str) -> dict:
 
     url = f"http://127.0.0.1:5001/api/home?lang={lang}"
     try:
-        with urllib.request.urlopen(url, timeout=30) as response:
+        with urllib.request.urlopen(url, timeout=30) as response:  # nosec B310 - fixed localhost URL, lang is internal sr/mk
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         log.warning("[maintenance] Failed to fetch homepage payload for %s: %s", lang, exc)
@@ -428,8 +428,9 @@ def refresh_fallback_syntheses_task(limit=None):
     if budget <= 0:
         return {"skipped": True, "reason": "hourly_cap"}
     batch_limit = min(batch_limit, budget)
-    rows = db.execute(
-        """
+    rows = (
+        db.execute(
+            """
         SELECT cluster_id, MAX(created_at) AS latest_at
         FROM cluster_summaries
         WHERE created_at >= NOW() - INTERVAL '7 days'
@@ -442,13 +443,16 @@ def refresh_fallback_syntheses_task(limit=None):
         ORDER BY latest_at ASC
         LIMIT %s
         """,
-        (max(batch_limit * 4, batch_limit),),
-        read_only=True,
-    ) or []
+            (max(batch_limit * 4, batch_limit),),
+            read_only=True,
+        )
+        or []
+    )
 
     homepage_ids = set(_collect_homepage_cluster_ids())
     ordered_rows = sorted(
-        rows, key=lambda row: (str(row["cluster_id"]) not in homepage_ids, row["latest_at"]),
+        rows,
+        key=lambda row: (str(row["cluster_id"]) not in homepage_ids, row["latest_at"]),
     )
 
     enqueued = 0
@@ -522,8 +526,9 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
 
     try:
         if homepage_ids is not None:
-            rows = db.execute(
-                """
+            rows = (
+                db.execute(
+                    """
                 SELECT id
                 FROM articles
                 WHERE summary IS NULL
@@ -532,12 +537,15 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
                 ORDER BY created_at DESC
                 LIMIT %s
                 """,
-                (max(1, int(hours)), homepage_ids, scaled_limit),
-                read_only=True,
-            ) or []
+                    (max(1, int(hours)), homepage_ids, scaled_limit),
+                    read_only=True,
+                )
+                or []
+            )
         else:
-            rows = db.execute(
-                """
+            rows = (
+                db.execute(
+                    """
                 SELECT id
                 FROM articles
                 WHERE summary IS NULL
@@ -545,9 +553,11 @@ def catch_up_recent_summaries_task(hours=72, limit=400):
                 ORDER BY created_at DESC
                 LIMIT %s
                 """,
-                (max(1, int(hours)), scaled_limit),
-                read_only=True,
-            ) or []
+                    (max(1, int(hours)), scaled_limit),
+                    read_only=True,
+                )
+                or []
+            )
         article_ids = [int(row["id"]) for row in rows]
         if not article_ids:
             return {"enqueued": 0}
@@ -595,8 +605,9 @@ def catch_up_deferred_crawls_task(limit=None):
     if dispatch_limit <= 0:
         return {"skipped": True, "reason": "no_headroom", "depth": depth}
 
-    rows = db.execute(
-        """
+    rows = (
+        db.execute(
+            """
         SELECT id, link
         FROM articles
         WHERE full_content IS NULL
@@ -604,9 +615,11 @@ def catch_up_deferred_crawls_task(limit=None):
         ORDER BY created_at DESC
         LIMIT %s
         """,
-        (dispatch_limit,),
-        read_only=True,
-    ) or []
+            (dispatch_limit,),
+            read_only=True,
+        )
+        or []
+    )
 
     enqueued = 0
     for row in rows:
@@ -673,8 +686,9 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
         log.info("[maintenance] Skipping cluster synthesis catch-up while synthesis queue backlog is high.")
         return {"skipped": True, "reason": "synthesis_backlog"}
 
-    rows = db.execute(
-        """
+    rows = (
+        db.execute(
+            """
         SELECT a.cluster_id, COUNT(a.id) AS source_count
         FROM articles a
         LEFT JOIN cluster_summaries cs ON cs.cluster_id = a.cluster_id
@@ -685,9 +699,11 @@ def catch_up_cluster_syntheses_task(hours=48, limit=50):
         ORDER BY MAX(a.created_at) DESC
         LIMIT %s
         """,
-        (max(1, int(hours)), max(1, int(limit))),
-        read_only=True,
-    ) or []
+            (max(1, int(hours)), max(1, int(limit))),
+            read_only=True,
+        )
+        or []
+    )
 
     enqueued = 0
     for idx, row in enumerate(rows):
@@ -720,7 +736,9 @@ def prioritize_homepage_syntheses_task(limit=None):
     synthesis_deferred = _synthesis_dispatch_deferred()
     fast_track_congested = fast_track_dispatches_deferred()
     if synthesis_deferred and fast_track_congested:
-        log.info("[maintenance] Skipping homepage synthesis prioritization while synthesis and fast-track are congested.")
+        log.info(
+            "[maintenance] Skipping homepage synthesis prioritization while synthesis and fast-track are congested."
+        )
         return {
             "skipped": True,
             "reason": "synthesis_and_fast_track_backlog",
@@ -838,8 +856,9 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
     if budget <= 0:
         return {"skipped": True, "reason": "hourly_cap"}
     batch_limit = min(batch_limit, budget)
-    rows = db.execute(
-        """
+    rows = (
+        db.execute(
+            """
         SELECT cs.cluster_id, cs.lang, cs.quality_score, COUNT(a.id) AS source_count
         FROM cluster_summaries cs
         JOIN articles a ON a.cluster_id = cs.cluster_id
@@ -851,9 +870,11 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
         ORDER BY cs.quality_score ASC, source_count DESC, MAX(a.created_at) DESC
         LIMIT %s
         """,
-        (float(score_floor), max(batch_limit * 4, batch_limit)),
-        read_only=True,
-    ) or []
+            (float(score_floor), max(batch_limit * 4, batch_limit)),
+            read_only=True,
+        )
+        or []
+    )
 
     homepage_ids = set(_collect_homepage_layout_cluster_ids()) if _homepage_synthesis_only() else set()
     ordered_rows = rows
@@ -902,10 +923,7 @@ def validate_cluster_images_task():
     if stats["replaced"] or stats["cleared"]:
         invalidate_public_data_caches()
 
-    return (
-        f"Checked {stats['checked']} clusters, "
-        f"replaced {stats['replaced']}, cleared {stats['cleared']} images."
-    )
+    return f"Checked {stats['checked']} clusters, replaced {stats['replaced']}, cleared {stats['cleared']} images."
 
 
 @maintenance_task(name="tasks.maintenance.backfill_weak_representative_images_task")
@@ -929,11 +947,7 @@ def backfill_weak_representative_images_task(days=30, limit=500, check_reachabil
     if not rows:
         return "No clusters found for image backfill."
 
-    candidates = [
-        row
-        for row in rows
-        if classify_image_url(row.get("representative_image"))[0] != "ok"
-    ]
+    candidates = [row for row in rows if classify_image_url(row.get("representative_image"))[0] != "ok"]
 
     if not candidates:
         return f"Checked {len(rows)} clusters, none had weak representative images."
@@ -993,9 +1007,7 @@ def repair_cluster_representative_image(
         return "unchanged"
 
     if img_url.startswith("http"):
-        log.info(
-            f"[maintenance] Image needs replacement for cluster {cluster_id}: {img_url} ({quality})"
-        )
+        log.info(f"[maintenance] Image needs replacement for cluster {cluster_id}: {img_url} ({quality})")
 
     articles = db.execute(
         """
@@ -1238,10 +1250,10 @@ def prune_system_logs_and_releases():
     releases_dir = app_root / "releases"
     if releases_dir.exists():
         all_releases = sorted(
-            [d for d in releases_dir.iterdir() if d.is_dir()], key=lambda x: x.stat().st_mtime,
-            reverse=True
+            [d for d in releases_dir.iterdir() if d.is_dir()], key=lambda x: x.stat().st_mtime, reverse=True
         )
         for old_rel in all_releases[5:]:
             log.info(f"[maintenance] Deleting old release: {old_rel}")
             import shutil
+
             shutil.rmtree(old_rel)

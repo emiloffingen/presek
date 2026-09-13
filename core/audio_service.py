@@ -23,18 +23,14 @@ _min_generation_interval = 2.0  # seconds between generations
 _STATIC_ROOT = "/home/emiloffingen/presek-runtime/shared/static"
 if not os.path.exists(_STATIC_ROOT):
     # Fallback to local dev path
-    _STATIC_ROOT = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "static")
-    )
+    _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 
 _AUDIO_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE", "auto").strip().lower()
 _SR_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_SR", "edge").strip().lower()
 _MK_TTS_ENGINE = os.environ.get("AUDIO_TTS_ENGINE_MK", "edge").strip().lower()
 _OMNIVOICE_NUM_STEP = max(1, int(os.environ.get("OMNIVOICE_NUM_STEP", "8")))
-_SR_TTS_SPEED_FACTOR = max(
-    1.0, min(2.0, float(os.environ.get("SR_TTS_SPEED_FACTOR", "1.2")))
-)
+_SR_TTS_SPEED_FACTOR = max(1.0, min(2.0, float(os.environ.get("SR_TTS_SPEED_FACTOR", "1.2"))))
 
 
 def clean_briefing_text_for_tts(text: str) -> str:
@@ -206,9 +202,7 @@ class AudioService:
                 return None
 
             try:
-                log.info(
-                    "[audio] Loading OmniVoice model (first time - this may take CPU resources)..."
-                )
+                log.info("[audio] Loading OmniVoice model (first time - this may take CPU resources)...")
                 _model_load_attempts += 1
 
                 # Try to use GPU if available, otherwise fall back to CPU
@@ -217,19 +211,12 @@ class AudioService:
                 device = (
                     "cuda"
                     if torch.cuda.is_available()
-                    else (
-                        "mps"
-                        if hasattr(torch.backends, "mps")
-                        and torch.backends.mps.is_available()
-                        else "cpu"
-                    )
+                    else ("mps" if hasattr(torch.backends, "mps") and torch.backends.mps.is_available() else "cpu")
                 )
 
                 from omnivoice import OmniVoice
 
-                _omnivoice_model = OmniVoice.from_pretrained(
-                    "k2-fsa/OmniVoice", device_map=device
-                )
+                _omnivoice_model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map=device)
 
                 log.info(f"[audio] OmniVoice model loaded successfully on {device}")
                 return _omnivoice_model
@@ -260,15 +247,11 @@ class AudioService:
             rate_str = "+0%"
             if lang == "sr" and _SR_TTS_ENGINE == "gtts":
                 rate_percent = int((_SR_TTS_SPEED_FACTOR - 1.0) * 100)
-                rate_str = (
-                    f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
-                )
+                rate_str = f"+{rate_percent}%" if rate_percent >= 0 else f"{rate_percent}%"
 
             async def _do_generate():
                 # Use high-quality parameters for better audio output
-                communicate = edge_tts.Communicate(
-                    speech_text, voice, rate=rate_str, volume="+0%", pitch="+0Hz"
-                )
+                communicate = edge_tts.Communicate(speech_text, voice, rate=rate_str, volume="+0%", pitch="+0Hz")
                 await communicate.save(filepath)
 
             try:
@@ -293,7 +276,7 @@ class AudioService:
             # Enhance audio quality using FFmpeg post-processing
             if cls._enhance_edge_audio_quality(filepath):
                 log.info(f"[audio] Enhanced Edge TTS audio quality for {filepath}")
-            
+
             return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
         except Exception as e:
             log.error(f"[audio] Edge TTS audio generation failed: {e}")
@@ -304,10 +287,10 @@ class AudioService:
         """Enhance Edge TTS audio quality using FFmpeg post-processing."""
         try:
             temp_file = filepath.replace(".mp3", "_enhanced.mp3")
-            
+
             # Special processing for Serbian audio to reduce robotic sound
             is_serbian = "_sr_" in filepath or "_sr_v3" in filepath
-            
+
             # Use FFmpeg to improve audio quality:
             # - Increase sample rate from 24kHz to 48kHz
             # - Increase bitrate from 48kbps to 192kbps
@@ -315,38 +298,52 @@ class AudioService:
             cmd = [
                 "ffmpeg",
                 "-y",  # Overwrite output file if it exists
-                "-i", filepath,
-                "-af", "loudnorm=I=-16:TP=-1.5",  # Normalize audio levels
+                "-i",
+                filepath,
+                "-af",
+                "loudnorm=I=-16:TP=-1.5",  # Normalize audio levels
             ]
-            
+
             # Add Serbian-specific processing to reduce robotic artifacts
             if is_serbian:
-                cmd.extend([
-                    "-af", "aecho=0.8:0.9:1000:0.3",  # Add subtle echo to reduce robotic sound
-                    "-af", "highpass=f=200,lowpass=f=3000",  # Filter extreme frequencies
-                ])
-            
-            cmd.extend([
-                "-ar", "48000",  # Increase sample rate to 48kHz
-                "-b:a", "192k",  # Increase bitrate to 192kbps
-                "-ac", "2",  # Convert to stereo for better quality
-                "-loglevel", "quiet",
-                temp_file
-            ])
-            
+                cmd.extend(
+                    [
+                        "-af",
+                        "aecho=0.8:0.9:1000:0.3",  # Add subtle echo to reduce robotic sound
+                        "-af",
+                        "highpass=f=200,lowpass=f=3000",  # Filter extreme frequencies
+                    ]
+                )
+
+            cmd.extend(
+                [
+                    "-ar",
+                    "48000",  # Increase sample rate to 48kHz
+                    "-b:a",
+                    "192k",  # Increase bitrate to 192kbps
+                    "-ac",
+                    "2",  # Convert to stereo for better quality
+                    "-loglevel",
+                    "quiet",
+                    temp_file,
+                ]
+            )
+
             result = subprocess.run(cmd, capture_output=True, timeout=60)
-            
+
             if result.returncode == 0 and os.path.exists(temp_file):
                 # Replace original file with enhanced version
                 os.replace(temp_file, filepath)
                 return True
             else:
-                log.warning(f"[audio] FFmpeg audio enhancement failed: {result.stderr.decode() if result.stderr else 'unknown error'}")
+                log.warning(
+                    f"[audio] FFmpeg audio enhancement failed: {result.stderr.decode() if result.stderr else 'unknown error'}"
+                )
                 # Clean up temp file if it exists
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
                 return False
-                
+
         except Exception as e:
             log.warning(f"[audio] Audio quality enhancement failed: {e}")
             return False
@@ -361,9 +358,7 @@ class AudioService:
 
         if elapsed < _min_generation_interval:
             sleep_time = _min_generation_interval - elapsed
-            log.info(
-                f"[audio] Rate limiting: sleeping for {sleep_time:.2f}s to prevent CPU overload"
-            )
+            log.info(f"[audio] Rate limiting: sleeping for {sleep_time:.2f}s to prevent CPU overload")
             time.sleep(sleep_time)
 
         _last_generation_time = time.time()
@@ -393,11 +388,7 @@ class AudioService:
             if not chunk_audio or len(chunk_audio) == 0:
                 log.error("[audio] OmniVoice generated empty array for single chunk")
                 return np.array([], dtype=np.float32)
-            return (
-                np.concatenate(chunk_audio)
-                if isinstance(chunk_audio, (list, tuple))
-                else chunk_audio
-            )
+            return np.concatenate(chunk_audio) if isinstance(chunk_audio, (list, tuple)) else chunk_audio
 
         # Split long text into chunks
         chunks = []
@@ -414,14 +405,12 @@ class AudioService:
         if current_chunk:
             chunks.append(current_chunk)
 
-        log.info(
-            f"[audio] Processing {len(chunks)} text chunks to reduce CPU/memory usage"
-        )
+        log.info(f"[audio] Processing {len(chunks)} text chunks to reduce CPU/memory usage")
 
         # Generate audio for each chunk and concatenate
         audio_segments = []
         for i, chunk in enumerate(chunks):
-            log.debug(f"[audio] Generating chunk {i+1}/{len(chunks)}...")
+            log.debug(f"[audio] Generating chunk {i + 1}/{len(chunks)}...")
             chunk_audio = model.generate(
                 text=chunk,
                 language=lang,
@@ -429,7 +418,7 @@ class AudioService:
                 num_step=_OMNIVOICE_NUM_STEP,
             )
             if not chunk_audio or len(chunk_audio) == 0:
-                log.error(f"[audio] OmniVoice generated empty array for chunk {i+1}")
+                log.error(f"[audio] OmniVoice generated empty array for chunk {i + 1}")
                 continue
             audio_segments.extend(chunk_audio)
 
@@ -601,9 +590,7 @@ class AudioService:
                 if os.path.exists(wav_path):
                     os.remove(wav_path)
             except Exception as cleanup_e:
-                log.warning(
-                    f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}"
-                )
+                log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
 
     @staticmethod
     def get_audio_path_and_url(date_str: str, lang: str) -> tuple[str, str]:
@@ -614,9 +601,7 @@ class AudioService:
         return filepath, urlpath
 
     @classmethod
-    def generate_briefing_audio(
-        cls, date_str: str, content: str, lang: str
-    ) -> Optional[str]:
+    def generate_briefing_audio(cls, date_str: str, content: str, lang: str) -> Optional[str]:
         """
         Synthesizes daily briefing text into high-quality speech.
         Uses the configured engine for the target language, with fallbacks.
@@ -633,53 +618,39 @@ class AudioService:
             log.warning("[audio] Empty briefing content, skipping audio synthesis.")
             return None
 
-        log.info(
-            f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]..."
-        )
+        log.info(f"[audio] Synthesizing daily briefing for {date_str} ({lang}) [Length: {len(clean_text)} chars]...")
 
         engine = cls._engine_for_lang(lang)
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using gTTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
             log.info("[audio] gTTS failed, falling back to Edge TTS")
             if cls._generate_edge_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using Edge TTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
             log.info("[audio] Edge TTS also failed, falling back to local OmniVoice.")
             engine = "omnivoice"
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using Edge TTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return version_audio_url(filepath, urlpath)
 
-            log.info(
-                f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback."
-            )
+            log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
             if lang in {"sr", "mk"}:
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
 
             if engine != "omnivoice":
-                log.info(
-                    f"[audio] No high-quality fallback for {lang}, using espeak-ng."
-                )
+                log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
                 if cls._generate_espeak_mp3(clean_text, filepath, lang):
                     return version_audio_url(filepath, urlpath)
                 return None
 
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using espeak-ng at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
                 return version_audio_url(filepath, urlpath)
             return None
 
@@ -688,39 +659,25 @@ class AudioService:
 
         for attempt in range(1, max_retries + 1):
             try:
-                log.info(
-                    f"[audio] Attempting local OmniVoice speech synthesis (attempt {attempt}/{max_retries})..."
-                )
+                log.info(f"[audio] Attempting local OmniVoice speech synthesis (attempt {attempt}/{max_retries})...")
                 import soundfile as sf
 
                 # Load pretrained OmniVoice model dynamically on CPU
                 # Use cached model instead of loading each time
                 model = cls._get_omnivoice_model()
                 if model is None:
-                    log.error(
-                        "[audio] Could not load OmniVoice model, aborting briefing audio generation"
-                    )
+                    log.error("[audio] Could not load OmniVoice model, aborting briefing audio generation")
                     return None
 
                 cls._lower_process_priority()
                 cls._enforce_rate_limit()
 
                 # Use voice design to select premium male/female regional accents
-                instruct_desc = (
-                    "female, young adult"
-                    if lang == "sr" or lang == "mk"
-                    else "male, young adult"
-                )
+                instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
 
-                log.info(
-                    f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]..."
-                )
+                log.info(f"[audio] Synthesizing text with OmniVoice [Instruct: {instruct_desc}]...")
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
-                audio = cls._coerce_audio_array(
-                    cls._generate_audio_in_chunks(
-                        model, clean_text, instruct_desc, lang
-                    )
-                )
+                audio = cls._coerce_audio_array(cls._generate_audio_in_chunks(model, clean_text, instruct_desc, lang))
                 if audio.size == 0:
                     log.error("[audio] OmniVoice returned empty audio array")
                     return None
@@ -751,35 +708,25 @@ class AudioService:
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
                     )
-                    log.info(
-                        f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}"
-                    )
+                    log.info(f"[audio] Successfully synthesized briefing using local OmniVoice at {filepath}")
                     return version_audio_url(filepath, urlpath)
                 finally:
                     # Cleanup WAV file in finally block to ensure it always gets removed
                     try:
                         if os.path.exists(wav_path):
                             os.remove(wav_path)
-                            log.debug(
-                                f"[audio] Cleaned up temporary WAV file: {wav_path}"
-                            )
+                            log.debug(f"[audio] Cleaned up temporary WAV file: {wav_path}")
                     except Exception as cleanup_e:
-                        log.warning(
-                            f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}"
-                        )
+                        log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
             except Exception as e:
-                log.error(
-                    f"[audio] Local OmniVoice speech synthesis attempt {attempt} failed: {e}"
-                )
+                log.error(f"[audio] Local OmniVoice speech synthesis attempt {attempt} failed: {e}")
                 if attempt < max_retries:
                     import time
 
                     log.info(f"[audio] Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
 
-        log.error(
-            "[audio] Failed to synthesize briefing audio since OmniVoice failed after all retries."
-        )
+        log.error("[audio] Failed to synthesize briefing audio since OmniVoice failed after all retries.")
         log.info("[audio] Attempting absolute final fallback to espeak-ng.")
         if cls._generate_espeak_mp3(clean_text, filepath, lang):
             return version_audio_url(filepath, urlpath)
@@ -794,9 +741,7 @@ class AudioService:
         return filepath, urlpath
 
     @classmethod
-    def generate_cluster_audio(
-        cls, cluster_id: str, content: str, lang: str, force: bool = False
-    ) -> Optional[str]:
+    def generate_cluster_audio(cls, cluster_id: str, content: str, lang: str, force: bool = False) -> Optional[str]:
         """
         Synthesizes cluster generated article/synthesis text into high-quality speech.
         Uses the configured engine for the target language, with fallbacks.
@@ -811,9 +756,7 @@ class AudioService:
             log.warning("[audio] Empty cluster content, skipping audio synthesis.")
             return None
 
-        content_hash = hashlib.md5(
-            clean_text.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()
+        content_hash = hashlib.md5(clean_text.encode("utf-8"), usedforsecurity=False).hexdigest()
         hash_filepath = filepath.replace(".mp3", ".hash")
 
         # Stale check: if force is False but file exists, verify its content hash
@@ -823,9 +766,7 @@ class AudioService:
                     with open(hash_filepath, "r", encoding="utf-8") as f:
                         stored_hash = f.read().strip()
                     if stored_hash == content_hash:
-                        log.info(
-                            f"[audio] Cluster audio already exists and matches hash for {cluster_id} ({lang})."
-                        )
+                        log.info(f"[audio] Cluster audio already exists and matches hash for {cluster_id} ({lang}).")
                         return version_audio_url(filepath, urlpath)
                     else:
                         log.info(
@@ -833,9 +774,7 @@ class AudioService:
                         )
                         force = True
                 except Exception as he:
-                    log.warning(
-                        f"[audio] Failed to read hash file {hash_filepath}: {he}"
-                    )
+                    log.warning(f"[audio] Failed to read hash file {hash_filepath}: {he}")
             else:
                 # To prevent CPU spike on old clusters that have audios but no hash,
                 # we just write the current hash now and keep the existing audio.
@@ -847,20 +786,14 @@ class AudioService:
                     )
                     return version_audio_url(filepath, urlpath)
                 except Exception as he:
-                    log.warning(
-                        f"[audio] Failed to write hash file {hash_filepath}: {he}"
-                    )
+                    log.warning(f"[audio] Failed to write hash file {hash_filepath}: {he}")
 
         if force and os.path.exists(filepath):
             try:
                 os.remove(filepath)
-                log.info(
-                    f"[audio] Removed existing cluster audio before regeneration: {filepath}"
-                )
+                log.info(f"[audio] Removed existing cluster audio before regeneration: {filepath}")
             except OSError as e:
-                log.error(
-                    f"[audio] Failed to remove existing cluster audio {filepath}: {e}"
-                )
+                log.error(f"[audio] Failed to remove existing cluster audio {filepath}: {e}")
                 return None
             try:
                 if os.path.exists(hash_filepath):
@@ -876,53 +809,39 @@ class AudioService:
                 log.warning(f"[audio] Failed to write hash file {hash_filepath}: {he}")
             return version_audio_url(filepath, urlpath)
 
-        log.info(
-            f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]..."
-        )
+        log.info(f"[audio] Synthesizing cluster audio for {cluster_id} ({lang}) [Length: {len(clean_text)} chars]...")
 
         engine = cls._engine_for_lang(lang)
         if engine == "gtts":
             if cls._generate_gtts_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using gTTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using gTTS at {filepath}")
                 return save_hash_and_return()
             log.info("[audio] gTTS failed, falling back to Edge TTS")
             if cls._generate_edge_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using Edge TTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return save_hash_and_return()
             log.info("[audio] Edge TTS also failed, falling back to local OmniVoice.")
             engine = "omnivoice"
 
         if engine == "edge":
             if cls._generate_edge_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using Edge TTS at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using Edge TTS at {filepath}")
                 return save_hash_and_return()
 
-            log.info(
-                f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback."
-            )
+            log.info(f"[audio] Edge TTS failed for {lang}, attempting high-quality fallback.")
             if lang in {"sr", "mk"}:
                 # Set engine to omnivoice and continue to the OmniVoice section
                 engine = "omnivoice"
 
             if engine != "omnivoice":
-                log.info(
-                    f"[audio] No high-quality fallback for {lang}, using espeak-ng."
-                )
+                log.info(f"[audio] No high-quality fallback for {lang}, using espeak-ng.")
                 if cls._generate_espeak_mp3(clean_text, filepath, lang):
                     return save_hash_and_return()
                 return None
 
         if engine != "omnivoice":
             if cls._generate_espeak_mp3(clean_text, filepath, lang):
-                log.info(
-                    f"[audio] Successfully synthesized audio using espeak-ng at {filepath}"
-                )
+                log.info(f"[audio] Successfully synthesized audio using espeak-ng at {filepath}")
                 return save_hash_and_return()
             return None
 
@@ -939,26 +858,16 @@ class AudioService:
                 # Use cached model instead of loading each time
                 model = cls._get_omnivoice_model()
                 if model is None:
-                    log.error(
-                        "[audio] Could not load OmniVoice model, aborting cluster audio generation"
-                    )
+                    log.error("[audio] Could not load OmniVoice model, aborting cluster audio generation")
                     return None
 
                 cls._lower_process_priority()
                 cls._enforce_rate_limit()
 
-                instruct_desc = (
-                    "female, young adult"
-                    if lang == "sr" or lang == "mk"
-                    else "male, young adult"
-                )
+                instruct_desc = "female, young adult" if lang == "sr" or lang == "mk" else "male, young adult"
 
                 # Process text in chunks to reduce memory usage and prevent CPU spikes
-                audio = cls._coerce_audio_array(
-                    cls._generate_audio_in_chunks(
-                        model, clean_text, instruct_desc, lang
-                    )
-                )
+                audio = cls._coerce_audio_array(cls._generate_audio_in_chunks(model, clean_text, instruct_desc, lang))
                 if audio.size == 0:
                     log.error("[audio] OmniVoice returned empty cluster audio array")
                     return None
@@ -988,35 +897,25 @@ class AudioService:
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
                     )
-                    log.info(
-                        f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}"
-                    )
+                    log.info(f"[audio] Successfully synthesized cluster audio using local OmniVoice at {filepath}")
                     return save_hash_and_return()
                 finally:
                     # Cleanup WAV file in finally block to ensure it always gets removed
                     try:
                         if os.path.exists(wav_path):
                             os.remove(wav_path)
-                            log.debug(
-                                f"[audio] Cleaned up temporary WAV file: {wav_path}"
-                            )
+                            log.debug(f"[audio] Cleaned up temporary WAV file: {wav_path}")
                     except Exception as cleanup_e:
-                        log.warning(
-                            f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}"
-                        )
+                        log.warning(f"[audio] Failed to cleanup WAV file {wav_path}: {cleanup_e}")
             except Exception as e:
-                log.error(
-                    f"[audio] Local OmniVoice cluster speech synthesis attempt {attempt} failed: {e}"
-                )
+                log.error(f"[audio] Local OmniVoice cluster speech synthesis attempt {attempt} failed: {e}")
                 if attempt < max_retries:
                     import time
 
                     log.info(f"[audio] Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
 
-        log.error(
-            "[audio] Failed to synthesize cluster audio since OmniVoice failed after all retries."
-        )
+        log.error("[audio] Failed to synthesize cluster audio since OmniVoice failed after all retries.")
         log.info("[audio] Attempting absolute final fallback to espeak-ng.")
         if cls._generate_espeak_mp3(clean_text, filepath, lang):
             return save_hash_and_return()

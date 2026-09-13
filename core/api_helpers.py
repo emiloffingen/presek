@@ -62,7 +62,7 @@ def is_safe_url(url: str) -> bool:
     BLOCKED_HOSTNAMES = {
         "localhost",
         "127.0.0.1",
-        "0.0.0.0",
+        "0.0.0.0",  # nosec B104 - blocklist literal, not a socket bind
         "::1",
         "0:0:0:0:0:0:0:1",
         "metadata",
@@ -82,12 +82,7 @@ def is_safe_url(url: str) -> bool:
     ):
         try:
             ip_address = ipaddress.ip_address(hostname_only)
-            if (
-                ip_address.is_private
-                or ip_address.is_loopback
-                or ip_address.is_link_local
-                or ip_address.is_reserved
-            ):
+            if ip_address.is_private or ip_address.is_loopback or ip_address.is_link_local or ip_address.is_reserved:
                 return False
         except ValueError:
             pass
@@ -107,12 +102,7 @@ def is_safe_url(url: str) -> bool:
             ip = addr_info[4][0]
             try:
                 ip_obj = ipaddress.ip_address(ip)
-                if (
-                    ip_obj.is_private
-                    or ip_obj.is_loopback
-                    or ip_obj.is_link_local
-                    or ip_obj.is_reserved
-                ):
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved:
                     return False
             except ValueError:
                 continue
@@ -186,25 +176,18 @@ def _clean_text_block(value) -> str:
     if not text:
         return ""
     text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).replace("```", "")
-    text = re.sub(
-        r"^\s*(summary|rezime|sublimat|clanci)\s*:\s*", "", text, flags=re.IGNORECASE
-    )
+    text = re.sub(r"^\s*(summary|rezime|sublimat|clanci)\s*:\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^[•*\-\u2022]+\s*", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
-def _infer_perspective_angle(
-    content: str, lang: str = "sr", fallback: str = None
-) -> str:
+def _infer_perspective_angle(content: str, lang: str = "sr", fallback: str = None) -> str:
     lowered = content.lower()
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = fallback or L["angle.key"]
 
-    if any(
-        token in lowered
-        for token in ("razlik", "akcenat", "formulac", "naglas", "разлик", "акцент")
-    ):
+    if any(token in lowered for token in ("razlik", "akcenat", "formulac", "naglas", "разлик", "акцент")):
         return L["angle.different"]
     if any(
         token in lowered
@@ -232,15 +215,9 @@ def _infer_perspective_angle(
         )
     ):
         return L["angle.unclear"]
-    if any(
-        token in lowered
-        for token in ("reakcija", "odgovor", "komentar", "osuda", "реакција", "одговор")
-    ):
+    if any(token in lowered for token in ("reakcija", "odgovor", "komentar", "osuda", "реакција", "одговор")):
         return L["angle.reaction"]
-    if any(
-        token in lowered
-        for token in ("kontekst", "pozadina", "siri", "контекст", "позадина", "поширок")
-    ):
+    if any(token in lowered for token in ("kontekst", "pozadina", "siri", "контекст", "позадина", "поширок")):
         return L["angle.context"]
     return fallback
 
@@ -253,11 +230,7 @@ def normalize_summary_text(raw_summary) -> str:
 
     if isinstance(raw_summary, list):
         cleaned_lines = [extract_clean_summary_text(line) for line in raw_summary]
-        return "\n".join(
-            f"• {_clean_text_block(line)}"
-            for line in cleaned_lines
-            if _clean_text_block(line)
-        )
+        return "\n".join(f"• {_clean_text_block(line)}" for line in cleaned_lines if _clean_text_block(line))
 
     text = extract_clean_summary_text(str(raw_summary).replace("\r", "\n"))
     lines = []
@@ -338,16 +311,8 @@ def normalize_perspectives(raw_perspectives, lang: str = "sr") -> list[dict]:
             continue
         if not isinstance(item, dict):
             continue
-        angle = _clean_text_block(
-            item.get("angle")
-            or item.get("label")
-            or item.get("title")
-            or item.get("name")
-            or ""
-        )
-        content = _clean_text_block(
-            item.get("content") or item.get("text") or item.get("description") or ""
-        )
+        angle = _clean_text_block(item.get("angle") or item.get("label") or item.get("title") or item.get("name") or "")
+        content = _clean_text_block(item.get("content") or item.get("text") or item.get("description") or "")
         if not content:
             continue
         lowered_content = content.lower()
@@ -430,9 +395,7 @@ def normalize_server_delivery_subscription(payload) -> dict:
     }
 
 
-def default_related_questions(
-    question: str, category: Optional[str] = None, lang: str = "sr"
-) -> list[str]:
+def default_related_questions(question: str, category: Optional[str] = None, lang: str = "sr") -> list[str]:
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = [
         L["q.development"],
@@ -501,8 +464,7 @@ def related_questions_from_context(
     ):
         add(L["q.next"])
     if has_multiple_sources and not any(
-        token in lowered
-        for token in ("najvazniji", "novo", "glavno", "најважно", "ново", "главно")
+        token in lowered for token in ("najvazniji", "novo", "glavno", "најважно", "ново", "главно")
     ):
         add(L["q.important"])
 
@@ -578,15 +540,8 @@ def rank_cluster_citations(
         article_terms = text_terms(article_text)
         overlap = len(combined_terms & article_terms)
         preferred_bonus = 5 if idx in preferred_order else 0
-        title_bonus = (
-            1 if question_terms & text_terms(str(article.get("title") or "")) else 0
-        )
-        trust_bonus = (
-            1
-            if get_source_trust_label(str(article.get("source") or ""))
-            == "Visoko poverenje"
-            else 0
-        )
+        title_bonus = 1 if question_terms & text_terms(str(article.get("title") or "")) else 0
+        trust_bonus = 1 if get_source_trust_label(str(article.get("source") or "")) == "Visoko poverenje" else 0
         signal = (
             signal_by_key.get(
                 (

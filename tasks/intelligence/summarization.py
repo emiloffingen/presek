@@ -9,7 +9,7 @@ from nlp import (
     summarize_article_fallback,
 )
 from nlp.utils import extract_clean_summary_text
-from tasks.intelligence._constants import *  # noqa: F403
+from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.intelligence._queue import _skip_when_intel_backlog
 from tasks.utils import (
     invalidate_public_data_caches,
@@ -63,7 +63,13 @@ def standardize_article_styles_batch_task(article_ids):
         standardize_article_style_task(article_id)
 
 
-@celery_app.task(name="tasks.intelligence.summarize_article_task", rate_limit="50/m", autoretry_for=(Exception,), retry_backoff=True, max_retries=2)
+@celery_app.task(
+    name="tasks.intelligence.summarize_article_task",
+    rate_limit="50/m",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    max_retries=2,
+)
 def summarize_article_task(article_id, final_title=None, local_only=False):
     """Refines article content using AI summarization."""
     row = db.execute_one(
@@ -86,9 +92,7 @@ def summarize_article_task(article_id, final_title=None, local_only=False):
     prompt_parts = [f"Naslov: {str(title or '').strip()}"]
     if context_text:
         prompt_parts.append(
-            f"Tekst za rezimiranje:\n<article_content>\n{
-                str(context_text).strip()[
-                    :10000]}\n</article_content>"
+            f"Tekst za rezimiranje:\n<article_content>\n{str(context_text).strip()[:10000]}\n</article_content>"
         )
     prompt = "\n".join(part for part in prompt_parts if part)
 
@@ -140,11 +144,52 @@ def summarize_article_task(article_id, final_title=None, local_only=False):
             )
             invalidate_public_data_caches()
 
-_DELEGATED = frozenset({'CLUSTER_LOOKBACK', '_call_ai', '_sanitize_synthesis_outputs', 'acquire_task_lock', 'analyst', 'average_embeddings', 'celery_app', 'clean_extracted_article_text', 'clean_json_response', 'db', 'deShout', 'detect_category', 'detect_topic', 'extract_clean_summary_text', 'extract_cluster_tags_locally', 'extract_entities', 'filter_cluster_tags', 'generate_cover_art', 'generate_local_placeholder', 'get_celery_queue_depth', 'get_dominant_color', 'invalidate_cluster_caches', 'invalidate_public_data_caches', 'log', 'normalize_citation_sources', 'normalize_headline', 'normalize_perspectives', 'normalize_summary_text', 'parse_embedding_value', 'record_runtime_event', 'redis_client', 'release_task_lock', 'schedule_task_once', 'summarize_article_fallback', 'synthesize_cluster_fallback', 'validate_person_names'})
+
+_DELEGATED = frozenset(
+    {
+        "CLUSTER_LOOKBACK",
+        "_call_ai",
+        "_sanitize_synthesis_outputs",
+        "acquire_task_lock",
+        "analyst",
+        "average_embeddings",
+        "celery_app",
+        "clean_extracted_article_text",
+        "clean_json_response",
+        "db",
+        "deShout",
+        "detect_category",
+        "detect_topic",
+        "extract_clean_summary_text",
+        "extract_cluster_tags_locally",
+        "extract_entities",
+        "filter_cluster_tags",
+        "generate_cover_art",
+        "generate_local_placeholder",
+        "get_celery_queue_depth",
+        "get_dominant_color",
+        "invalidate_cluster_caches",
+        "invalidate_public_data_caches",
+        "log",
+        "normalize_citation_sources",
+        "normalize_headline",
+        "normalize_perspectives",
+        "normalize_summary_text",
+        "parse_embedding_value",
+        "record_runtime_event",
+        "redis_client",
+        "release_task_lock",
+        "schedule_task_once",
+        "summarize_article_fallback",
+        "synthesize_cluster_fallback",
+        "validate_person_names",
+    }
+)
+
 
 def __getattr__(name: str):
     if name in _DELEGATED:
         from tasks.intelligence import _constants
+
         return getattr(_constants, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-

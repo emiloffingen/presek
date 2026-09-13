@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import importlib
 import logging
 import os
 import re
@@ -23,13 +22,11 @@ log = logging.getLogger("presek")
 
 
 def _raise_http_error(status_code: int, detail: str):
-    try:
-        fastapi_mod = importlib.import_module("fastapi")
-        exc_cls = getattr(fastapi_mod, "HTTPException", HTTPException)
-    except Exception as e:
-        log.debug(f"Failed to import fastapi: {e}")
-        exc_cls = HTTPException
-    raise exc_cls(status_code=status_code, detail=detail)
+    # Raise the module-global HTTPException directly. Re-resolving fastapi
+    # via importlib here creates a *second* HTTPException class object
+    # whenever sys.modules was pruned mid-session (test module isolation),
+    # which then escapes callers' pytest.raises(HTTPException) checks.
+    raise HTTPException(status_code=status_code, detail=detail)
 
 
 # =============================================================================
@@ -51,9 +48,7 @@ def generate_csrf_token() -> str:
     """Generate a CSRF token."""
     timestamp = str(int(time.time()))
     message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
-    signature = hmac.new(
-        CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256
-    ).hexdigest()
+    signature = hmac.new(CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
     return f"{timestamp}:{signature}"
 
 
@@ -72,9 +67,7 @@ def validate_csrf_token(token: str) -> bool:
 
         # Reconstruct and validate signature
         message = f"{timestamp}:{CSRF_TOKEN_SECRET}"
-        expected_signature = hmac.new(
-            CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256
-        ).hexdigest()
+        expected_signature = hmac.new(CSRF_TOKEN_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
 
         return hmac.compare_digest(signature, expected_signature)
     except Exception:
@@ -130,13 +123,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=63072000; includeSubDomains; preload"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
         else:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=300; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=300; includeSubDomains"
 
         # Content Security Policy with nonce-based approach
         # Nonce allows inline scripts/styles that include the nonce attribute
@@ -218,9 +207,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # =============================================================================
 
 CLUSTER_ID_PATTERN = re.compile(r"^[a-f0-9\-]{6,64}$")
-UUID_PATTERN = re.compile(
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I
-)
+UUID_PATTERN = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
 
@@ -232,9 +219,7 @@ def validate_cluster_id(cluster_id: str, param_name: str = "cluster_id") -> str:
     if not isinstance(cluster_id, str):
         raise HTTPException(status_code=400, detail=f"{param_name} mora da bide tekst")
     if not CLUSTER_ID_PATTERN.match(cluster_id):
-        _raise_http_error(
-            400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string."
-        )
+        _raise_http_error(400, f"Invalid {param_name}. Must be 6-64 character hexadecimal string.")
     return cluster_id
 
 
@@ -294,9 +279,7 @@ def validate_string_param(
     return value
 
 
-def validate_list_param(
-    items, param_name: str, max_items: int = 20, max_item_length: int = 100
-) -> list:
+def validate_list_param(items, param_name: str, max_items: int = 20, max_item_length: int = 100) -> list:
     """Validate a list parameter."""
     if items is None:
         return []
@@ -358,16 +341,12 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(
-                    status_code=400, detail="Nevaliden Content-Length naslov"
-                )
+                raise HTTPException(status_code=400, detail="Nevaliden Content-Length naslov")
 
         # Check query parameters
         for key, value in request.query_params.items():
             if len(value) > MAX_QUERY_PARAM_LENGTH:
-                _raise_http_error(
-                    400, f"Query parameter '{key}' exceeds maximum length"
-                )
+                _raise_http_error(400, f"Query parameter '{key}' exceeds maximum length")
 
         # Check headers
         for key, value in request.headers.items():

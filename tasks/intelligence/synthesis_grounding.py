@@ -112,9 +112,7 @@ def _fact_grounding_diagnostics(
     ungrounded_scores: list[str] = []
     if synth_scores:
         ungrounded_scores = [
-            score
-            for score in synth_scores
-            if score not in source_scores and score.casefold() not in source_folded
+            score for score in synth_scores if score not in source_scores and score.casefold() not in source_folded
         ]
 
     numbers_ok = len(ungrounded_numbers) <= max_ungrounded
@@ -129,7 +127,9 @@ def _fact_grounding_diagnostics(
     }
 
 
-def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False) -> bool:
+def _is_fact_grounded_synthesis(
+    synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False
+) -> bool:
     diagnostics = _fact_grounding_diagnostics(
         synthesis_text,
         article_rows,
@@ -148,6 +148,8 @@ def _is_fact_grounded_synthesis(synthesis_text: str, article_rows, lang: str = "
                 ", ".join(diagnostics["ungrounded_scores"]),
             )
     return diagnostics["ok"]
+
+
 def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     if not synthesis_text or not source_context:
         return True
@@ -201,11 +203,7 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
 
     def _entity_words(value: str) -> list[str]:
         folded_value = transliterate(value or "").casefold()
-        return [
-            word
-            for word in re.findall(r"[A-Za-z\u0400-\u04FF0-9-]{3,}", folded_value)
-            if word not in role_words
-        ]
+        return [word for word in re.findall(r"[A-Za-z\u0400-\u04FF0-9-]{3,}", folded_value) if word not in role_words]
 
     def _entity_is_grounded(value: str) -> bool:
         folded_value = transliterate(value or "").casefold().strip()

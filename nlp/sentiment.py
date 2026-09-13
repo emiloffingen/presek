@@ -153,12 +153,15 @@ def analyze_sentiment_locally(text, bypass_llm: bool = False):
 
     # 1. Try local LLM sentiment analysis first
     import os
+
     if not bypass_llm and os.environ.get("LOCAL_MODEL_PATH"):
         try:
             from nlp.local_analyst import LocalAnalyst
+
             analyst = LocalAnalyst()
             if analyst._load_model():
                 from core.language import detect_language
+
                 lang = detect_language(text)
                 if lang == "sr":
                     system = (
@@ -172,7 +175,7 @@ def analyze_sentiment_locally(text, bypass_llm: bool = False):
                         "Vrati ISKLUCIVO broj megu -2.0 (ekstremno negativen/kritican) i 2.0 (ekstremno pozitiven/afirmativen). "
                         "Neutralen sentiment treba da bide 0.0. Vrati samo broj bez nikakov dopolnitelen tekst ili obrazlozenie."
                     )
-                
+
                 res = analyst.analyze(text[:1200], system, max_tokens=10, lang=lang)
                 if res:
                     match = re.search(r"[-+]?\d*\.\d+|\d+", res)

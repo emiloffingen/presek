@@ -35,6 +35,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://presek:presek_test@localhost:5432/presek_test
+        run: uv run alembic upgrade head
+
       - name: Run tests
         env:
           ENV: test
@@ -77,7 +82,16 @@ jobs:
       - name: Bandit scan
         run: uv run bandit -r core/ tasks/ routes/ -ll
       - name: pip-audit
-        run: uv run pip-audit
+        # Ignored: no fixed release available (transitive ML/CV deps),
+        # celery ecosystem caps click below the fixed release, or
+        # build-env-only packages (pip/setuptools in the audit venv).
+        run: >-
+          uv run pip-audit
+          --ignore-vuln PYSEC-2026-3804
+          --ignore-vuln PYSEC-2026-2447
+          --ignore-vuln PYSEC-2026-2132
+          --ignore-vuln PYSEC-2026-3721
+          --ignore-vuln PYSEC-2026-3447
 
   lint:
     runs-on: ubuntu-latest

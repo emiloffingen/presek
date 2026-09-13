@@ -116,7 +116,7 @@ SR_DAYS = LOCALES["sr"]["days"]
 
 def format_date(dt: datetime, locale: str = "sr") -> str:
     conf = LOCALES.get(locale, LOCALES["sr"])
-    return f"{conf['days'][dt.weekday()]}, {dt.day} {conf['months'][dt.month-1]} {dt.year}"
+    return f"{conf['days'][dt.weekday()]}, {dt.day} {conf['months'][dt.month - 1]} {dt.year}"
 
 
 def sr_date(dt: datetime) -> str:
@@ -198,12 +198,7 @@ def parse_briefing_for_email(content: str, metadata: dict | None = None) -> dict
 
         if stripped.startswith("##"):
             section_label = stripped.lstrip("#").strip().casefold()
-            normalized = (
-                section_label.replace("š", "s")
-                .replace("č", "c")
-                .replace("ć", "c")
-                .replace("ž", "z")
-            )
+            normalized = section_label.replace("š", "s").replace("č", "c").replace("ć", "c").replace("ž", "z")
             in_big_picture = any(marker in normalized for marker in _BIG_PICTURE_MARKERS)
             continue
 
@@ -254,8 +249,8 @@ def _render_story_items(stories_by_cat: dict[str, list[dict]], locale: str, limi
         rows += f"""
             <tr>
               <td class="border-light" style="padding:16px 0;border-bottom:1px solid #e5e7eb">
-                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{_escape(article.get('source') or 'izvor')}</p>
-                <a href="{_escape(article.get('link') or conf['url'])}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:17px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
+                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{_escape(article.get("source") or "izvor")}</p>
+                <a href="{_escape(article.get("link") or conf["url"])}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:17px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
                   {_escape(headline)}
                 </a>
               </td>
@@ -264,7 +259,7 @@ def _render_story_items(stories_by_cat: dict[str, list[dict]], locale: str, limi
     return f"""
         <tr>
           <td style="padding:36px 0 12px">
-            <p class="text-title sans" style="margin:0;font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827">{_escape(conf['also_today'])}</p>
+            <p class="text-title sans" style="margin:0;font-family:'Manrope',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.2em;text-transform:uppercase;color:#111827">{_escape(conf["also_today"])}</p>
           </td>
         </tr>
         {rows}"""
@@ -313,11 +308,11 @@ def render_morning_briefing_email(
     story_block = _render_story_items(stories_by_cat or {}, locale, limit=3)
 
     html_body = f"""<!DOCTYPE html>
-<html lang="{conf['lang_code']}">
+<html lang="{conf["lang_code"]}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{_escape(conf['masthead'])} — {_escape(conf['subject'])}</title>
+  <title>{_escape(conf["masthead"])} — {_escape(conf["subject"])}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800;900&family=Noto+Serif:ital,wght@0,900;1,900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
@@ -328,14 +323,14 @@ def render_morning_briefing_email(
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e5e7eb;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1)">
         <tr>
           <td style="padding:40px 40px 24px;text-align:center;border-bottom:4px double #111827">
-            <h1 style="margin:0;font-family:'Noto Serif',Georgia,serif;font-size:38px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">{_escape(conf['masthead'])}</h1>
-            <p style="margin:10px 0 0;font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">{_escape(conf['tagline'])}</p>
+            <h1 style="margin:0;font-family:'Noto Serif',Georgia,serif;font-size:38px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">{_escape(conf["masthead"])}</h1>
+            <p style="margin:10px 0 0;font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">{_escape(conf["tagline"])}</p>
           </td>
         </tr>
         <tr>
           <td style="background-color:#111827;padding:12px 40px;text-align:center">
             <p style="margin:0;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              <span style="color:#ffffff">{_escape(conf['pulse'])}:</span> &nbsp; {_escape(' · '.join(pulse_bits))}
+              <span style="color:#ffffff">{_escape(conf["pulse"])}:</span> &nbsp; {_escape(" · ".join(pulse_bits))}
             </p>
           </td>
         </tr>
@@ -346,26 +341,26 @@ def render_morning_briefing_email(
         </tr>
         <tr>
           <td style="padding:28px 40px 0">
-            <p style="margin:0 0 10px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#b91c1c">{_escape(conf['briefing_edition'])}</p>
+            <p style="margin:0 0 10px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#b91c1c">{_escape(conf["briefing_edition"])}</p>
             <h2 style="margin:0 0 18px;font-family:'Noto Serif',Georgia,serif;font-size:28px;line-height:1.2;font-weight:900;color:#111827">{_escape(title)}</h2>
-            <p style="margin:0 0 8px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.16em;text-transform:uppercase;color:#111827">{_escape(conf['big_picture'])}</p>
+            <p style="margin:0 0 8px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:900;letter-spacing:0.16em;text-transform:uppercase;color:#111827">{_escape(conf["big_picture"])}</p>
             <p style="margin:0;color:#4a4a4a;font-family:'Source Serif 4',Georgia,serif;font-size:16px;line-height:1.65">{_escape(big_picture)}</p>
           </td>
         </tr>
-        {f'<tr><td style="padding:18px 40px 0"><table width="100%" cellpadding="0" cellspacing="0">{bullet_html}</table></td></tr>' if bullet_html else ''}
+        {f'<tr><td style="padding:18px 40px 0"><table width="100%" cellpadding="0" cellspacing="0">{bullet_html}</table></td></tr>' if bullet_html else ""}
         <tr>
           <td style="padding:28px 40px 12px;text-align:center">
-            <a href="{_escape(briefing_url)}" style="display:inline-block;padding:14px 24px;background-color:#111827;color:#ffffff;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf['open_briefing'])}</a>
-            <a href="{_escape(audio_url)}" style="display:inline-block;padding:14px 24px;background-color:#ffffff;color:#111827;border:1px solid #111827;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf['listen_audio'])}</a>
+            <a href="{_escape(briefing_url)}" style="display:inline-block;padding:14px 24px;background-color:#111827;color:#ffffff;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf["open_briefing"])}</a>
+            <a href="{_escape(audio_url)}" style="display:inline-block;padding:14px 24px;background-color:#ffffff;color:#111827;border:1px solid #111827;font-family:'Manrope',sans-serif;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px;margin:0 8px 8px 0">{_escape(conf["listen_audio"])}</a>
           </td>
         </tr>
-        {f'<tr><td style="padding:0 40px 24px"><table width="100%" cellpadding="0" cellspacing="0">{story_block}</table></td></tr>' if story_block else ''}
+        {f'<tr><td style="padding:0 40px 24px"><table width="100%" cellpadding="0" cellspacing="0">{story_block}</table></td></tr>' if story_block else ""}
         <tr>
           <td style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
-            <p style="margin:0;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">{_escape(conf['footer_tagline'])}</p>
+            <p style="margin:0;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">{_escape(conf["footer_tagline"])}</p>
             <p style="margin:8px 0 0;font-family:'Manrope',sans-serif;font-size:10px;color:#9ca3af;line-height:1.5">
-              {_escape(conf['footer_disclaimer'])}<br>
-              {_escape(conf['unsubscribe'])} <a href="{{{{UNSUBSCRIBE_URL}}}}" style="color:#6b7280;text-decoration:underline">{_escape(conf['here'])}</a>.
+              {_escape(conf["footer_disclaimer"])}<br>
+              {_escape(conf["unsubscribe"])} <a href="{{{{UNSUBSCRIBE_URL}}}}" style="color:#6b7280;text-decoration:underline">{_escape(conf["here"])}</a>.
             </p>
           </td>
         </tr>
@@ -437,9 +432,9 @@ def fetch_top_stories(days: int = 7, per_category: int = 3, locale: str = "sr") 
                 """,
                     (top_cluster_ids, locale),
                 ).fetchall()
-                
+
                 summaries_by_cid = {r["cluster_id"]: r for r in summary_rows}
-                
+
                 # Enrich selected articles with synthesis metadata
                 for cat in by_cat:
                     for main in by_cat[cat]:
@@ -478,7 +473,7 @@ def render_html(
                 clean = " ".join(
                     line for line in summary_text.split("\n") if line.strip() and not line.strip().startswith("#")
                 )
-                summary_html = f"<p class=\"text-body\" style=\"margin:8px 0 0;color:#4a4a4a;font-family:'Source Serif 4',Georgia,serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em\">{clean[:220]}…</p>"
+                summary_html = f'<p class="text-body" style="margin:8px 0 0;color:#4a4a4a;font-family:\'Source Serif 4\',Georgia,serif;font-size:14px;line-height:1.55;letter-spacing:-0.01em">{clean[:220]}…</p>'
 
             sources_badge = ""
             if a.get("source_count", 1) > 1:
@@ -487,13 +482,13 @@ def render_html(
             items += f"""
             <tr>
               <td class="border-light" style="padding:20px 0;border-bottom:1px solid #e5e7eb">
-                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get('source','') or 'izvor'}</p>
-                <a href="{a['link']}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
+                <p class="sans" style="margin:0 0 6px;font-family:'Manrope',sans-serif;font-size:10px;font-weight:bold;color:#b91c1c;text-transform:uppercase;letter-spacing:0.1em">{a.get("source", "") or "izvor"}</p>
+                <a href="{a["link"]}" class="text-title" style="font-family:'Noto Serif',Georgia,serif;font-size:19px;font-weight:900;color:#111827;text-decoration:none;line-height:1.25;display:block">
                   {headline}
                 </a>
                 {summary_html}
                 <div style="margin-top:12px">
-                    <a href="{a['link']}" class="text-muted sans" style="font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">{conf['read_more']}</a>
+                    <a href="{a["link"]}" class="text-muted sans" style="font-family:'Manrope',sans-serif;font-size:11px;font-weight:bold;color:#6b7280;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em">{conf["read_more"]}</a>
                     {sources_badge}
                 </div>
               </td>
@@ -517,11 +512,11 @@ def render_html(
     period_str = f"{format_date(period_start, locale)} — {format_date(period_end, locale)}"
 
     html = f"""<!DOCTYPE html>
-<html lang="{conf['lang_code']}">
+<html lang="{conf["lang_code"]}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{conf['masthead']} — {conf['subject']}</title>
+  <title>{conf["masthead"]} — {conf["subject"]}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@800;900&family=Noto+Serif:ital,wght@0,900;1,900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
@@ -581,10 +576,10 @@ def render_html(
         <tr>
           <td class="double-border" style="padding:40px 40px 30px;text-align:center;border-bottom:4px double #111827">
             <h1 class="text-title" style="margin:0;font-size:42px;font-weight:900;color:#111827;letter-spacing:-1.5px;text-transform:uppercase">
-              {conf['masthead']}
+              {conf["masthead"]}
             </h1>
             <p class="text-muted sans" style="margin:10px 0 0;font-size:11px;font-weight:bold;letter-spacing:0.3em;text-transform:uppercase;color:#6b7280">
-              {conf['tagline']}
+              {conf["tagline"]}
             </p>
           </td>
         </tr>
@@ -593,7 +588,7 @@ def render_html(
         <tr>
           <td style="background-color:#111827;padding:12px 40px;text-align:center">
             <p class="sans" style="margin:0;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              <span style="color:#ffffff">{conf['pulse']}:</span> &nbsp; {total_stories} {conf['temi']} &nbsp; • &nbsp; {total_sources} {conf['izvori']}
+              <span style="color:#ffffff">{conf["pulse"]}:</span> &nbsp; {total_stories} {conf["temi"]} &nbsp; • &nbsp; {total_sources} {conf["izvori"]}
             </p>
           </td>
         </tr>
@@ -619,8 +614,8 @@ def render_html(
         <!-- Bottom CTA -->
         <tr>
             <td style="padding:0 40px 40px;text-align:center">
-                <a href="{conf['url']}" class="btn-primary sans" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
-                    {conf['cta']}
+                <a href="{conf["url"]}" class="btn-primary sans" style="display:inline-block;padding:14px 28px;background-color:#111827;color:#ffffff;font-size:12px;font-weight:bold;text-decoration:none;text-transform:uppercase;letter-spacing:0.15em;border-radius:2px">
+                    {conf["cta"]}
                 </a>
             </td>
         </tr>
@@ -629,11 +624,11 @@ def render_html(
         <tr>
           <td class="footer-bg border-light" style="padding:30px 40px;text-align:center;background-color:#f3f4f6;border-top:1px solid #e5e7eb">
             <p class="text-muted sans" style="margin:0;font-size:10px;font-weight:bold;color:#9ca3af;letter-spacing:0.1em;text-transform:uppercase">
-              {conf['footer_tagline']}
+              {conf["footer_tagline"]}
             </p>
             <p class="text-muted sans" style="margin:8px 0 0;font-size:10px;color:#9ca3af;line-height:1.5">
-              {conf['footer_disclaimer']}<br>
-              {conf['unsubscribe']} <a href="{{UNSUBSCRIBE_URL}}" class="text-muted" style="color:#6b7280;text-decoration:underline">{conf['here']}</a>.
+              {conf["footer_disclaimer"]}<br>
+              {conf["unsubscribe"]} <a href="{{UNSUBSCRIBE_URL}}" class="text-muted" style="color:#6b7280;text-decoration:underline">{conf["here"]}</a>.
             </p>
           </td>
         </tr>
@@ -644,7 +639,7 @@ def render_html(
         <tr>
             <td style="padding:20px 0;text-align:center">
                 <p class="text-muted sans" style="margin:0;font-size:10px;color:#9ca3af">
-                    © {datetime.now().year} Presek. {conf['rights']}.
+                    © {datetime.now().year} Presek. {conf["rights"]}.
                 </p>
             </td>
         </tr>

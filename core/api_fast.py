@@ -148,9 +148,7 @@ if cors_origins == "*" and os.environ.get("ENV") == "production":
         "https://presek.mk",
         "https://www.presek.mk",
     ]
-    log.warning(
-        "CORS_ORIGINS was '*', defaulting to presek.live, presek.rs, and presek.mk for production security"
-    )
+    log.warning("CORS_ORIGINS was '*', defaulting to presek.live, presek.rs, and presek.mk for production security")
 elif cors_origins == "*":
     # In development, still avoid wildcard - use explicit localhost origins
     cors_origins = [
@@ -161,9 +159,7 @@ elif cors_origins == "*":
         "http://localhost:3001",
         "http://127.0.0.1:3001",
     ]
-    log.warning(
-        "CORS_ORIGINS set to '*' in development - using explicit localhost origins instead"
-    )
+    log.warning("CORS_ORIGINS set to '*' in development - using explicit localhost origins instead")
 else:
     cors_origins = (
         cors_origins.split(",")
@@ -178,6 +174,7 @@ else:
         ]
     )
 
+
 class APIVersionMiddleware:
     def __init__(self, app):
         self.app = app
@@ -186,10 +183,11 @@ class APIVersionMiddleware:
         if scope["type"] == "http":
             path = scope.get("path", "")
             if path.startswith("/api/v1/"):
-                scope["path"] = "/api/" + path[len("/api/v1/"):]
+                scope["path"] = "/api/" + path[len("/api/v1/") :]
                 if "raw_path" in scope:
-                    scope["raw_path"] = b"/api/" + path[len("/api/v1/"):].encode("utf-8")
+                    scope["raw_path"] = b"/api/" + path[len("/api/v1/") :].encode("utf-8")
         await self.app(scope, receive, send)
+
 
 app.add_middleware(APIVersionMiddleware)
 
@@ -198,7 +196,15 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["Authorization", "X-CSRF-Token", "X-Admin-Token", "X-Sync-Token", "Content-Type", "Accept", "Accept-Language"],
+    allow_headers=[
+        "Authorization",
+        "X-CSRF-Token",
+        "X-Admin-Token",
+        "X-Sync-Token",
+        "Content-Type",
+        "Accept",
+        "Accept-Language",
+    ],
     max_age=600,
 )
 
@@ -270,17 +276,11 @@ if _rate_limiter_enabled:
 
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
 _UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
-_GENERATED_FILENAME_RE = re.compile(
-    r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE
-)
+_GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
 _home_dir = os.environ.get("HOME") or "/home/emiloffingen"
-_STATIC_ROOT = os.environ.get(
-    "STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static")
-)
+_STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static"))
 if not os.path.exists(_STATIC_ROOT):
-    _STATIC_ROOT = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "static")
-    )
+    _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 _AUDIO_UPLOAD_DIR = os.path.join(_STATIC_ROOT, "uploads", "audio")
 _UPLOADS_DIR = os.path.join(_STATIC_ROOT, "uploads")
 _GENERATED_DIR = os.path.join(_STATIC_ROOT, "generated")
@@ -297,9 +297,7 @@ else:
     )
 
 if "presek_celery_failed_tasks_count" in REGISTRY._names_to_collectors:
-    _FAILED_TASKS_COUNT = REGISTRY._names_to_collectors[
-        "presek_celery_failed_tasks_count"
-    ]
+    _FAILED_TASKS_COUNT = REGISTRY._names_to_collectors["presek_celery_failed_tasks_count"]
 else:
     _FAILED_TASKS_COUNT = Gauge(
         "presek_celery_failed_tasks_count",
@@ -307,20 +305,14 @@ else:
     )
 
 if "presek_postgresql_database_size_mb" in REGISTRY._names_to_collectors:
-    _POSTGRESQL_DB_SIZE = REGISTRY._names_to_collectors[
-        "presek_postgresql_database_size_mb"
-    ]
+    _POSTGRESQL_DB_SIZE = REGISTRY._names_to_collectors["presek_postgresql_database_size_mb"]
 else:
-    _POSTGRESQL_DB_SIZE = Gauge(
-        "presek_postgresql_database_size_mb", "Database size in megabytes"
-    )
+    _POSTGRESQL_DB_SIZE = Gauge("presek_postgresql_database_size_mb", "Database size in megabytes")
 
 if "presek_articles_total" in REGISTRY._names_to_collectors:
     _ARTICLES_TOTAL = REGISTRY._names_to_collectors["presek_articles_total"]
 else:
-    _ARTICLES_TOTAL = Gauge(
-        "presek_articles_total", "Total number of ingested articles"
-    )
+    _ARTICLES_TOTAL = Gauge("presek_articles_total", "Total number of ingested articles")
 
 
 def _audio_file_path(filename: str) -> str | None:
@@ -328,9 +320,7 @@ def _audio_file_path(filename: str) -> str | None:
         return None
     candidate = os.path.abspath(os.path.join(_AUDIO_UPLOAD_DIR, filename))
     try:
-        if os.path.commonpath(
-            [candidate, os.path.abspath(_AUDIO_UPLOAD_DIR)]
-        ) != os.path.abspath(_AUDIO_UPLOAD_DIR):
+        if os.path.commonpath([candidate, os.path.abspath(_AUDIO_UPLOAD_DIR)]) != os.path.abspath(_AUDIO_UPLOAD_DIR):
             return None
     except ValueError:
         return None
@@ -448,9 +438,7 @@ async def serve_uploaded_audio(filename: str, request: Request):
             "Content-Range": f"bytes {start}-{end}/{file_size}",
         }
         if request.method == "HEAD":
-            return Response(
-                status_code=206, headers=partial_headers, media_type="audio/mpeg"
-            )
+            return Response(status_code=206, headers=partial_headers, media_type="audio/mpeg")
         return StreamingResponse(
             _iter_file_range(path, start, end),
             status_code=206,
@@ -478,9 +466,7 @@ async def serve_uploaded_image(filename: str):
 
 
 # Mount static files
-app.mount(
-    "/static", StaticFiles(directory="static", follow_symlink=False), name="static"
-)
+app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name="static")
 
 
 # Import and include routers
@@ -497,15 +483,11 @@ from routes import (
 )
 
 
-def _safe_rank_cluster_citations(
-    question: str, answer: str, articles, citation_numbers
-) -> list[dict]:
+def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
     try:
         return _rank_cluster_citations(question, answer, articles, citation_numbers)
     except Exception as e:
-        log.warning(
-            f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True
-        )
+        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
         return []
 
 
@@ -574,9 +556,7 @@ async def version_info():
 
 
 if "presek_db_pool_connections_num" in REGISTRY._names_to_collectors:
-    _DB_POOL_CONNECTIONS_NUM = REGISTRY._names_to_collectors[
-        "presek_db_pool_connections_num"
-    ]
+    _DB_POOL_CONNECTIONS_NUM = REGISTRY._names_to_collectors["presek_db_pool_connections_num"]
 else:
     _DB_POOL_CONNECTIONS_NUM = Gauge(
         "presek_db_pool_connections_num",
@@ -612,19 +592,11 @@ def update_db_pool_metrics():
             return
         try:
             stats = pool.get_stats()
-            _DB_POOL_CONNECTIONS_NUM.labels(pool_type=pool_type, role=role).set(
-                stats.get("connections_num", 0)
-            )
-            _DB_POOL_AVAILABLE.labels(pool_type=pool_type, role=role).set(
-                stats.get("pool_available", 0)
-            )
-            _DB_POOL_WAITING.labels(pool_type=pool_type, role=role).set(
-                stats.get("requests_waiting", 0)
-            )
+            _DB_POOL_CONNECTIONS_NUM.labels(pool_type=pool_type, role=role).set(stats.get("connections_num", 0))
+            _DB_POOL_AVAILABLE.labels(pool_type=pool_type, role=role).set(stats.get("pool_available", 0))
+            _DB_POOL_WAITING.labels(pool_type=pool_type, role=role).set(stats.get("requests_waiting", 0))
         except Exception as e:
-            log.warning(
-                f"Failed to collect database pool stats for {pool_type} {role}: {e}"
-            )
+            log.warning(f"Failed to collect database pool stats for {pool_type} {role}: {e}")
 
     collect_pool_stats(getattr(db_manager, "_pool", None), "sync", "primary")
     collect_pool_stats(getattr(db_manager, "_read_pool", None), "sync", "replica")
@@ -660,18 +632,12 @@ async def metrics(request: Request):
         _POSTGRESQL_DB_SIZE.set(size_mb)
 
         # 2. Fetch failed tasks count
-        failed_tasks_count_row = db_manager.execute(
-            "SELECT COUNT(*) as count FROM failed_tasks"
-        )
-        failed_tasks_count = (
-            failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
-        )
+        failed_tasks_count_row = db_manager.execute("SELECT COUNT(*) as count FROM failed_tasks")
+        failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
         _FAILED_TASKS_COUNT.set(failed_tasks_count)
 
         # 3. Fetch total articles count
-        articles_total_row = db_manager.execute(
-            "SELECT COUNT(*) as count FROM articles"
-        )
+        articles_total_row = db_manager.execute("SELECT COUNT(*) as count FROM articles")
         articles_total = articles_total_row[0]["count"] if articles_total_row else 0
         _ARTICLES_TOTAL.set(articles_total)
     except Exception as exc:
@@ -693,9 +659,7 @@ async def image_proxy(
 ):
     from routes.system import proxy_image
 
-    return await proxy_image(
-        url=url, w=w, cid=cid, t=t, cat=cat, theme=theme, lang=lang
-    )
+    return await proxy_image(url=url, w=w, cid=cid, t=t, cat=cat, theme=theme, lang=lang)
 
 
 # Legacy/Helper endpoints
@@ -747,15 +711,11 @@ async def track_delivery_event(
 
     parsed = parse_delivery_track_token(token)
     if not parsed:
-        return JSONResponse(
-            status_code=400, content={"detail": "Invalid tracking token"}
-        )
+        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
 
     parsed_event_id, parsed_type, parsed_redirect = parsed
     if parsed_event_id != event_id or parsed_type != clean_type:
-        return JSONResponse(
-            status_code=400, content={"detail": "Invalid tracking token"}
-        )
+        return JSONResponse(status_code=400, content={"detail": "Invalid tracking token"})
 
     p = await db.async_execute_one(
         "SELECT sync_token, delivery_kind, channel, target, cluster_id FROM delivery_tracking_events WHERE id = %s",
@@ -800,9 +760,7 @@ def trigger_reclustering(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task(
-            "tasks.intelligence.recluster_recent_articles_task", args=[hours, limit]
-        )
+        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
 
         return {
             "status": "success",
@@ -811,9 +769,7 @@ def trigger_reclustering(
         }
     except Exception as e:
         log.error(f"Failed to trigger reclustering: {e}")
-        raise HTTPException(
-            status_code=503, detail="Failed to trigger reclustering"
-        ) from e
+        raise HTTPException(status_code=503, detail="Failed to trigger reclustering") from e
 
 
 @app.post("/api/admin/trigger-storyline-discovery")
@@ -837,9 +793,7 @@ def trigger_storyline_discovery(
         }
     except Exception as e:
         log.error(f"Failed to trigger storyline discovery: {e}")
-        raise HTTPException(
-            status_code=503, detail="Failed to trigger storyline discovery"
-        ) from e
+        raise HTTPException(status_code=503, detail="Failed to trigger storyline discovery") from e
 
 
 @app.get("/api/admin/clustering-status")
@@ -864,9 +818,7 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
         )[0]["count"]
 
         # Check clusters in storylines
-        clusters_in_storylines = db.execute(
-            "SELECT COUNT(*) as count FROM storyline_clusters_v2"
-        )[0]["count"]
+        clusters_in_storylines = db.execute("SELECT COUNT(*) as count FROM storyline_clusters_v2")[0]["count"]
 
         return {
             "status": "success",
@@ -876,9 +828,7 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
                 "storylines_24h": storylines,
                 "clusters_in_storylines_total": clusters_in_storylines,
                 "clustering_rate": (
-                    round(clustered_articles / max(recent_articles, 1) * 100, 1)
-                    if recent_articles > 0
-                    else 0
+                    round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
                 ),
             },
             "health": {

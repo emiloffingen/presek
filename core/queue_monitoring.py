@@ -82,29 +82,21 @@ class QueueMonitor:
             # Count active tasks by queue
             for worker, tasks in active_tasks.items():
                 for task in tasks:
-                    queue_name = task.get("delivery_info", {}).get(
-                        "routing_key", "unknown"
-                    )
+                    queue_name = task.get("delivery_info", {}).get("routing_key", "unknown")
                     if queue_name in queue_stats:
                         queue_stats[queue_name]["active"] += 1
 
             # Count scheduled tasks by queue
             for worker, tasks in scheduled_tasks.items():
                 for task in tasks:
-                    queue_name = (
-                        task.get("request", {})
-                        .get("delivery_info", {})
-                        .get("routing_key", "unknown")
-                    )
+                    queue_name = task.get("request", {}).get("delivery_info", {}).get("routing_key", "unknown")
                     if queue_name in queue_stats:
                         queue_stats[queue_name]["scheduled"] += 1
 
             # Count reserved tasks by queue
             for worker, tasks in reserved_tasks.items():
                 for task in tasks:
-                    queue_name = task.get("delivery_info", {}).get(
-                        "routing_key", "unknown"
-                    )
+                    queue_name = task.get("delivery_info", {}).get("routing_key", "unknown")
                     if queue_name in queue_stats:
                         queue_stats[queue_name]["reserved"] += 1
 
@@ -137,12 +129,8 @@ class QueueMonitor:
         stats = self.get_queue_stats()
         total_depth = self.get_total_queue_depth()
 
-        critical_queues = [
-            q.name for q in stats if q.is_critical(self.critical_threshold)
-        ]
-        backlogged_queues = [
-            q.name for q in stats if q.is_backlogged(self.warning_threshold)
-        ]
+        critical_queues = [q.name for q in stats if q.is_critical(self.critical_threshold)]
+        backlogged_queues = [q.name for q in stats if q.is_backlogged(self.warning_threshold)]
 
         health_status = "healthy"
         if critical_queues:
@@ -236,13 +224,9 @@ class QueueMonitor:
 
             # Log based on status
             if health["status"] == "critical":
-                log.critical(
-                    f"Celery queues in critical state: {health['total_depth']} tasks queued"
-                )
+                log.critical(f"Celery queues in critical state: {health['total_depth']} tasks queued")
             elif health["status"] == "warning":
-                log.warning(
-                    f"Celery queues backlogged: {health['total_depth']} tasks queued"
-                )
+                log.warning(f"Celery queues backlogged: {health['total_depth']} tasks queued")
             elif now % 300 < 10:  # Every ~5 minutes
                 log.info(f"Celery queues healthy: {health['total_depth']} tasks queued")
 
@@ -296,9 +280,7 @@ class QueuePerformanceMonitor:
     def record_task_execution(self, task_name: str, queue: str, execution_time: float):
         """Record a task execution."""
         if execution_time > self.slow_task_threshold:
-            log.warning(
-                f"Slow task ({execution_time:.3f}s): {task_name} on queue {queue}"
-            )
+            log.warning(f"Slow task ({execution_time:.3f}s): {task_name} on queue {queue}")
 
         self.task_history.append(
             {
@@ -324,11 +306,7 @@ class QueuePerformanceMonitor:
             }
 
         total_time = sum(t["execution_time"] for t in self.task_history)
-        slow_tasks = sum(
-            1
-            for t in self.task_history
-            if t["execution_time"] > self.slow_task_threshold
-        )
+        slow_tasks = sum(1 for t in self.task_history if t["execution_time"] > self.slow_task_threshold)
 
         return {
             "average_time": total_time / len(self.task_history),
@@ -404,9 +382,7 @@ def init_queue_monitoring():
                 time.sleep(10)
 
     # Start monitoring thread
-    monitoring_thread = threading.Thread(
-        target=monitoring_loop, daemon=True, name="queue-monitoring"
-    )
+    monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True, name="queue-monitoring")
     monitoring_thread.start()
 
 

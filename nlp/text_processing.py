@@ -422,6 +422,7 @@ def extract_entities_semantic(text: str) -> set[str]:
     global _ner_pipeline
     # Always normalize to Cyrillic to ensure consistent matching between scripts
     from core.language import transliterate_lat_to_cyr
+
     text = transliterate_lat_to_cyr(text)
 
     if not text:

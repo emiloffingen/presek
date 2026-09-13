@@ -15,9 +15,7 @@ def _load_cluster_articles_for_synthesis(cluster_id):
 
 def _langs_for_cluster_articles(article_rows):
     countries = {
-        str(row.get("country") or "").upper()
-        for row in (article_rows or [])
-        if str(row.get("country") or "").strip()
+        str(row.get("country") or "").upper() for row in (article_rows or []) if str(row.get("country") or "").strip()
     }
     langs = [COUNTRY_LANG[country] for country in ("RS", "MK") if country in countries]
     return langs or ["sr"]
@@ -54,15 +52,11 @@ def _build_source_comparison_prompt_block(article_rows, lang="sr"):
 
     if lang == "mk":
         header = (
-            "Локална анализа на изворите (користи ја при споредба на извори и непознати детали):\n"
-            "<source_comparison>"
+            "Локална анализа на изворите (користи ја при споредба на извори и непознати детали):\n<source_comparison>"
         )
         footer = "</source_comparison>"
     else:
-        header = (
-            "Lokalna analiza izvora (koristi pri poređenju izvora i nepotvrđenim detaljima):\n"
-            "<source_comparison>"
-        )
+        header = "Lokalna analiza izvora (koristi pri poređenju izvora i nepotvrđenim detaljima):\n<source_comparison>"
         footer = "</source_comparison>"
     return f"{header}\n" + "\n".join(f"- {line}" for line in lines) + f"\n{footer}"
 
@@ -114,9 +108,9 @@ def _fetch_synthesis_history_context(cluster_id, lang="sr", article_rows=None):
         return ""
 
 
-
-
-def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="", legacy_summary="", source_comparison=""):
+def _build_cluster_synthesis_prompt(
+    article_rows, lang="sr", history_context="", legacy_summary="", source_comparison=""
+):
     rows = article_rows or []
     prompt_parts = []
     if history_context:
@@ -159,4 +153,3 @@ def _build_cluster_synthesis_prompt(article_rows, lang="sr", history_context="",
             "Ne izmišljaj brojeve, procente ili rezultate — koristi samo brojke koje se pojavljuju u izvorima."
         )
     return "\n\n".join(part for part in prompt_parts if part)
-

@@ -57,31 +57,33 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
 
     recent_activity = []
     for s in source_statuses.values():
-        recent_activity.append({
-            "source": s.get("source", "Unknown"),
-            "is_active": not s.get("degraded", False),
-            "last_fetched": s.get("time") or datetime.datetime.now().isoformat(),
-            "recent_count": s.get("accepted", 0)
-        })
+        recent_activity.append(
+            {
+                "source": s.get("source", "Unknown"),
+                "is_active": not s.get("degraded", False),
+                "last_fetched": s.get("time") or datetime.datetime.now().isoformat(),
+                "recent_count": s.get("accepted", 0),
+            }
+        )
     recent_activity.sort(key=lambda x: x.get("last_fetched", ""), reverse=True)
 
     # 3. Database & Tasks
     db_health = _probe_database()
     redis_health = _probe_redis()
-    
+
     # Failed tasks lists
-    failed_tasks_db = await db.async_execute(
-        """
+    failed_tasks_db = (
+        await db.async_execute(
+            """
         SELECT task_name, error_message, created_at AS failed_at
         FROM failed_tasks
         ORDER BY created_at DESC LIMIT 5
         """
-    ) or []
+        )
+        or []
+    )
 
-    recent_failures_db = [
-        {"task_name": t.get("task_name"), "error": t.get("error_message")}
-        for t in failed_tasks_db
-    ]
+    recent_failures_db = [{"task_name": t.get("task_name"), "error": t.get("error_message")} for t in failed_tasks_db]
 
     failed_tasks_count_row = await db.async_execute("SELECT COUNT(*) as count FROM failed_tasks")
     failed_tasks_count = failed_tasks_count_row[0]["count"] if failed_tasks_count_row else 0
@@ -92,10 +94,14 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
     global_acceptance = round(total_accepted / total_fetched, 2) if total_fetched > 0 else 0
 
     # 5. Articles Volume
-    last_24h_res = await db.async_execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'")
+    last_24h_res = await db.async_execute(
+        "SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+    )
     last_24h = last_24h_res[0]["count"] if last_24h_res else 0
 
-    last_1h_res = await db.async_execute("SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'")
+    last_1h_res = await db.async_execute(
+        "SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '1 hour'"
+    )
     last_1h = last_1h_res[0]["count"] if last_1h_res else 0
 
     # 6. Clusters Stats
@@ -150,7 +156,6 @@ async def get_admin_dashboard(authorized: bool = Depends(verify_admin)):
         "ops": ops,
         "system": version_payload(),
     }
-
 
 
 @router.post("/admin/tasks/trigger-newsletter")
@@ -295,13 +300,16 @@ async def clear_failed_ingestion(
     """Clear ingestion failure noise and restart ingestion."""
     from core.celery_app import celery_app
 
-    deleted = await db.async_execute(
-        """
+    deleted = (
+        await db.async_execute(
+            """
         DELETE FROM failed_tasks
         WHERE task_name ILIKE '%ingestion%'
         RETURNING id
         """,
-    ) or []
+        )
+        or []
+    )
     celery_app.send_task("tasks.ingestion_task.run_ingestion", countdown=3)
     return {
         "status": "success",
@@ -348,13 +356,9 @@ async def create_admin_token_endpoint(
 ):
     """Create a new admin token with specified parameters."""
     from core.admin_tokens import create_admin_token
-    
+
     try:
-        token, token_info = create_admin_token(
-            subject=subject,
-            scope=scope,
-            expiry_hours=expiry_hours
-        )
+        token, token_info = create_admin_token(subject=subject, scope=scope, expiry_hours=expiry_hours)
         return {
             "status": "success",
             "token": token,
@@ -362,7 +366,7 @@ async def create_admin_token_endpoint(
             "subject": token_info.subject,
             "scope": token_info.scope,
             "expires_at": token_info.expires_at.isoformat(),
-            "created_at": token_info.created_at.isoformat()
+            "created_at": token_info.created_at.isoformat(),
         }
     except ValueError as e:
         return {"status": "error", "message": str(e)}
@@ -379,7 +383,7 @@ async def revoke_admin_token_endpoint(
 ):
     """Revoke an admin token by its ID."""
     from core.admin_tokens import revoke_admin_token
-    
+
     success = revoke_admin_token(token_id)
     if success:
         return {"status": "success", "message": f"Token {token_id} revoked successfully"}
@@ -395,13 +399,9 @@ async def revoke_all_tokens_for_subject_endpoint(
 ):
     """Revoke all tokens for a specific subject."""
     from core.admin_tokens import revoke_all_tokens_for_subject
-    
+
     count = revoke_all_tokens_for_subject(subject)
-    return {
-        "status": "success",
-        "message": f"Revoked {count} tokens for subject {subject}",
-        "revoked_count": count
-    }
+    return {"status": "success", "message": f"Revoked {count} tokens for subject {subject}", "revoked_count": count}
 
 
 @router.get("/admin/tokens/list")
@@ -410,7 +410,7 @@ async def list_admin_tokens_endpoint(
 ):
     """List all active admin tokens."""
     from core.admin_tokens import list_active_admin_tokens
-    
+
     tokens = list_active_admin_tokens()
     return {
         "status": "success",
@@ -423,11 +423,11 @@ async def list_admin_tokens_endpoint(
                 "created_at": token.created_at.isoformat(),
                 "revoked_at": token.revoked_at.isoformat() if token.revoked_at else None,
                 "last_used_at": token.last_used_at.isoformat() if token.last_used_at else None,
-                "is_active": token.is_active
+                "is_active": token.is_active,
             }
             for token in tokens
         ],
-        "count": len(tokens)
+        "count": len(tokens),
     }
 
 
@@ -438,33 +438,23 @@ async def cleanup_expired_tokens_endpoint(
 ):
     """Clean up expired admin tokens."""
     from core.admin_tokens import cleanup_expired_tokens
-    
+
     count = cleanup_expired_tokens()
-    return {
-        "status": "success",
-        "message": f"Cleaned up {count} expired tokens",
-        "cleaned_count": count
-    }
+    return {"status": "success", "message": f"Cleaned up {count} expired tokens", "cleaned_count": count}
 
 
 @router.get("/admin/db/health")
 async def get_database_health_endpoint(authorized: bool = Depends(verify_admin)):
     """Get comprehensive database health information."""
     health = get_database_health()
-    return {
-        "status": "success",
-        "database_health": health
-    }
+    return {"status": "success", "database_health": health}
 
 
 @router.get("/admin/db/pool")
 async def get_db_pool_health_endpoint(authorized: bool = Depends(verify_admin)):
     """Get database connection pool health."""
     health = check_db_pool_health()
-    return {
-        "status": "success",
-        "pool_health": health
-    }
+    return {"status": "success", "pool_health": health}
 
 
 @router.get("/admin/db/pool/stats")
@@ -482,34 +472,25 @@ async def get_db_pool_stats_endpoint(authorized: bool = Depends(verify_admin)):
                 "utilization": round(stats.utilization, 3),
                 "queue_size": stats.queue_size,
                 "is_healthy": stats.is_healthy(),
-                "is_critical": stats.is_critical()
-            }
+                "is_critical": stats.is_critical(),
+            },
         }
     else:
-        return {
-            "status": "error",
-            "message": "Unable to retrieve pool statistics"
-        }
+        return {"status": "error", "message": "Unable to retrieve pool statistics"}
 
 
 @router.get("/admin/queues/health")
 async def get_queue_health_endpoint(authorized: bool = Depends(verify_admin)):
     """Get comprehensive queue health information."""
     health = get_queue_health()
-    return {
-        "status": "success",
-        "queue_health": health
-    }
+    return {"status": "success", "queue_health": health}
 
 
 @router.get("/admin/queues/status")
 async def get_queue_status_endpoint(authorized: bool = Depends(verify_admin)):
     """Get current queue status."""
     status = check_queue_health()
-    return {
-        "status": "success",
-        "queue_status": status
-    }
+    return {"status": "success", "queue_status": status}
 
 
 @router.get("/admin/queues/stats")
@@ -518,15 +499,18 @@ async def get_queue_stats_endpoint(authorized: bool = Depends(verify_admin)):
     stats = get_current_queue_stats()
     return {
         "status": "success",
-        "queues": [{
-            "name": queue.name,
-            "active": queue.active,
-            "scheduled": queue.scheduled,
-            "reserved": queue.reserved,
-            "total": queue.total,
-            "is_backlogged": queue.is_backlogged(),
-            "is_critical": queue.is_critical()
-        } for queue in stats]
+        "queues": [
+            {
+                "name": queue.name,
+                "active": queue.active,
+                "scheduled": queue.scheduled,
+                "reserved": queue.reserved,
+                "total": queue.total,
+                "is_backlogged": queue.is_backlogged(),
+                "is_critical": queue.is_critical(),
+            }
+            for queue in stats
+        ],
     }
 
 
@@ -534,20 +518,15 @@ async def get_queue_stats_endpoint(authorized: bool = Depends(verify_admin)):
 async def get_scaling_recommendation_endpoint(authorized: bool = Depends(verify_admin)):
     """Get worker scaling recommendation."""
     recommendation = get_scaling_recommendation()
-    return {
-        "status": "success",
-        "scaling_recommendation": recommendation
-    }
+    return {"status": "success", "scaling_recommendation": recommendation}
 
 
 @router.get("/admin/localization/rules")
 async def get_localization_rules(authorized: bool = Depends(verify_admin)):
     """Fetches the active dynamic localization and tag normalization rules."""
     from core.localization import localization_engine
-    return {
-        "status": "success",
-        "rules": localization_engine.get_rules_dict()
-    }
+
+    return {"status": "success", "rules": localization_engine.get_rules_dict()}
 
 
 @router.post("/admin/localization/rules")
@@ -558,6 +537,7 @@ async def update_localization_rules(
 ):
     """Updates and hot-reloads the dynamic localization and tag normalization rules."""
     from core.localization import localization_engine
+
     try:
         rules_payload = await request.json()
         success = localization_engine.update_rules(rules_payload)

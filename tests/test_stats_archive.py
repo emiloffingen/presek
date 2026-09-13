@@ -3,11 +3,15 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi import HTTPException
 
+# Top-level import binds collection-era modules once. Deferred (function-level)
+# imports would re-execute app modules mid-session against whatever happens
+# to be in sys.modules then, creating duplicate class objects that escape
+# narrow pytest.raises checks (see _raise_http_error note in routes/security).
+from routes.stats import get_archive
+
 
 @pytest.mark.anyio
 async def test_archive_invalid_date_returns_400_not_500():
-    from routes.stats import get_archive
-
     with pytest.raises(HTTPException) as exc:
         await get_archive(
             date="2026-06-08\" AND 1=1 --",
@@ -24,8 +28,6 @@ async def test_archive_invalid_date_returns_400_not_500():
 
 @pytest.mark.anyio
 async def test_archive_valid_date_does_not_raise_validation_error():
-    from routes.stats import get_archive
-
     with patch("routes.stats.db") as mock_db, patch("routes.stats.cached_response", return_value=None):
         mock_db.async_execute = AsyncMock(return_value=[])
         mock_db.async_execute_one = AsyncMock(return_value={"total": 0, "source_count": 0})

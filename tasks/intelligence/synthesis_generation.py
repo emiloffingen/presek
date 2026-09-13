@@ -34,18 +34,18 @@ def _heal_synthesis_paragraph_structure(article: str, expected: int) -> str:
         return article
 
     # First check: did it use single newlines instead of double newlines?
-    paragraphs_double = [p.strip() for p in re.split(r'\n{2,}', article) if p.strip()]
+    paragraphs_double = [p.strip() for p in re.split(r"\n{2,}", article) if p.strip()]
     if len(paragraphs_double) == expected:
         return article
 
-    paragraphs_single = [p.strip() for p in re.split(r'\n', article) if p.strip()]
+    paragraphs_single = [p.strip() for p in re.split(r"\n", article) if p.strip()]
     if len(paragraphs_single) == expected:
         return "\n\n".join(paragraphs_single)
 
     # Second check: did it output everything in 1 paragraph?
     if len(paragraphs_double) == 1:
         # Split into sentences using a simple regex
-        sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', paragraphs_double[0]) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", paragraphs_double[0]) if s.strip()]
         if len(sentences) >= expected:
             # Distribute sentences into expected paragraphs
             if expected == 3:
@@ -53,16 +53,16 @@ def _heal_synthesis_paragraph_structure(article: str, expected: int) -> str:
                 p1_len = max(1, n // 3)
                 p2_len = max(1, (n - p1_len) // 2)
                 p1 = " ".join(sentences[:p1_len])
-                p2 = " ".join(sentences[p1_len:p1_len + p2_len])
-                p3 = " ".join(sentences[p1_len + p2_len:])
+                p2 = " ".join(sentences[p1_len : p1_len + p2_len])
+                p3 = " ".join(sentences[p1_len + p2_len :])
                 return f"{p1}\n\n{p2}\n\n{p3}"
             elif expected == 5:
                 n = len(sentences)
                 p_len = max(1, n // 5)
                 parts = []
                 for i in range(4):
-                    parts.append(" ".join(sentences[i * p_len:(i + 1) * p_len]))
-                parts.append(" ".join(sentences[4 * p_len:]))
+                    parts.append(" ".join(sentences[i * p_len : (i + 1) * p_len]))
+                parts.append(" ".join(sentences[4 * p_len :]))
                 return "\n\n".join(parts)
 
     return article
@@ -89,6 +89,7 @@ def _evaluate_synthesis_candidate(
 
     # Heal paragraph structure if needed to prevent incorrect point docking
     from tasks.intelligence.synthesis_scoring import _expected_article_paragraphs
+
     expected_paragraphs = _expected_article_paragraphs()
     generated_article = _heal_synthesis_paragraph_structure(generated_article, expected_paragraphs)
 
@@ -141,12 +142,16 @@ def _evaluate_synthesis_candidate(
         if not copy_ok:
             return None, "sr_copy_purity_failed", copy_diag
 
-    return {
-        "quality_score": quality_score,
-        "summary": summary,
-        "generated_article": generated_article,
-        "synthetic_headline": synthetic_headline,
-    }, None, None
+    return (
+        {
+            "quality_score": quality_score,
+            "summary": summary,
+            "generated_article": generated_article,
+            "synthetic_headline": synthetic_headline,
+        },
+        None,
+        None,
+    )
 
 
 def _grounding_retry_suffix(lang: str, diagnostics: dict | None) -> str:
@@ -185,11 +190,7 @@ def _attempt_gemma_rescue(
     from core.llm_router import _local_model_available
     from core.runtime_limits import SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC, local_synthesis_enabled
 
-    if (
-        not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC
-        or not local_synthesis_enabled()
-        or not _local_model_available()
-    ):
+    if not SYNTHESIS_GEMMA_BEFORE_DETERMINISTIC or not local_synthesis_enabled() or not _local_model_available():
         return None
     if "local" in exclude_providers:
         return None
@@ -273,6 +274,7 @@ def _generate_synthesis_via_cascade(
     if primary_provider == "enhanced_fallback":
         if force_llm:
             from core.llm_router import _default_remote_provider
+
             primary_provider = _default_remote_provider()
         else:
             return {

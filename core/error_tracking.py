@@ -82,9 +82,7 @@ def capture_exception(error: Exception, context: Optional[Dict[str, Any]] = None
         log_error(error, context)
 
 
-def capture_message(
-    message: str, level: str = "error", context: Optional[Dict[str, Any]] = None
-):
+def capture_message(message: str, level: str = "error", context: Optional[Dict[str, Any]] = None):
     """Capture a custom message with optional context."""
     _initialize_sentry()
 
@@ -142,9 +140,7 @@ def set_user_context(user_id: str, email: Optional[str] = None, **kwargs):
         log.error(f"Failed to set user context in Sentry: {e}")
 
 
-def add_breadcrumb(
-    message: str, category: str = "default", data: Optional[Dict[str, Any]] = None
-):
+def add_breadcrumb(message: str, category: str = "default", data: Optional[Dict[str, Any]] = None):
     """Add a breadcrumb for diagnostic context."""
     _initialize_sentry()
 

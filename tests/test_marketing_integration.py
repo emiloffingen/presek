@@ -18,6 +18,34 @@ def client():
     finally:
         test_client.close()
 
+
+def _sync_csrf_header(client, response=None):
+    """Mirror the rotated csrf_token cookie into the request header.
+
+    The security middleware rotates the csrf_token cookie on every
+    response while verify_csrf_token requires header == cookie
+    (double-submit). A correct client re-reads the cookie per request,
+    otherwise follow-up state-changing requests fail with 403.
+    """
+    token = None
+    if response is not None:
+        try:
+            token = response.cookies.get("csrf_token")
+        except Exception:
+            token = None
+    if not token:
+        try:
+            token = client.cookies.get("csrf_token")
+        except Exception:
+            token = None
+    if token:
+        client.headers["X-CSRF-Token"] = token
+        try:
+            client.cookies.set("csrf_token", token)
+        except Exception:
+            pass
+    return token
+
 def test_checkout_validation_invalid_slot(client):
     # Prepare dummy file
     file_data = io.BytesIO(b"dummy image data")
@@ -112,6 +140,7 @@ def test_checkout_and_ad_lifecycle(client):
     data = response.json()
     assert data["status"] == "success"
     assert "campaign_id" in data
+    _sync_csrf_header(client, response)
     
     campaign_id = data["campaign_id"]
     
@@ -126,6 +155,7 @@ def test_checkout_and_ad_lifecycle(client):
     # 2. Get active ads and verify our campaign is active
     active_response = client.get("/api/marketing/ads/active")
     assert active_response.status_code == 200
+    _sync_csrf_header(client, active_response)
     active_data = active_response.json()
     assert active_data["status"] == "success"
     assert "top_banner" in active_data["ads"]
@@ -139,6 +169,7 @@ def test_checkout_and_ad_lifecycle(client):
     imp_response = client.post(f"/api/marketing/ads/{campaign_id}/impression")
     assert imp_response.status_code == 200
     assert imp_response.json()["status"] == "success"
+    _sync_csrf_header(client, imp_response)
     
     # Verify impression incremented
     campaign = db.execute("SELECT impressions_delivered FROM advertising_campaigns WHERE id = %s", (campaign_id,))

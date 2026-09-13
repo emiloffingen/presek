@@ -38,10 +38,7 @@ def _schedule_deep_analyst_work(
             with _analyst_semaphore:
                 analyst_text = f"NASLOV: {synthetic_headline}\n{summary}"
                 deep_metadata = analyst.extract_deep_metadata(analyst_text, lang=lang)
-                titles_sources = [
-                    f"{a['source']}: {a['title']}"
-                    for a in article_rows[:10]
-                ]
+                titles_sources = [f"{a['source']}: {a['title']}" for a in article_rows[:10]]
                 pluralism_data = analyst.assess_pluralism(titles_sources, lang=lang)
                 deep_metadata = _ensure_dict(deep_metadata)
                 pluralism_data = _ensure_dict(pluralism_data)
@@ -78,9 +75,7 @@ def _schedule_deep_analyst_work(
                 centroid = _compute_centroid_from_values(
                     [a.get("embedding") for a in article_rows if a.get("embedding")]
                 )
-                centroid_str = (
-                    f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
-                )
+                centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
                 db.execute(
                     """
