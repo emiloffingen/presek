@@ -300,7 +300,7 @@ async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(ver
     return {"status": "success", "subscription": sub}
 
 
-async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = "sr") -> List[dict]:
+async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = "mk") -> List[dict]:
     """
     Core personalization search using pgvector. Computes dynamic interest vectors
     from recently read articles or followed topics, and returns semantically matching clusters.

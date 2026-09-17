@@ -432,9 +432,6 @@ def test_fastapi_only_registers_prefixed_routers(mock_all):
 
 def _with_homepage_synthesis(cluster, *, homepage_score=5.0):
     enriched = dict(cluster)
-    enriched["has_synthesis"] = True
-    enriched["generated_article"] = f"Sinteza za {enriched['cluster_id']}."
-    enriched["synthetic_headline"] = enriched["articles"][0]["title"]
     enriched["homepage_score"] = homepage_score
     return enriched
 
@@ -772,10 +769,6 @@ def test_home_route_composes_named_slots(mock_all):
 
     with (
         patch(
-            "routes.home.fetch_synthesis_hero_candidates",
-            new=AsyncMock(return_value=[]),
-        ),
-        patch(
             "routes.home.fetch_news_data",
             new=AsyncMock(return_value=news_payload),
         ),
@@ -784,10 +777,6 @@ def test_home_route_composes_named_slots(mock_all):
         patch(
             "routes.home.get_trending_route",
             new=AsyncMock(return_value=[{"word": "Budzet", "trend": "↑"}]),
-        ),
-        patch(
-            "routes.home.get_top_entities",
-            new=AsyncMock(return_value=[{"name": "vlada", "total_mentions": 7, "type": "ORG"}]),
         ),
         patch(
             "routes.home.get_stats_summary",
@@ -801,35 +790,16 @@ def test_home_route_composes_named_slots(mock_all):
                 }
             ),
         ),
-        patch(
-            "routes.intelligence.get_latest_briefing",
-            new=AsyncMock(
-                return_value={
-                    "status": "success",
-                    "date": "2026-06-17",
-                    "content": "## Šta pokreće dan\n\nGlavna vest.",
-                }
-            ),
-        ),
     ):
         data = asyncio.run(home.get_home())
 
     assert data["status"] == "success"
-    assert data["briefing"]["date"] == "2026-06-17"
     assert data["pipeline"] is not None
     assert data["lead"]["cluster_id"] == "lead"
     assert [item["cluster_id"] for item in data["supporting"]] == [
         "support-1",
         "support-2",
         "support-3",
-    ]
-    assert [item["cluster_id"] for item in data["for_you_pool"]] == [
-        "foryou-1",
-        "foryou-2",
-        "foryou-3",
-        "foryou-4",
-        "foryou-5",
-        "foryou-6",
     ]
     assert [item["cluster_id"] for item in data["developing"]] == [
         "developing-1",
@@ -856,8 +826,6 @@ def test_home_route_composes_named_slots(mock_all):
         "Sobranieto otvori rasprava za budzetot",
         "Lead",
     ]
-    assert data["focus_entities"][0]["name"] == "Vlada"
-    assert data["focus_entities"][0]["display_name"] == "Vlada"
 
 
 def test_home_live_now_route_uses_backend_selection(mock_all):

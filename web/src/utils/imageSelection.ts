@@ -98,7 +98,7 @@ export function buildProxySrcSet(baseUrl: string | null | undefined, widths: num
 
 export function buildProxyFallbackUrl(
   cluster: ClusterLike,
-  lang: SiteLang = 'sr',
+  lang: SiteLang = 'mk',
   variant: ImageVariant = 'card',
 ) {
   const context = fallbackContext(cluster);
@@ -111,7 +111,7 @@ export function buildProxyFallbackUrl(
   return proxyUrl(`/proxy?${params.toString()}`);
 }
 
-export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
+export function buildEmergencyFallbackUrl(lang: SiteLang = 'mk') {
   const params = new URLSearchParams({
     cat: lang === 'mk' ? 'вести' : 'vesti',
     lang,
@@ -120,7 +120,7 @@ export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
   return proxyUrl(`/proxy?${params.toString()}`);
 }
 
-export function getFallbackImage(cluster: ClusterLike, lang: SiteLang = 'sr', variant: ImageVariant = 'card') {
+export function getFallbackImage(cluster: ClusterLike, lang: SiteLang = 'mk', variant: ImageVariant = 'card') {
   const kind = getFallbackKind(cluster);
   const smartSrc = buildProxyFallbackUrl(cluster, lang, variant);
 
@@ -153,7 +153,7 @@ function uniqueCandidates(cluster: ClusterLike) {
 export function chooseClusterImage(
   cluster: ClusterLike,
   variant: ImageVariant = 'card',
-  lang: SiteLang = 'sr',
+  lang: SiteLang = 'mk',
 ) {
   const candidates = uniqueCandidates(cluster);
 

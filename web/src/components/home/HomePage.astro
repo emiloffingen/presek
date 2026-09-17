@@ -9,24 +9,19 @@ import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
 import AnalizaSectionNav from './AnalizaSectionNav.astro';
 import Footer from '../Footer.astro';
 
-import ForYouIsland from '../ForYouIsland.tsx';
 import LeadHero from './LeadHero.astro';
 import SupportingBand from './SupportingBand.astro';
 import { ErrorBoundary } from '../ErrorBoundary.tsx';
-import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
 import HomePregledTeaser from './HomePregledTeaser.astro';
-import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import PresekInlinedAd from '../PresekInlinedAd.astro';
 import PresekRailAd from '../PresekRailAd.astro';
 import { loadHomepageViewModel } from '../../lib/homepageViewModel';
 import { safeJsonForScript } from '../../lib/safeJson';
-import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
-import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import HomeStartHere from './HomeStartHere.astro';
@@ -80,7 +75,6 @@ const homepageVm = await loadHomepageViewModel({
 
 const {
     homepageFlags,
-    focusEntities,
     leadCluster,
     leadVisual,
     leadSummary,
@@ -93,7 +87,6 @@ const {
     hasPartialFeedContent,
     showEmptyState,
     supportingClusters,
-    forYouClusters,
     feedClusters,
     wireClusters,
     excludedClusterIds,
@@ -108,9 +101,6 @@ const {
     unifiedFeedItems,
     pluralismPct,
     showLeadHeroVisual,
-    displayedSynthesisPicks,
-    feedSynthesisTeaser,
-    feedSynthesisMoreCount,
     analysisBands,
     leadEvidenceItems,
     leadStatus,
@@ -139,7 +129,6 @@ const {
     globalClusters,
     trending,
     stats,
-    briefing,
     pipeline,
 } = homepageState;
 
@@ -154,9 +143,6 @@ const dailyModeLabel = isHomepage && variant !== 'pregled' && isSimpleHomepage
 const expandPreviewChips: string[] = [];
 if (typeof pluralismPct === 'number' && pluralismPct > 0) {
     expandPreviewChips.push(t('home.expand_preview_pluralism', { pct: pluralismPct }));
-}
-if (displayedSynthesisPicks.length > 0) {
-    expandPreviewChips.push(t('home.expand_preview_synthesis', { count: displayedSynthesisPicks.length }));
 }
 if (analizaNavItems.length > 0) {
     expandPreviewChips.push(t('home.expand_preview_modules', { count: analizaNavItems.length }));
@@ -288,12 +274,6 @@ if (analizaNavItems.length > 0) {
 					</div>
 				)}
 
-                {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-core">
-                        <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
-                    </div>
-                )}
-
                 {isHomepage && !isPregled && !error && (unifiedFeedItems.length > 0 || globalClusters.length > 0) && (
                     <div id="home-unified-feed" class="section-wrapper home-mobile-order-feed home-edition-core presek-section-mark home-feed-only">
                         {unifiedFeedItems.length > 0 ? (
@@ -352,16 +332,6 @@ if (analizaNavItems.length > 0) {
                         <PresekRailAd class="home-feed-rail-ad" />
                     </div>
                 )}
-
-				{isHomepage && displayedSynthesisPicks.length > 0 && showAnalysisLayers && (
-					<div class="section-wrapper home-mobile-order-synthesis homepage-analiza-only">
-						<SynthesisPicksSection
-							synthesisPicks={displayedSynthesisPicks}
-							lang={lang}
-							defaultOpen={isPregled}
-						/>
-					</div>
-				)}
 
 				<div class={`home-mobile-order-analysis ${isHomepage ? 'homepage-analiza-only' : 'hidden'}`}>
 				{/* ── UGAO GLEDANJA (PERSPECTIVE SPECTRUM) ── */}
@@ -492,38 +462,14 @@ if (analizaNavItems.length > 0) {
                 )}
                 </div>
 
-                <div class="home-mobile-order-feed-extended homepage-analiza-only">
-                {isHomepage && forYouClusters.length > 0 && (
-					<div class="section-wrapper for-you-wrapper" data-for-you-band>
-                        <p class="for-you-boundary-label">{t('home.for_you_boundary')}</p>
-                        <ErrorBoundary>
-                            <ForYouIsland client:visible clusters={forYouClusters} excludeClusterIds={excludedClusterIds} lang={lang} />
-                        </ErrorBoundary>
-                    </div>
-				)}
-                </div>
-
-                {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
-                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-analiza-deferred home-feed-only">
-                        <HomeSynthesisTeaser
-                            cluster={feedSynthesisTeaser}
-                            lang={lang}
-                            moreCount={feedSynthesisMoreCount}
-                        />
-                    </div>
-                )}
-
 
 			</div>
 			{/* HomeRail rendered horizontally at the bottom of the main feed */}
 			<div class={`w-full mt-16 pt-12 ${isHomepage ? 'homepage-analiza-only' : 'hidden'}`}>
 				<div class="masthead-double-rule mb-12"></div>
 				<HomeRail
-					briefing={briefing}
 					stats={stats}
-					focusEntities={focusEntities}
 					getTimeStr={getTimeStr}
-					getBriefingSnippet={getBriefingSnippet}
 				/>
 			</div>
 		</div>

@@ -3,8 +3,6 @@ import { chooseClusterImage } from '../utils/imageSelection.ts';
 import { getStoryPreviewText } from '../utils/textUtils.ts';
 import { buildUnifiedFeedItems } from './unifiedFeed.ts';
 import {
-    buildHomepageSynthesisExcludeIds,
-    filterSynthesisPicks,
     selectVisibleAnalysisBands,
 } from './homepageLayout.ts';
 import { buildLeadSignals, buildLeadStatus, getFirstArticle } from './homepageLeadSignals.ts';
@@ -13,7 +11,6 @@ import { buildHomepageSections } from './homepageSections.ts';
 import { getClockTimeStr } from './newsTimeFormat.ts';
 import type { HomepageDataState, HomepageFilters } from './homepageData.ts';
 import {
-    buildFocusEntities,
     buildHomepageFlags,
     buildLeadViewModel,
     loadHomepageData,
@@ -22,7 +19,6 @@ import {
 
 export type HomepageViewModel = {
     homepageFlags: ReturnType<typeof buildHomepageFlags>;
-    focusEntities: ReturnType<typeof buildFocusEntities>;
     leadCluster: NewsCluster | null;
     leadVisual: ReturnType<typeof chooseClusterImage> | null;
     leadSummary: string;
@@ -35,7 +31,6 @@ export type HomepageViewModel = {
     hasPartialFeedContent: boolean;
     showEmptyState: boolean;
     supportingClusters: NewsCluster[];
-    forYouClusters: NewsCluster[];
     feedClusters: NewsCluster[];
     wireClusters: NewsCluster[];
     excludedClusterIds: string[];
@@ -51,9 +46,6 @@ export type HomepageViewModel = {
     unifiedFeedItems: ReturnType<typeof buildUnifiedFeedItems>;
     pluralismPct: number | null;
     showLeadHeroVisual: boolean;
-    displayedSynthesisPicks: NewsCluster[];
-    feedSynthesisTeaser: NewsCluster | null;
-    feedSynthesisMoreCount: number;
     analysisBands: ReturnType<typeof selectVisibleAnalysisBands>;
     leadEvidenceItems: Array<{ label: string; value: string; detail: string }>;
     leadStatus: LeadStatus | null;
@@ -99,21 +91,17 @@ export function buildHomepageViewModel(options: {
         clusters,
         globalClusters,
         trending,
-        topEntities,
         stats,
-        synthesisPicks,
         homepageLeadDisplay,
         pipeline,
     } = homepageState;
 
     let supportingClusters = homepageState.supportingClusters;
-    let forYouClusters = homepageState.forYouClusters;
     let feedClusters = homepageState.feedClusters;
     let wireClusters = homepageState.wireClusters;
     let excludedClusterIds = homepageState.excludedClusterIds;
 
     const homepageFlags = buildHomepageFlags(homepageState, isHomepage);
-    const focusEntities = buildFocusEntities(topEntities);
     const leadCluster = homepageFlags.leadCluster;
     const leadVisual = leadCluster ? chooseClusterImage(leadCluster, 'hero', lang) : null;
 
@@ -140,7 +128,6 @@ export function buildHomepageViewModel(options: {
         clusters,
         leadCluster,
         supportingClusters,
-        forYouClusters,
         feedClusters,
         developingClusters: homepageState.developingClusters,
         wireClusters,
@@ -151,7 +138,6 @@ export function buildHomepageViewModel(options: {
 
     ({
         supportingClusters,
-        forYouClusters,
         feedClusters,
         wireClusters,
         excludedClusterIds,
@@ -180,11 +166,6 @@ export function buildHomepageViewModel(options: {
     const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
 
     const showLeadHeroVisual = Boolean(leadVisual?.proxiedUrl);
-    const displayedSynthesisPicks = isHomepage
-        ? filterSynthesisPicks(synthesisPicks, buildHomepageSynthesisExcludeIds(leadCluster, supportingClusters))
-        : synthesisPicks;
-    const feedSynthesisTeaser = displayedSynthesisPicks[0] || null;
-    const feedSynthesisMoreCount = Math.max(0, displayedSynthesisPicks.length - 1);
     const analysisBands = isHomepage
         ? selectVisibleAnalysisBands({
             radarCount: radarClusters.length,
@@ -282,14 +263,6 @@ export function buildHomepageViewModel(options: {
     const consensusTeaser = consensusBandItems[0]?.title || '';
 
     const analizaNavItems: HomepageViewModel['analizaNavItems'] = [];
-    if (displayedSynthesisPicks.length > 0) {
-        analizaNavItems.push({
-            target: '[data-synthesis-band]',
-            kicker: t('home.feed_synthesis_badge'),
-            label: t('home.synthesis_picks_title'),
-            count: displayedSynthesisPicks.length,
-        });
-    }
     if (analysisBands.perspectives && perspectivesClusters.length > 0) {
         analizaNavItems.push({
             target: '[data-perspectives-band]',
@@ -314,14 +287,6 @@ export function buildHomepageViewModel(options: {
             count: consensusClusters.length,
         });
     }
-    if (forYouClusters.length > 0) {
-        analizaNavItems.push({
-            target: '[data-for-you-band]',
-            kicker: t('nav.for_you'),
-            label: t('home.nav_personalized'),
-            count: forYouClusters.length,
-        });
-    }
 
     const analysisOverviewItems = [
         {
@@ -330,25 +295,14 @@ export function buildHomepageViewModel(options: {
             note: t('home.analysis_overview_modules_note'),
         },
         {
-            label: t('home.analysis_overview_synthesis'),
-            value: String(displayedSynthesisPicks.length),
-            note: t('home.analysis_overview_synthesis_note'),
-        },
-        {
             label: t('home.analysis_overview_pluralism'),
             value: `${pluralismPct}%`,
             note: t('home.analysis_overview_pluralism_note'),
-        },
-        {
-            label: t('home.analysis_overview_personal'),
-            value: String(forYouClusters.length),
-            note: t('home.analysis_overview_personal_note'),
         },
     ].filter((item) => item.value !== '0' || item.label === t('home.analysis_overview_pluralism'));
 
     return {
         homepageFlags,
-        focusEntities,
         leadCluster,
         leadVisual,
         leadSummary,
@@ -361,7 +315,6 @@ export function buildHomepageViewModel(options: {
         hasPartialFeedContent,
         showEmptyState,
         supportingClusters,
-        forYouClusters,
         feedClusters,
         wireClusters,
         excludedClusterIds,
@@ -377,9 +330,6 @@ export function buildHomepageViewModel(options: {
         unifiedFeedItems,
         pluralismPct,
         showLeadHeroVisual,
-        displayedSynthesisPicks,
-        feedSynthesisTeaser,
-        feedSynthesisMoreCount,
         analysisBands,
         leadEvidenceItems,
         leadStatus,

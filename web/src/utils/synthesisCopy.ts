@@ -19,7 +19,7 @@ const META_PARAGRAPH_PATTERNS: Record<'mk' | 'sr', RegExp[]> = {
     ],
 };
 
-export function isSynthesisMetaParagraph(text: string, lang = 'sr'): boolean {
+export function isSynthesisMetaParagraph(text: string, lang = 'mk'): boolean {
     const locale: 'mk' | 'sr' = lang === 'mk' ? 'mk' : 'sr';
     const trimmed = String(text || '').trim();
     if (!trimmed) return false;
@@ -34,11 +34,11 @@ export function stripBareUrls(text: string): string {
         .trim();
 }
 
-export function prepareSynthesisParagraph(text: string, lang = 'sr'): string {
+export function prepareSynthesisParagraph(text: string, lang = 'mk'): string {
     return scrubBriefingBoilerplate(stripBareUrls(text), lang);
 }
 
-export function splitNarrativeParagraphs(text: string, lang = 'sr'): {
+export function splitNarrativeParagraphs(text: string, lang = 'mk'): {
     story: string[];
     meta: string[];
 } {

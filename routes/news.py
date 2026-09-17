@@ -143,7 +143,7 @@ _ARTICLE_LIST_COLUMNS = (
 )
 
 
-def _public_article_payload(article, lang="sr", include_full_content: bool = False):
+def _public_article_payload(article, lang="mk", include_full_content: bool = False):
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 
@@ -353,7 +353,7 @@ async def get_news(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = "mk",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
@@ -385,7 +385,7 @@ async def fetch_news_data(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = "mk",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
@@ -819,7 +819,7 @@ async def fetch_news_data(
 async def semantic_search(
     q: str = Query(..., min_length=3, max_length=API_MAX_Q_LEN),
     limit: int = Query(24, ge=1, le=50),
-    lang: str = "sr",
+    lang: str = "mk",
 ):
     """
     Explicit Semantic Search endpoint.
@@ -1055,7 +1055,7 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
 
 
 @router.get("/cluster/{cluster_id}")
-async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "mk"):
     # Validate cluster_id using comprehensive validation
     validate_cluster_id_input(cluster_id)
     # Validate language code
@@ -1565,7 +1565,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
 
 
 @router.get("/cluster/{cluster_id}/history")
-async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_history(cluster_id: str, lang: Optional[str] = "mk"):
     """
     Returns the historical versions of a cluster synthesis.
     """
@@ -1701,7 +1701,7 @@ async def get_live_route(request: Request):
 
 
 @router.get("/cluster/{cluster_id}/audio")
-async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "mk"):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
     validate_cluster_id(cluster_id)
 

@@ -2,14 +2,6 @@ import type { NewsCluster } from '../types';
 
 export type AnalysisBandKind = 'radar' | 'perspectives' | 'consensus';
 
-export function filterSynthesisPicks(
-  picks: NewsCluster[],
-  excludeIds: Iterable<string> = [],
-): NewsCluster[] {
-  const excluded = new Set(Array.from(excludeIds).filter(Boolean));
-  return (picks || []).filter((pick) => pick?.cluster_id && !excluded.has(pick.cluster_id));
-}
-
 export function selectVisibleAnalysisBands(input: {
   radarCount: number;
   perspectivesCount: number;
@@ -29,14 +21,4 @@ export function selectVisibleAnalysisBands(input: {
     perspectives: visible.has('perspectives'),
     consensus: visible.has('consensus'),
   };
-}
-
-export function buildHomepageSynthesisExcludeIds(
-  leadCluster: NewsCluster | null,
-  supportingClusters: NewsCluster[],
-): string[] {
-  return [
-    leadCluster?.cluster_id,
-    ...supportingClusters.map((cluster) => cluster.cluster_id),
-  ].filter(Boolean) as string[];
 }

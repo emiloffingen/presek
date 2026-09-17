@@ -3,7 +3,7 @@ export const languages = {
   mk: 'Makedonski',
 } as const;
 
-export const defaultLang = 'sr';
+export const defaultLang = 'mk';
 
 export type Locale = keyof typeof languages;
 

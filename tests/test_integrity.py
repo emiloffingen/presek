@@ -115,16 +115,6 @@ class TestAstroFrontendIntegrity:
         assert "_article_freshness_time(article)" in homepage
         assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
 
-    def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
-        home_route = _read("routes/home.py")
-        entity_route = _read("routes/intelligence.py")
-
-        assert 'display_name = _normalize_focus_entity_name(raw_name)' in home_route
-        assert 'normalized["display_name"] = display_name' in home_route
-        assert 'normalized["name"] = display_name' in home_route
-        assert "LOWER(name) = LOWER(%s)" in entity_route
-        assert "LOWER(tag) = LOWER(%s)" in entity_route
-
     def test_homepage_cards_render_ingestion_aware_time(self):
         homepage = _read("web/src/components/NewsCard.astro")
         interactive_card = _read("web/src/components/NewsCard.tsx")
