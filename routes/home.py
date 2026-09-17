@@ -8,13 +8,10 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
 from core.api_errors import soft_error
-from core.audio_service import AudioService
 from core.queue_status import reader_pipeline_status
-from nlp import normalize_focus_entity_surface
 from utils import cached_response, set_cache
 
 from .common import cleanAndDecode
-from .intelligence import get_top_entities
 from .news import fetch_news_data
 from .stats import get_stats_summary
 from .system import get_trending_route
