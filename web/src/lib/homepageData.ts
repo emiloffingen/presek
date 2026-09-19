@@ -282,17 +282,12 @@ export async function fetchHomepagePayload(options: {
     errorMessage: string;
 }): Promise<HomepageDataState> {
     const { apiUrl, lang, fetchJson, fetchJsonCached, errorMessage } = options;
-    const [homePayload, briefingPayload] = await Promise.allSettled([
+    const homePayload = await Promise.allSettled([
         fetchJson(`${apiUrl}/home?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
-    ]);
+    ]).then(([result]) => result);
 
     if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
-        const state = { ...normalizeHomeApiResponse(homePayload.value), error: null };
-        if (!state.briefing && briefingPayload.status === 'fulfilled') {
-            state.briefing = normalizeBriefingPayload(briefingPayload.value);
-        }
-        return state;
+        return { ...normalizeHomeApiResponse(homePayload.value), error: null };
     }
 
     const { state, recovered } = await loadHomepageFallback({
