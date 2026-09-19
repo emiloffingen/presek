@@ -1,6 +1,5 @@
 ---
-// 🌐 PRESEK - Consolidated Multi-language Site (Serbian & Macedonian)
-// This layout handles both presek.live (sr) and presek.mk (mk) via Astro i18n.
+// PRESEK.MK public layout.
 
 import '../styles/global.css';
 import '../lib/transliterationInit.js';
@@ -51,7 +50,7 @@ const {
 const defaultDescription = t('layout.default_description');
 const siteName = siteDisplayName(lang);
 const pageTitle = buildPageTitle(title, lang);
-const { canonicalUrl, imageUrl, srHref, mkHref } = resolveLayoutUrls(
+const { canonicalUrl, imageUrl } = resolveLayoutUrls(
 	requestUrl.pathname,
 	lang,
 	image,
@@ -76,8 +75,6 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 			description={metaDescription}
 			canonicalUrl={canonicalUrl}
 			imageUrl={imageUrl}
-			srHref={srHref}
-			mkHref={mkHref}
 			type={type}
 			robots={robots}
 			image={image}

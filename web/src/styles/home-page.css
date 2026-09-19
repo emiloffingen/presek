@@ -966,6 +966,30 @@
     color: var(--muted-foreground);
 }
 
+.home-error-retry {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.8rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--nyt-red) 35%, var(--border));
+    background: color-mix(in srgb, var(--background) 80%, var(--nyt-red) 5%);
+    font-family: var(--font-ui);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--nyt-red);
+    cursor: pointer;
+    transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.home-error-retry:hover,
+.home-error-retry:focus-visible {
+    border-color: var(--nyt-red);
+    background: var(--nyt-red);
+    color: var(--background);
+}
+
 .home-degraded-panel {
     display: flex;
     align-items: baseline;

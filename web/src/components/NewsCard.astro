@@ -203,6 +203,12 @@ function getTimeStr(dateStr: string) {
         )}
 
         <div class="article-footer-meta mt-auto">
+            {uniqueSources > 1 && (
+                <>
+                    <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+                    <span class="meta-dot">·</span>
+                </>
+            )}
             <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
             {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
                 <>

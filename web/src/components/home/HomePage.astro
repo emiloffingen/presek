@@ -238,6 +238,9 @@ if (analizaNavItems.length > 0) {
                         {hasPartialFeedContent && (
                             <p class="home-error-note">{t('home.partial_error_note')}</p>
                         )}
+                        <button type="button" class="home-error-retry" onclick="window.location.reload()">
+                            {t('home.retry')}
+                        </button>
                     </div>
                 )}
 

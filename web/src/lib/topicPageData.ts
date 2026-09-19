@@ -298,6 +298,6 @@ export function buildTopicPageMeta(lang: 'sr' | 'mk', topic: string) {
     title: topic ? `${topic} | Tema` : 'Tema',
     description: `još što je aktivno za temu ${topic} — klasteri, izvori, perspektive i razvoj.`,
     breadcrumbTopics: 'Teme',
-    siteUrl: 'https://presek.live',
+    siteUrl: 'https://presek.mk',
   };
 }

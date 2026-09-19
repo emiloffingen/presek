@@ -1,4 +1,4 @@
-import { buildCanonicalUrl, hreflangAlternates, siteOrigin, type Locale } from './localePaths.ts';
+import { buildCanonicalUrl, siteOrigin, type Locale } from './localePaths.ts';
 
 export function siteDisplayName(lang: Locale): string {
   return lang === 'sr' ? 'PRESEK.rs' : 'PRESEK.mk';
@@ -46,8 +46,7 @@ export function resolveLayoutUrls(
   const imageUrl = /^https?:\/\//i.test(image)
     ? image
     : `${siteUrl}${image.startsWith('/') ? image : `/${image}`}`;
-  const { sr: srHref, mk: mkHref } = hreflangAlternates(pathname);
-  return { siteUrl, canonicalUrl, imageUrl, srHref, mkHref };
+  return { siteUrl, canonicalUrl, imageUrl };
 }
 
 export function gtagIdForLang(lang: Locale): string {

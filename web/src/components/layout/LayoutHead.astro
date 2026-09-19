@@ -9,8 +9,6 @@ interface Props {
   description: string;
   canonicalUrl: string;
   imageUrl: string;
-  srHref: string;
-  mkHref: string;
   type: string;
   robots?: string;
   image: string;
@@ -27,8 +25,6 @@ const {
   description,
   canonicalUrl,
   imageUrl,
-  srHref,
-  mkHref,
   type,
   robots,
   image,
@@ -73,9 +69,8 @@ const ClientRouterAny = ClientRouter as any;
 {robots && <meta name="robots" content={robots} />}
 
 <link rel="canonical" href={canonicalUrl} />
-<link rel="alternate" hreflang="sr-Latn-RS" href={srHref} />
-<link rel="alternate" hreflang="mk-MK" href={mkHref} />
-<link rel="alternate" hreflang="x-default" href={srHref} />
+<link rel="alternate" hreflang="mk-MK" href={canonicalUrl} />
+<link rel="alternate" hreflang="x-default" href={canonicalUrl} />
 
 {image && !image.includes('presek_emblem') && (
   <link rel="preload" as="image" href={imageUrl} fetchpriority="high" />

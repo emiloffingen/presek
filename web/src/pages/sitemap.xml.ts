@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
     const host = request.headers.get('host') || url.hostname;
     const isMk = host.includes('presek.mk');
-    const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
+            const SITE_URL = 'https://presek.mk';
     const API_URL = apiBaseUrl();
     
     const clusterData: {id: string, title: string, image: string | null, updated: string | null}[] = [];

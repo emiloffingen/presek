@@ -11,9 +11,10 @@ export function getLangFromUrl(url: URL, hostname?: string | null): Locale {
     return 'mk';
   }
 
-  // Fall back to path-based detection for Serbian site
+  // Macedonian is the sole public edition. Keep explicit legacy locale paths
+  // detectable for redirects and compatibility, but default everything else to MK.
   if (isLocale(lang)) return lang;
-  return defaultLang;
+  return 'mk';
 }
 
 export function useTranslations(lang: keyof typeof ui) {

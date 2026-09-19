@@ -1,8 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import {
-  shouldRewriteMkDomainToInternal,
   stripMkPrefix,
-  withMkPrefix,
 } from './lib/localePaths';
 import { buildCspPolicy, computeInlineHashes, generateCspNonce } from './lib/csp';
 import { timingSafeEqual } from 'node:crypto';
@@ -13,7 +11,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const hostname = host.split(':')[0].toLowerCase();
   const pathname = url.pathname;
 
-  if ((hostname === 'presek.live' || hostname === 'www.presek.live') && pathname.startsWith('/mk')) {
+  if (hostname === 'presek.live' || hostname === 'www.presek.live') {
     const targetPath = stripMkPrefix(pathname) || '/';
     const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');
     return Response.redirect(target, 301);
@@ -21,7 +19,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && pathname.startsWith('/sr')) {
     const targetPath = pathname.replace(/^\/sr/, '') || '/';
-    const target = new URL(`${targetPath}${url.search}`, 'https://presek.live');
+    const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');
     return Response.redirect(target, 301);
   }
 
@@ -48,13 +46,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
     return response;
   };
-
-  if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && shouldRewriteMkDomainToInternal(pathname)) {
-    const internalPath = withMkPrefix(pathname);
-    if (internalPath !== pathname) {
-      return attachFrameAncestors(await next(`${internalPath}${url.search}`));
-    }
-  }
 
   const isProductionHost =
     hostname === 'presek.live'

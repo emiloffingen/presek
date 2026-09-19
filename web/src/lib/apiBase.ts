@@ -21,7 +21,7 @@ export function proxyBaseUrl(): string {
   if (!apiBase || apiBase === '/api' || apiBase.startsWith('/')) return '';
 
   try {
-    const url = new URL(apiBase, 'https://presek.live');
+    const url = new URL(apiBase, 'https://presek.mk');
     if (url.pathname.endsWith('/api')) {
       url.pathname = url.pathname.slice(0, -4) || '/';
     }
