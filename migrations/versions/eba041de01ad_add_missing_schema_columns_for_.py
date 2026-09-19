@@ -26,8 +26,16 @@ def upgrade() -> None:
     op.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS pluralism_score FLOAT")
     op.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS narrative_diversity FLOAT")
     op.execute("ALTER TABLE cluster_summaries ADD COLUMN IF NOT EXISTS storyline_narrative TEXT")
-    op.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS key_facts JSONB")
-    op.execute("ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS analyst_entities JSONB")
+    op.execute(
+        """
+        DO $$ BEGIN
+            IF to_regclass('cluster_summary_history') IS NOT NULL THEN
+                ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS key_facts JSONB;
+                ALTER TABLE cluster_summary_history ADD COLUMN IF NOT EXISTS analyst_entities JSONB;
+            END IF;
+        END $$
+        """
+    )
 
 
 def downgrade() -> None:

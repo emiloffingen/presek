@@ -355,7 +355,8 @@ async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = D
 
 
 @router.get("/marketing/campaign/{campaign_id}")
-async def get_campaign_status(campaign_id: str):
+@custom_rate_limit("10/minute")
+async def get_campaign_status(request: Request, campaign_id: str):
     try:
         sql = """
             SELECT id, buyer_name, buyer_email, slot_id, target_impressions,

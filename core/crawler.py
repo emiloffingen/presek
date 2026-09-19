@@ -257,11 +257,24 @@ class CrawlerService:
                     user_agent=user_agent,
                 )
                 page = await context.new_page()
+
+                async def guard_request(route):
+                    request_url = route.request.url
+                    if request_url.startswith(("http://", "https://")):
+                        try:
+                            _resolve_public_ips(request_url)
+                        except Exception:
+                            await route.abort()
+                            return
+                    await route.continue_()
+
+                await page.route("**/*", guard_request)
                 await page.goto(url, wait_until="networkidle", timeout=30000)
                 await asyncio.sleep(1)
 
                 html_content = await page.content()
                 final_url = page.url
+                _resolve_public_ips(final_url)
 
                 metadata = await page.evaluate("""() => {
                     const getMeta = (name) => {
