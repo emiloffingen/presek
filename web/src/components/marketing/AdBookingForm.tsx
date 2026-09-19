@@ -13,6 +13,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { localePathForLang } from '../../lib/localePaths';
+import { buildCsrfHeadersAsync } from '../../lib/personalization';
 
 interface AdBookingFormProps {
   lang: 'sr' | 'mk';
@@ -137,10 +138,13 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     try {
       const formData = new FormData();
       formData.append('email', requestEmail);
+      const csrfHeaders = await buildCsrfHeadersAsync();
       
       const res = await fetch('/api/marketing/request-access', {
         method: 'POST',
-        body: formData
+        body: formData,
+        credentials: 'same-origin',
+        headers: csrfHeaders,
       });
       
       const data = await res.json();
@@ -288,9 +292,13 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
         formData.append('file', file);
       }
 
+      const csrfHeaders = await buildCsrfHeadersAsync();
+
       const res = await fetch('/api/marketing/checkout', {
         method: 'POST',
         body: formData,
+        credentials: 'same-origin',
+        headers: csrfHeaders,
       });
 
       if (!res.ok) {
