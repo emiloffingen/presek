@@ -13,7 +13,7 @@ log = logging.getLogger("presek.check_live_site")
 
 
 async def run():
-    target_url = sys.argv[1] if len(sys.argv) > 1 else "https://presek.live/"
+    target_url = sys.argv[1] if len(sys.argv) > 1 else "https://presek.mk/"
     log.info(f"Targeting URL: {target_url}")
 
     async with async_playwright() as p:
