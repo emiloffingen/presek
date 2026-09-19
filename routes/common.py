@@ -310,7 +310,7 @@ async def build_intelligence_summary_payload(
     last_24h: int,
     category: Optional[str] = None,
     runtime_events: Optional[dict] = None,
-    lang: Optional[str] = "mk",
+    lang: Optional[str] = "sr",
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     import asyncio

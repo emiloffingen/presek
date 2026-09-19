@@ -1,0 +1,38 @@
+---
+import type { BriefingSection } from '../../utils/briefingFormatter';
+import { useTranslations } from '../../i18n/utils';
+
+interface Props {
+	sections: BriefingSection[];
+	lang?: string;
+}
+
+const { sections, lang = 'sr' } = Astro.props;
+const t = useTranslations(lang as any);
+
+if (!sections.length) {
+	return null;
+}
+
+const sectionCount = sections.length;
+const countLabel = `${sectionCount} ${sectionCount === 1 ? t('briefing.toc_section_one') : t('briefing.toc_section_many')}`;
+---
+
+<details class="briefing-sections-toc" id="briefing-sections-toc">
+	<summary class="briefing-sections-toc__summary">
+		<span class="briefing-sections-toc__summary-label">
+			<span class="briefing-sections-toc__kicker">{t('briefing.toc_kicker')}</span>
+			<span class="briefing-sections-toc__count">{countLabel}</span>
+		</span>
+	</summary>
+	<ol class="briefing-sections-toc__list">
+		{sections.map((section) => (
+			<li>
+				<a href={`#${section.id}`} class="briefing-sections-link">
+					<span class="briefing-sections-link__index">{String(section.index).padStart(2, '0')}</span>
+					<span class="briefing-sections-link__title">{section.title}</span>
+				</a>
+			</li>
+		))}
+	</ol>
+</details>

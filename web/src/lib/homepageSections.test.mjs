@@ -123,8 +123,10 @@ test('buildHomepageSections uses API developing list when articles are compacted
   const sections = buildHomepageSections({
     clusters,
     leadCluster: clusters[0],
-    supportingClusters: clusters.slice(1, 4),
-    feedClusters: clusters.slice(4),
+    supportingClusters: clusters.slice(1),
+    forYouClusters: [],
+    feedClusters: [...developingClusters],
+    developingClusters,
     wireClusters: [],
     wireArticles: [],
     excludedClusterIds: [],
@@ -144,6 +146,7 @@ test('buildHomepageSections surfaces full filtered feed after lead and supportin
     clusters,
     leadCluster: clusters[0],
     supportingClusters: [],
+    forYouClusters: [],
     feedClusters: [],
     wireClusters: [],
     wireArticles: [],
@@ -155,6 +158,7 @@ test('buildHomepageSections surfaces full filtered feed after lead and supportin
     sections.supportingClusters.map((item) => item.cluster_id),
     ['story-1', 'story-2', 'story-3'],
   );
+  assert.equal(sections.forYouClusters.length, 0);
   assert.deepEqual(
     sections.developmentsFeatured.map((item) => item.cluster_id),
     ['story-4', 'story-5', 'story-6', 'story-7', 'story-8', 'story-9'],

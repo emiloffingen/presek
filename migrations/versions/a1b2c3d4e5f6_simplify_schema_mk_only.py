@@ -19,9 +19,24 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _safe_execute(sql: str) -> None:
+    """Execute raw SQL inside a DO block that swallows errors.
+
+    Alembic wraps each migration in a single transaction, so a failed
+    statement aborts the entire transaction on PostgreSQL.  Wrapping in a
+    PL/pgSQL block lets us ignore errors from columns/tables that don't
+    exist yet on this branch.
+    """
+    op.execute(
+        f"DO $$ BEGIN {sql}; "
+        "EXCEPTION WHEN undefined_column OR undefined_table "
+        "OR undefined_object THEN NULL; END $$"
+    )
+
+
 def upgrade() -> None:
     """Simplify schema for MK-only minimal AI version."""
-    
+
     # Drop tables that are no longer needed
     tables_to_drop = [
         "feed_sources",
@@ -39,33 +54,27 @@ def upgrade() -> None:
         "daily_briefings",
         "saved_insights",
     ]
-    
+
     for table in tables_to_drop:
         op.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
-    
+
+    # Remove Serbian data (safe even if columns don't exist on this branch)
+    _safe_execute("DELETE FROM sources WHERE country = 'RS'")
+    _safe_execute("DELETE FROM cluster_summaries WHERE lang = 'sr'")
+    _safe_execute("DELETE FROM subscribers WHERE locale = 'sr'")
+
     # Drop columns that are no longer needed
-    op.execute("ALTER TABLE articles DROP COLUMN IF EXISTS embedding")
-    op.execute("ALTER TABLE cluster_metadata DROP COLUMN IF EXISTS centroid")
-    op.execute("ALTER TABLE cluster_summaries DROP COLUMN IF EXISTS lang")
-    op.execute("ALTER TABLE subscribers DROP COLUMN IF EXISTS locale")
-    
+    _safe_execute("ALTER TABLE articles DROP COLUMN embedding")
+    _safe_execute("ALTER TABLE cluster_metadata DROP COLUMN centroid")
+    _safe_execute("ALTER TABLE cluster_summaries DROP COLUMN lang")
+    _safe_execute("ALTER TABLE subscribers DROP COLUMN locale")
+
     # Remove vector indexes if they exist
     op.execute("DROP INDEX IF EXISTS idx_articles_embedding")
     op.execute("DROP INDEX IF EXISTS idx_cluster_metadata_centroid")
     op.execute("DROP INDEX IF EXISTS idx_storylines_centroid")
-    
-    # Remove Serbian sources from sources table
-    op.execute("DELETE FROM sources WHERE country = 'RS'")
-    
-    # Remove Serbian subscribers
-    op.execute("DELETE FROM subscribers WHERE locale = 'sr'")
-    
-    # Remove cluster_summaries for Serbian
-    op.execute("DELETE FROM cluster_summaries WHERE lang = 'sr'")
 
 
 def downgrade() -> None:
     """Revert schema changes (not recommended - data will be lost)."""
-    # This is a destructive migration - downgrade is not supported
-    # The original schema can be restored from backup
     raise NotImplementedError("This migration is not reversible - restore from backup")

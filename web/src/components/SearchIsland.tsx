@@ -678,6 +678,7 @@ export default function SearchIsland({
             </button>
             <button
               onClick={startVoiceSearch}
+              aria-label={isListening ? 'Stop voice search' : 'Start voice search'}
               className={`search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-muted-foreground animate-pulse' : 'text-muted-foreground'}`}
             >
               <Mic size={18} />

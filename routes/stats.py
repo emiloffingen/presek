@@ -118,7 +118,7 @@ def _pick_quote_of_the_day(row) -> dict | None:
 
 
 @router.get("/archive/heatmap")
-async def get_archive_heatmap(lang: str = "mk"):
+async def get_archive_heatmap(lang: str = "sr"):
     country_filter = "RS" if lang == "sr" else "MK"
     cache_key = f"archive:heatmap:v3:{lang}"
     cached = cached_response(cache_key, ttl=3600)
@@ -163,7 +163,7 @@ async def get_archive(
     q: str = "",
     source: str = "",
     topic: str = "",
-    lang: str = "mk",
+    lang: str = "sr",
     page: int = 0,
     page_size: int = 50,
 ):
@@ -358,7 +358,7 @@ async def get_archive(
 
 
 @router.get("/archive/daily-briefing")
-async def get_archive_daily_briefing(date: str = Query(...), lang: str = "mk"):
+async def get_archive_daily_briefing(date: str = Query(...), lang: str = "sr"):
     """Provides an AI-generated briefing for a specific historical date."""
     validate_date(date)
     cache_key = f"archive:briefing:{date}:{lang}:v1"
@@ -415,7 +415,7 @@ async def get_archive_daily_briefing(date: str = Query(...), lang: str = "mk"):
 
 
 @router.get("/archive/on-this-day")
-async def get_archive_on_this_day(date: str = Query(...), lang: str = "mk"):
+async def get_archive_on_this_day(date: str = Query(...), lang: str = "sr"):
     """Finds a significant cluster from exactly 1 or 2 years ago."""
     validate_date(date)
     dt = datetime.strptime(date, "%Y-%m-%d")
@@ -458,7 +458,7 @@ async def get_stats_route():
 
 
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
-async def get_stats_summary(lang: Optional[str] = "mk"):
+async def get_stats_summary(lang: Optional[str] = "sr"):
     cache_key = f"api:stats:summary:v4:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -601,7 +601,7 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
 
 
 @router.get("/newsletter/unsubscribe")
-async def unsubscribe_newsletter(token: str, lang: str = "mk"):
+async def unsubscribe_newsletter(token: str, lang: str = "sr"):
     """Deactivate a newsletter subscription using a signed token."""
     from core.signed_tokens import parse_newsletter_unsubscribe_token
 
@@ -680,7 +680,7 @@ from routes.security import admin_auth
 
 
 @router.get("/stats/full")
-async def get_stats_full(request: Request, lang: str = "mk", authorized: str = Depends(admin_auth)):
+async def get_stats_full(request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)):
     cached = cached_response("stats:full:sr", ttl=120)
     if cached:
         return cached
@@ -897,7 +897,7 @@ async def control_source_route(name: str, request: Request, csrf_valid: bool = D
 
 
 @router.get("/stats/sentiment-trends")
-async def get_sentiment_trends(lang: Optional[str] = "mk"):
+async def get_sentiment_trends(lang: Optional[str] = "sr"):
     """Returns average sentiment and tone analysis for the last 7 days, filtered by language."""
     cache_key = f"api:stats:sentiment:trends:v2:{lang}"
     cached = cached_response(cache_key, ttl=1800)
@@ -954,7 +954,7 @@ async def get_sentiment_trends(lang: Optional[str] = "mk"):
 
 
 @router.get("/stats/mood")
-async def get_current_mood(lang: Optional[str] = "mk"):
+async def get_current_mood(lang: Optional[str] = "sr"):
     """Returns a real-time 'National Mood' based on today's coverage, filtered by language."""
     cache_key = f"api:stats:mood:v2:{lang}"
     cached = cached_response(cache_key, ttl=600)

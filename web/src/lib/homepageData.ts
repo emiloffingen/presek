@@ -46,14 +46,18 @@ export type HomepageDataState = {
     clusters: NewsCluster[];
     globalClusters: NewsCluster[];
     trending: unknown[];
+    topEntities: unknown[];
     stats: HomepageStats | null;
+    briefing: unknown | null;
     error: string | null;
     supportingClusters: NewsCluster[];
+    forYouClusters: NewsCluster[];
     feedClusters: NewsCluster[];
     developingClusters: NewsCluster[];
     wireClusters: NewsCluster[];
     wireArticles: WireArticle[];
     excludedClusterIds: string[];
+    synthesisPicks: NewsCluster[];
     homepageLeadDisplay: HomepageLeadDisplay;
     pipeline: HomepagePipeline;
 };
@@ -80,30 +84,66 @@ export function parseHomepageFilters(searchParams: URLSearchParams): HomepageFil
     return { category, topic, entity, subcategory, q, timespan, isHomepage };
 }
 
+export function normalizeForYouCluster(cluster: any): NewsCluster {
+    const article = cluster.articles?.[0] || {};
+    return ({
+        cluster_id: cluster.cluster_id,
+        is_breaking: cluster.is_breaking,
+        topics: cluster.topics,
+        tags: cluster.tags,
+        homepage_score: cluster.homepage_score,
+        articles: [{
+            title: article.title,
+            source: article.source,
+            summary: article.summary,
+            description: article.description,
+            category: article.category,
+        }],
+        sources_count: cluster.articles?.length || 0,
+    } as unknown) as NewsCluster;
+}
+
+export function normalizeBriefingPayload(payload: unknown) {
+    if (!payload || typeof payload !== 'object') return null;
+    const record = payload as { status?: string; content?: string };
+    if (record.status !== 'success' || !record.content) return null;
+    return payload;
+}
+
 export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'error'> {
     const lead = home?.lead ? [home.lead] : [];
     const supportingClusters = Array.isArray(home?.supporting) ? home.supporting : [];
+    const forYouClusters = Array.isArray(home?.for_you_pool)
+        ? home.for_you_pool.map(normalizeForYouCluster)
+        : [];
     const developingClusters = Array.isArray(home?.developing) ? home.developing : [];
     const wireClusters = Array.isArray(home?.wire) ? home.wire : [];
     const wireArticles = (Array.isArray(home?.latest_wire) ? home.latest_wire : []) as WireArticle[];
     const globalClusters = Array.isArray(home?.global) ? home.global : [];
+    const synthesisPicks = Array.isArray(home?.synthesis_picks) ? home.synthesis_picks : [];
     const feedClusters = [...developingClusters, ...wireClusters];
 
     return {
         clusters: [
             ...lead,
             ...supportingClusters,
+            ...synthesisPicks,
+            ...(Array.isArray(home?.for_you_pool) ? home.for_you_pool : []),
             ...feedClusters,
         ],
         globalClusters,
         trending: Array.isArray(home?.trending) ? home.trending : [],
+        topEntities: Array.isArray(home?.focus_entities) ? home.focus_entities : [],
         stats: (home?.stats || null) as HomepageStats | null,
+        briefing: normalizeBriefingPayload(home?.briefing),
         supportingClusters,
+        forYouClusters,
         feedClusters,
         developingClusters,
         wireClusters,
         wireArticles,
         excludedClusterIds: Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [],
+        synthesisPicks,
         homepageLeadDisplay: home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null,
         pipeline: home?.pipeline && typeof home.pipeline === 'object' ? home.pipeline : null,
     };
@@ -114,14 +154,18 @@ export function emptyHomepageDataState(): HomepageDataState {
         clusters: [],
         globalClusters: [],
         trending: [],
+        topEntities: [],
         stats: null,
+        briefing: null,
         error: null,
         supportingClusters: [],
+        forYouClusters: [],
         feedClusters: [],
         developingClusters: [],
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
+        synthesisPicks: [],
         homepageLeadDisplay: null,
         pipeline: null,
     };
@@ -141,10 +185,12 @@ export async function loadHomepageFallback(options: {
     fallbackNewsUrl.searchParams.set('lang', lang);
     fallbackNewsUrl.searchParams.set('sort', 'score');
 
-    const [newsResult, trendResult, statsResult, wireResult] = await Promise.allSettled([
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
         fetchJson(fallbackNewsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
+        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
+        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
         fetchJsonCached(`${apiUrl}/home/latest-wire?limit=15&lang=${lang}`),
     ]);
 
@@ -162,7 +208,13 @@ export async function loadHomepageFallback(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
+    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    state.briefing = briefingResult.status === 'fulfilled'
+        ? normalizeBriefingPayload(briefingResult.value)
+        : null;
 
     const recovered = state.clusters.length > 0
         || state.wireArticles.length > 0
@@ -193,10 +245,12 @@ export async function fetchFilteredNewsPayload(options: {
     if (q) newsUrl.searchParams.set('q', q);
     if (timespan) newsUrl.searchParams.set('timespan', timespan);
 
-    const [newsResult, trendResult, statsResult] = await Promise.allSettled([
+    const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
+        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
+        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
     ]);
 
     if (newsResult.status === 'fulfilled') {
@@ -209,7 +263,13 @@ export async function fetchFilteredNewsPayload(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
+    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
+        ? entityResult.value
+        : [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+    state.briefing = briefingResult.status === 'fulfilled'
+        ? normalizeBriefingPayload(briefingResult.value)
+        : null;
 
     return state;
 }
@@ -222,12 +282,16 @@ export async function fetchHomepagePayload(options: {
     errorMessage: string;
 }): Promise<HomepageDataState> {
     const { apiUrl, lang, fetchJson, fetchJsonCached, errorMessage } = options;
-    const homePayload = await Promise.allSettled([
+    const [homePayload, briefingPayload] = await Promise.allSettled([
         fetchJson(`${apiUrl}/home?lang=${lang}`),
+        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
     ]);
 
-    if (homePayload[0].status === 'fulfilled' && homePayload[0].value?.status === 'success') {
-        const state = { ...normalizeHomeApiResponse(homePayload[0].value), error: null };
+    if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
+        const state = { ...normalizeHomeApiResponse(homePayload.value), error: null };
+        if (!state.briefing && briefingPayload.status === 'fulfilled') {
+            state.briefing = normalizeBriefingPayload(briefingPayload.value);
+        }
         return state;
     }
 
@@ -263,6 +327,17 @@ export async function loadHomepageData(options: {
         ...options,
         filters,
     });
+}
+
+export function buildFocusEntities(topEntities: unknown[]) {
+    return topEntities
+        .map((ent: any) => ({
+            ...ent,
+            name: String(ent?.name || '').trim(),
+            display_name: String(ent?.display_name || ent?.name || '').trim(),
+        }))
+        .filter((ent: { name: string }) => ent.name && ent.name.length >= 3)
+        .slice(0, 10);
 }
 
 export function toLeadWhySentence(text: string, maxLen = 220): string {
@@ -340,6 +415,7 @@ export function buildHomepageFlags(state: HomepageDataState, isHomepage: boolean
         || state.supportingClusters.length > 0
         || state.wireArticles.length > 0
         || state.trending.length > 0
+        || state.forYouClusters.length > 0
         || state.globalClusters.length > 0,
     );
 
@@ -348,7 +424,7 @@ export function buildHomepageFlags(state: HomepageDataState, isHomepage: boolean
         pipelineBusy: Boolean(state.pipeline?.busy),
         hasPartialFeedContent,
         showEmptyState: !hasPartialFeedContent,
-        missingSystemModules: isHomepage && !state.error && hasPartialFeedContent && !state.stats,
+        missingSystemModules: isHomepage && !state.error && hasPartialFeedContent && (!state.stats || !state.briefing),
         shouldSetErrorStatus: Boolean(
             state.error
             && !state.clusters.length
@@ -357,4 +433,35 @@ export function buildHomepageFlags(state: HomepageDataState, isHomepage: boolean
             && !state.globalClusters.length,
         ),
     };
+}
+
+function trimBriefingSnippet(text: string, maxLen = 150) {
+    const line = text
+        .trim()
+        .split('\n')
+        .map((part) => part.replace(/\*\*/g, '').trim())
+        .find(Boolean) || '';
+    if (!line) return '';
+    return line.length > maxLen ? `${line.substring(0, maxLen - 3)}...` : line;
+}
+
+export function getBriefingSnippet(content: string) {
+    if (!content) return '';
+
+    const legacy = content.match(/## Šta pokreće dan\n+([^#]+)/);
+    if (legacy?.[1]) {
+        return trimBriefingSnippet(legacy[1]);
+    }
+
+    const sectionBody = content.match(/^##\s+.+?\n+([^#]+)/m);
+    if (sectionBody?.[1]) {
+        return trimBriefingSnippet(sectionBody[1]);
+    }
+
+    const afterTitle = content.match(/^#\s+.+?\n+([^#]+)/m);
+    if (afterTitle?.[1]) {
+        return trimBriefingSnippet(afterTitle[1]);
+    }
+
+    return '';
 }

@@ -11,6 +11,7 @@ type HomepageSectionsInput = {
     clusters: NewsCluster[];
     leadCluster: NewsCluster | null;
     supportingClusters: NewsCluster[];
+    forYouClusters: any[];
     feedClusters: NewsCluster[];
     developingClusters?: NewsCluster[];
     wireClusters: NewsCluster[];
@@ -25,6 +26,26 @@ function clusterSourceCount(cluster: NewsCluster) {
 
 function qualifiesAsContinuingCluster(cluster: NewsCluster) {
     return clusterSourceCount(cluster) >= 2 || (cluster.articles?.length || 0) >= 2;
+}
+
+function toForYouCluster(cluster: NewsCluster) {
+    const article = cluster.articles?.[0] || {};
+    const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
+    return {
+        cluster_id: cluster.cluster_id,
+        is_breaking: cluster.is_breaking,
+        topics: cluster.topics,
+        tags: cluster.tags,
+        homepage_score: cluster.homepage_score,
+        articles: [{
+            title: article.title,
+            source: article.source,
+            summary: article.summary,
+            description: article.description,
+            category: article.category,
+        }],
+        sources_count: sourceCount,
+    };
 }
 
 function clusterTrendScore(cluster: NewsCluster) {
@@ -66,6 +87,7 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     if (leadId) usedIds.add(leadId);
 
     let supportingClusters = input.supportingClusters;
+    let forYouClusters = input.forYouClusters;
     let feedClusters = input.feedClusters;
     let wireClusters = input.wireClusters;
     let excludedClusterIds = input.excludedClusterIds;
@@ -84,6 +106,7 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     supportingCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     if (!input.isHomepage) {
+        forYouClusters = [];
         feedClusters = input.clusters.slice(4);
         wireClusters = [];
         excludedClusterIds = [
@@ -153,6 +176,7 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
         consensusClusters,
         perspectivesClusters,
         radarClusters,
+        forYouClusters,
         feedClusters,
         wireClusters,
         developmentsFeatured,

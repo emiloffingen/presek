@@ -11,7 +11,7 @@ def build_trust_summary(
     has_verification: bool = False,
     is_provisional: bool = False,
     needs_upgrade: bool = False,
-    lang: str = "mk",
+    lang: str = "sr",
 ) -> dict:
     pluralism = int(pluralism_score or 0)
     provisional = bool(is_provisional or needs_upgrade)

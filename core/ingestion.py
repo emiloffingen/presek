@@ -28,7 +28,7 @@ import core.clustering as clustering
 from core.api_helpers import is_safe_url
 from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
 from core.database import db_manager as db
-# Embeddings removed for simplified version
+from core.embeddings import generate_embeddings_batch
 from core.health import get_source_statuses, record_source_fetch
 from core.language import is_cyrillic_south_slavic
 from core.text_extraction import clean_extracted_article_text
@@ -1040,13 +1040,19 @@ async def ingest_all_sources_async():
             )
         return 0, [], errors
 
-    # 3. Batch Processing
+    # 3. Batch Processing (CPU/API intensive parts)
     log.info(f"[ingestion] Processing {len(candidates)} candidates...")
 
     if not renew_ingestion_lock():
         log.warning("[ingestion] Failed to renew ingestion lock before candidate processing")
 
-    # 4. DB Preparation (simplified - no embeddings or vector clustering)
+    # Generate embeddings in one batch
+    texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
+    loop = asyncio.get_running_loop()
+    embeddings = await loop.run_in_executor(None, generate_embeddings_batch, texts_to_embed)
+
+    # 4. Clustering & DB Preparation
+    # (Rest of the logic remains mostly same but wrapped in async orchestration)
     from billiard.exceptions import SoftTimeLimitExceeded
 
     new_count = 0
@@ -1058,7 +1064,15 @@ async def ingest_all_sources_async():
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
 
+        from core.clustering import (
+            VECTOR_THRESHOLD,
+            _cluster_title_overlap,
+            _extract_title_entities,
+            _meaningful_entity_token_overlap,
+        )
+
         prepared_rows = []
+        batch_clusters = []
         _soft_limit_hit = False
 
         for i, c in enumerate(candidates):
@@ -1066,6 +1080,7 @@ async def ingest_all_sources_async():
                 if not renew_ingestion_lock():
                     log.warning("[ingestion] Failed to renew ingestion lock during candidate batch")
             try:
+                emb = embeddings[i]
                 forced = HARDCODED_FEED_CATEGORIES.get(c["source"])
                 category = (
                     detect_category(
@@ -1073,34 +1088,52 @@ async def ingest_all_sources_async():
                         description=c["desc"],
                         source=c["source"],
                         forced_category=forced,
-                        lang="mk",
+                        lang="mk" if c["country"] == "MK" else "sr",
                     )
                     or c["category"]
                 )
                 subcategory = detect_subcategory(c["title"], description=c["desc"], country=c["country"]) or ""
                 topic = detect_topic(c["title"], description=c["desc"])
 
+                is_intl = c["country"] != "RS"
+                # Always normalize headlines to strip VIDEO, FOTO, etc.
                 display_title = normalize_headline(c["title"])
 
-                # Simple clustering by title similarity (no vectors)
                 cluster_id = None
-                for ra in recent_articles:
-                    if ra.get("category") != category:
-                        continue
-                    existing_title = ra.get("title", "").lower()
-                    new_title = display_title.lower()
-                    # Simple word overlap check
-                    existing_words = set(existing_title.split())
-                    new_words = set(new_title.split())
-                    if existing_words and new_words:
-                        overlap = len(existing_words & new_words) / max(len(existing_words), len(new_words))
-                        if overlap > 0.6:
-                            cluster_id = ra.get("cluster_id")
+                if emb:
+                    for bc in batch_clusters:
+                        # Batch-time merges must be stricter than persisted clustering,
+                        # especially for generic domestic news where adjacent stories
+                        # often arrive together in the same fetch cycle.
+                        if bc["category"] != category or bc["topic"] != topic:
+                            continue
+                        dist = cosine_dist(emb, bc["embedding"])
+                        if dist >= (VECTOR_THRESHOLD * 0.78):
+                            continue
+                        if topic == "vesti" or not topic:
+                            incoming_entities = _extract_title_entities(display_title, semantic=False)
+                            batch_entities = bc.get("entities", set())
+                            article_lang = "mk" if c["country"] == "MK" else "sr"
+                            meaningful_shared = _meaningful_entity_token_overlap(
+                                incoming_entities, batch_entities, lang=article_lang
+                            )
+                            phrase_overlap = _cluster_title_overlap(display_title, bc["title"])
+                            if not meaningful_shared and phrase_overlap < 0.34:
+                                continue
+                            cluster_id = bc["cid"]
                             break
 
                 if not cluster_id:
-                    # Create new cluster ID
-                    cluster_id = f"cluster_{int(time.time())}_{i}"
+                    cluster_id = clustering.find_or_create_cluster(
+                        conn,
+                        display_title,
+                        recent_articles,
+                        embedding=emb,
+                        category=category,
+                        source=c["source"],
+                        topic=topic,
+                        semantic_entities=False,
+                    )
 
                 clean_desc = re.sub(r"<[^>]+>", "", c["desc"]).strip() if c["desc"] else ""
                 clean_desc = clean_rss_footer(clean_desc)[:500]
@@ -1111,7 +1144,7 @@ async def ingest_all_sources_async():
                 prepared_rows.append(
                     (
                         display_title,
-                        c["title"],
+                        c["title"] if is_intl else "",
                         c["link"],
                         c["source"],
                         category,
@@ -1121,10 +1154,10 @@ async def ingest_all_sources_async():
                         ingested_at,
                         c["image_url"],
                         clean_desc,
-                        clean_desc,
+                        clean_desc if is_intl else "",
                         c["country"],
                         0,
-                        None,  # No embedding
+                        str(emb) if emb else None,
                         topic,
                         is_fact,
                     )
@@ -1248,7 +1281,14 @@ async def ingest_all_sources_async():
                     )
 
                 from tasks.ingestion_task import crawl_article_task
-                from tasks.summarization import summarize_article_task
+                from tasks.intelligence import (
+                    _dispatch_batched,
+                    detect_global_stories_batch_task,
+                    intelligence_batches_deferred,
+                    intelligence_soft_deferred,
+                    standardize_article_styles_batch_task,
+                    summarize_articles_batch_task,
+                )
                 from tasks.utils import crawl_dispatch_cap, crawl_dispatches_deferred
 
                 # 1. Batch Crawl (defer or cap when crawl queue is congested)
@@ -1269,9 +1309,28 @@ async def ingest_all_sources_async():
                     for art in crawl_batch:
                         crawl_article_task.delay(art["id"], art["link"])
 
-                # Summarize new articles
-                for article_id in inserted_ids:
-                    summarize_article_task.delay(article_id)
+                # Always prioritize article summarization — readers need fresh copy even when
+                # the intel-heavy queue is saturated with deferrable backfill work.
+                _dispatch_batched(summarize_articles_batch_task, inserted_ids)
+
+                if intelligence_batches_deferred():
+                    log.info(
+                        "[ingestion] Deferring secondary intelligence batches for %s new articles while intel-heavy backlog is high",
+                        len(inserted_ids),
+                    )
+                elif intelligence_soft_deferred():
+                    log.info(
+                        "[ingestion] Deferring non-critical intelligence batches for %s new articles while intel-heavy backlog is high",
+                        len(inserted_ids),
+                    )
+                else:
+                    # Batch global story detection
+                    _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
+
+                    # Batch style normalization (low-credibility sources only)
+                    credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
+                    if credibility_ids:
+                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

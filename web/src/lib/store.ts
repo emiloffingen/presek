@@ -94,7 +94,7 @@ export function updateOnboarding(newState: any) {
 }
 
 // Computed progress (not an atom to keep it simple, but can be derived in components)
-export function getStoredOnboardingProgress(lang = 'mk') {
+export function getStoredOnboardingProgress(lang = 'sr') {
     return getOnboardingProgress(undefined, lang);
 }
 

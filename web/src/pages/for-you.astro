@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import ForYouPageIsland from '../components/ForYouPageIsland.tsx';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
+import { getLangFromUrl, useTranslations } from '../i18n/utils';
+import '../styles/for-you-premium.css';
+import '../styles/settings-surfaces.css';
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const t = useTranslations(lang);
+---
+
+<Layout
+    title={`${t('nav.for_you')} — Presek`}
+    description={t('layout.filtered_description')}
+    robots="noindex, follow"
+>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] for-you-page-scope">
+        <Breadcrumbs items={[{ label: t('nav.for_you') }]} />
+
+        <div class="broadsheet-grid mt-6 md:mt-8">
+            <div class="broadsheet-main">
+                <ErrorBoundary client:idle lang={lang}>
+                    <ForYouPageIsland client:visible lang={lang} />
+                </ErrorBoundary>
+            </div>
+        </div>
+    </main>
+    <Footer />
+</Layout>

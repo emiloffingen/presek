@@ -117,7 +117,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning(f"Error disconnecting Redis client during shutdown: {e}")
 
+    # 4. Shutdown Embedding Thread Pool and Unload Local AI Model
+    try:
+        from core.embeddings import shutdown_embedding_executor
 
+        shutdown_embedding_executor()
+    except Exception as e:
+        log.warning(f"Error shutting down embedding thread pool during shutdown: {e}")
 
 
 app = FastAPI(
@@ -271,7 +277,7 @@ if _rate_limiter_enabled:
 _AUDIO_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.mp3$")
 _UPLOAD_IMAGE_FILENAME_RE = re.compile(r"^art_\d+\.webp$")
 _GENERATED_FILENAME_RE = re.compile(r"^[A-Za-z0-9_.-]+\.(?:jpg|jpeg|png|svg|webp)$", re.IGNORECASE)
-_home_dir = os.environ.get("HOME") or "/home/emiloffingen"
+_home_dir = os.environ.get("HOME") or os.path.expanduser("~")
 _STATIC_ROOT = os.environ.get("STATIC_ROOT", os.path.join(_home_dir, "presek-runtime", "shared", "static"))
 if not os.path.exists(_STATIC_ROOT):
     _STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
@@ -467,6 +473,7 @@ app.mount("/static", StaticFiles(directory="static", follow_symlink=False), name
 from routes import (
     admin,
     home,
+    intelligence,
     marketing,
     monitoring,
     news,
@@ -500,10 +507,12 @@ async def health_check(request: Request):
     redis_public.pop("error", None)
     redis_public.pop("config", None)
 
+    synthesis_quality = health.get_synthesis_quality_snapshot()
     celery_queue = health._probe_celery_queue()
     operational_status = health.get_operational_status(
         db_status["ok"],
         redis_status["ok"],
+        synthesis_quality,
         celery_queue,
     )
 
@@ -527,6 +536,7 @@ async def health_check(request: Request):
         }
         payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
         payload["celery_queue"] = celery_public
+        payload["synthesis_quality"] = synthesis_quality
 
     return payload
 
@@ -735,9 +745,109 @@ async def track_delivery_event(
 API_VERSION = "v1"
 
 
+# Clustering Control Endpoints - Manual triggers for debugging/emergency use
+@app.post("/api/admin/trigger-reclustering")
+def trigger_reclustering(
+    hours: int = 6,
+    limit: int = 500,
+    authorized: str = Depends(admin.verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """
+    Manually trigger reclustering of recent articles.
+    Used when automatic clustering fails or for emergency recovery.
+    """
+    try:
+        from core.celery_app import celery_app
+
+        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
+
+        return {
+            "status": "success",
+            "task_id": str(task.id),
+            "message": f"Triggered reclustering for last {hours} hours, limit {limit} articles",
+        }
+    except Exception as e:
+        log.error(f"Failed to trigger reclustering: {e}")
+        raise HTTPException(status_code=503, detail="Failed to trigger reclustering") from e
+
+
+@app.post("/api/admin/trigger-storyline-discovery")
+def trigger_storyline_discovery(
+    authorized: str = Depends(admin.verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """
+    Manually trigger storyline discovery.
+    Used when storylines aren't being created automatically.
+    """
+    try:
+        from core.celery_app import celery_app
+
+        task = celery_app.send_task("tasks.intelligence.discover_storylines_task")
+
+        return {
+            "status": "success",
+            "task_id": str(task.id),
+            "message": "Triggered storyline discovery",
+        }
+    except Exception as e:
+        log.error(f"Failed to trigger storyline discovery: {e}")
+        raise HTTPException(status_code=503, detail="Failed to trigger storyline discovery") from e
+
+
+@app.get("/api/admin/clustering-status")
+def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
+    """
+    Get current clustering system status.
+    """
+    try:
+        # Check recent articles
+        recent_articles = db.execute(
+            "SELECT COUNT(*) as count FROM articles WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+
+        # Check articles with cluster IDs
+        clustered_articles = db.execute(
+            "SELECT COUNT(*) as count FROM articles WHERE cluster_id IS NOT NULL AND created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+
+        # Check storylines
+        storylines = db.execute(
+            "SELECT COUNT(*) as count FROM storylines_v2 WHERE created_at >= NOW() - INTERVAL '24 hours'"
+        )[0]["count"]
+
+        # Check clusters in storylines
+        clusters_in_storylines = db.execute("SELECT COUNT(*) as count FROM storyline_clusters_v2")[0]["count"]
+
+        return {
+            "status": "success",
+            "stats": {
+                "recent_articles_24h": recent_articles,
+                "clustered_articles_24h": clustered_articles,
+                "storylines_24h": storylines,
+                "clusters_in_storylines_total": clusters_in_storylines,
+                "clustering_rate": (
+                    round(clustered_articles / max(recent_articles, 1) * 100, 1) if recent_articles > 0 else 0
+                ),
+            },
+            "health": {
+                "articles_ingested": recent_articles > 0,
+                "articles_clustered": clustered_articles > 0,
+                "storylines_created": storylines > 0,
+                "clusters_available": clusters_in_storylines > 0,
+                "overall_healthy": storylines > 0 and clusters_in_storylines > 0,
+            },
+        }
+    except Exception as e:
+        log.error(f"Failed to get clustering status: {e}")
+        return {"status": "error", "error": str(e)}
+
+
 # Include routers with /api prefix
 app.include_router(news.router, prefix="/api")
 app.include_router(home.router, prefix="/api")
+app.include_router(intelligence.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(system.router, prefix="/api")

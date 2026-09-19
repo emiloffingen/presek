@@ -126,7 +126,7 @@ async def health(request: Request):
 
 
 @router.get("/system/media-quality")
-async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "mk"):
+async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):
     """Report recent clusters with missing or weak representative imagery."""
     cache_key = f"system:media-quality:v1:{lang}:{limit}"
     cached = cached_response(cache_key, ttl=300)
@@ -219,7 +219,7 @@ async def get_categories():
 
 
 @router.get("/weather")
-async def get_weather(lang: Optional[str] = "mk"):
+async def get_weather(lang: Optional[str] = "sr"):
     city = "skopje" if lang == "mk" else "beograd"
     cache_key = f"weather:{city}"
     cached = cached_response(cache_key, ttl=900)
@@ -256,7 +256,7 @@ async def get_weather(lang: Optional[str] = "mk"):
 
 
 @router.get("/trending")
-async def get_trending_route(lang: Optional[str] = "mk"):
+async def get_trending_route(lang: Optional[str] = "sr"):
     cache_key = f"api:trending:v5:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -294,7 +294,7 @@ async def get_trending_route(lang: Optional[str] = "mk"):
 
 
 @router.get("/navigation")
-async def get_navigation(lang: Optional[str] = "mk"):
+async def get_navigation(lang: Optional[str] = "sr"):
     """Returns high-intelligence dynamic navigation with activity thresholds."""
     cache_key = f"api:navigation:v6:{lang}"
     cached = cached_response(cache_key)

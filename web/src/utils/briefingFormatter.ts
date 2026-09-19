@@ -47,7 +47,7 @@ export function extractBriefingSections(markdown: string): BriefingSection[] {
  * A specialized formatter for the Daily Briefing markdown content.
  * Converts markdown-like structures into styled HTML for the Briefing layout.
  */
-export function formatBriefing(markdown: string, lang: BriefingLang = 'mk', hostname?: string | null): string {
+export function formatBriefing(markdown: string, lang: BriefingLang = 'sr', hostname?: string | null): string {
     if (!markdown) return "";
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const l = (path: string) => localePath(path, locale, hostname);

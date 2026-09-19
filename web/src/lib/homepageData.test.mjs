@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
     buildHomepageFlags,
     cleanFilterParam,
+    getBriefingSnippet,
+    normalizeBriefingPayload,
+    normalizeForYouCluster,
     normalizeHomeApiResponse,
     parseHomepageFilters,
     toLeadWhySentence,
@@ -32,18 +35,43 @@ test('normalizeHomeApiResponse maps home API payload into feed state', () => {
         supporting: [{ cluster_id: 'sup-1', articles: [] }],
         developing: [{ cluster_id: 'dev-1', articles: [] }],
         wire: [{ cluster_id: 'wire-1', articles: [] }],
+        for_you_pool: [{
+            cluster_id: 'fy-1',
+            articles: [{ title: 'A', source: 'RTS' }],
+        }],
+        synthesis_picks: [{ cluster_id: 'syn-1', articles: [] }],
         trending: [{ cluster_id: 't-1' }],
+        focus_entities: [{ name: 'Vučić' }],
         stats: { intelligence: { pluralism: { pluralism_pct: 42 } } },
+        briefing: { date: '2026-06-14', status: 'success', content: '## Šta pokreće dan\n\nTekst.' },
         lead_display: { title: 'Lead', summary: 'Summary.' },
         pipeline: { busy: true },
         excluded_cluster_ids: ['x-1'],
     });
 
-    assert.equal(state.clusters.length, 4);
+    assert.equal(state.clusters.length, 6);
     assert.equal(state.supportingClusters.length, 1);
+    assert.equal(state.forYouClusters.length, 1);
+    assert.equal(state.forYouClusters[0].sources_count, 1);
     assert.equal(state.developingClusters.length, 1);
     assert.equal(state.pipeline?.busy, true);
+    assert.equal(state.briefing?.date, '2026-06-14');
     assert.deepEqual(state.excludedClusterIds, ['x-1']);
+});
+
+test('normalizeForYouCluster keeps compact article fields for For You cards', () => {
+    const cluster = normalizeForYouCluster({
+        cluster_id: 'c1',
+        is_breaking: true,
+        topics: ['politics'],
+        tags: ['tag'],
+        homepage_score: 9,
+        articles: [{ title: 'T', source: 'N1', summary: 'S', description: 'D', category: 'Cat' }, { title: 'T2' }],
+    });
+
+    assert.equal(cluster.cluster_id, 'c1');
+    assert.equal(cluster.sources_count, 2);
+    assert.equal(cluster.articles[0].source, 'N1');
 });
 
 test('buildHomepageFlags marks empty homepage as showEmptyState', () => {
@@ -51,14 +79,18 @@ test('buildHomepageFlags marks empty homepage as showEmptyState', () => {
         clusters: [],
         globalClusters: [],
         trending: [],
+        topEntities: [],
         stats: null,
+        briefing: null,
         error: null,
         supportingClusters: [],
+        forYouClusters: [],
         feedClusters: [],
         developingClusters: [],
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
+        synthesisPicks: [],
         homepageLeadDisplay: null,
         pipeline: null,
     }, true);
@@ -72,14 +104,18 @@ test('buildHomepageFlags requests 500 when error and no partial content', () => 
         clusters: [],
         globalClusters: [],
         trending: [],
+        topEntities: [],
         stats: null,
+        briefing: null,
         error: 'fail',
         supportingClusters: [],
+        forYouClusters: [],
         feedClusters: [],
         developingClusters: [],
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
+        synthesisPicks: [],
         homepageLeadDisplay: null,
         pipeline: null,
     }, true);
@@ -90,6 +126,23 @@ test('buildHomepageFlags requests 500 when error and no partial content', () => 
 test('toLeadWhySentence returns first sentence trimmed to max length', () => {
     const long = 'Prva rečenica. Druga rečenica.';
     assert.equal(toLeadWhySentence(long), 'Prva rečenica.');
+});
+
+test('normalizeBriefingPayload rejects missing content', () => {
+    assert.equal(normalizeBriefingPayload({ status: 'success' }), null);
+    assert.equal(normalizeBriefingPayload({ status: 'error', content: 'x' }), null);
+    assert.equal(normalizeBriefingPayload({ status: 'success', content: 'Brifing.' })?.content, 'Brifing.');
+});
+
+test('getBriefingSnippet extracts first paragraph from briefing markdown', () => {
+    const legacy = getBriefingSnippet('## Šta pokreće dan\n\nGlavna vest dana.\n\n## Drugo');
+    assert.equal(legacy, 'Glavna vest dana.');
+
+    const modern = getBriefingSnippet('# **Požar u Enjubu**\n\n## Velika Slika\nPrva rečenica brifinga.\n\n## Drugo');
+    assert.equal(modern, 'Prva rečenica brifinga.');
+
+    const macedonian = getBriefingSnippet('# **Наслов**\n\n## Големата Слика\nМакедонски текст.\n\n## Друго');
+    assert.equal(macedonian, 'Македонски текст.');
 });
 
 test('cleanFilterParam returns null for blank values', () => {

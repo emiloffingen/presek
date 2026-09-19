@@ -320,7 +320,7 @@ async def clear_failed_ingestion(
 
 @router.get("/admin/synthesis-traces/recent")
 async def list_recent_synthesis_traces(
-    lang: str = "mk",
+    lang: str = "sr",
     limit: int = 8,
     authorized: bool = Depends(verify_admin),
 ):
@@ -334,7 +334,7 @@ async def list_recent_synthesis_traces(
 @router.get("/admin/cluster/{cluster_id}/synthesis-trace")
 async def get_cluster_synthesis_trace(
     cluster_id: str,
-    lang: str = "mk",
+    lang: str = "sr",
     authorized: bool = Depends(verify_admin),
 ):
     """Per-cluster synthesis debug trace for the admin cockpit."""

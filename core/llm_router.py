@@ -283,7 +283,7 @@ class SmartModelRouter:
         return dynamic_order
 
     @staticmethod
-    def route_cluster(articles: list[dict], lang: str = "mk") -> str:
+    def route_cluster(articles: list[dict], lang: str = "sr") -> str:
         """
         Determines the optimal LLM provider or local fallback for a given news cluster.
         Returns one of: 'local', 'nvidia', or 'enhanced_fallback' (empty input only).

@@ -182,7 +182,7 @@ def _clean_text_block(value) -> str:
     return text
 
 
-def _infer_perspective_angle(content: str, lang: str = "mk", fallback: str = None) -> str:
+def _infer_perspective_angle(content: str, lang: str = "sr", fallback: str = None) -> str:
     lowered = content.lower()
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = fallback or L["angle.key"]
@@ -257,7 +257,7 @@ def normalize_summary_text(raw_summary) -> str:
     return "\n".join(f"• {line}" for line in lines[:4])
 
 
-def normalize_perspectives(raw_perspectives, lang: str = "mk") -> list[dict]:
+def normalize_perspectives(raw_perspectives, lang: str = "sr") -> list[dict]:
     """
     Normalise a raw perspectives value into a clean list of {angle, content} dicts.
 
@@ -395,7 +395,7 @@ def normalize_server_delivery_subscription(payload) -> dict:
     }
 
 
-def default_related_questions(question: str, category: Optional[str] = None, lang: str = "mk") -> list[str]:
+def default_related_questions(question: str, category: Optional[str] = None, lang: str = "sr") -> list[str]:
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = [
         L["q.development"],
@@ -414,7 +414,7 @@ def related_questions_from_context(
     has_perspectives: bool = False,
     has_multiple_sources: bool = False,
     has_unclear_points: bool = False,
-    lang: str = "mk",
+    lang: str = "sr",
 ) -> list[str]:
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     suggestions = []

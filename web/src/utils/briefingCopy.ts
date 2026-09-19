@@ -34,7 +34,7 @@ const BOILERPLATE_PATTERNS: Record<string, RegExp[]> = {
     ],
 };
 
-export function scrubBriefingBoilerplate(text: MaybeText, lang = 'mk'): string {
+export function scrubBriefingBoilerplate(text: MaybeText, lang = 'sr'): string {
     if (!text) return '';
 
     const locale = lang === 'mk' ? 'mk' : 'sr';
@@ -50,7 +50,7 @@ export function scrubBriefingBoilerplate(text: MaybeText, lang = 'mk'): string {
         .trim();
 }
 
-export function simplifyBriefingBullet(text: MaybeText, lang = 'mk'): string {
+export function simplifyBriefingBullet(text: MaybeText, lang = 'sr'): string {
     const cleaned = scrubBriefingBoilerplate(normalizeBriefingText(text, lang), lang);
     if (!cleaned) return '';
 
@@ -65,7 +65,7 @@ export function simplifyBriefingBullet(text: MaybeText, lang = 'mk'): string {
     return cleaned;
 }
 
-export function normalizeBriefingText(text: MaybeText, lang = 'mk'): string {
+export function normalizeBriefingText(text: MaybeText, lang = 'sr'): string {
     if (!text) return '';
 
     const replacements = lang === 'mk' ? MACEDONIAN_REPLACEMENTS : SERBIAN_REPLACEMENTS;
@@ -82,7 +82,7 @@ export function normalizeBriefingText(text: MaybeText, lang = 'mk'): string {
         .trim();
 }
 
-export function normalizeBriefingMarkdown(markdown: MaybeText, lang = 'mk'): string {
+export function normalizeBriefingMarkdown(markdown: MaybeText, lang = 'sr'): string {
     if (!markdown) return '';
     return markdown
         .replace(/https?:\/\/(?:www\.)?presek\.mk\/cluster\/([a-f0-9-]+)\/?/gi, '[[$1]]')
@@ -91,7 +91,7 @@ export function normalizeBriefingMarkdown(markdown: MaybeText, lang = 'mk'): str
         .join('\n');
 }
 
-export function normalizeBriefingPayload<T>(value: T, lang = 'mk'): T {
+export function normalizeBriefingPayload<T>(value: T, lang = 'sr'): T {
     if (typeof value === 'string') {
         return normalizeBriefingText(value, lang) as T;
     }

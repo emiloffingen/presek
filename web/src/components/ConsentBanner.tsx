@@ -120,12 +120,12 @@ export const ConsentBanner: React.FC = () => {
         <div className="flex items-center gap-2 md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 md:mb-0.5">
-              <h3 className="font-sans text-[9px] font-black uppercase tracking-[0.12em] text-foreground md:text-[11px]">{t('cookies.title')}</h3>
-              <a href={l('/privacy')} className="text-[9px] font-semibold text-muted-foreground underline underline-offset-2 hover:text-nyt-accent md:hidden">{t('nav.privacy')}</a>
-              <span className="hidden md:inline text-[11px] text-muted-foreground">•</span>
-              <span className="hidden md:inline text-xs text-muted-foreground">{t('cookies.kicker')}</span>
+              <h3 className="font-sans text-xs font-black uppercase tracking-[0.12em] text-foreground md:text-sm">{t('cookies.title')}</h3>
+              <a href={l('/privacy')} className="text-xs font-semibold text-muted-foreground underline underline-offset-2 hover:text-nyt-accent md:hidden">{t('nav.privacy')}</a>
+              <span className="hidden md:inline text-sm text-muted-foreground">•</span>
+              <span className="hidden md:inline text-sm text-muted-foreground">{t('cookies.kicker')}</span>
             </div>
-            <p className="consent-banner-brief mt-0.5 text-[9px] leading-snug text-secondary-foreground md:hidden">
+            <p className="consent-banner-brief mt-0.5 text-xs leading-snug text-secondary-foreground md:hidden">
               {t('cookies.brief')}
               {' '}
               <button
@@ -137,13 +137,13 @@ export const ConsentBanner: React.FC = () => {
               </button>
             </p>
             {expanded && (
-              <p className="mt-1 text-[9px] text-secondary-foreground leading-snug md:hidden">
+              <p className="mt-1 text-xs text-secondary-foreground leading-snug md:hidden">
                 {t('cookies.details')}
                 {' '}
                 <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
               </p>
             )}
-            <p className="hidden text-[12px] text-secondary-foreground leading-relaxed md:block">
+            <p className="hidden text-sm text-secondary-foreground leading-relaxed md:block">
               {t('cookies.details')}
               {' '}
               <a href={l('/privacy')} className="underline underline-offset-2 hover:text-nyt-accent">{t('nav.privacy')}</a>.
@@ -155,12 +155,12 @@ export const ConsentBanner: React.FC = () => {
               aria-label={t('cookies.dismiss')}
               className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200/50 dark:border-neutral-800/60 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:h-8 md:w-8"
             >
-              <X size={12} />
+              <X size={14} />
             </button>
             <button
               onClick={accept}
               aria-label={t('cookies.accept')}
-              className="rounded-lg bg-neutral-900 dark:bg-neutral-100 px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-neutral-100 dark:text-neutral-900 transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-[10px]"
+              className="rounded-lg bg-neutral-900 dark:bg-neutral-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-neutral-100 dark:text-neutral-900 transition-colors hover:bg-nyt-accent hover:text-white md:px-4 md:py-2 md:text-sm"
             >
               {t('cookies.accept')}
             </button>

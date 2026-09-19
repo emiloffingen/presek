@@ -1,0 +1,77 @@
+---
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath, homePath } from '../../lib/localePaths';
+import { getStoryPreviewText } from '../../utils/textUtils';
+const { homeData } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const isMK = lang === 'mk';
+const t = useTranslations(lang);
+const l = (path: string) => localePath(path, isMK ? 'mk' : 'sr', hostHeader);
+---
+
+{homeData && homeData.developing && (
+    <section class="mt-8">
+        <p class="briefing-trust-framing">
+            {t('briefing.digest_trust_framing')}
+        </p>
+        <h3 class="ui-kicker ui-kicker--accent mb-6">{t('briefing.digest_focus_topics')}</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
+            {homeData.developing.slice(0, 6).map((c: any) => (
+                <a href={l(`/cluster/${c.cluster_id}`)} class="block p-6 bg-secondary/50 border border-border hover:border-presek-mark transition-all group">
+                    <p class="ui-kicker ui-kicker--accent mb-3">{t('briefing.digest_trending')}</p>
+                    <h4 class="font-serif font-black text-xl leading-tight group-hover:underline decoration-2 underline-offset-4 decoration-presek-mark/30">{c.synthetic_headline || (c.articles?.[0] ? c.articles[0].title : '')}</h4>
+                    {(() => {
+                        const summaryText = getStoryPreviewText(c, c.articles?.[0], lang);
+                        if (!summaryText) return null;
+                        return <p class="font-serif text-sm mt-3 text-muted-foreground line-clamp-3">{summaryText}</p>;
+                    })()}
+                </a>
+            ))}
+        </div>
+    </section>
+)}
+
+<style>
+    .briefing-trust-framing {
+        margin: 0 0 1rem;
+        font-family: var(--font-serif);
+        font-size: 0.98rem;
+        line-height: 1.55;
+        color: var(--muted-foreground);
+        font-style: italic;
+    }
+
+    @media (max-width: 639.98px) {
+        section.mt-8 {
+            margin-top: 1.5rem;
+        }
+
+        h3.text-xs {
+            margin-bottom: 0.9rem;
+            font-size: 0.62rem;
+            letter-spacing: 0.16em;
+        }
+
+        a.p-6 {
+            padding: 1rem;
+        }
+
+        a.p-6 > p:first-child {
+            margin-bottom: 0.45rem;
+            font-size: 0.54rem;
+            letter-spacing: 0.14em;
+        }
+
+        h4.text-xl {
+            font-size: 1.08rem;
+            line-height: 1.2;
+        }
+
+        p.text-sm {
+            margin-top: 0.55rem;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+    }
+</style>
