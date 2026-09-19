@@ -914,6 +914,8 @@ async def ingest_all_sources_async():
     # 2. Parallel Fetching with httpx
     candidates = []
     errors = []
+    new_count = 0
+    inserted_ids = []
     source_stats = {source["name"]: {"status": "ok", "fetched": 0, "accepted": 0, "error": ""} for source in sources}
     seen_links = set()
     seen_titles_by_source = defaultdict(set)
@@ -1157,7 +1159,6 @@ async def ingest_all_sources_async():
                         clean_desc if is_intl else "",
                         c["country"],
                         0,
-                        str(emb) if emb else None,
                         topic,
                         is_fact,
                     )
@@ -1204,9 +1205,9 @@ async def ingest_all_sources_async():
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory,
                     cluster_id, created_at, ingested_at, image_url, description, original_description,
-                    country, is_translated, embedding, topic, is_fact_check
+                    country, is_translated, topic, is_fact_check
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 ) ON CONFLICT (link) DO NOTHING RETURNING id
             """
             cur.executemany(sql, prepared_rows, returning=True)

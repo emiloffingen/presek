@@ -6,7 +6,11 @@ from urllib.parse import urljoin
 
 import httpx
 import trafilatura
-from playwright.async_api import async_playwright
+
+try:
+    from playwright.async_api import async_playwright
+except ModuleNotFoundError:
+    async_playwright = None
 
 from core.text_extraction import clean_extracted_article_text
 from utils import _peer_ip, _resolve_public_ips
@@ -238,6 +242,8 @@ class CrawlerService:
         browser = None
 
         try:
+            if async_playwright is None:
+                raise RuntimeError("Playwright is not installed; headless crawling is unavailable")
             _resolve_public_ips(url)
 
             async with async_playwright() as p:
@@ -312,6 +318,8 @@ class CrawlerService:
         log.info(f"Searching for feeds on {homepage_url}")
         feeds = []
         try:
+            if async_playwright is None:
+                return feeds
             _resolve_public_ips(homepage_url)
 
             async with async_playwright() as p:

@@ -52,8 +52,8 @@ def crawl_article_task(article_id, url):
         params = []
 
         # Only allow whitelisted columns
+        # The MK-only schema intentionally omits the legacy full_content column.
         column_mappings = {
-            "content": "full_content",
             "image_url": "image_url",
         }
 
@@ -75,7 +75,7 @@ def crawl_article_task(article_id, url):
             if image_url:
                 post_crawl_tasks.append(process_article_image_task.signature(args=(article_id, image_url)))
 
-            if res.get("content"):
+            if res.get("content") or image_url:
                 post_crawl_tasks.append(post_crawl_invalidation_task.signature(args=(article_id,)))
 
             if post_crawl_tasks:
