@@ -359,6 +359,30 @@ celery_app.conf.update(
     worker_concurrency=int(os.environ.get("CELERY_WORKER_CONCURRENCY", "4")),
 )
 
+# The Android MK-only deployment uses deterministic clustering and ingestion.
+# Keep expensive synthesis, intelligence backfills, and email delivery opt-in
+# so a fresh worker does not spend memory on disabled AI paths.
+if os.environ.get("ENABLE_AI_SCHEDULES", "false").lower() != "true":
+    for _schedule_name in (
+        "auto-summarize-clusters",
+        "recluster-recent-articles",
+        "repair-split-clusters",
+        "refine-knowledge-graph-sentiment",
+        "backfill-cluster-summaries-sr",
+        "backfill-cluster-summaries-mk",
+        "backfill-historical-summaries",
+        "generate-daily-briefing-sr",
+        "generate-daily-briefing-mk",
+        "send-daily-digest",
+        "send-daily-newsletter",
+        "send-profile-briefings",
+        "send-profile-weekly-digests",
+        "send-profile-breaking-alerts",
+        "backfill-cover-art",
+        "discover-storylines",
+    ):
+        celery_app.conf.beat_schedule.pop(_schedule_name, None)
+
 # Setup logging for Celery workers
 from core.logging_config import setup_logging
 
