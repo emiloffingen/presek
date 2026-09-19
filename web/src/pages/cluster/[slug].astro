@@ -76,8 +76,8 @@ const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
 const SITE_URL = siteOrigin(lang);
 
-// Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
-const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
+// Extract the complete UUID before any optional title suffix.
+const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{8,12})/i);
 const id = idMatch ? idMatch[0] : slug?.split('-')[0];
 
 let cluster: ClusterDetail | null = null;
