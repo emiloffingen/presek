@@ -121,7 +121,7 @@ def test_checkout_and_ad_lifecycle(client):
     tomorrow = (date.today() + timedelta(days=1)).isoformat()
     
     # 1. Success checkout flow (sandbox)
-    with patch("routes.marketing.STRIPE_API_KEY", ""):
+    with patch("routes.marketing.STRIPE_API_KEY", ""), patch("routes.marketing.MOCK_PAYMENTS_ENABLED", True):
         with patch.dict("os.environ", {"ENV": "test"}):
             response = client.post(
                 "/api/marketing/checkout",
@@ -196,7 +196,11 @@ def test_stripe_webhook_processing(client):
         "data": {
             "object": {
                 "metadata": {"campaign_id": "test_campaign_id_123"},
-                "id": "cs_test_123"
+                "id": "cs_test_123",
+                "payment_status": "paid",
+                "mode": "payment",
+                "currency": "eur",
+                "amount_total": 488,
             }
         }
     }
@@ -248,7 +252,11 @@ def test_stripe_webhook_idempotence(client):
         "data": {
             "object": {
                 "metadata": {"campaign_id": "test_campaign_id_idemp"},
-                "id": "cs_test_idemp"
+                "id": "cs_test_idemp",
+                "payment_status": "paid",
+                "mode": "payment",
+                "currency": "eur",
+                "amount_total": 488,
             }
         }
     }
@@ -460,5 +468,4 @@ def test_request_campaigns_access_success(client):
                 
     # Clean up
     db.execute("DELETE FROM advertising_campaigns WHERE id = %s", ("test_access_id",))
-
 

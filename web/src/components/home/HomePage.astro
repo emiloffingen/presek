@@ -197,7 +197,7 @@ if (analizaNavItems.length > 0) {
 			<div class="broadsheet-main home-mobile-feed">
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
-                        <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} />
+                        <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} stats={stats} />
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
                         )}

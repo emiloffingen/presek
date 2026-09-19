@@ -125,6 +125,32 @@
   line-height: 1.2;
 }
 
+.daily-edition-coverage {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  width: 100%;
+  margin-top: 0.1rem;
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-min);
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.daily-edition-coverage a {
+  color: var(--presek-mark);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: var(--presek-mark-line);
+  text-underline-offset: 0.18em;
+}
+
+.daily-edition-coverage a:hover,
+.daily-edition-coverage a:focus-visible {
+  color: var(--foreground);
+}
+
 /* ── Briefing teaser card ──────────────────────────── */
 .presek-briefing-card {
   margin: 0 0 1rem;
