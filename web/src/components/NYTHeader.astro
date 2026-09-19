@@ -142,9 +142,6 @@ const toolNavItems: NavItem[] = [
     { label: t('nav.briefing'), href: l('/briefing') },
     { label: t('nav.for_you'), href: l('/for-you') },
     { label: t('nav.pulse'), href: l('/pulse') },
-    { label: t('nav.graph'), href: l('/graf') },
-    { label: t('nav.marketing'), href: l('/marketing') },
-    { label: t('nav.settings'), href: l('/settings') },
 ];
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
 const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
@@ -414,6 +411,25 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
         </div>
     </nav>
 </div>
+
+<nav class="mobile-bottom-nav" aria-label={t('header.quick_nav')}>
+    <a href={homeHref} class:list={{ 'is-active': isBrowseEditionActive }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">⌂</span>
+        <span>{t('nav.browse_edition')}</span>
+    </a>
+    <a href={pregledHref} class:list={{ 'is-active': isPregledActive }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">◈</span>
+        <span>{t('nav.deep_analysis')}</span>
+    </a>
+    <a href={l('/pulse')} class:list={{ 'is-active': normalizedPath.startsWith('/pulse') }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">◉</span>
+        <span>{t('nav.pulse')}</span>
+    </a>
+    <a href={l('/for-you')} class:list={{ 'is-active': normalizedPath.startsWith('/for-you') }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">✦</span>
+        <span>{t('nav.for_you')}</span>
+    </a>
+</nav>
 
 <div class="search-fab-mobile">
     <button

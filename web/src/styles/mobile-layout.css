@@ -1,5 +1,9 @@
 /* Mobile Layout extracted from global.css */
 
+.mobile-bottom-nav {
+  display: none;
+}
+
 /* Mobile Layout Polish */
 @media (max-width: 768px) {
   :root {
@@ -10,6 +14,55 @@
 
   body.has-consent-banner {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body {
+    padding-bottom: calc(4.65rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.2rem;
+    padding: 0.45rem 0.55rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, var(--border));
+    background: color-mix(in srgb, var(--background) 94%, transparent);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 -12px 30px -24px rgba(0, 0, 0, 0.45);
+  }
+
+  .mobile-bottom-nav a {
+    display: flex;
+    min-height: 3.35rem;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.16rem;
+    border-radius: 0.75rem;
+    color: var(--muted-foreground);
+    font-family: var(--font-ui);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-align: center;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .mobile-bottom-nav a.is-active {
+    color: var(--presek-mark);
+    background: var(--presek-mark-soft);
+  }
+
+  .mobile-bottom-nav-icon {
+    font-family: var(--font-serif-display);
+    font-size: 1.05rem;
+    line-height: 1;
   }
 
   body.has-consent-banner .consent-banner {
