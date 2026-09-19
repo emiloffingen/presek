@@ -353,13 +353,16 @@ async def get_news(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = "mk",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
 ):
     try:
+        # The public deployment is Macedonian-only. Legacy callers may still
+        # send lang=sr, but must not receive the retired Serbian edition.
+        lang = "mk"
         return await fetch_news_data(
             q=q,
             category=category,

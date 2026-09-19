@@ -30,7 +30,7 @@ from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWOR
 from core.database import db_manager as db
 from core.embeddings import generate_embeddings_batch
 from core.health import get_source_statuses, record_source_fetch
-from core.language import is_cyrillic_south_slavic
+from core.language import is_macedonian
 from core.text_extraction import clean_extracted_article_text
 from nlp.categories import (
     detect_category,
@@ -340,9 +340,9 @@ def clean_rss_footer(text: str) -> str:
 
 
 def is_supported_display_language(title: str, description: str = "") -> bool:
-    """Only ingest articles that can be displayed naturally without translation."""
+    """Only ingest Macedonian articles for the MK-only public edition."""
     sample = f"{title or ''}. {description or ''}".strip()
-    return is_cyrillic_south_slavic(sample)
+    return is_macedonian(sample)
 
 
 def normalize_feed_link(link: str) -> str:
