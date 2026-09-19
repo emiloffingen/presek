@@ -11,6 +11,7 @@ const t = useTranslations(lang);
 
 const status = Astro.url.searchParams.get('status');
 const campaignId = Astro.url.searchParams.get('campaign_id');
+const checkoutEnabled = process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 ---
 
 <Layout
@@ -97,11 +98,13 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
             </svg>
           </div>
           <h3 class="text-xl font-bold text-foreground font-serif">
-            {lang === 'mk' ? 'Плаќањето е безбедно со Stripe' : 'Plaćajte bezbedno uz Stripe'}
+             {checkoutEnabled ? 'Плаќањето е безбедно' : 'Плаќањата моментално не се достапни'}
           </h3>
           <p class="text-muted-foreground text-xs md:text-sm leading-relaxed font-sans">
-            {lang === 'mk'
-              ? 'Вашите трансакции се 100% безбедни преку Stripe Checkout. Кампањата започнува автоматски на избраниот почетен датум.'
+             {lang === 'mk'
+               ? checkoutEnabled
+                 ? 'Плаќањето се обработува преку безбеден платежен систем. Кампањата започнува автоматски на избраниот почетен датум.'
+                 : 'Системот за резервирање рекламни позиции наскоро повторно ќе биде достапен.'
               : 'Vaše transakcije su 100% bezbedne preko Stripe Checkout-a. Kampanja počinje automatski na izabrani početni datum.'}
           </p>
           <ul class="text-left text-xs text-muted-foreground space-y-2 max-w-xs mx-auto pt-2 font-sans">
@@ -123,7 +126,15 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
     </section>
 
     {/* Booking Form component */}
-    <AdBookingForm client:load lang={lang} />
+     {checkoutEnabled ? (
+       <AdBookingForm client:load lang={lang} />
+     ) : (
+       <div class="max-w-4xl mx-auto border border-[var(--presek-mark-line)] bg-[var(--presek-mark-soft)] p-8 text-center">
+         <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--presek-mark)] mb-3">Наскоро</p>
+         <h2 class="text-2xl font-black font-serif mb-3">Рекламирањето е привремено паузирано</h2>
+         <p class="text-sm text-muted-foreground max-w-xl mx-auto">Следете ја оваа страница за повторно отворање на резервациите.</p>
+       </div>
+     )}
   </main>
 
   <Footer />

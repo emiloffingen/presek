@@ -24,6 +24,7 @@ EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 MOCK_PAYMENTS_ENABLED = os.environ.get("MOCK_PAYMENTS_ENABLED", "false").lower() == "true"
+STRIPE_CHECKOUT_ENABLED = os.environ.get("STRIPE_CHECKOUT_ENABLED", "false").lower() == "true"
 stripe.api_key = STRIPE_API_KEY
 
 # CPM Prices in EUR (converted from MKD at ~61.5 MKD/EUR)
@@ -57,6 +58,9 @@ async def create_ad_checkout(
     csrf_valid: bool = Depends(verify_csrf_token),
 ):
     try:
+        if not STRIPE_CHECKOUT_ENABLED:
+            raise HTTPException(status_code=503, detail="Advertising checkout is temporarily unavailable")
+
         # 1. Validation
         # Validate email format
         if not EMAIL_REGEX.match(buyer_email):
