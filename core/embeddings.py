@@ -10,6 +10,8 @@ or the API fails, so callers fall back to plain full-text search.
 
 import logging
 import os
+import threading
+import time
 
 import httpx
 
@@ -20,6 +22,33 @@ JINA_MODEL = "jina-embeddings-v3"
 EMBEDDING_DIM = 384
 _BATCH_SIZE = 100
 _TIMEOUT = 30.0
+
+# In-memory cache for single-query vectors. News queries repeat heavily
+# (trending topics), so this skips the ~0.5-1s Jina roundtrip and the token
+# spend on repeats. Process-local: safe for the single-worker API.
+_QUERY_CACHE_TTL = 3600
+_QUERY_CACHE_MAX = 2000
+_query_cache: dict[str, tuple[float, list]] = {}
+_query_cache_lock = threading.Lock()
+
+
+def _query_cache_get(text: str) -> list | None:
+    now = time.monotonic()
+    with _query_cache_lock:
+        hit = _query_cache.get(text)
+        if hit and now - hit[0] < _QUERY_CACHE_TTL:
+            return hit[1]
+        if hit:
+            del _query_cache[text]
+    return None
+
+
+def _query_cache_set(text: str, vec: list) -> None:
+    with _query_cache_lock:
+        if len(_query_cache) >= _QUERY_CACHE_MAX:
+            oldest = next(iter(_query_cache))
+            del _query_cache[oldest]
+        _query_cache[text] = (time.monotonic(), vec)
 
 
 def _api_key() -> str:
@@ -81,24 +110,38 @@ def generate_query_embedding(q, *a, **kw):
     """Sync single-query embedding; [] when unavailable (FTS fallback)."""
     if not q:
         return []
-    vecs = _embed_sync([str(q)], "retrieval.query")
-    return vecs[0] or []
+    text = str(q)[:4000]
+    hit = _query_cache_get(text)
+    if hit is not None:
+        return hit
+    vecs = _embed_sync([text], "retrieval.query")
+    vec = vecs[0] or []
+    if vec:
+        _query_cache_set(text, vec)
+    return vec
 
 
 async def get_query_embedding_async(q, *a, **kw):
     """Async single-query embedding for request handlers; [] on any failure."""
     if not q or not _api_key():
         return []
+    text = str(q)[:4000]
+    hit = _query_cache_get(text)
+    if hit is not None:
+        return hit
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.post(
                 JINA_URL,
-                json=_payload([str(q)[:4000]], "retrieval.query"),
+                json=_payload([text], "retrieval.query"),
                 headers={"Authorization": f"Bearer {_api_key()}"},
             )
             resp.raise_for_status()
             vecs = _parse_response(resp.json(), 1)
-            return vecs[0] or []
+            vec = vecs[0] or []
+            if vec:
+                _query_cache_set(text, vec)
+            return vec
     except Exception as e:
         log.warning("Jina query embedding failed: %s", e)
         return []

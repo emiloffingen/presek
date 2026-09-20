@@ -17,7 +17,7 @@ import {
   Archive,
 } from 'lucide-react';
 
-import { fetchJsonCached } from '../lib/apiCache';
+import { fetchJson } from '../lib/apiCache';
 import { getDisplayTitle, getStoryPreviewText } from '../utils/textUtils';
 import { SearchInput } from './search/SearchInput';
 import { SearchFilters } from './search/SearchFilters';
@@ -411,13 +411,19 @@ export default function SearchIsland({
     }
 
     let cancelled = false;
+    const aborter = new AbortController();
     const startTime = performance.now();
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       setError(null);
       try {
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
-        const data = (await fetchJsonCached(url + timespanPart + categoryPart, 120_000)) as SearchApiResponse;
+        // Direct (non-promise-cached) fetch: each keystroke is a unique URL and the
+        // per-query sync cache above already covers repeats. Abortable so typing
+        // cancels superseded backend searches instead of queueing them.
+        const data = (await fetchJson(url + timespanPart + categoryPart, 2, {
+          signal: aborter.signal,
+        })) as SearchApiResponse;
         const nextSuggestions = Array.isArray(data.clusters)
           ? data.clusters.map((cluster: unknown) => {
               const clusterRecord = cluster as Record<string, unknown>;
@@ -454,6 +460,8 @@ export default function SearchIsland({
           setActiveIndex(-1);
         }
       } catch (err) {
+        // Aborted by newer keystrokes: stay silent, a fresher request is in flight.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
@@ -463,10 +471,11 @@ export default function SearchIsland({
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    }, 100); // Reduced debounce from 200ms to 100ms for a snappier, instant typing feel
+    }, 280); // Debounced to avoid firing a ~1.5s backend search on every keystroke
 
     return () => {
       cancelled = true;
+      aborter.abort();
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
   }, [query, isOpen, timespan, categoryFilter, lang, t, activeCategory]);

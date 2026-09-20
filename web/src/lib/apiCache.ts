@@ -2,13 +2,24 @@ import { apiBaseUrl } from './apiBase';
 
 const API_URL = apiBaseUrl();
 
-async function fetchJson(url: string, retries = 2) {
+export async function fetchJson(url: string, retries = 2, init?: RequestInit) {
+    const externalSignal = init?.signal;
     for (let attempt = 0; attempt <= retries; attempt++) {
+        if (externalSignal?.aborted) {
+            throw new DOMException('Aborted', 'AbortError');
+        }
         try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 30000);
-            const response = await fetch(url, { signal: controller.signal });
-            clearTimeout(timer);
+            const onExternalAbort = () => controller.abort();
+            externalSignal?.addEventListener('abort', onExternalAbort, { once: true });
+            let response: Response;
+            try {
+                response = await fetch(url, { signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+                externalSignal?.removeEventListener('abort', onExternalAbort);
+            }
             if (!response.ok) {
                 const err: any = new Error(`Request failed: ${response.status} ${url}`);
                 err.status = response.status;
@@ -16,6 +27,8 @@ async function fetchJson(url: string, retries = 2) {
             }
             return response.json();
         } catch (err: any) {
+            // Caller-cancelled requests must never be retried.
+            if (externalSignal?.aborted) throw err;
             if (attempt < retries && (err.cause?.code === 'UND_ERR_SOCKET' || err.name === 'AbortError')) {
                 await new Promise(r => setTimeout(r, 100 * (attempt + 1)));
                 continue;
