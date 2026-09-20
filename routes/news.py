@@ -1718,15 +1718,30 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
             (cluster_id,),
         )
 
-    if not s_row or (not s_row.get("generated_article") and not s_row.get("summary")):
-        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
-
     from core.audio_service import AudioService, select_cluster_audio_text
 
-    content = select_cluster_audio_text(
-        s_row.get("generated_article"),
-        s_row.get("summary"),
-    )
+    content = ""
+    if s_row and (s_row.get("generated_article") or s_row.get("summary")):
+        content = select_cluster_audio_text(
+            s_row.get("generated_article"),
+            s_row.get("summary"),
+        )
+    if not content:
+        # No synthesis stored yet: narrate the cluster's latest headlines instead.
+        a_rows = await db.async_execute(
+            "SELECT title, description FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 5",
+            (cluster_id,),
+            read_only=True,
+        ) or []
+        headlines = [str(r.get("title") or "").strip() for r in a_rows]
+        headlines = [h for h in headlines if h]
+        if not headlines:
+            raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
+        lead = str((a_rows[0] or {}).get("description") or "").strip()
+        narration = "Вести: " + ". ".join(headlines)
+        if lead:
+            narration += ". " + lead
+        content = select_cluster_audio_text(None, narration)
     if not content:
         raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
     loop = asyncio.get_running_loop()
