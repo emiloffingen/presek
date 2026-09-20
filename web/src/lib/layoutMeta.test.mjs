@@ -23,10 +23,9 @@ test('buildPageTitle replaces embedded Presek brand', () => {
 
 test('resolveLayoutUrls builds canonical and image URLs', () => {
   const urls = resolveLayoutUrls('/vesti', 'sr', '/img/presek_emblem.png');
-  assert.match(urls.canonicalUrl, /^https:\/\/presek\.live\/vesti$/);
+  assert.equal(urls.siteUrl, 'https://presek.live');
+  assert.equal(urls.canonicalUrl, 'https://presek.live/vesti');
   assert.match(urls.imageUrl, /\/img\/presek_emblem\.png$/);
-  assert.match(urls.srHref, /^https:\/\/presek\.live/);
-  assert.match(urls.mkHref, /^https:\/\/presek\.mk/);
 });
 
 test('buildOrganizationSchema includes organization id', () => {

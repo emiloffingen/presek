@@ -70,11 +70,11 @@ def _parse_json_response(response: str) -> Optional[dict]:
 
 def summarize_article(title: str, content: str) -> str:
     """Generate a brief summary of a single article.
-    
+
     Args:
         title: Article title
         content: Article content (full text or description)
-    
+
     Returns:
         Summary text (2-3 sentences)
     """
@@ -109,10 +109,10 @@ def summarize_article(title: str, content: str) -> str:
 
 def synthesize_cluster(articles: list[dict]) -> dict:
     """Generate a synthesis for a cluster of related articles.
-    
+
     Args:
         articles: List of dicts with 'title', 'description', 'source' keys
-    
+
     Returns:
         Dict with 'headline', 'summary', 'key_facts' keys
     """

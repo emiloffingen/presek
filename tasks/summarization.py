@@ -20,7 +20,7 @@ log = get_logger("presek.tasks.summarization")
 )
 def summarize_article_task(self, article_id: int):
     """Generate a summary for a single article using local Gemma.
-    
+
     Args:
         article_id: The article ID to summarize
     """
@@ -80,7 +80,7 @@ def summarize_article_task(self, article_id: int):
 )
 def synthesize_cluster_task(self, cluster_id: int):
     """Generate a synthesis for a cluster of related articles using local Gemma.
-    
+
     Args:
         cluster_id: The cluster ID to synthesize
     """
@@ -150,7 +150,7 @@ def synthesize_cluster_task(self, cluster_id: int):
 @shared_task(name="tasks.summarization.auto_summarize_task")
 def auto_summarize_task():
     """Auto-summarize recent articles and clusters that need processing.
-    
+
     This task runs periodically via Celery beat to ensure new articles
     get summarized and new clusters get synthesized.
     """
@@ -193,10 +193,7 @@ def auto_summarize_task():
             except Exception as e:
                 log.warning(f"Failed to queue cluster {cluster['cluster_id']}: {e}")
 
-        log.info(
-            f"Auto-summarize: queued {summarized_count} articles, "
-            f"{synthesized_count} clusters"
-        )
+        log.info(f"Auto-summarize: queued {summarized_count} articles, {synthesized_count} clusters")
 
         return {
             "status": "success",

@@ -10,7 +10,34 @@ from core.language import transliterate_cyr_to_lat
 
 MAX_CLUSTER_SIZE = 40
 VECTOR_THRESHOLD = 0.28
-_STOPWORDS = {"а", "и", "во", "в", "до", "за", "од", "со", "на", "не", "ќе", "се", "што", "кој", "која", "кои", "ова", "овој", "оваа", "the", "and", "for", "from", "with", "this", "that"}
+_STOPWORDS = {
+    "а",
+    "и",
+    "во",
+    "в",
+    "до",
+    "за",
+    "од",
+    "со",
+    "на",
+    "не",
+    "ќе",
+    "се",
+    "што",
+    "кој",
+    "која",
+    "кои",
+    "ова",
+    "овој",
+    "оваа",
+    "the",
+    "and",
+    "for",
+    "from",
+    "with",
+    "this",
+    "that",
+}
 
 
 def _tokens(text: str) -> list[str]:
@@ -45,7 +72,13 @@ def _extract_title_entities(title: str, *args, **kwargs) -> set[str]:
 
 def _entity_token_overlap(left, right, *args, **kwargs):
     def normalize(value):
-        return transliterate_cyr_to_lat(str(value).casefold()).replace("č", "c").replace("ć", "c").replace("š", "s").replace("ž", "z")
+        return (
+            transliterate_cyr_to_lat(str(value).casefold())
+            .replace("č", "c")
+            .replace("ć", "c")
+            .replace("š", "s")
+            .replace("ž", "z")
+        )
 
     return {normalize(item) for item in (left or set())} & {normalize(item) for item in (right or set())}
 

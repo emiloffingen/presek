@@ -11,7 +11,8 @@ def _dedupe_briefing_candidates(candidates, *args, **kwargs):
     return candidates or []
 
 
-def _load_daily_brief_clusters(*a, **kw): return []
+def _load_daily_brief_clusters(*a, **kw):
+    return []
 
 
 @celery_app.task(name="tasks.delivery.briefing.generate_all_daily_briefs_task")
