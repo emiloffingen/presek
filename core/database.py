@@ -202,16 +202,20 @@ SQL_ARTICLE_SEARCH = """
 """
 
 
-def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
+def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str = "") -> str:
     """Build dynamic hybrid search SQL with whitelisted fragment injection.
 
     Security: time_filter is validated by _validate_timespan (only predefined SQL fragments).
     sort_by is validated against VALID_SORT_BY set. Both are re-checked here.
+    country_filter must be either "" or the literal "AND country = %s" (the value
+    itself is always passed as a bound parameter, never interpolated).
     """
     if time_filter and time_filter not in VALID_TIMESPANS.values():
         time_filter = ""
     if sort_by not in VALID_SORT_BY:
         sort_by = "hybrid"
+    if country_filter not in ("", "AND country = %s"):
+        country_filter = ""
 
     order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
 
@@ -220,7 +224,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
             FROM articles
             WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-            {time_filter}
+            {time_filter} {country_filter}
             ORDER BY rank DESC
             LIMIT 300
         ),
@@ -229,7 +233,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             FROM articles
             WHERE embedding IS NOT NULL
               AND created_at >= NOW() - INTERVAL '30 days'
-              {time_filter}
+              {time_filter} {country_filter}
             ORDER BY similarity DESC
             LIMIT 300
         ),
@@ -725,24 +729,26 @@ class DatabaseManager:
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
 
-        # Security: Use parameter binding for country if provided
+        # Country is filtered via a bound parameter in both CTEs. The fragment
+        # itself is a hardcoded literal (see _build_hybrid_search_sql), so the
+        # value can never alter the query structure.
+        has_country = bool(country)
+        country_filter = "AND country = %s" if has_country else ""
         params = [query_text, query_text]
-        if country:
-            # We need to add the parameter twice because time_filter is used twice in the hybrid search SQL
-            time_filter += " AND country = %s"
+        if has_country:
             params.append(country)
 
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         params.append(vec_str)
 
-        if country:
-            # Second occurrence of time_filter in semantic_results
+        if has_country:
+            # Second occurrence of the country filter in semantic_results
             params.append(country)
 
         params.append(limit)
 
         validated_sort_by = _validate_sort_by(sort_by)
-        sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
+        sql = _build_hybrid_search_sql(time_filter, validated_sort_by, country_filter)
         return await self.async_execute(sql, tuple(params), read_only=True)
 
     async def async_search_articles(
