@@ -62,6 +62,7 @@ import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.as
 import ClusterSynthesisSection from '../../components/Cluster/ClusterSynthesisSection.astro';
 import ClusterKeyFactsBand from '../../components/Cluster/ClusterKeyFactsBand.astro';
 import TrustBlock from '../../components/Cluster/TrustBlock.astro';
+import TrustChip from '../../components/TrustChip.astro';
 import CrossLingualStrip from '../../components/Cluster/CrossLingualStrip.astro';
 import { buildTrustChip } from '../../lib/trustSignals';
 import ClusterAnalysisSection from '../../components/Cluster/ClusterAnalysisSection.astro';
@@ -669,6 +670,21 @@ const articleSchema = cluster ? {
 							{showKeyFactsBand && cluster.key_facts && (
 								<ClusterKeyFactsBand facts={cluster.key_facts} lang={lang as 'sr' | 'mk'} />
 							)}
+
+							<div style="margin-bottom: 0.75rem;">
+								<TrustChip
+									sourcesCount={uniqueSourcesCount}
+									pluralismScore={cluster?.pluralism_score ?? null}
+									isStale={isSynthesisRefreshStale}
+									hasVerification={hasFactcheck}
+									quietFreshness={isMissingSynthesis}
+									isPendingSynthesis={isMissingSynthesis}
+									isProvisional={isProvisionalSynthesis}
+									needsUpgrade={isProvisionalSynthesis}
+									lang={lang as 'sr' | 'mk'}
+									showExplainer={true}
+								/>
+							</div>
 
 							<TrustBlock
 								trustLabel={trustSummary.label}

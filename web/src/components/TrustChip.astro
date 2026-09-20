@@ -64,8 +64,29 @@ const explainerLines = [
       </span>
     </summary>
     <div class="trust-chip-popover" role="note">
-      <strong>{t('trust.explainer_title')}</strong>
-      {explainerLines.map((line) => <span>{line}</span>)}
+      <span class="trust-chip-popover-eyebrow">{t('trust.explainer_title')}</span>
+      <div class="trust-chip-scoreline">
+        <span class="trust-chip-scoreline-value">{trust.score}</span>
+        <span class="trust-chip-scoreline-max">/100</span>
+        <span class="trust-chip-scoreline-tier">{trust.label}</span>
+      </div>
+      <div class="trust-chip-breakdown">
+        {trust.breakdown.map((item) => (
+          <div class="trust-chip-breakdown-row">
+            <span class="trust-chip-breakdown-label">{item.label}</span>
+            <span class="trust-chip-breakdown-track" aria-hidden="true">
+              <span class="trust-chip-breakdown-fill" style={`width:${(item.points / item.max) * 100}%`}></span>
+            </span>
+            <span class="trust-chip-breakdown-points">{item.points}</span>
+          </div>
+        ))}
+      </div>
+      {explainerLines.length > 0 && (
+        <div class="trust-chip-notes">
+          {explainerLines.map((line) => <span>{line}</span>)}
+        </div>
+      )}
+      <span class="trust-chip-capped">{t('trust.capped')}</span>
     </div>
   </details>
 ) : (
@@ -151,10 +172,90 @@ const explainerLines = [
     transform: translateY(0.25rem);
     transition: opacity 0.16s ease, transform 0.16s ease;
   }
-  .trust-chip-popover strong {
+  .trust-chip-popover-eyebrow {
     font-size: 0.62rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+  }
+  .trust-chip-scoreline {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    margin-top: 0.15rem;
+  }
+  .trust-chip-scoreline-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: var(--nyt-accent);
+    line-height: 1;
+  }
+  .trust-chip-scoreline-max {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted-foreground);
+  }
+  .trust-chip-scoreline-tier {
+    margin-left: auto;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--nyt-accent) 12%, transparent);
+    color: var(--nyt-accent);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .trust-chip-breakdown {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+  .trust-chip-breakdown-row {
+    display: grid;
+    grid-template-columns: minmax(5.5rem, 1fr) 2fr 1.6rem;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .trust-chip-breakdown-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .trust-chip-breakdown-track {
+    height: 0.32rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+    overflow: hidden;
+  }
+  .trust-chip-breakdown-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--nyt-accent), color-mix(in srgb, var(--nyt-accent) 55%, #10b981));
+  }
+  .trust-chip-breakdown-points {
+    font-size: 0.66rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-foreground);
+    text-align: right;
+  }
+  .trust-chip-notes {
+    display: grid;
+    gap: 0.2rem;
+    margin-top: 0.6rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+    font-size: 0.64rem;
+    color: var(--muted-foreground);
+  }
+  .trust-chip-capped {
+    display: block;
+    margin-top: 0.45rem;
+    font-size: 0.58rem;
+    color: var(--muted-foreground);
+    opacity: 0.8;
   }
   @media (hover: hover) {
     .trust-chip--explainer:hover .trust-chip-popover,
