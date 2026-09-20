@@ -9,12 +9,7 @@ const { lang } = Astro.props;
 const t = useTranslations(lang);
 ---
 
-<div
-    class="home-mode-dock"
-    data-home-mode-dock
-    role="tablist"
-    aria-label={t('home.edition_mode_nav_label')}
->
+<div class="home-mode-dock" data-home-mode-dock role="navigation" aria-label={t('home.edition_mode_nav_label')}>
     <div class="home-mode-dock-inner">
         <button
             type="button"
@@ -23,14 +18,6 @@ const t = useTranslations(lang);
             aria-pressed="true"
         >
             {t('home.mode_daily_short')}
-        </button>
-        <button
-            type="button"
-            class="home-mode-dock-btn"
-            data-home-mode-analiza
-            aria-pressed="false"
-        >
-            {t('home.mode_analiza')}
         </button>
     </div>
 </div>

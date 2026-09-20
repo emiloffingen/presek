@@ -52,7 +52,7 @@ def main() -> int:
         failures.append("Macedonian news API is not healthy")
 
     status, body = get("/marketing")
-    if status != 200 or "Рекламирањето е привремено паузирано".encode("utf-8") not in body:
+    if status not in (200, 302) or (status == 200 and "Рекламирањето е привремено паузирано".encode("utf-8") not in body):
         failures.append("Stripe-disabled marketing state is not visible")
 
     required_tables = {"feed_sources", "cluster_summaries", "advertising_campaigns"}

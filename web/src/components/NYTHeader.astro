@@ -125,7 +125,6 @@ const baseOverflowNavItems = overflowNavSections.flatMap((section: any) =>
 );
 
 const mobileOverflowExtras: NavItem[] = [
-    { label: t('nav.deep_analysis'), href: '/pregled' },
     ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
         label: String(item.label || ''),
         href: String(item.href || ''),
@@ -136,18 +135,14 @@ const overflowNavItems = (lang === 'sr' || lang === 'mk')
     ? dedupeNavItems([...mobileOverflowExtras, ...baseOverflowNavItems])
     : baseOverflowNavItems;
 
-const pregledHref = l('/pregled');
 const homeHref = l('/');
 const toolNavItems: NavItem[] = [
-    { label: t('nav.briefing'), href: l('/briefing') },
-    { label: t('nav.for_you'), href: l('/for-you') },
-    { label: t('nav.pulse'), href: l('/pulse') },
+    { label: t('nav.sources'), href: l('/izvori') },
+    { label: t('nav.archive'), href: l('/archive') },
 ];
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
-const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
 const isBrowseEditionActive =
     (normalizedPath === homeHref.replace(/\/$/, '') || normalizedPath === '') &&
-    !isPregledActive &&
     !category &&
     !topic &&
     !entity &&
@@ -324,11 +319,8 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             </button>
                             <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
                             <a href={l('/briefing')} class="utility-menu-link">{t('nav.briefing')}</a>
-                            <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
-                            <a href={l('/pulse')} class="utility-menu-link">{t('nav.pulse')}</a>
-                            <a href={l('/graf')} class="utility-menu-link">{t('nav.graph')}</a>
-                            <a href={l('/marketing')} class="utility-menu-link">{t('nav.marketing')}</a>
-                            <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
+                            <a href={l('/izvori')} class="utility-menu-link">{t('nav.sources')}</a>
+                            <a href={l('/archive')} class="utility-menu-link">{t('nav.archive')}</a>
                             <ScriptSwitcher />
                             <TextScaleIsland client:load lang={lang} />
                         </div>
@@ -346,9 +338,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                         <div class="group-links nav-entry-links">
                             <a href={homeHref} class:list={['nav-rail-link', 'nav-rail-link--browse', { 'is-active': isBrowseEditionActive }]}>
                                 <span class="link-label">{t('nav.browse_edition')}</span>
-                            </a>
-                            <a href={pregledHref} class:list={['nav-rail-link', 'nav-rail-link--analysis', { 'is-active': isPregledActive }]}>
-                                <span class="link-label">{t('nav.deep_analysis')}</span>
                             </a>
                         </div>
                     </div>
@@ -417,17 +406,13 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
         <span class="mobile-bottom-nav-icon" aria-hidden="true">⌂</span>
         <span>{t('nav.browse_edition')}</span>
     </a>
-    <a href={pregledHref} class:list={{ 'is-active': isPregledActive }}>
+    <a href={l('/izvori')} class:list={{ 'is-active': normalizedPath.startsWith('/izvori') }}>
         <span class="mobile-bottom-nav-icon" aria-hidden="true">◈</span>
-        <span>{t('nav.deep_analysis')}</span>
+        <span>{t('nav.sources')}</span>
     </a>
-    <a href={l('/pulse')} class:list={{ 'is-active': normalizedPath.startsWith('/pulse') }}>
+    <a href={l('/archive')} class:list={{ 'is-active': normalizedPath.startsWith('/archive') }}>
         <span class="mobile-bottom-nav-icon" aria-hidden="true">◉</span>
-        <span>{t('nav.pulse')}</span>
-    </a>
-    <a href={l('/for-you')} class:list={{ 'is-active': normalizedPath.startsWith('/for-you') }}>
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">✦</span>
-        <span>{t('nav.for_you')}</span>
+        <span>{t('nav.archive')}</span>
     </a>
 </nav>
 

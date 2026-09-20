@@ -85,7 +85,7 @@ digests/
 .hf_cache/
 
 # Application specific
-celerybeat-schedule
+celerybeat-schedule*
 *.log
 *.pid
 logs/

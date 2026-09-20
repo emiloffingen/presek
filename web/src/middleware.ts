@@ -11,6 +11,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const hostname = host.split(':')[0].toLowerCase();
   const pathname = url.pathname;
 
+  const retiredPublicPrefixes = [
+    '/for-you', '/briefing', '/pulse', '/graf', '/grafik', '/marketing',
+    '/settings', '/pregled', '/analize', '/subjekt', '/debug', '/admin',
+  ];
+  if (
+    (hostname === 'presek.mk' || hostname === 'www.presek.mk')
+    && retiredPublicPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  ) {
+    return Response.redirect(new URL(`/${url.search}`, 'https://presek.mk'), 302);
+  }
+
   if (hostname === 'presek.live' || hostname === 'www.presek.live') {
     const targetPath = stripMkPrefix(pathname) || '/';
     const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');

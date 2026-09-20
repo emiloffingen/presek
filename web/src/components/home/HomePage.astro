@@ -6,7 +6,6 @@ import '../../styles/next-level-home.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
 import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
-import AnalizaSectionNav from './AnalizaSectionNav.astro';
 import Footer from '../Footer.astro';
 
 import ForYouIsland from '../ForYouIsland.tsx';
@@ -16,7 +15,6 @@ import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
-import HomePregledTeaser from './HomePregledTeaser.astro';
 import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import PresekInlinedAd from '../PresekInlinedAd.astro';
 import PresekRailAd from '../PresekRailAd.astro';
@@ -26,7 +24,6 @@ import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
-import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import HomeStartHere from './HomeStartHere.astro';
@@ -291,12 +288,6 @@ if (analizaNavItems.length > 0) {
 					</div>
 				)}
 
-                {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-core">
-                        <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
-                    </div>
-                )}
-
                 {isHomepage && !isPregled && !error && (unifiedFeedItems.length > 0 || globalClusters.length > 0) && (
                     <div id="home-unified-feed" class="section-wrapper home-mobile-order-feed home-edition-core presek-section-mark home-feed-only">
                         {unifiedFeedItems.length > 0 ? (
@@ -313,40 +304,9 @@ if (analizaNavItems.length > 0) {
                     </div>
                 )}
 
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand home-feed-only">
-                        <p class="type-kicker home-expand-analysis-kicker">{t('home.mode_analiza')}</p>
-                        {expandPreviewChips.length > 0 && (
-                            <div class="home-expand-analysis-preview" aria-label={t('home.expand_preview_label')}>
-                                {expandPreviewChips.map((chip) => (
-                                    <span class="home-expand-analysis-chip">{chip}</span>
-                                ))}
-                            </div>
-                        )}
-                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
-                            {t('home.mode_open_analiza')}
-                        </button>
-                        <p class="home-expand-analysis-copy">
-                            {t('home.mode_analiza_hint')}
-                        </p>
-                    </div>
-                )}
-
                 {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
                     <div class="home-mobile-order-start-here home-feed-only home-edition-collapsed">
                         <HomeStartHere lang={lang} />
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only homepage-analiza-only">
-                        <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
-                    </div>
-                )}
-
-                {!error && isHomepage && analizaNavItems.length > 0 && (
-                    <div class="homepage-analiza-only">
-                        <AnalizaSectionNav items={analizaNavItems} lang={lang} />
                     </div>
                 )}
 
