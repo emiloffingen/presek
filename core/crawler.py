@@ -204,8 +204,19 @@ class CrawlerService:
             return await self._extract_headless(url)
 
         extracted = self._parse_with_trafilatura(html_content, final_url)
+        content = extracted.get("content") or ""
 
-        if not extracted.get("content") or len(extracted.get("content", "")) < 200:
+        if len(content) < 200:
+            # Middle fallback: jusText is local and token-free (already installed).
+            # Keep whichever extractor yields more text; jusText can only help.
+            justext_text = self._parse_with_justext(html_content) or ""
+            if len(justext_text) > len(content):
+                log.info(f"jusText improved {url} ({len(content)} -> {len(justext_text)} chars)")
+                extracted["content"] = justext_text
+                content = justext_text
+                result["method"] = "fast-justext"
+
+        if len(content) < 200:
             log.info(f"Low quality content from fast path for {url}, falling back to headless")
             return await self._extract_headless(url)
 
@@ -232,6 +243,19 @@ class CrawlerService:
             "author": metadata.author if metadata else None,
             "published_at": metadata.date if metadata else None,
         }
+
+    @staticmethod
+    def _parse_with_justext(html: str) -> str | None:
+        """Boilerplate removal with jusText (Macedonian stoplist). Returns cleaned text or None."""
+        try:
+            import justext
+
+            paragraphs = justext.justext(html, justext.get_stoplist("Macedonian"))
+            text = "\n\n".join(p.text.strip() for p in paragraphs if not p.is_boilerplate and p.text.strip())
+            return clean_extracted_article_text(text) if text else None
+        except Exception as e:
+            log.debug(f"jusText extraction failed: {e}")
+            return None
 
     async def _extract_headless(self, url: str) -> Dict[str, Any]:
         """
