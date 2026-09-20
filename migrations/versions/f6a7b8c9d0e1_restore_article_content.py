@@ -17,7 +17,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("articles", sa.Column("full_content", sa.Text()))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "articles" not in set(inspector.get_table_names()):
+        return
+    existing = {c["name"] for c in inspector.get_columns("articles")}
+    if "full_content" not in existing:
+        op.add_column("articles", sa.Column("full_content", sa.Text()))
 
 
 def downgrade() -> None:

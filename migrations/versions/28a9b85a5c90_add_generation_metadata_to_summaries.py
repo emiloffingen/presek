@@ -17,17 +17,37 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _add_missing_columns(table: str, columns: list[tuple[str, sa.Column]]) -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if table not in set(inspector.get_table_names()):
+        return
+    existing = {c["name"] for c in inspector.get_columns(table)}
+    for name, column in columns:
+        if name not in existing:
+            op.add_column(table, column)
+
+
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column('cluster_summaries', sa.Column('generation_provider', sa.String(), nullable=True))
-    op.add_column('cluster_summaries', sa.Column('generation_model', sa.String(), nullable=True))
-    op.add_column('cluster_summaries', sa.Column('quality_score', sa.Float(), nullable=True))
-    op.add_column('cluster_summaries', sa.Column('fallback_reason', sa.String(), nullable=True))
-
-    op.add_column('cluster_summary_history', sa.Column('generation_provider', sa.String(), nullable=True))
-    op.add_column('cluster_summary_history', sa.Column('generation_model', sa.String(), nullable=True))
-    op.add_column('cluster_summary_history', sa.Column('quality_score', sa.Float(), nullable=True))
-    op.add_column('cluster_summary_history', sa.Column('fallback_reason', sa.String(), nullable=True))
+    _add_missing_columns(
+        'cluster_summaries',
+        [
+            ('generation_provider', sa.Column('generation_provider', sa.String(), nullable=True)),
+            ('generation_model', sa.Column('generation_model', sa.String(), nullable=True)),
+            ('quality_score', sa.Column('quality_score', sa.Float(), nullable=True)),
+            ('fallback_reason', sa.Column('fallback_reason', sa.String(), nullable=True)),
+        ],
+    )
+    _add_missing_columns(
+        'cluster_summary_history',
+        [
+            ('generation_provider', sa.Column('generation_provider', sa.String(), nullable=True)),
+            ('generation_model', sa.Column('generation_model', sa.String(), nullable=True)),
+            ('quality_score', sa.Column('quality_score', sa.Float(), nullable=True)),
+            ('fallback_reason', sa.Column('fallback_reason', sa.String(), nullable=True)),
+        ],
+    )
 
 
 def downgrade() -> None:

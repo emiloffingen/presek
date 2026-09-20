@@ -17,18 +17,37 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _add_missing_columns(table: str, columns: list[tuple[str, sa.Column]]) -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if table not in set(inspector.get_table_names()):
+        return
+    existing = {c["name"] for c in inspector.get_columns(table)}
+    for name, column in columns:
+        if name not in existing:
+            op.add_column(table, column)
+
+
 def upgrade() -> None:
-    op.add_column("articles", sa.Column("is_redundant", sa.Boolean(), server_default=sa.text("false"), nullable=False))
-    op.add_column("articles", sa.Column("reading_time", sa.Integer(), server_default=sa.text("1"), nullable=False))
-    op.add_column(
+    _add_missing_columns(
         "articles",
-        sa.Column("entity_names", JSONB(), server_default=sa.text("'[]'::jsonb"), nullable=False),
-    )
-    op.add_column("articles", sa.Column("source_signal", JSONB(), server_default=sa.text("'{}'::jsonb"), nullable=False))
-    op.add_column("articles", sa.Column("is_global", sa.Boolean(), server_default=sa.text("false"), nullable=False))
-    op.add_column(
-        "articles",
-        sa.Column("coverage_balance", JSONB(), server_default=sa.text("'{}'::jsonb"), nullable=False),
+        [
+            ("is_redundant", sa.Column("is_redundant", sa.Boolean(), server_default=sa.text("false"), nullable=False)),
+            ("reading_time", sa.Column("reading_time", sa.Integer(), server_default=sa.text("1"), nullable=False)),
+            (
+                "entity_names",
+                sa.Column("entity_names", JSONB(), server_default=sa.text("'[]'::jsonb"), nullable=False),
+            ),
+            (
+                "source_signal",
+                sa.Column("source_signal", JSONB(), server_default=sa.text("'{}'::jsonb"), nullable=False),
+            ),
+            ("is_global", sa.Column("is_global", sa.Boolean(), server_default=sa.text("false"), nullable=False)),
+            (
+                "coverage_balance",
+                sa.Column("coverage_balance", JSONB(), server_default=sa.text("'{}'::jsonb"), nullable=False),
+            ),
+        ],
     )
 
 
