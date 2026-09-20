@@ -21,6 +21,46 @@ MAX_TTS_CHARS = 3500
 _TAG_RE = re.compile(r"<[^>]+>")
 _MD_RE = re.compile(r"[#>*_`~\-]{1,3}")
 _URL_RE = re.compile(r"https?://\S+")
+_SENT_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
+
+# Spoken-form replacements so the voice doesn't read symbols literally.
+_SPEECH_SUBS = (
+    ("%", " проценти "),
+    ("&", " и "),
+    ("€", " евра "),
+    ("$", " долари "),
+    ("°C", " степени целзиусови "),
+    ("°", " степени "),
+    ("+", " плус "),
+    ("=", " еднакво на "),
+)
+
+
+def _normalize_for_speech(text: str) -> str:
+    """Expand symbols/units into spoken words so the voice reads naturally."""
+    for src, dst in _SPEECH_SUBS:
+        text = text.replace(src, dst)
+    text = re.sub(r"\s+", " ", text)
+    return re.sub(r"\s+([.!?…,:;])", r"\1", text).strip()
+
+
+def _xml_escape(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _to_ssml(text: str, voice: str, lang: str) -> str:
+    """Wrap narration in SSML: news-reader pacing with pauses between sentences.
+
+    Plain-text TTS reads headlines as one flat run-on stream. Sentence breaks
+    plus a slightly reduced rate give it a human newsreader cadence.
+    """
+    locale = "sr-RS" if lang.startswith("sr") else "mk-MK"
+    sentences = [s.strip() for s in _SENT_SPLIT_RE.split(text) if s.strip()]
+    body = '<break time="450ms"/>'.join(_xml_escape(s) for s in sentences)
+    return (
+        f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{locale}">'
+        f'<voice name="{voice}"><prosody rate="-6%">{body}</prosody></voice></speak>'
+    )
 
 
 def _voice_for_lang(lang: str | None) -> str:
@@ -54,10 +94,10 @@ def _audio_dir() -> str:
     return d
 
 
-async def _synthesize_async(text: str, voice: str, path: str) -> None:
+async def _synthesize_async(ssml: str, voice: str, path: str) -> None:
     import edge_tts
 
-    communicator = edge_tts.Communicate(text, voice)
+    communicator = edge_tts.Communicate(ssml, voice)
     await communicator.save(path)
 
 
@@ -88,17 +128,18 @@ class AudioService:
     @staticmethod
     def generate_cluster_audio(cluster_id: str, content: str, lang: str = "mk"):
         """Synthesize (or reuse cached) cluster briefing MP3. Returns public URL or None."""
-        text = _clean_text(content)[:MAX_TTS_CHARS].strip()
+        text = _normalize_for_speech(_clean_text(content)[:MAX_TTS_CHARS]).strip()
         if not text:
             return None
         lang = (lang or "mk").lower()
+        voice = _voice_for_lang(lang)
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
-        digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:10]
+        digest = hashlib.sha1(f"{voice}|{text}".encode("utf-8")).hexdigest()[:10]
         path, url = AudioService.get_cluster_audio_path_and_url(safe_cluster, lang, digest)
         if os.path.isfile(path) and os.path.getsize(path) > 1024:
             return url
         try:
-            asyncio.run(_synthesize_async(text, _voice_for_lang(lang), path))
+            asyncio.run(_synthesize_async(_to_ssml(text, voice, lang), voice, path))
         except Exception as e:
             log.warning("Edge TTS synthesis failed for cluster %s: %s", cluster_id, e)
             try:
