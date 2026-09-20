@@ -83,4 +83,3 @@ def main() -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 
-# Test marker: verifies Termux auto-deploy restart path.
