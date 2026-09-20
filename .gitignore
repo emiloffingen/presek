@@ -86,6 +86,7 @@ digests/
 
 # Application specific
 celerybeat-schedule*
+presek-runtime/
 *.log
 *.pid
 logs/

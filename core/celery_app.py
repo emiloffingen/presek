@@ -380,6 +380,16 @@ if os.environ.get("ENABLE_AI_SCHEDULES", "false").lower() != "true":
         "send-profile-breaking-alerts",
         "backfill-cover-art",
         "discover-storylines",
+        # Synthesis-quality / homepage-synthesis maintenance: all no-ops or
+        # crashing stubs on the MK-only (minimal-AI) deployment.
+        "refresh-synthesis-quality",
+        "upgrade-stuck-fast-syntheses",
+        "refresh-fallback-syntheses",
+        "refresh-low-score-syntheses",
+        "catch-up-recent-summaries",
+        "catch-up-cluster-syntheses",
+        "prioritize-homepage-syntheses",
+        "boost-homepage-cluster-supply",
     ):
         celery_app.conf.beat_schedule.pop(_schedule_name, None)
 

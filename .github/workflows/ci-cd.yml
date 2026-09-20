@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, simplify/mk-only-minimal-ai]
   pull_request:
-    branches: [main]
+    branches: [main, simplify/mk-only-minimal-ai]
 
 jobs:
   backend-tests:
@@ -106,19 +106,3 @@ jobs:
         run: uv run ruff check core/ routes/ tasks/ nlp/ utils/
       - name: Ruff format check
         run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
-
-  deploy:
-    needs: [backend-tests, frontend-tests, security-scan, lint]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ${{ secrets.DEPLOY_GIT_DIR || '$HOME/presek' }}
-            git pull origin main
-            bash deploy/ci_deploy.sh
