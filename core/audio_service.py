@@ -1,8 +1,9 @@
 """Cluster TTS briefings via Edge TTS (free, no API key).
 
 Generates Macedonian (or Serbian) speech MP3s for cluster briefings and caches
-them under static/generated/ as tts_<cluster>.<lang>.<hash>.mp3. Files are
-served by the existing /static/generated/{filename} route.
+them under static/uploads/audio/ as tts_<cluster>.<lang>.<hash>.mp3. Files are
+served by the existing /static/uploads/audio/{filename} route (audio/mpeg with
+range-request support for seeking).
 
 generate_cluster_audio is synchronous on purpose: the API calls it inside
 run_in_executor (see routes/news.py).
@@ -42,12 +43,13 @@ def select_cluster_audio_text(generated_article, summary) -> str:
     return text[:MAX_TTS_CHARS].strip()
 
 
-def _generated_dir() -> str:
+def _audio_dir() -> str:
+    """Mirrors core.api_fast's _STATIC_ROOT resolution; served with range support."""
     home = os.environ.get("HOME") or os.path.expanduser("~")
     root = os.environ.get("STATIC_ROOT", os.path.join(home, "presek-runtime", "shared", "static"))
     if not os.path.exists(root):
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
-    d = os.path.join(root, "generated")
+    d = os.path.join(root, "uploads", "audio")
     os.makedirs(d, exist_ok=True)
     return d
 
@@ -80,8 +82,8 @@ class AudioService:
     def get_cluster_audio_path_and_url(cluster_id: str, lang: str, content_hash: str):
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
         filename = f"tts_{safe_cluster}.{lang}.{content_hash}.mp3"
-        path = os.path.join(_generated_dir(), filename)
-        return path, f"/static/generated/{filename}"
+        path = os.path.join(_audio_dir(), filename)
+        return path, f"/static/uploads/audio/{filename}"
 
     @staticmethod
     def generate_cluster_audio(cluster_id: str, content: str, lang: str = "mk"):
