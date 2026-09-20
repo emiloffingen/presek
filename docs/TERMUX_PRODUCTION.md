@@ -67,3 +67,5 @@ bash /root/scripts/presek_deploy.sh
 
 CI cannot reach this host (no inbound SSH), so deploys are driven by the poller
 above rather than the `deploy` job in `.github/workflows/ci-cd.yml`.
+
+_Last verified: 2026-09-20._
