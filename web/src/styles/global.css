@@ -208,6 +208,11 @@
     height: auto;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
   /* Performance optimizations */
   .article-editorial-row,
   .unified-ticker-track-wrap,
