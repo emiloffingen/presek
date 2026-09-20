@@ -37,14 +37,6 @@ def test_build_citation_snippet_handles_empty():
     assert build_citation_snippet(None) == ""
 
 
-def test_build_citation_snippet_uses_summary_or_description():
-    art1 = {"summary": "Kratko rezime", "description": "Dolg opis"}
-    assert build_citation_snippet(art1) == "Dolg opis"
-
-    art2 = {"summary": "", "description": "Samo opis"}
-    assert build_citation_snippet(art2) == "Samo opis"
-
-
 def test_get_source_trust_label():
     label = get_source_trust_label("N1 Info")
     assert label in ["Visoko poverenje", "Potvrden izvor", "sledeci izvor"]

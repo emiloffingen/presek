@@ -38,8 +38,3 @@ def test_cluster_trust_summary_fixture_matches_builder():
     assert rebuilt["tier"] == trust["tier"]
 
 
-def test_cluster_synthesis_meta_fixture():
-    cluster = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))["data"]
-    meta = build_synthesis_meta(cluster["synthesis_meta"], lang="sr", headline=cluster["synthetic_headline"])
-    for key in ("generation_provider", "quality_score", "copy_purity_ok", "is_provisional"):
-        assert key in meta

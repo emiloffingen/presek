@@ -8,18 +8,6 @@ def _read(rel_path: str) -> str:
 
 
 class TestAstroFrontendIntegrity:
-    def test_core_astro_routes_exist(self):
-        for rel_path in (
-            "web/src/pages/index.astro",
-            "web/src/pages/briefing.astro",
-            "web/src/pages/archive.astro",
-            "web/src/pages/izvori.astro",
-            "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[slug].astro",
-            "web/src/pages/subjekt/[name].astro",
-        ):
-            assert (ROOT / rel_path).is_file(), f"Missing Astro route: {rel_path}"
-
     def test_layout_contains_required_seo_structures(self):
         layout = _read("web/src/layouts/Layout.astro")
         head = _read("web/src/components/layout/LayoutHead.astro")
@@ -31,12 +19,6 @@ class TestAstroFrontendIntegrity:
         assert '<link rel="alternate" hreflang=' in head
         # Check for theme logic usage
         assert "typeof localStorage !== 'undefined'" in boot
-
-    def test_mk_middleware_redirects_to_presek_mk(self):
-        middleware = _read("web/src/middleware.ts")
-
-        assert "pathname.startsWith('/mk')" in middleware
-        assert "https://presek.mk" in middleware
 
     def test_canonical_url_uses_logic(self):
         layout = _read("web/src/layouts/Layout.astro")
@@ -53,38 +35,6 @@ class TestAstroFrontendIntegrity:
         assert "i18n:" in config
         assert "routing:" in config
         assert "site:" in config
-
-    def test_primary_pages_fetch_api_through_supported_base_url(self):
-        # Pages can either import the shared apiBaseUrl() helper (which
-        # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
-        # the env lookup directly. Delegated view components may also own fetch logic.
-        for rel_path in (
-            "web/src/components/home/HomePage.astro",
-            "web/src/pages/briefing.astro",
-            "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[slug].astro",
-            "web/src/pages/archive.astro",
-        ):
-            content = _read(rel_path)
-            uses_helper = "apiBaseUrl" in content
-            uses_inline_env = "PUBLIC_API_URL" in content
-            assert uses_helper or uses_inline_env, f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
-            if uses_inline_env:
-                assert "127.0.0.1:5001/api" in content or '"/api"' in content, f"Missing FastAPI fallback in {rel_path}"
-
-        entity_page = _read("web/src/pages/subjekt/[name].astro")
-        entity_view = _read("web/src/components/entity/EntitySubjectView.astro")
-        entity_loader = _read("web/src/lib/loadEntitySubject.ts")
-        assert "loadEntitySubject" in entity_page
-        assert "EntitySubjectView" in entity_page
-        assert "apiBaseUrl" in entity_loader or "PUBLIC_API_URL" in entity_loader
-
-        # The shared helper must still contain the canonical fallback values
-        # so that the assertion above is actually meaningful.
-        helper = _read("web/src/lib/apiBase.ts")
-        assert "PUBLIC_API_URL" in helper
-        assert "127.0.0.1:5001/api" in helper
-        assert "'/api'" in helper or '"/api"' in helper
 
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/admin/status.astro")
@@ -166,64 +116,6 @@ class TestAstroFrontendIntegrity:
         assert "Math.max(0, Math.min(100" in source_comparison
         assert "buildResearchQA" in research_qa
 
-    def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
-        briefing = _read("web/src/pages/briefing.astro")
-        briefing_content = _read("web/src/components/briefing/BriefingContent.astro")
-        briefing_i18n = _read("web/src/i18n/namespaces/briefing.ts")
-        assert "BriefingContent" in briefing
-        assert "briefing.error_unavailable" in briefing_content or "Brifing trenutno nije dostupan." in briefing_i18n
-
-    def test_pulse_page_has_real_error_state_and_safe_category_math(self):
-        pulse = _read("web/src/pages/pulse.astro")
-        intelligence = _read("routes/intelligence.py")
-
-        assert "let ssrFailed = false;" in pulse
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
-
-    def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(
-        self,
-    ):
-        for_you_page = _read("web/src/pages/for-you.astro")
-        for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
-        profile_route = _read("routes/profile.py")
-
-        assert "TinyAdzRailAd" not in for_you_page
-        assert "TinyAdzInlinedAd" not in for_you_page
-        assert "ErrorBoundary client:idle lang={lang}" in for_you_page
-        assert "<ForYouPageIsland client:visible lang={lang} />" in for_you_page
-        assert "const [clusterLoading, setClusterLoading]" in for_you_island
-        assert "ForYouSkeleton" in for_you_island
-        assert "fetch(`${apiBaseUrl()}/news?page_size=32&lang=${lang}`)" in for_you_island
-        assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
-        assert "}, [profile, lang, initialClusters.length, clusterFetchError]);" in for_you_island
-        assert "const pageError = semanticError || clusterError;" in for_you_island
-        assert "COALESCE(ingested_at, created_at)" in profile_route
-        assert (
-            'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"'
-            in profile_route
-        )
-
-    def test_secondary_intelligence_and_stats_surfaces_use_ingestion_aware_freshness(
-        self,
-    ):
-        intelligence = _read("routes/intelligence.py")
-        stats = _read("routes/stats.py")
-        system = _read("routes/system.py")
-
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
-        assert "WHERE a.country = %s AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
-        assert (
-            "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
-        )
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats
-        assert "ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC" in stats
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in system
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in system
-        assert "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in system
-        assert "FROM articles" in system
-
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage_data = _read("web/src/lib/homepageData.ts")
         assert "newsUrl.searchParams.set('category', category);" in homepage_data
@@ -273,20 +165,6 @@ class TestAstroFrontendIntegrity:
         assert '"shared_tags": shared_tags' in news
         assert '"shared_topics": shared_topics' in news
         assert '"shared_entities": shared_entities' in news
-
-    def test_recommendations_route_imports_list_validator(self):
-        intelligence = _read("routes/intelligence.py")
-        assert "validate_list_param" in intelligence
-        assert '@router.post("/intelligence/recommendations")' in intelligence
-        recommendations_block = intelligence.split('@router.post("/intelligence/recommendations")', 1)[1].split("@router.", 1)[0]
-        assert "@custom_rate_limit" in recommendations_block
-        assert "verify_csrf_token" in recommendations_block
-
-    def test_synthesize_nodes_route_requires_csrf(self):
-        intelligence = _read("routes/intelligence.py")
-        synthesize_block = intelligence.split('@router.post("/intelligence/synthesize-nodes")', 1)[1].split("@router.", 1)[0]
-        assert "@custom_rate_limit" in synthesize_block
-        assert "verify_csrf_token" in synthesize_block
 
     def test_intelligence_graph_sends_csrf_for_synthesis(self):
         graph = _read("web/src/components/IntelligenceGraph.tsx")

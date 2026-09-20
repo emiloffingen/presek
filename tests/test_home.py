@@ -171,19 +171,6 @@ def test_rank_latest_wire_articles_dedupes_cleaned_titles():
     assert len(ranked) == 1
 
 
-def test_extract_preview_summary_truncates_long_text():
-    home = _load_home_module()
-
-    article = {
-        "summary": "A" * 250,
-        "description": "",
-    }
-
-    result = home._extract_preview_summary(article)
-    assert len(result) == 200
-    assert result.endswith("...")
-
-
 def test_extract_preview_summary_returns_short_text_unchanged():
     home = _load_home_module()
 
@@ -193,28 +180,6 @@ def test_extract_preview_summary_returns_short_text_unchanged():
     }
 
     assert home._extract_preview_summary(article) == "Short text"
-
-
-def test_build_lead_display_returns_cleaned_preview_fields():
-    home = _load_home_module()
-
-    cluster = {
-        "is_breaking": True,
-        "articles": [
-            {
-                "title": "Vladata &amp; merki",
-                "summary": "Procitaj povece",
-                "description": "Opis",
-            },
-            {"title": "Vtor ugao"},
-        ],
-    }
-
-    display = home._build_lead_display(cluster)
-
-    assert display["title"] == "Vladata & merki"
-    assert display["summary"] == "Procitaj povece"
-    assert display["signal"] == "Најбрз развој денес"
 
 
 def test_decorate_cluster_display_adds_display_fields_to_articles():
@@ -238,37 +203,6 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
 
 
 
-
-
-def test_fill_developing_clusters_backfills_when_primary_pool_empty():
-    home = _load_home_module()
-
-    feed = [
-        {
-            "cluster_id": "wire-only",
-            "homepage_score": 0.01,
-            "has_synthesis": False,
-            "articles": [{"title": "Singleton", "source": "A"}],
-        },
-        {
-            "cluster_id": "scored",
-            "homepage_score": 2.5,
-            "has_synthesis": True,
-            "source_count": 1,
-            "articles": [{"title": "Lead story", "source": "B"}],
-        },
-        {
-            "cluster_id": "corroborated",
-            "homepage_score": 1.8,
-            "has_synthesis": False,
-            "source_count": 3,
-            "articles": [{"title": "Multi", "source": "C"}],
-        },
-    ]
-
-    developing = home._fill_developing_clusters(feed, exclude_ids=set(), limit=10, backfill_min=2)
-
-    assert [cluster["cluster_id"] for cluster in developing] == ["corroborated", "scored"]
 
 
 

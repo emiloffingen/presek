@@ -91,6 +91,7 @@ async def test_security_headers_middleware():
         (),
         {
             "headers": Headers({}),
+            "cookies": {},
         },
     )()
 
