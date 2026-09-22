@@ -185,12 +185,10 @@ export async function loadHomepageFallback(options: {
     fallbackNewsUrl.searchParams.set('lang', lang);
     fallbackNewsUrl.searchParams.set('sort', 'score');
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+    const [newsResult, trendResult, statsResult, wireResult] = await Promise.allSettled([
         fetchJson(fallbackNewsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
         fetchJsonCached(`${apiUrl}/home/latest-wire?limit=15&lang=${lang}`),
     ]);
 
@@ -208,13 +206,9 @@ export async function loadHomepageFallback(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
-    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
+    state.topEntities = [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    state.briefing = briefingResult.status === 'fulfilled'
-        ? normalizeBriefingPayload(briefingResult.value)
-        : null;
+    state.briefing = null;
 
     const recovered = state.clusters.length > 0
         || state.wireArticles.length > 0
@@ -245,12 +239,10 @@ export async function fetchFilteredNewsPayload(options: {
     if (q) newsUrl.searchParams.set('q', q);
     if (timespan) newsUrl.searchParams.set('timespan', timespan);
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
+    const [newsResult, trendResult, statsResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
     ]);
 
     if (newsResult.status === 'fulfilled') {
@@ -263,13 +255,9 @@ export async function fetchFilteredNewsPayload(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
-    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
+    state.topEntities = [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    state.briefing = briefingResult.status === 'fulfilled'
-        ? normalizeBriefingPayload(briefingResult.value)
-        : null;
+    state.briefing = null;
 
     return state;
 }

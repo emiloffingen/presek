@@ -37,9 +37,13 @@ function normalizeText(value?: string | null) {
 
 function fallbackContext(cluster: ClusterLike) {
   const primary = cluster?.articles?.[0] || {};
+  // Keep the fallback title short: it is percent-encoded into every proxied
+  // image URL (src, srcset x3, data-fallback-url), so a full 150-char headline
+  // costs ~1KB per card. 70 chars is plenty for a thumbnail placeholder.
+  const fullTitle = cluster?.synthetic_headline || primary.title || cluster?.synthetic_standfirst || '';
   return {
     cid: cluster?.cluster_id || '',
-    title: cluster?.synthetic_headline || primary.title || cluster?.synthetic_standfirst || '',
+    title: fullTitle.length > 70 ? fullTitle.slice(0, 70).trimEnd() : fullTitle,
     category: primary.category || primary.topic || cluster?.topics?.[0] || cluster?.tags?.[0] || 'vesti',
   };
 }

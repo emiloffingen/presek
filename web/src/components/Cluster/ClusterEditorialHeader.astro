@@ -76,14 +76,14 @@ const {
         <span class="edition-badge cluster-meta-pill bg-foreground text-background px-3 py-1">
           {t(getEditionStr(cluster.articles?.[0].created_at) as any)}
         </span>
-        <span class="header-date cluster-meta-label text-muted-foreground border-l border-border pl-4">
+        <time class="header-date cluster-meta-label text-muted-foreground border-l border-border pl-4" datetime={cluster.articles?.[0].created_at || ''}>
           {new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
           })}
-        </span>
+        </time>
       </div>
       <h1 class:list={['headline is-visible font-serif text-4xl md:text-6xl font-black leading-[1.2] tracking-tight text-foreground mb-4', { 'headline-cyrillic': headlineIsCyrillic }]}>
         {displayHeadline}

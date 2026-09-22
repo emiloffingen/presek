@@ -14,6 +14,7 @@ import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
 from core.config import (
+    AI_ENABLED,
     PROVIDER_FALLBACK_ORDER,
     PROVIDER_FALLBACK_ORDER_RESEARCH,
     PROVIDER_FALLBACK_ORDER_SUMMARY,
@@ -592,6 +593,8 @@ def build_provider_fallback_order(
     exclude_providers: list[str] | None = None,
 ) -> list[str]:
     """Build provider cascade order with optional primary override and exclusions."""
+    if not AI_ENABLED:
+        return []
     from core.runtime_limits import synthesis_local_only
 
     if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
@@ -728,6 +731,8 @@ async def _call_ai_async(
     exclude_providers: list[str] | None = None,
 ):
     """Async entrypoint with cascading failover."""
+    if not AI_ENABLED:
+        return None, None
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -824,6 +829,8 @@ def _call_ai(
     exclude_providers: list[str] | None = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
+    if not AI_ENABLED:
+        return None, None
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -1187,6 +1194,8 @@ def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
 
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
+    if not AI_ENABLED:
+        return
     try:
         from core.config import (
             AUTO_SUMMARIZE_DELAY,

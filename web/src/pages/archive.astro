@@ -26,7 +26,7 @@ const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
-let archive: any = { clusters: [], total: 0, sources: 0, date, page, page_size: 50, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
+let archive: any = { clusters: [], total: 0, sources: 0, date, page, page_size: 15, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
 let briefingData: { briefing?: string | null } = { briefing: null };
 let onThisDay: any = {};
 let error = null;
@@ -36,7 +36,7 @@ try {
   archiveUrl.searchParams.set('date', date);
   archiveUrl.searchParams.set('lang', lang);
   archiveUrl.searchParams.set('page', String(page));
-  archiveUrl.searchParams.set('page_size', '50');
+  archiveUrl.searchParams.set('page_size', '15');
   if (q) archiveUrl.searchParams.set('q', q);
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
@@ -248,7 +248,7 @@ function formatBriefingItem(item: string) {
                         <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
                     </div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 15} date={date} q={q} source={source} topic={topic} lang={lang} />
                 ) : (
                     <div class="py-32 text-center border-2 border-dashed border-border rounded-none">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>

@@ -430,7 +430,9 @@ class AsyncDatabaseManager:
                 async with conn.cursor() as cur:
                     await cur.execute(sql, params)
                     if fetch:
-                        return await cur.fetchall()
+                        rows = await cur.fetchall()
+                        await conn.commit()
+                        return rows
                     await conn.commit()
                     return cur.rowcount
         except Exception as e:

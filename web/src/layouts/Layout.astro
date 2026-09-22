@@ -2,6 +2,7 @@
 // PRESEK.MK public layout.
 
 import '../styles/global.css';
+import '../styles/theme-warm.css';
 import '../lib/transliterationInit.js';
 import LayoutBodyChrome from '../components/layout/LayoutBodyChrome.astro';
 import LayoutHead from '../components/layout/LayoutHead.astro';
@@ -63,6 +64,19 @@ const organizationSchema = buildOrganizationSchema(lang);
 const metaDescription = description || defaultDescription;
 const normalizedPath = requestUrl.pathname.replace(/\/$/, '') || '/';
 const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : 'default';
+
+// Opt-in style direction for A/B testing: ?style=warm applies the warm palette
+// (theme-warm.css) and persists via cookie; ?style=default clears it.
+const styleParam = Astro.url.searchParams.get('style');
+if (styleParam === 'warm' || styleParam === 'default') {
+	Astro.cookies.set('presek_style', styleParam, {
+		path: '/',
+		maxAge: 60 * 60 * 24 * 30,
+		sameSite: 'lax',
+	});
+}
+const stylePref = styleParam || Astro.cookies.get('presek_style')?.value || '';
+const isWarmTheme = stylePref === 'warm';
 ---
 
 <!doctype html>
@@ -88,7 +102,7 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 		id="top"
 		class:list={[
 			'antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full',
-			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
+			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk', 'theme-warm': isWarmTheme },
 		]}
 	>
 		<SkipLink targetId="main-content" />

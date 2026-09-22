@@ -169,7 +169,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         )}
 
         <div className="article-footer-meta mt-auto">
-          <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+          <time className="time-stamp" dateTime={main.ingested_at || main.created_at}>{getTimeStr(main.ingested_at || main.created_at)}</time>
           {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
             <>
               <span className="meta-dot">·</span>

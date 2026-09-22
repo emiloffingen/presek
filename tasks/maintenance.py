@@ -289,11 +289,11 @@ def run_prune_db():
     try:
         valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
         valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
-        from core.ai_engine import cleanup_cover_art
+        from core.ai_engine import cleanup_generated_images
 
-        cleanup_cover_art(valid_ids)
+        cleanup_generated_images(valid_ids)
     except Exception as e:
-        log.error(f"[tasks] cleanup_cover_art failed: {e}", exc_info=True)
+        log.error(f"[tasks] cleanup_generated_images failed: {e}", exc_info=True)
 
     try:
         # 3. Clean up orphaned local images and logs

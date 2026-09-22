@@ -209,7 +209,7 @@ function getTimeStr(dateStr: string) {
                     <span class="meta-dot">·</span>
                 </>
             )}
-            <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+            <time class="time-stamp" datetime={main.ingested_at || main.created_at}>{getTimeStr(main.ingested_at || main.created_at)}</time>
             {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
                 <>
                     <span class="meta-dot">·</span>

@@ -97,9 +97,11 @@ _FEATURE_PATTERNS = [
 
 
 def _is_publicly_displayable_article(article):
-    if article.get("is_translated"):
+    # Support both dict and tuple (psycopg Row) formats
+    a = dict(article) if not isinstance(article, dict) else article
+    if a.get("is_translated"):
         return True
-    return is_cyrillic_south_slavic(f"{article.get('title') or ''}. {article.get('description') or ''}")
+    return is_cyrillic_south_slavic(f"{a.get('title') or ''}. {a.get('description') or ''}")
 
 
 _PUBLIC_ARTICLE_FIELDS = {

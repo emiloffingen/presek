@@ -1,0 +1,50 @@
+/* Warm style direction — opt-in via ?style=warm (adds body.theme-warm).
+ *
+ * Recolors the brand accent from navy (#173f7a) to terracotta and gently warms
+ * dark-mode surfaces. Purely token overrides: no structural change, fully
+ * reversible by dropping the body class. See /style-directions preview.
+ *
+ * Dark mode has two entry points (explicit `.dark` class on <html>, and the
+ * system-preference media query), so the dark block is duplicated for each.
+ */
+
+/* ---- light ---- */
+body.theme-warm {
+  --presek-mark: #c2542a;
+  --nyt-accent: #c2542a;
+  --ring: #c2542a;
+  --link: #8a3a1e;
+  --link-hover: #6d2c15;
+}
+
+/* ---- explicit dark (theme toggle adds .dark to <html>) ---- */
+html.dark body.theme-warm {
+  --presek-mark: #e07a3d;
+  --nyt-accent: #e07a3d;
+  --ring: #e07a3d;
+  --link: #f0a878;
+  --link-hover: #f6c4a1;
+  --background: #0b0908;
+  --card: #13100d;
+  --secondary: #171310;
+  --muted: #14110e;
+  --muted-foreground: #d8cfc2;
+  --border: #241e19;
+}
+
+/* ---- system dark (no explicit theme class) ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) body.theme-warm {
+    --presek-mark: #e07a3d;
+    --nyt-accent: #e07a3d;
+    --ring: #e07a3d;
+    --link: #f0a878;
+    --link-hover: #f6c4a1;
+    --background: #0b0908;
+    --card: #13100d;
+    --secondary: #171310;
+    --muted: #14110e;
+    --muted-foreground: #d8cfc2;
+    --border: #241e19;
+  }
+}

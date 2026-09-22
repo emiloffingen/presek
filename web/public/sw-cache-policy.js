@@ -27,7 +27,6 @@ export const API_CACHE_ALLOW_PREFIXES = [
   '/api/search',
   '/api/cluster/',
   '/api/entity-graph/',
-  '/api/intelligence/briefing',
   '/api/stats/',
   '/api/v1/home',
   '/api/v1/news',
@@ -36,7 +35,6 @@ export const API_CACHE_ALLOW_PREFIXES = [
   '/api/v1/search',
   '/api/v1/cluster/',
   '/api/v1/entity-graph/',
-  '/api/v1/intelligence/briefing',
   '/api/v1/stats/',
 ];
 

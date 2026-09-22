@@ -119,11 +119,22 @@ class AudioService:
         pass
 
     @staticmethod
-    def get_cluster_audio_path_and_url(cluster_id: str, lang: str, content_hash: str):
+    def get_cluster_audio_path_and_url(cluster_id: str, lang: str, content_hash: str | None = None):
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
-        filename = f"tts_{safe_cluster}.{lang}.{content_hash}.mp3"
-        path = os.path.join(_audio_dir(), filename)
-        return path, f"/static/uploads/audio/{filename}"
+        directory = _audio_dir()
+        if content_hash:
+            filename = f"tts_{safe_cluster}.{lang}.{content_hash}.mp3"
+            return os.path.join(directory, filename), f"/static/uploads/audio/{filename}"
+        # content_hash unknown: reuse any existing cached variant for this cluster/lang
+        prefix = f"tts_{safe_cluster}.{lang}."
+        try:
+            for name in sorted(os.listdir(directory)):
+                if name.startswith(prefix) and name.endswith(".mp3"):
+                    return os.path.join(directory, name), f"/static/uploads/audio/{name}"
+        except OSError:
+            pass
+        filename = f"tts_{safe_cluster}.{lang}..mp3"
+        return os.path.join(directory, filename), f"/static/uploads/audio/{filename}"
 
     @staticmethod
     def generate_cluster_audio(cluster_id: str, content: str, lang: str = "mk"):

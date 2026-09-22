@@ -10,7 +10,6 @@ import {
   Radio,
   SlidersHorizontal,
   Sparkles,
-  Newspaper,
 } from 'lucide-react';
 import { useStore } from '@nanostores/react';
 import { $profile } from '../lib/store.ts';
@@ -18,7 +17,6 @@ import PersonalizationWhyChip from './PersonalizationWhyChip.tsx';
 import { NewsCard } from './NewsCard.tsx';
 import OnboardingIsland from './OnboardingIsland.tsx';
 import MorningEmailSignup from './MorningEmailSignup.tsx';
-import ForYouBriefingCard from './ForYouBriefingCard.tsx';
 import PreferenceToggle from './PreferenceToggle.tsx';
 import {
   buildCsrfHeadersAsync,
@@ -295,7 +293,6 @@ export default function ForYouPageIsland({
             <p>{t('for_you.cold_start_lede')}</p>
           </div>
           <div className="cold-start-unified-panel">
-            <ForYouBriefingCard lang={lang} embedded />
             <div className="cold-start-onboarding">
               <OnboardingIsland lang={lang} />
             </div>
@@ -346,9 +343,6 @@ export default function ForYouPageIsland({
       </section>
 
       <div className="for-you-action-bar">
-        <a href={localePathForLang('/briefing', locale)} className="for-you-action-link">
-          <Newspaper size={15} /> {t('for_you.action_briefing')}
-        </a>
         <a href={localePathForLang('/settings', locale)} className="for-you-action-link">
           <SlidersHorizontal size={15} /> {t('for_you.action_settings')}
         </a>
@@ -356,8 +350,6 @@ export default function ForYouPageIsland({
           <BellRing size={15} /> {t('for_you.action_morning')}
         </a>
       </div>
-
-      <ForYouBriefingCard lang={lang} />
 
       {pageError && (
         <div className="for-you-alert">

@@ -173,8 +173,7 @@ if (analizaNavItems.length > 0) {
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
-	<main
-		id="main-content"
+	<div
 		class:list={[
 			'site-layout broadsheet-layout py-0 max-w-full home-page-scope',
 			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
@@ -490,7 +489,7 @@ if (analizaNavItems.length > 0) {
 				/>
 			</div>
 		</div>
-	</main>
+	</div>
 
 	<Footer />
 </Layout>

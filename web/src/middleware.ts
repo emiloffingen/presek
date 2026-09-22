@@ -43,7 +43,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const cspNonce = generateCspNonce();
   context.locals.cspNonce = cspNonce;
 
-  const attachFrameAncestors = async (response: Response) => {
+  const isProductionHost =
+    hostname === 'presek.live'
+    || hostname === 'www.presek.live'
+    || hostname === 'presek.mk'
+    || hostname === 'www.presek.mk';
+
+  // Static hardening headers (mirrors routes/security.py). Applied to every
+  // response; HSTS uses the full preload value only on production hosts.
+  const staticSecurityHeaders: Record<string, string> = {
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer-when-downgrade',
+    'Permissions-Policy':
+      'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()',
+    'Strict-Transport-Security': isProductionHost
+      ? 'max-age=63072000; includeSubDomains; preload'
+      : 'max-age=300; includeSubDomains',
+  };
+
+  const attachSecurityHeaders = async (response: Response) => {
+    for (const [name, value] of Object.entries(staticSecurityHeaders)) {
+      response.headers.set(name, value);
+    }
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
       const body = await response.text();
@@ -57,12 +78,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
     return response;
   };
-
-  const isProductionHost =
-    hostname === 'presek.live'
-    || hostname === 'www.presek.live'
-    || hostname === 'presek.mk'
-    || hostname === 'www.presek.mk';
 
   if (isProductionHost && pathname.startsWith('/dev')) {
     return new Response('Not found', { status: 404 });
@@ -83,5 +98,5 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  return attachFrameAncestors(await next());
+  return attachSecurityHeaders(await next());
 });

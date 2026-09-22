@@ -1,31 +1,26 @@
 ---
-// AudioPlayer.astro - reusable cluster and briefing audio player
+// AudioPlayer.astro - reusable cluster audio player
 import { Loader2, Pause, Play, RotateCcw, RotateCw } from 'lucide-react';
 import { useTranslations } from '../../i18n/utils';
 
 interface Props {
     clusterId?: string;
-    briefingDate?: string;
     lang: string;
-    type: 'cluster' | 'briefing';
     initialAudioUrl?: string;
     title?: string;
     compact?: boolean;
 }
 
-const { clusterId, briefingDate, lang, type, initialAudioUrl, title, compact = false } = Astro.props;
+const { clusterId, lang, initialAudioUrl, title, compact = false } = Astro.props;
 const t = useTranslations(lang as 'sr' | 'mk');
 const apiBase = import.meta.env.PUBLIC_API_BASE || '';
 const params = new URLSearchParams();
 params.set('lang', lang);
-if (type === 'briefing' && briefingDate) params.set('date', briefingDate);
 
-const apiEndpoint = type === 'cluster'
-    ? `${apiBase}/api/cluster/${clusterId}/audio?${params.toString()}`
-    : `${apiBase}/api/intelligence/briefing/audio?${params.toString()}`;
+const apiEndpoint = `${apiBase}/api/cluster/${clusterId}/audio?${params.toString()}`;
 
 const labels = {
-    title: title || (type === 'briefing' ? t('cluster.audio.briefing_title') : t('cluster.audio.synthesis_title')),
+    title: title || t('cluster.audio.synthesis_title'),
     idle: t('cluster.audio.idle'),
     loading: t('cluster.audio.loading'),
     playing: t('cluster.audio.playing'),
@@ -40,10 +35,7 @@ const labels = {
 
 <div
     class:list={['presek-audio-player', { 'is-compact': compact }]}
-    id={type === 'briefing' ? 'audio' : undefined}
-    data-type={type}
     data-cluster-id={clusterId}
-    data-briefing-date={briefingDate}
     data-lang={lang}
     data-api-endpoint={apiEndpoint}
     data-state="idle"

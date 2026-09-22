@@ -71,6 +71,12 @@ def _probe_database():
     finally:
         if conn is not None:
             try:
+                # End the implicit read transaction so the pooled connection
+                # returns clean (avoids psycopg.pool INTRANS rollback warnings).
+                conn.rollback()
+            except Exception as e:
+                log.debug(f"Failed to rollback health probe connection: {e}")
+            try:
                 conn.close()
             except Exception as e:
                 log.debug(f"Failed to close DB connection: {e}")
