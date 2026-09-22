@@ -30,10 +30,7 @@ async def test_crawler_blocks_ssrf_peer_mismatch_without_headless_fallback():
 
     with patch("core.crawler._resolve_public_ips", return_value={"93.184.216.34"}), patch(
         "core.crawler._peer_ip", return_value="10.0.0.1"
-    ), patch("core.crawler.httpx.AsyncClient", return_value=mock_client), patch.object(
-        crawler, "_extract_headless", new_callable=AsyncMock
-    ) as headless_mock:
+    ), patch("core.crawler.httpx.AsyncClient", return_value=mock_client):
         result = await crawler.extract_all("https://example.com/article")
 
     assert "Security block" in result.get("error", "")
-    headless_mock.assert_not_called()

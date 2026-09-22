@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import html
 import logging
 import random
 import re
@@ -169,44 +168,6 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
         raise
     finally:
         scraper.close()
-
-
-async def _fetch_with_playwright(url: str, timeout: float = 30.0) -> bytes:
-    """Fetch URL content using headless Playwright to bypass Cloudflare and complex challenge protections."""
-    from playwright.async_api import async_playwright
-
-    log.debug(f"[ingest] Launching headless Playwright for {url}")
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        try:
-            context = await browser.new_context(
-                viewport={"width": 1280, "height": 800},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            )
-            page = await context.new_page()
-            # Navigate and wait for page to load
-            await page.goto(url, wait_until="load", timeout=int(timeout * 1000))
-
-            # Allow a small delay for any script execution/CF challenge completion
-            await asyncio.sleep(2)
-
-            content = await page.content()
-
-            # Playwright might wrap XML inside an HTML pre tag or document structure when rendering.
-            # Let's extract the raw pre content if the page is XML rendered in pre.
-            if "<pre" in content.lower():
-                # Extract text inside <pre> tag if present
-                match = re.search(r"<pre[^>]*>(.*?)</pre>", content, re.DOTALL | re.IGNORECASE)
-                if match:
-                    raw_xml = html.unescape(match.group(1))
-                    return raw_xml.encode("utf-8", errors="replace")
-
-            return content.encode("utf-8", errors="replace")
-        except Exception as e:
-            log.warning(f"[ingest] Playwright detailed error for {url}: {e}")
-            raise
-        finally:
-            await browser.close()
 
 
 def is_junk(title: str, desc: str) -> bool:
@@ -769,18 +730,9 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
                         log.debug(f"[ingest] {name}: fetched {len(entries)} articles via cloudscraper")
                         return name, entries, None
                     except Exception as e:
-                        log.debug(f"[ingest] {name}: cloudscraper failed: {e}, falling back to headless Playwright...")
-                        try:
-                            content = await _fetch_with_playwright(url, timeout)
-                            cleaned_content = cleanup_rss_xml(content)
-                            feed = feedparser.parse(cleaned_content)
-                            entries = feed.entries[:limit]
-                            log.debug(f"[ingest] {name}: fetched {len(entries)} articles via Playwright")
-                            return name, entries, None
-                        except Exception as pe:
-                            log.debug(f"[ingest] {name}: Playwright fallback failed: {pe}, retrying with httpx...")
-                            await asyncio.sleep(1.0 * (attempt + 1))
-                            continue
+                        log.debug(f"[ingest] {name}: cloudscraper failed: {e}, retrying with httpx...")
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
                 else:
                     if is_cf_challenge:
                         raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")

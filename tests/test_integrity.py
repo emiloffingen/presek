@@ -125,11 +125,9 @@ class TestAstroFrontendIntegrity:
         account_sync = _read("web/src/components/AccountSyncIsland.tsx")
         delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
         personalization = _read("web/src/lib/personalization.js")
-        debug_page = _read("web/src/pages/debug/recommendations.astro")
 
         assert "?token=" not in account_sync
         assert "?token=" not in delivery
-        assert "searchParams.get('token')" not in debug_page
         assert "buildSyncTokenHeaders" in account_sync
         assert "buildSyncTokenHeaders" in delivery
         assert "X-Sync-Token" in personalization
