@@ -835,6 +835,12 @@ async def proxy_image(
         except Exception:
             return serve_fallback("parse_error")
 
+        # httpx requires an ASCII URL and rejects raw non-ASCII bytes (e.g.
+        # Cyrillic image filenames). Percent-encode only the non-ASCII bytes
+        # while preserving existing escapes and URL structure, so already
+        # encoded URLs are not double-encoded.
+        request_url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
+
         target_w = int(w) if w and w.isdigit() else 600
         target_w = max(20, min(1200, target_w))
 
@@ -884,7 +890,7 @@ async def proxy_image(
         if not img_data:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Referer": url,
+                "Referer": request_url,
                 "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
             }
 
@@ -892,7 +898,7 @@ async def proxy_image(
                 import httpx
 
                 async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                    async with client.stream("GET", url, headers=headers) as resp:
+                    async with client.stream("GET", request_url, headers=headers) as resp:
                         p_ip = _peer_ip(resp)
                         if not p_ip or p_ip not in safe_ips:
                             return serve_fallback("security_ssrf_block")
