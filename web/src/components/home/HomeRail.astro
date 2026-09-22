@@ -7,7 +7,6 @@ import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
-import PresekRailAd from '../PresekRailAd.astro';
 import { normalizeFocusEntitySurface } from '../../lib/focusEntityNormalize';
 
 
@@ -72,8 +71,6 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 			<a href={l('/briefing')} class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
 		</section>
 	)}
-
-	<PresekRailAd class="rail-inlined-ad" />
 
 	<NationalMoodIsland lang={lang} client:visible />
 

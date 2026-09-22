@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { buildCsrfHeadersAsync } from '../lib/personalization';
+import { CPM_RATES_EUR, CPM_BASE_EUR, PROMO_PERCENT, localCpm } from '../lib/adPricing';
 
 interface Props {
   lang?: 'sr' | 'mk';
@@ -43,16 +45,36 @@ export default function PresekAdRailSlot({ lang = 'sr', className = '' }: Props)
   // Track impression once when activeAd is visible and loaded
   useEffect(() => {
     if (activeAd && !impressionLogged) {
-      fetch(`/api/marketing/ads/${activeAd.id}/impression`, { method: 'POST' })
-        .then(() => setImpressionLogged(true))
-        .catch(err => console.error('Failed to log impression:', err));
+      let cancelled = false;
+      buildCsrfHeadersAsync()
+        .then((headers: Record<string, string>) =>
+          fetch(`/api/marketing/ads/${activeAd.id}/impression`, {
+            method: 'POST',
+            headers,
+            credentials: 'same-origin',
+          }),
+        )
+        .then(() => {
+          if (!cancelled) setImpressionLogged(true);
+        })
+        .catch((err: unknown) => console.error('Failed to log impression:', err));
+      return () => {
+        cancelled = true;
+      };
     }
   }, [activeAd, impressionLogged]);
 
   const handleAdClick = () => {
     if (activeAd) {
-      fetch(`/api/marketing/ads/${activeAd.id}/click`, { method: 'POST' })
-        .catch(err => console.error('Failed to log click:', err));
+      buildCsrfHeadersAsync()
+        .then((headers: Record<string, string>) =>
+          fetch(`/api/marketing/ads/${activeAd.id}/click`, {
+            method: 'POST',
+            headers,
+            credentials: 'same-origin',
+          }),
+        )
+        .catch((err: unknown) => console.error('Failed to log click:', err));
     }
   };
 
@@ -65,11 +87,11 @@ export default function PresekAdRailSlot({ lang = 'sr', className = '' }: Props)
   const desc = isMk 
     ? 'Автоматизиран самопослужен систем за реклами со Stripe плаќање.' 
     : 'Automatski samouslužni sistem za reklame sa Stripe plaćanjem.';
-  const priceStr = isMk 
-    ? `Од 75 ден. / 1000 импресии` 
-    : `Od 75 MKD / 1000 impresija`;
+  const cpm = CPM_RATES_EUR.sidebar;
+  const cpmBase = CPM_BASE_EUR.sidebar;
+  const local = localCpm(cpm, isMk ? 'mk' : 'sr');
   const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
-  const marketingUrl = isMk ? '/mk/marketing' : '/marketing';
+  const marketingUrl = '/marketing';
 
   return (
     <div className={`native-ad-slot-react sidebar-placement ${className}`} style={{ minHeight: '250px', display: 'flex', width: '100%' }}>
@@ -108,8 +130,11 @@ export default function PresekAdRailSlot({ lang = 'sr', className = '' }: Props)
             </p>
           </div>
           <div className="fallback-footer relative z-10 flex items-center justify-between mt-4 gap-2 flex-wrap">
-            <span className="fallback-price text-xs font-bold text-[var(--nyt-red)] font-mono">
-              {priceStr}
+            <span className="fallback-price flex flex-wrap items-baseline gap-1 font-mono">
+              <span className="text-sm font-extrabold text-[var(--foreground)]">€{cpm.toFixed(2)}</span>
+              <span className="text-[10px] text-[var(--muted-foreground)] line-through opacity-70">€{cpmBase.toFixed(2)}</span>
+              <span className="text-[9px] font-extrabold px-1 text-white bg-[var(--presek-mark,#b91c1c)]">−{PROMO_PERCENT}%</span>
+              <span className="text-[10px] text-[var(--muted-foreground)] w-full">~{local.amount} {local.currency} / 1000</span>
             </span>
             <a 
               href={marketingUrl} 

@@ -12,7 +12,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const pathname = url.pathname;
 
   const retiredPublicPrefixes = [
-    '/for-you', '/briefing', '/pulse', '/graf', '/grafik', '/marketing',
+    '/for-you', '/briefing', '/pulse', '/graf', '/grafik',
     '/settings', '/pregled', '/analize', '/subjekt', '/debug', '/admin',
   ];
   if (

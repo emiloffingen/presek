@@ -14,26 +14,16 @@ import {
 } from 'lucide-react';
 import { localePathForLang } from '../../lib/localePaths';
 import { buildCsrfHeadersAsync } from '../../lib/personalization';
+import { CPM_RATES_EUR, CPM_BASE_EUR, PROMO_PERCENT, localCpm } from '../../lib/adPricing';
 
 interface AdBookingFormProps {
   lang: 'sr' | 'mk';
 }
 
-const CPM_RATES: Record<string, number> = {
-  top_banner: 0.9756,       // ~60 MKD — 990x80 / 990x150
-  sidebar: 1.2207,          // ~75 MKD — 300x250 / 300x600
-  mobile_content: 2.00,   // ~125 MKD — 300x250
-};
-
-const LOCAL_CPM_RATES: Record<string, { mk: number; sr: number }> = {
-  top_banner: { mk: 60, sr: 117 },
-  sidebar: { mk: 75, sr: 146 },
-  mobile_content: { mk: 125, sr: 234 }
-};
-
-const MKD_PER_EUR = 61.5;
-const RSD_PER_EUR = 117.0;
-const MIN_CHECKOUT_EUR = 10;
+const CPM_RATES = CPM_RATES_EUR;
+const CPM_BASE = CPM_BASE_EUR;
+// Keep in sync with MIN_CHARGE_CENTS in routes/marketing.py.
+const MIN_CHECKOUT_EUR = 30;
 
 const translations = {
   mk: {
@@ -128,6 +118,16 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Stable per-form idempotency token. Retried submissions reuse it so the
+  // backend/Stripe return the original session instead of charging twice.
+  const idempotencyKeyRef = useRef<string>('');
+  if (!idempotencyKeyRef.current) {
+    idempotencyKeyRef.current =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `ad_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  }
 
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,6 +288,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
       formData.append('target_url', targetUrl);
       formData.append('start_date', startDate);
       formData.append('end_date', endDate);
+      formData.append('idempotency_key', idempotencyKeyRef.current);
       if (file) {
         formData.append('file', file);
       }
@@ -575,7 +576,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             <div className="space-y-3 font-mono text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <span>{t.cpm}:</span>
-                <span className="text-foreground font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-muted-foreground/60 text-xxs font-normal">(~{LOCAL_CPM_RATES[slotId][lang]} {lang === 'mk' ? 'MKD' : 'RSD'})</span></span>
+                <span className="text-foreground font-bold">€{CPM_RATES[slotId].toFixed(2)} <span className="text-muted-foreground/50 text-xxs font-normal line-through">€{CPM_BASE[slotId].toFixed(2)}</span> <span className="text-emerald-600 dark:text-emerald-400 text-xxs font-bold">−{PROMO_PERCENT}%</span> <span className="text-muted-foreground/60 text-xxs font-normal">(~{localCpm(CPM_RATES[slotId], lang).amount} {localCpm(CPM_RATES[slotId], lang).currency})</span></span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{t.totalDays}:</span>
@@ -590,7 +591,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
               <div className="border-t border-border pt-3 flex justify-between text-base font-sans">
                 <span className="text-foreground font-semibold">{t.totalPrice}:</span>
                 <span className={`font-bold text-lg ${totalCost < MIN_CHECKOUT_EUR ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  €{totalCost.toFixed(2)} <span className="text-sm font-normal text-muted-foreground/60">(~{Math.round((targetImpressions / 1000) * LOCAL_CPM_RATES[slotId][lang]).toLocaleString()} {lang === 'mk' ? 'MKD' : 'RSD'})</span>
+                  €{totalCost.toFixed(2)} <span className="text-sm font-normal text-muted-foreground/60">(~{Math.round((targetImpressions / 1000) * localCpm(CPM_RATES[slotId], lang).amount).toLocaleString()} {localCpm(CPM_RATES[slotId], lang).currency})</span>
                 </span>
               </div>
             </div>

@@ -6,6 +6,10 @@ WEB_DIR="${WEB_DIR:-$APP_ROOT/web}"
 ENTRY="$WEB_DIR/dist/server/entry.mjs"
 FORCE_WEB_BUILD="${FORCE_WEB_BUILD:-0}"
 
+# Derive the Vite public discount from the single PROMO_DISCOUNT knob so the
+# frontend never drifts from the backend (routes/marketing.py).
+export PUBLIC_PROMO_DISCOUNT="${PUBLIC_PROMO_DISCOUNT:-${PROMO_DISCOUNT:-0.25}}"
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "Missing required command: $1" >&2

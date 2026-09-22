@@ -61,16 +61,16 @@
     top: calc(var(--header-height, 4.5rem) + 1.25rem);
   }
 
-  .broadsheet-grid:has(> .ad-only-rail:not(:has(.tinyadz-inlined))) {
+  .broadsheet-grid:has(> .ad-only-rail) {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .broadsheet-grid:has(> .ad-only-rail:not(:has(.tinyadz-inlined))) > .broadsheet-main {
+  .broadsheet-grid:has(> .ad-only-rail) > .broadsheet-main {
     border-right: 0;
     padding-right: 0;
   }
 
-  .ad-only-rail:not(:has(.tinyadz-inlined)) {
+  .ad-only-rail {
     display: none !important;
   }
 }

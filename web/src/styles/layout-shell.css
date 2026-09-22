@@ -26,13 +26,6 @@ iframe.corner-popup {
   z-index: 10050 !important;
 }
 
-[ta-ad-container] iframe.inlined-ta-ad,
-.tinyadz-inlined iframe.inlined-ta-ad {
-  width: 100%;
-  max-width: 900px;
-  margin-inline: auto;
-}
-
 *,
 *::before,
 *::after {
