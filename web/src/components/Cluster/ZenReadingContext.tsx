@@ -6,7 +6,7 @@ import { settings } from '../../i18n/namespaces/settings';
 
 export default function ZenReadingContext({
   headline,
-  lang = 'sr',
+  lang = 'mk',
 }: {
   headline: string;
   lang?: string;

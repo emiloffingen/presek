@@ -5,9 +5,6 @@ type NamespaceBundle = Record<Locale, Record<string, string>>;
 function mergeNamespaces(lang: Locale, parts: readonly NamespaceBundle[]): Record<string, string> {
   const merged: Record<string, string> = {};
   for (const part of parts) {
-    Object.assign(merged, part.sr);
-  }
-  for (const part of parts) {
     Object.assign(merged, part[lang]);
   }
   return merged;

@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function PersonalizationWhyChip({
-  lang = 'sr',
+  lang = 'mk',
   reason = null,
   matchReasons = [],
   matchedTopics = [],

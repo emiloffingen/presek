@@ -1,0 +1,60 @@
+---
+import Layout from '../layouts/Layout.astro';
+import NYTHeader from '../components/NYTHeader.astro';
+import Footer from '../components/Footer.astro';
+
+const title = 'PresekBot — индексирање и откажување';
+const description = 'Како PresekBot собира јавно достапни содржини, почитувањето на robots.txt и како издавачите можат да се откажат од прикажување на целосен текст.';
+---
+
+<Layout title={title} description={description}>
+    <NYTHeader />
+    <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)]">
+        <header class="editorial-masthead mb-12">
+            <div class="masthead-top">
+                <span class="masthead-kicker ui-label">ТРАНСПАРЕНТНОСТ</span>
+            </div>
+            <div class="masthead-main">
+                <h1 class="masthead-title">PresekBot <span>и откажување од индексирање</span></h1>
+            </div>
+            <p class="masthead-intro">Информации за автоматското собирање на јавно достапни содржини и постапката за откажување.</p>
+        </header>
+
+        <div class="editorial-broadsheet-grid">
+            <div class="editorial-broadsheet-main">
+                <article class="prose-editorial">
+                    <p class="first-paragraph">
+                        Пресек е агрегатор на македонски медиумски содржини. За индексирање на јавно достапни
+                        написи користиме идентификуван робот <strong>PresekBot/1.0</strong>, кој се претставува со
+                        User-Agent: <code>PresekBot/1.0 (+https://presek.mk/bot; bot@presek.mk)</code>.
+                    </p>
+
+                    <h2 class="section-title-italic">Што собираме</h2>
+                    <p>
+                        Ги читаме јавно достапните RSS/Atom извори и оригиналните страници на издавачите, со цел
+                        да прикажеме оригиналниот текст со јасно наведен извор и врска до оригиналот. Ги почитуваме
+                        правилата во <code>robots.txt</code> на секој сајт.
+                    </p>
+
+                    <h2 class="section-title-italic">Откажување (opt-out)</h2>
+                    <p>
+                        Издавачот може во секое време да побара неговата содржина да не се прикажува во целост или
+                        целосно да се отстрани од Пресек. Пишете на
+                        <a href="mailto:bot@presek.mk">bot@presek.mk</a> со името на издавачот и доменот.
+                    </p>
+                    <ul class="editorial-list">
+                        <li><strong>Целосен текст:</strong> прикажувањето на целиот текст за тој извор се исклучува (прикажуваат се само наслов, краток извод и врска).</li>
+                        <li><strong>Целосно отстранување:</strong> содржините на издавачот се отстрануваат од базата.</li>
+                    </ul>
+
+                    <h2 class="section-title-italic">Контакт</h2>
+                    <p>
+                        За сите прашања поврзани со индексирање, авторски права или откажување:
+                        <a href="mailto:bot@presek.mk">bot@presek.mk</a>.
+                    </p>
+                </article>
+            </div>
+        </div>
+    </main>
+    <Footer />
+</Layout>

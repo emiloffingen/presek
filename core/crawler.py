@@ -2,16 +2,70 @@ import asyncio
 import logging
 import random
 import re
-from typing import Any, Dict
-from urllib.parse import urljoin
+import time
+from typing import Any, Dict, Optional
+from urllib.parse import urljoin, urlsplit
+from urllib.robotparser import RobotFileParser
 
 import httpx
 import trafilatura
 
+from core.config import BOT_USER_AGENT
 from core.text_extraction import clean_extracted_article_text
 from utils import _peer_ip, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
+
+# robots.txt cache: origin -> (fetched_at, RobotFileParser | None)
+_ROBOTS_CACHE: Dict[str, tuple] = {}
+_ROBOTS_TTL_SECONDS = 3600.0
+
+
+async def _robots_allows(url: str) -> bool:
+    """Return True if robots.txt permits fetching ``url`` for our bot UA.
+
+    Fails open (returns True) when robots.txt is missing, unreachable, or the
+    SSRF guard rejects the robots.txt origin.
+    """
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return True
+    origin = f"{parts.scheme}://{parts.netloc}"
+    now = time.time()
+    cached = _ROBOTS_CACHE.get(origin)
+    if cached and (now - cached[0]) < _ROBOTS_TTL_SECONDS:
+        rp: Optional[RobotFileParser] = cached[1]
+    else:
+        rp = None
+        try:
+            robots_url = f"{origin}/robots.txt"
+            safe_ips = _resolve_public_ips(robots_url)
+            async with httpx.AsyncClient(
+                headers={"User-Agent": BOT_USER_AGENT},
+                follow_redirects=True,
+                timeout=10.0,
+            ) as client:
+                async with client.stream("GET", robots_url) as resp:
+                    peer = _peer_ip(resp)
+                    if peer and safe_ips and peer not in safe_ips:
+                        rp = None
+                    elif resp.status_code == 200:
+                        await resp.aread()
+                        parser = RobotFileParser()
+                        parser.set_url(robots_url)
+                        parser.parse(resp.text.splitlines())
+                        rp = parser
+        except Exception as e:
+            log.debug("robots.txt fetch failed for %s: %s", origin, e)
+            rp = None
+        _ROBOTS_CACHE[origin] = (now, rp)
+    if rp is None:
+        return True
+    try:
+        return rp.can_fetch(BOT_USER_AGENT, url)
+    except Exception:
+        return True
+
 
 
 def prune_boilerplate_html(html_str: str) -> str:
@@ -152,10 +206,10 @@ class CrawlerService:
 
     def _get_headers(self):
         return {
-            "User-Agent": random.choice(self.user_agents),
+            "User-Agent": BOT_USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
-            "Referer": "https://www.google.com/",
+            "Accept-Language": "mk,en;q=0.8",
+            "Referer": "https://presek.mk/",
         }
 
     async def extract_all(self, url: str) -> Dict[str, Any]:
@@ -163,6 +217,10 @@ class CrawlerService:
         Main entry point: Try fast extraction first, fall back to headless browser if needed.
         """
         await asyncio.sleep(random.uniform(0.5, 2.0))
+
+        if not await _robots_allows(url):
+            log.info("robots.txt disallows crawling %s", url)
+            return {"url": url, "error": "blocked by robots.txt", "method": "fast"}
 
         result = {
             "url": url,

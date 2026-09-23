@@ -24,7 +24,7 @@ interface Props {
 }
 
 export default function ClusterSidebarTabs({
-  lang = 'sr',
+  lang = 'mk',
   articles,
   allSourcesNames,
   sentimentData,

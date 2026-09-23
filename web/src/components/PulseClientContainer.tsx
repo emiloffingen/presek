@@ -40,7 +40,7 @@ interface PulseClientContainerProps {
     lang?: string;
 }
 
-export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'sr' }: PulseClientContainerProps) {
+export default function PulseClientContainer({ initialGlobalPulse, initialPulseData, categories, ssrFailed, lang = 'mk' }: PulseClientContainerProps) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, pulse);
 

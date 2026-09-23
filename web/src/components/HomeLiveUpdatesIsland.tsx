@@ -35,7 +35,7 @@ interface LiveState {
 
 const API_URL = apiBaseUrl();
 
-export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [], lang = 'sr' }: HomeLiveUpdatesIslandProps) {
+export default function HomeLiveUpdatesIsland({ excludeClusterIds = [], initialClusters = [], lang = 'mk' }: HomeLiveUpdatesIslandProps) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, home, common, news);
   const [clusters, setClusters] = useState<ClusterLike[]>(initialClusters);

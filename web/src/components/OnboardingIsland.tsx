@@ -17,7 +17,7 @@ import { useClientTranslations } from '../i18n/clientTranslations';
 import { common } from '../i18n/namespaces/common';
 import { nav } from '../i18n/namespaces/nav';
 
-export default function OnboardingIsland({ compact = false, lang = 'sr' }: { compact?: boolean, lang?: string }) {
+export default function OnboardingIsland({ compact = false, lang = 'mk' }: { compact?: boolean, lang?: string }) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, common, nav);
   const profile = useStore($profile);

@@ -30,7 +30,7 @@ type SearchPreviewProps = {
 export const SearchPreview = React.memo(function SearchPreview({
   item,
   t,
-  lang = 'sr',
+  lang = 'mk',
   onOpenCluster,
   onOpenEntity,
   onOpenAction,

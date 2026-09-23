@@ -169,7 +169,7 @@ const getCoordinates = (source: SourceRow, lang: string) => {
   return { x, y, pctX, pctY };
 };
 
-const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
+const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

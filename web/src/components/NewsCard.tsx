@@ -22,7 +22,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   cluster,
   isLead = false,
   variant = 'standard',
-  lang = 'sr'
+  lang = 'mk'
 }) => {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, news, clusterNamespace, common);

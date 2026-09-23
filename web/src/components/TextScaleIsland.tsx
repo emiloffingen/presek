@@ -9,7 +9,7 @@ const SCALES = [
   { value: '1.24', label: '124%', nameKey: 'typography.scale_large' },
 ] as const;
 
-export default function TextScaleIsland({ lang = 'sr' }: { lang?: string }) {
+export default function TextScaleIsland({ lang = 'mk' }: { lang?: string }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [scale, setScale] = useState('1');
   const [isOpen, setIsOpen] = useState(false);

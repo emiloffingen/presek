@@ -7,7 +7,7 @@ interface Props {
 
 import { useTranslations } from '../../i18n/utils';
 
-const { stats, metadata, lang = 'sr' } = Astro.props;
+const { stats, metadata, lang = 'mk' } = Astro.props;
 const t = useTranslations(lang as any);
 
 const totalFeeds = stats?.total_feeds || 0;

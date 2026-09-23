@@ -41,7 +41,7 @@ export default function BriefingDeliveryIsland({
   content = '',
   dateLabel = '',
   variant = 'full',
-  lang = 'sr'
+  lang = 'mk'
 }: {
   content?: string;
   dateLabel?: string;

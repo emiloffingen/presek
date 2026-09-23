@@ -120,7 +120,7 @@ function normalizeSuggestionEventType(eventType) {
   return ['impression', 'follow', 'dismiss'].includes(clean) ? clean : '';
 }
 
-function createKindSummary(kind, bucket, lang = 'sr') {
+function createKindSummary(kind, bucket, lang = 'mk') {
   const impressions = bucket?.impressions || 0;
   const follows = bucket?.follows || 0;
   const dismissals = bucket?.dismissals || 0;
@@ -262,7 +262,7 @@ export function sendSuggestionEvents(events, storage = safeStorage) {
   }).catch(console.error);
 }
 
-export function getSuggestionConversionSummary(storage = safeStorage, lang = 'sr') {
+export function getSuggestionConversionSummary(storage = safeStorage, lang = 'mk') {
   const analytics = loadSuggestionAnalytics(storage);
   const surfaceLabels = SUGGESTION_SURFACE_LABELS[lang] || SUGGESTION_SURFACE_LABELS.sr;
   const surfaces = Object.entries(analytics.surfaces || {})
@@ -709,7 +709,7 @@ function distinctByValue(items, limit) {
   return next;
 }
 
-function buildTopicSignalFallbacks(topicCounts, followedTopics, existingTopics, limit, lang = 'sr') {
+function buildTopicSignalFallbacks(topicCounts, followedTopics, existingTopics, limit, lang = 'mk') {
   const existing = new Set((existingTopics || []).map((item) => normalizedLabelKey(item?.value)));
   const isMK = lang === 'mk';
   return distinctByValue(
@@ -736,7 +736,7 @@ function buildTopicSignalFallbacks(topicCounts, followedTopics, existingTopics, 
   );
 }
 
-export function scoreClusterForReader(cluster, profile, lang = 'sr') {
+export function scoreClusterForReader(cluster, profile, lang = 'mk') {
   if (!cluster?.cluster_id || !Array.isArray(cluster?.articles) || cluster.articles.length === 0) {
     return null;
   }
@@ -812,7 +812,7 @@ export function scoreClusterForReader(cluster, profile, lang = 'sr') {
   };
 }
 
-export function buildPersonalizedClusters(clusters, profile, limit = 4, excludeClusterIds = [], lang = 'sr') {
+export function buildPersonalizedClusters(clusters, profile, limit = 4, excludeClusterIds = [], lang = 'mk') {
   const excludeSet = new Set(excludeClusterIds);
   const scored = (Array.isArray(clusters) ? clusters : [])
     .map((cluster) => scoreClusterForReader(cluster, profile, lang))
@@ -827,7 +827,7 @@ export function buildPersonalizedClusters(clusters, profile, limit = 4, excludeC
   return (unseen.length > 0 ? unseen : scored).slice(0, limit);
 }
 
-export function buildDeliveryDigest(content, profile, prefs, lang = 'sr') {
+export function buildDeliveryDigest(content, profile, prefs, lang = 'mk') {
   const lines = String(content || '')
     .replace(/\r/g, '')
     .split('\n')
@@ -902,7 +902,7 @@ export function completeOnboarding(storage = safeStorage) {
   );
 }
 
-export function getOnboardingProgress(storage = safeStorage, lang = 'sr') {
+export function getOnboardingProgress(storage = safeStorage, lang = 'mk') {
   const profile = loadReaderProfile(storage);
   const delivery = loadDeliveryPreferences(storage);
   const syncToken = loadSyncToken(storage);
@@ -945,7 +945,7 @@ export function getOnboardingProgress(storage = safeStorage, lang = 'sr') {
   };
 }
 
-export function buildFollowRecommendations(profile, limit = 4, lang = 'sr') {
+export function buildFollowRecommendations(profile, limit = 4, lang = 'mk') {
   const normalizedProfile = profile || createEmptyProfile();
   const signals = buildReaderSignals(normalizedProfile);
   const topicSignals = signals.topicCounts;

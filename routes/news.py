@@ -1059,6 +1059,56 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
         log.debug("[cluster] JIT synthesis cache hook failed for %s: %s", cluster_id, e)
 
 
+@router.get("/article/{article_id}")
+async def get_article_detail(article_id: int, lang: Optional[str] = "sr"):
+    """Full original text for a single article, with source attribution.
+
+    The body is only returned when the source allows full-text display
+    (``sources.full_text_allowed``); otherwise the client falls back to a link.
+    """
+    lang = validate_language_code(lang, allowed_languages=["sr", "mk"])
+    cache_key = f"api:article:detail:v1:{article_id}:{lang}"
+    cached = cached_response(cache_key, ttl=3600)
+    if cached:
+        return cached
+
+    try:
+        row = await db.async_execute_one(
+            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE id = %s",  # nosec B608 - static column constant with bound params
+            (article_id,),
+            read_only=True,
+        )
+    except Exception as e:
+        log.debug("[article] lookup failed for %s: %s", article_id, e)
+        row = None
+
+    if not row or not _is_publicly_displayable_article(row):
+        raise HTTPException(status_code=404, detail="tekstot ne e najden")
+
+    allowed = True
+    attribution_name = None
+    try:
+        srow = await db.async_execute_one(
+            "SELECT full_text_allowed, attribution_name FROM sources WHERE name = %s",
+            (row.get("source"),),
+            read_only=True,
+        )
+        if srow:
+            allowed = bool(srow.get("full_text_allowed", True))
+            attribution_name = srow.get("attribution_name")
+    except Exception as e:
+        log.debug("[article] source flag lookup failed for %s: %s", article_id, e)
+
+    payload = _public_article_payload(row, lang=lang, include_full_content=allowed)
+    payload["full_text_allowed"] = allowed
+    payload["attribution"] = attribution_name or row.get("source")
+    payload["original_url"] = row.get("link")
+    payload["published_at"] = row.get("created_at")
+
+    set_cache(cache_key, payload, ttl=3600)
+    return payload
+
+
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     # Validate cluster_id using comprehensive validation
@@ -1075,7 +1125,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         # Map language to country for article filtering
         country_filter = "MK" if lang == "mk" else "RS"
         rows = await db.async_execute(
-            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
+            f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
             (cluster_id, country_filter),
             read_only=True,
         )
@@ -1088,7 +1138,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
         public_articles = [
-            _public_article_payload(article, lang=lang, include_full_content=True) for article in articles
+            _public_article_payload(article, lang=lang, include_full_content=False) for article in articles
         ]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}' ({lang})")

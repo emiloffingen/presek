@@ -16,7 +16,7 @@ interface RadarProps {
     lang?: string;
 }
 
-export default function SentimentRadarIsland({ data, lang = 'sr' }: RadarProps) {
+export default function SentimentRadarIsland({ data, lang = 'mk' }: RadarProps) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, pulse);
     const displayData = data.slice(0, 8);

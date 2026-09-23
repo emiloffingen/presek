@@ -1,6 +1,5 @@
 ---
-import { Link2, ShieldCheck, ExternalLink } from 'lucide-react';
-import { sanitizeHtml } from '../../lib/sanitize';
+import { ShieldCheck, ExternalLink, FileText, ChevronDown } from 'lucide-react';
 import { deShout, cleanAndDecode } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 
@@ -27,13 +26,22 @@ function cleanText(text: string) {
     return clean;
 }
 
+const articleRef = a.id || (a.link ? a.link.hashCode() : rowId);
 const displayTitle = cleanText(a.title);
 const displaySnippet = cleanText(a.description || a.summary);
 const objectiveTitle = isMk ? 'Висок степен на фактичко известување' : 'Visok stepen faktičkog izveštavanja';
 const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
+const showFullTextLabel = t('cluster.fulltext.show');
+const hideFullTextLabel = t('cluster.fulltext.hide');
+const fulltextLoading = t('cluster.fulltext.loading');
+const fulltextError = t('cluster.fulltext.error');
+const fulltextUnavailable = t('cluster.fulltext.unavailable');
+const sourceLabel = t('cluster.fulltext.source_label');
+const openOriginalLabel = t('cluster.fulltext.open_original');
+const copyrightNotice = t('cluster.fulltext.copyright', { source: a.source });
 ---
 
-<div id={rowId} class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')} role="article" aria-labelledby={`article-title-${a.id || rowId || 'article'}`}>
+<div id={rowId} class={`article-editorial-row tone-${a.relationship.tone} timeline-item min-w-0`} data-article-link={encodeURIComponent(a.link || '')} role="article" aria-labelledby={`article-title-${articleRef || 'article'}`}>
 	<div class="timeline-dot" role="presentation"></div>
     <div class="row-header">
 		<div class="row-source-info">
@@ -52,18 +60,112 @@ const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
 			<time datetime={a.published_at || a.ingested_at}>{a.relativeTime}</time>
 		</div>
 	</div>
-	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link" aria-describedby={`article-source-${a.id || a.link.hashCode()}`}>
-		<h3 id={`article-title-${a.id || a.link.hashCode()}`} class="row-title min-w-0 break-words whitespace-normal">{displayTitle}</h3>
+	<a href={a.link} target="_blank" rel="noopener noreferrer" class="row-title-link" aria-describedby={`article-source-${articleRef}`}>
+		<h3 id={`article-title-${articleRef}`} class="row-title min-w-0 break-words whitespace-normal">{displayTitle}</h3>
 	</a>
 	{displaySnippet && (
         <p class="row-snippet min-w-0 break-words whitespace-normal">{displaySnippet}</p>
     )}
 	<div class="row-footer">
-        <a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original" id={`article-source-${a.id || a.link.hashCode()}`}>
+        <a href={a.link} target="_blank" rel="noopener noreferrer" class="read-original" id={`article-source-${articleRef}`}>
             {readOriginalLabel} {a.source} <ExternalLink size={10} aria-hidden="true" />
         </a>
 	</div>
+
+    {a.id && (
+        <div
+            class="fulltext-wrap"
+            data-article-id={a.id}
+            data-loading={fulltextLoading}
+            data-error={fulltextError}
+            data-unavailable={fulltextUnavailable}
+        >
+            <button
+                type="button"
+                class="fulltext-toggle"
+                aria-expanded="false"
+                aria-controls={`fulltext-panel-${articleRef}`}
+                data-show-label={showFullTextLabel}
+                data-hide-label={hideFullTextLabel}
+            >
+                <FileText size={13} aria-hidden="true" />
+                <span class="fulltext-toggle-label">{showFullTextLabel}</span>
+                <ChevronDown size={13} class="fulltext-chevron" aria-hidden="true" />
+            </button>
+            <div class="fulltext-panel" id={`fulltext-panel-${articleRef}`} hidden>
+                <div class="fulltext-head">
+                    <span class="fulltext-source">{sourceLabel} <strong>{a.source}</strong></span>
+                    <a href={a.link} target="_blank" rel="noopener noreferrer" class="fulltext-original">
+                        {openOriginalLabel} <ExternalLink size={10} aria-hidden="true" />
+                    </a>
+                </div>
+                <div class="fulltext-body" data-loaded="false" lang="mk"></div>
+                <p class="fulltext-copyright">{copyrightNotice}</p>
+            </div>
+        </div>
+    )}
 </div>
+
+<script>
+    (() => {
+        const w = window as any;
+        if (w.__presekFulltextInit) return;
+        w.__presekFulltextInit = true;
+
+        document.addEventListener('click', async (ev: Event) => {
+            const target = ev.target as HTMLElement | null;
+            const btn = target?.closest('.fulltext-toggle') as HTMLElement | null;
+            if (!btn) return;
+            const wrap = btn.closest('.fulltext-wrap') as HTMLElement | null;
+            if (!wrap) return;
+            const panel = wrap.querySelector('.fulltext-panel') as HTMLElement | null;
+            const body = wrap.querySelector('.fulltext-body') as HTMLElement | null;
+            const label = btn.querySelector('.fulltext-toggle-label');
+            const expanded = btn.getAttribute('aria-expanded') === 'true';
+
+            if (expanded) {
+                btn.setAttribute('aria-expanded', 'false');
+                if (panel) panel.hidden = true;
+                if (label) label.textContent = btn.dataset.showLabel || '';
+                return;
+            }
+
+            if (panel) panel.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+            if (label) label.textContent = btn.dataset.hideLabel || '';
+            if (body && body.dataset.loaded === 'true') return;
+
+            const id = wrap.dataset.articleId;
+            if (!id || !body) return;
+
+            body.textContent = wrap.dataset.loading || '';
+            body.dataset.loaded = 'error';
+            try {
+                const res = await fetch(`/api/article/${encodeURIComponent(id)}?lang=mk`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok) throw new Error('http ' + res.status);
+                const data = await res.json();
+                if (data && data.full_content && data.full_text_allowed !== false) {
+                    body.textContent = '';
+                    const paragraphs = String(data.full_content).split(/\n{2,}/);
+                    for (const raw of paragraphs) {
+                        const text = raw.trim();
+                        if (!text) continue;
+                        const p = document.createElement('p');
+                        p.textContent = text;
+                        body.appendChild(p);
+                    }
+                    body.dataset.loaded = 'true';
+                } else {
+                    body.textContent = wrap.dataset.unavailable || '';
+                }
+            } catch (e) {
+                body.textContent = wrap.dataset.error || '';
+            }
+        });
+    })();
+</script>
 
 <style>
 	.article-editorial-row {
@@ -223,5 +325,113 @@ const readOriginalLabel = isMk ? 'ПРОЧИТАЈ НА' : 'PROČITAJ NA';
 
 	.read-original:hover {
 		color: var(--cluster-accent, var(--nyt-accent));
+	}
+
+	/* Full original text (transparency mode) */
+	.fulltext-wrap {
+		margin-top: 0.9rem;
+	}
+
+	.fulltext-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		background: transparent;
+		border: 1px solid var(--border);
+		color: var(--foreground);
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		padding: 0.4rem 0.7rem;
+		cursor: pointer;
+		transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+	}
+
+	.fulltext-toggle:hover {
+		border-color: var(--cluster-accent, var(--nyt-accent));
+		color: var(--cluster-accent, var(--nyt-accent));
+	}
+
+	.fulltext-toggle[aria-expanded="true"] .fulltext-chevron {
+		transform: rotate(180deg);
+	}
+
+	.fulltext-chevron {
+		transition: transform 0.2s ease;
+	}
+
+	.fulltext-panel {
+		margin-top: 1rem;
+		padding: 1.1rem 1.2rem;
+		border-left: 2px solid var(--cluster-accent, var(--nyt-accent));
+		background: color-mix(in srgb, var(--foreground) 3%, transparent);
+	}
+
+	.fulltext-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.85rem;
+		padding-bottom: 0.6rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.fulltext-source {
+		font-family: var(--font-sans);
+		font-size: 0.62rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--muted-foreground);
+	}
+
+	.fulltext-source strong {
+		color: var(--foreground);
+	}
+
+	.fulltext-original {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--cluster-accent, var(--nyt-accent));
+		text-decoration: none;
+	}
+
+	.fulltext-original:hover {
+		text-decoration: underline;
+	}
+
+	.fulltext-body {
+		font-family: var(--font-nyt-body);
+		font-size: 0.98rem;
+		line-height: 1.7;
+		color: var(--foreground);
+	}
+
+	.fulltext-body p {
+		margin: 0 0 0.85rem;
+	}
+
+	.fulltext-body p:last-child {
+		margin-bottom: 0;
+	}
+
+	.fulltext-copyright {
+		margin-top: 1rem;
+		padding-top: 0.7rem;
+		border-top: 1px solid var(--border);
+		font-family: var(--font-sans);
+		font-size: 0.6rem;
+		line-height: 1.5;
+		color: var(--muted-foreground);
 	}
 </style>

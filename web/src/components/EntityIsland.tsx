@@ -160,7 +160,7 @@ function coMentionedEntities(clusters: NewsCluster[], currentName: string) {
 export default function EntityIsland({
   name,
   initialData = null,
-  lang = 'sr'
+  lang = 'mk'
 }: {
   name: string;
   initialData?: EntityPayload | null;

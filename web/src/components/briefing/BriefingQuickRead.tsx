@@ -42,7 +42,7 @@ function readModeFromUrl(fallback: 'quick' | 'full' = 'quick'): 'quick' | 'full'
 }
 
 export default function BriefingQuickRead({
-  lang = 'sr',
+  lang = 'mk',
   quickRead,
   narratives = [],
   initialMode = 'quick',

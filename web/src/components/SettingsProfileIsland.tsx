@@ -22,7 +22,7 @@ function summarizeRecent(profile: any) {
   })).filter((item: any) => item.clusterId && item.title);
 }
 
-export default function SettingsProfileIsland({ lang = 'sr' }: { lang?: 'sr' | 'mk' }) {
+export default function SettingsProfileIsland({ lang = 'mk' }: { lang?: 'sr' | 'mk' }) {
   const profile = useStore($profile);
   const [resetConfirm, setResetConfirm] = useState(false);
   const t = useClientTranslations(lang, settings);

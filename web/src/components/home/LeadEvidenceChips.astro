@@ -15,7 +15,7 @@ interface Props {
     lang?: string;
 }
 
-const { statusLabel, statusNote, tone, items, lang = 'sr' } = Astro.props;
+const { statusLabel, statusNote, tone, items, lang = 'mk' } = Astro.props;
 const t = useTranslations(lang as 'sr' | 'mk');
 const expandLabel = t('lead.evidence_expand');
 ---

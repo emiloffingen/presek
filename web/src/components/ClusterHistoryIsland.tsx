@@ -10,7 +10,7 @@ interface HistoryItem {
   verification_report: any;
 }
 
-export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clusterId: string, lang?: string }) {
+export default function ClusterHistoryIsland({ clusterId, lang = 'mk' }: { clusterId: string, lang?: string }) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);

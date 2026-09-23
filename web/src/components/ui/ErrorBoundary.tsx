@@ -20,7 +20,7 @@ export class ErrorBoundary extends React.Component<Props, { hasError: boolean }>
   }
 
   render() {
-    const { lang = 'sr' } = this.props;
+    const { lang = 'mk' } = this.props;
     if (this.state.hasError) {
       return (
         <div className="p-4 border border-red-200 bg-red-50 rounded-none text-red-800 text-xs text-center">

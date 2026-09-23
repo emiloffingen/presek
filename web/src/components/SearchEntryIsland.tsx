@@ -45,7 +45,7 @@ import { ErrorBoundary } from './ui/ErrorBoundary';
 
 function SearchEntryIslandContent({
   initialQuery = '',
-  lang = 'sr',
+  lang = 'mk',
 }: {
   initialQuery?: string | null;
   lang?: Locale;
@@ -102,7 +102,7 @@ function SearchEntryIslandContent({
 
 export default function SearchEntryIsland({
   initialQuery = '',
-  lang = 'sr',
+  lang = 'mk',
 }: {
   initialQuery?: string | null;
   lang?: Locale;

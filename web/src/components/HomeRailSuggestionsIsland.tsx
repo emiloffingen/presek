@@ -10,7 +10,7 @@ import {
   sendSuggestionEvents,
 } from '../lib/personalization.js';
 
-export default function HomeRailSuggestionsIsland({ lang = 'sr' }: { lang?: string }) {
+export default function HomeRailSuggestionsIsland({ lang = 'mk' }: { lang?: string }) {
   const profile = useStore($profile);
   const [isMounted, setIsMounted] = useState(false);
 

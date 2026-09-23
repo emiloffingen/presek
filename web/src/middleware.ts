@@ -28,12 +28,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return Response.redirect(target, 301);
   }
 
-  if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && pathname.startsWith('/sr')) {
-    const targetPath = pathname.replace(/^\/sr/, '') || '/';
-    const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');
-    return Response.redirect(target, 301);
-  }
-
   if ((hostname === 'presek.mk' || hostname === 'www.presek.mk') && (pathname === '/mk' || pathname.startsWith('/mk/'))) {
     const targetPath = stripMkPrefix(pathname) || '/';
     const target = new URL(`${targetPath}${url.search}`, 'https://presek.mk');

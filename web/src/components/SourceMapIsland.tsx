@@ -7,7 +7,7 @@ interface SourceActivity {
   activity_score: number;
 }
 
-export default function SourceMapIsland({ lang = 'sr' }: { lang?: string }) {
+export default function SourceMapIsland({ lang = 'mk' }: { lang?: string }) {
   const [sources, setSources] = useState<SourceActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const isMK = lang === 'mk';

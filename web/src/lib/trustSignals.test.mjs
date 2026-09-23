@@ -14,34 +14,34 @@ test('buildTrustChip shows pending label when synthesis is missing', () => {
 test('buildTrustChip keeps stale note for refresh stale synthesis', () => {
   const chip = buildTrustChip(
     { sourcesCount: 3, isStale: true },
-    'sr',
+    'mk',
   );
-  assert.match(chip.detail, /osvežava/);
+  assert.match(chip.detail, /освежува/);
 });
 
 test('buildTrustChip shows provisional label when synthesis needs upgrade', () => {
   const chip = buildTrustChip(
     { sourcesCount: 4, isProvisional: true },
-    'sr',
+    'mk',
   );
-  assert.equal(chip.label, 'Privremeni pregled');
+  assert.equal(chip.label, 'Привремен преглед');
   assert.equal(chip.isProvisional, true);
 });
 
 test('buildCompactPluralismMeta highlights plural coverage on compact cards', () => {
-  const meta = buildCompactPluralismMeta({ sourcesCount: 4, pluralismScore: 62 }, 'sr');
-  assert.match(meta, /Različiti uglovi/);
+  const meta = buildCompactPluralismMeta({ sourcesCount: 4, pluralismScore: 62 }, 'mk');
+  assert.match(meta, /Различни агли/);
   assert.match(meta, /62%/);
 });
 
 test('buildCompactPluralismMeta shows consensus label', () => {
-  const meta = buildCompactPluralismMeta({ sourcesCount: 5, pluralismScore: 10 }, 'sr');
-  assert.match(meta, /Konsenzus/);
-  assert.match(meta, /5 izv\./);
+  const meta = buildCompactPluralismMeta({ sourcesCount: 5, pluralismScore: 10 }, 'mk');
+  assert.match(meta, /Консензус/);
+  assert.match(meta, /5 изв\./);
 });
 
 test('buildPrimaryCardBadge shows early signal for single source', () => {
-  const badge = buildPrimaryCardBadge({ sourcesCount: 1 }, 'sr');
-  assert.match(badge, /Rani signal/);
-  assert.match(badge, /1 izvor/);
+  const badge = buildPrimaryCardBadge({ sourcesCount: 1 }, 'mk');
+  assert.match(badge, /Ран сигнал/);
+  assert.match(badge, /1 извор/);
 });

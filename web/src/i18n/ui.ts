@@ -21,25 +21,6 @@ import { analize } from './namespaces/analize';
 import { editorial } from './namespaces/editorial';
 
 export const ui = {
-  sr: {
-    ...nav.sr,
-    ...home.sr,
-    ...cluster.sr,
-    ...briefing.sr,
-    ...news.sr,
-    ...settings.sr,
-    ...about.sr,
-    ...common.sr,
-    ...search.sr,
-    ...pulse.sr,
-    ...archive.sr,
-    ...entity.sr,
-    ...sources.sr,
-    ...graph.sr,
-    ...methodology.sr,
-    ...analize.sr,
-    ...editorial.sr,
-  },
   mk: {
     ...nav.mk,
     ...home.mk,

@@ -17,7 +17,7 @@ interface PulseRow {
     latest_cluster_id?: string;
 }
 
-const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang?: string, onSourceClick?: (s: string) => void }> = ({ data, loading = false, lang = 'sr', onSourceClick }) => {
+const PulseLandscapeIsland: React.FC<{ data: PulseRow[], loading?: boolean, lang?: string, onSourceClick?: (s: string) => void }> = ({ data, loading = false, lang = 'mk', onSourceClick }) => {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, pulse, sources);
     const highTrustLabel = t('sources.high_trust');

@@ -17,7 +17,7 @@ Tekst o požaru.
 Drugi pasus.`;
 
 test('formatBriefing renders bold item headlines as briefing-item-title', () => {
-    const html = formatBriefing(sample, 'sr');
+    const html = formatBriefing(sample, 'mk', 'presek.mk');
 
     assert.equal((html.match(/class="briefing-item-title"/g) || []).length, 2);
     assert.equal(html.includes('Požar u Enjubu'), true);
@@ -26,7 +26,7 @@ test('formatBriefing renders bold item headlines as briefing-item-title', () => 
 });
 
 test('formatBriefing uses editorial section headings without matrix labels', () => {
-    const html = formatBriefing(sample, 'sr');
+    const html = formatBriefing(sample, 'mk', 'presek.mk');
 
     assert.equal((html.match(/class="briefing-section-title"/g) || []).length, 2);
     assert.equal(html.includes('briefing-section-heading'), true);
@@ -45,7 +45,7 @@ test('extractBriefingSections keeps section titles from markdown', () => {
 test('formatBriefing converts bare cluster urls into inline links', () => {
     const html = formatBriefing(
         '## Tema\n\n**Vest [[abc123]]**\nTekst.\n\nhttps://presek.mk/cluster/def456',
-        'sr',
+        'mk', 'presek.mk',
     );
 
     assert.equal(html.includes('href="/cluster/abc123"'), true);

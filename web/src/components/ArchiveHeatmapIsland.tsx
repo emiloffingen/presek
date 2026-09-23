@@ -17,7 +17,7 @@ interface Props {
   lang?: string;
 }
 
-export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Props) {
+export default function ArchiveHeatmapIsland({ selectedDate, lang = 'mk' }: Props) {
   const [data, setData] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
   const activeLang = lang === 'mk' ? 'mk' : 'sr';

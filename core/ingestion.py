@@ -25,7 +25,7 @@ from prometheus_client import Counter
 
 import core.clustering as clustering
 from core.api_helpers import is_safe_url
-from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
+from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
 from core.embeddings import generate_embeddings_batch
 from core.health import get_source_statuses, record_source_fetch
@@ -789,8 +789,12 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
 
 
 def get_active_sources():
-    """Fetches all active sources from the database."""
-    rows = db.execute("""
+    """Fetches all active sources from the database.
+
+    In MK-only mode (the public product) only Macedonian sources are ingested.
+    """
+    country_clause = " AND s.country = 'MK'" if MK_ONLY else ""
+    rows = db.execute(f"""
         SELECT
             fs.name,
             fs.url,
@@ -802,7 +806,7 @@ def get_active_sources():
             s.pause_reason
         FROM feed_sources fs
         JOIN sources s ON fs.name = s.name
-        WHERE fs.is_active = TRUE AND s.is_active = TRUE
+        WHERE fs.is_active = TRUE AND s.is_active = TRUE{country_clause}
         """)
     return [dict(r) for r in rows]
 

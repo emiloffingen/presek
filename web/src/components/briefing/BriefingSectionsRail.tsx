@@ -8,7 +8,7 @@ type Props = {
   lang?: string;
 };
 
-export default function BriefingSectionsRail({ sections, lang = 'sr' }: Props) {
+export default function BriefingSectionsRail({ sections, lang = 'mk' }: Props) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, briefing);
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '');

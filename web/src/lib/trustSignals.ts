@@ -3,7 +3,7 @@ import { cluster } from '../i18n/namespaces/cluster.ts';
 type Lang = 'sr' | 'mk';
 
 function trustT(lang: Lang, key: string, params?: Record<string, string | number>): string {
-  const dict = cluster[lang] as Record<string, string>;
+  const dict = (cluster[lang] || cluster.mk) as Record<string, string>;
   let value = dict[key] ?? key;
   if (params) {
     for (const [paramKey, paramValue] of Object.entries(params)) {
@@ -172,7 +172,7 @@ export function buildPrimaryCardBadge(input: TrustInput, lang: Lang): string {
 }
 
 export function primaryCardBadgeTier(input: TrustInput): TrustTier {
-  return buildTrustChip({ ...input, quietFreshness: true }, 'sr').tier;
+  return buildTrustChip({ ...input, quietFreshness: true }, 'mk').tier;
 }
 
 /** Short footer label for compact/wire cards where TrustChip row is hidden. */

@@ -42,7 +42,7 @@ function readStoredTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export default function ThemeIsland({ fixed = false, lang = 'sr' }: { fixed?: boolean; lang?: string }) {
+export default function ThemeIsland({ fixed = false, lang = 'mk' }: { fixed?: boolean; lang?: string }) {
   const theme = useStore($theme);
   const [ready, setReady] = useState(false);
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);

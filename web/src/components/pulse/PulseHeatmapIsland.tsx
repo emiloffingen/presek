@@ -9,7 +9,7 @@ interface ActivitySource {
     activity_score: number;
 }
 
-export default function PulseHeatmapIsland({ lang = 'sr' }: { lang?: string }) {
+export default function PulseHeatmapIsland({ lang = 'mk' }: { lang?: string }) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, pulse);
     const [data, setData] = useState<ActivitySource[]>([]);

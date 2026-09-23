@@ -9,7 +9,7 @@ interface DivergenceProps {
     lang?: string;
 }
 
-export default function DivergenceGaugeIsland({ pluralism_pct, high_consensus_pct, lang = 'sr' }: DivergenceProps) {
+export default function DivergenceGaugeIsland({ pluralism_pct, high_consensus_pct, lang = 'mk' }: DivergenceProps) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, pulse);
     const divergence = pluralism_pct || 0;

@@ -115,7 +115,7 @@ export function buildProxyFallbackUrl(
   return proxyUrl(`/proxy?${params.toString()}`);
 }
 
-export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
+export function buildEmergencyFallbackUrl(lang: SiteLang = 'mk') {
   const params = new URLSearchParams({
     cat: lang === 'mk' ? 'вести' : 'vesti',
     lang,

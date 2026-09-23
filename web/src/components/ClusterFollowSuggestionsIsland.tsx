@@ -44,7 +44,7 @@ export default function ClusterFollowSuggestionsIsland({
   topic = '',
   source = '',
   adjacentTopic = '',
-  lang = 'sr'
+  lang = 'mk'
 }: {
   topic?: string;
   source?: string;

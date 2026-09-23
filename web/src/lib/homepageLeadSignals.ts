@@ -12,7 +12,7 @@ export interface LeadStatus {
 type LeadLang = 'sr' | 'mk';
 
 function leadT(lang: LeadLang, key: string): string {
-  const dict = home[lang] as Record<string, string>;
+  const dict = (home[lang] || home.mk) as Record<string, string>;
   return dict[key] ?? key;
 }
 

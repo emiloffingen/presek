@@ -13,7 +13,7 @@ interface Ad {
   target_url: string;
 }
 
-export default function PresekAdRailSlot({ lang = 'sr', className = '' }: Props) {
+export default function PresekAdRailSlot({ lang = 'mk', className = '' }: Props) {
   const [activeAd, setActiveAd] = useState<Ad | null>(null);
   const [loading, setLoading] = useState(true);
   const [impressionLogged, setImpressionLogged] = useState(false);

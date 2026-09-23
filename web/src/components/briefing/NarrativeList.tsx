@@ -14,7 +14,7 @@ interface Props {
     lang?: string;
 }
 
-export default function NarrativeList({ narratives, lang = 'sr' }: Props) {
+export default function NarrativeList({ narratives, lang = 'mk' }: Props) {
     const locale = lang === 'mk' ? 'mk' : 'sr';
     const t = useClientTranslations(locale, briefing);
 

@@ -92,7 +92,7 @@ function formatTime(value: string, lang: string) {
 export default function ForYouPageIsland({
   initialClusters = [],
   initialError = null,
-  lang = 'sr',
+  lang = 'mk',
 }: ForYouPageIslandProps) {
   const profile = useStore($profile);
   const [seedClusters, setSeedClusters] = useState<NewsCluster[]>(initialClusters);

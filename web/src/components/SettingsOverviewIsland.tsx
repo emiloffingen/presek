@@ -26,7 +26,7 @@ function activateSettingsTab(tab: TabId) {
   window.location.hash = tab;
 }
 
-export default function SettingsOverviewIsland({ lang = 'sr' }: { lang?: string }) {
+export default function SettingsOverviewIsland({ lang = 'mk' }: { lang?: string }) {
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
   const deliveryPrefs = useStore($deliveryPrefs);

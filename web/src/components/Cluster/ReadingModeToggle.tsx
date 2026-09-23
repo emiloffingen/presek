@@ -10,7 +10,7 @@ const MODES: { id: ReadingMode; icon: typeof BookOpen; labelKey: 'reading.standa
   { id: 'compare', icon: Columns2, labelKey: 'reading.compare' },
 ];
 
-export default function ReadingModeToggle({ lang = 'sr' }: { lang?: string }) {
+export default function ReadingModeToggle({ lang = 'mk' }: { lang?: string }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [mode, setMode] = useState<ReadingMode>('standard');
   const labels = {

@@ -52,7 +52,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Kultura": "#14b8a6",
 };
 
-export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang = 'sr' }) => {
+export const SourceSpectrum: React.FC<SourceSpectrumProps> = ({ articles, lang = 'mk' }) => {
   const stats = React.useMemo(() => {
     const counts: Record<string, number> = {};
     const sourcesByCategory: Record<string, string[]> = {};

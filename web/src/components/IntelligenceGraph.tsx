@@ -37,7 +37,7 @@ interface Edge {
   direction?: 'a_to_b' | 'b_to_a' | 'mutual';
 }
 
-export default function IntelligenceGraph({ lang = 'sr' }: { lang?: 'sr' | 'mk' }) {
+export default function IntelligenceGraph({ lang = 'mk' }: { lang?: 'sr' | 'mk' }) {
   const t = useClientTranslations(lang, graph);
   
   const [nodes, setNodes] = useState<Node[]>([]);

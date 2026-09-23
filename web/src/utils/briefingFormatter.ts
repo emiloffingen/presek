@@ -6,7 +6,7 @@ import { briefing } from '../i18n/namespaces/briefing.ts';
 type BriefingLang = 'sr' | 'mk';
 
 function briefingT(lang: BriefingLang, key: string): string {
-  const dict = briefing[lang] as Record<string, string>;
+  const dict = (briefing[lang] || briefing.mk) as Record<string, string>;
   return dict[key] ?? key;
 }
 

@@ -9,7 +9,7 @@ interface EntityContextCardProps {
   lang?: 'sr' | 'mk';
 }
 
-export default function EntityContextCard({ name, lang = 'sr' }: EntityContextCardProps) {
+export default function EntityContextCard({ name, lang = 'mk' }: EntityContextCardProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const t = useClientTranslations(lang, entity);

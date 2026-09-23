@@ -6,7 +6,7 @@ import { settings } from '../../i18n/namespaces/settings';
 
 const SESSION_KEY = 'cluster-mobile-focus-dismissed';
 
-export default function ClusterMobileFocusIsland({ lang = 'sr' }: { lang?: string }) {
+export default function ClusterMobileFocusIsland({ lang = 'mk' }: { lang?: string }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [visible, setVisible] = useState(false);
 

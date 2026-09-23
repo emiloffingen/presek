@@ -125,12 +125,27 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 # Set PRESEK_AI_ENABLED=1 to re-enable.
 AI_ENABLED = os.environ.get("PRESEK_AI_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
 
+# ── Full-text transparency mode ─────────────────────────────
+# When enabled, crawl_article_task persists the extracted article body into
+# articles.full_content (per-source gated by sources.full_text_allowed).
+FULLTEXT_ENABLED = os.environ.get("FULLTEXT_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on")
+FULLTEXT_MAX_CHARS = int(os.environ.get("FULLTEXT_MAX_CHARS", "20000"))
+
+# MK-only product: ingest only Macedonian sources and never translate.
+MK_ONLY = os.environ.get("MK_ONLY", "true").strip().lower() in ("1", "true", "yes", "on")
+
+# Identifying crawler UA (robots.txt compliance / attribution friendliness).
+BOT_USER_AGENT = os.environ.get(
+    "BOT_USER_AGENT",
+    "PresekBot/1.0 (+https://presek.mk/bot; bot@presek.mk)",
+)
+
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000
 CLUSTER_LOOKBACK = 300  # Narrowed to reduce memory pressure
 BREAKING_SCORE_THRESHOLD = 4.5
-DB_RETAIN_DAYS = 180  # articles older than this are pruned daily
+DB_RETAIN_DAYS = 90  # articles older than this are pruned daily
 DB_RETAIN_FAILED_TASKS_DAYS = 360  # failed tasks older than this are pruned daily
 
 # ── Language Configuration ──────────────────────────────────

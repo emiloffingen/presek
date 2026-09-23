@@ -1,5 +1,4 @@
 export const languages = {
-  sr: 'Srpski',
   mk: 'Makedonski',
 } as const;
 

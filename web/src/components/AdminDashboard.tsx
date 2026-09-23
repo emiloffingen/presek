@@ -7,7 +7,7 @@ import {
   RefreshCw, BarChart3, Database, Globe
 } from 'lucide-react';
 
-export default function AdminDashboard({ lang = 'sr' }: { lang?: string }) {
+export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
   const [token, setToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -34,7 +34,7 @@ test('buildHomepageViewModel maps fixture into analysis nav', () => {
     homepageState,
     isHomepage: true,
     isSimpleHomepage: true,
-    lang: 'sr',
+    lang: 'mk',
     filters: {
       category: null,
       topic: null,
@@ -66,7 +66,7 @@ test('buildHomepageViewModel marks simple homepage when analiza view is not requ
     homepageState,
     isHomepage: true,
     isSimpleHomepage: true,
-    lang: 'sr',
+    lang: 'mk',
     filters: {
       category: null,
       topic: null,

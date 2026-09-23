@@ -8,7 +8,7 @@ interface Props {
     date?: string;
 }
 
-const { currentDate, lang = 'sr' } = Astro.props;
+const { currentDate, lang = 'mk' } = Astro.props;
 const t = useTranslations(lang as any);
 const isMK = lang === 'mk';
 ---

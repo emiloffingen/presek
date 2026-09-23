@@ -58,7 +58,7 @@ function isSpeechRecognitionSupported(): boolean {
 
 export default function SearchIsland({
   initialQuery = '',
-  lang = 'sr',
+  lang = 'mk',
   startOpen = false,
   hideTrigger = false,
   onClose,

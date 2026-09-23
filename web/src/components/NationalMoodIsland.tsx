@@ -17,7 +17,7 @@ interface TrendDay {
     count: number;
 }
 
-export default function NationalMoodIsland({ lang = 'sr' }: { lang?: string }) {
+export default function NationalMoodIsland({ lang = 'mk' }: { lang?: string }) {
     const [mood, setMood] = useState<MoodData | null>(null);
     const [trends, setTrends] = useState<TrendDay[]>([]);
     const [loading, setLoading] = useState(true);

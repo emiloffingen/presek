@@ -4,7 +4,7 @@ import { $syncToken, updateSyncToken } from '../lib/store';
 import { buildCsrfHeadersAsync, buildSyncTokenHeadersAsync } from '../lib/personalization.js';
 import { KeyRound, ShieldCheck, RefreshCw, Copy, Upload, Download, AlertCircle, Check } from 'lucide-react';
 
-export default function AccountSyncIsland({ lang = 'sr' }: { lang?: string }) {
+export default function AccountSyncIsland({ lang = 'mk' }: { lang?: string }) {
   const token = useStore($syncToken);
   const [inputToken, setInputToken] = useState('');
   const [status, setStatus] = useState<'idle' | 'working' | 'success' | 'error'>('idle');
