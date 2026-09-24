@@ -375,7 +375,7 @@ function cleanTopicLabel(value?: string) {
     const clean = cleanAndDecode(value || '').trim();
     if (!clean) return '';
     const mapped = topicLabelMap[clean.toLowerCase()];
-    if (mapped) return lang === 'sr' ? mapped.sr : mapped.mk;
+    if (mapped) return mapped.mk;
     return clean;
 }
 const storyKindLabel = (() => {

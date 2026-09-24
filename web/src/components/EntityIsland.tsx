@@ -58,7 +58,7 @@ interface EntityPayload {
 function formatDate(value: string | undefined, lang: keyof typeof ui, t: ReturnType<typeof useClientTranslations>) {
   if (!value) return t('entity.unknown');
   try {
-    return new Date(value).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+    return new Date(value).toLocaleDateString('mk-MK', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -93,7 +93,7 @@ function buildTimeline(history: SentimentPoint[], lang: keyof typeof ui) {
     const date = new Date(item.day);
     return {
       key: item.day,
-      label: date.toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', { day: 'numeric', month: 'short' }),
+      label: date.toLocaleDateString('mk-MK', { day: 'numeric', month: 'short' }),
       count: item.volume,
       percent: Math.max(8, Math.round((item.volume / max) * 100)),
       sentiment: item.avg_sentiment,

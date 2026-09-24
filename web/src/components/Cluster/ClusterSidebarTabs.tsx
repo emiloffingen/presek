@@ -35,7 +35,7 @@ export default function ClusterSidebarTabs({
   adjacentTopic,
   keyEntities,
 }: Props) {
-  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const locale = 'mk';
   const t = useClientTranslations(locale, cluster);
   const tabs = useMemo(() => {
     const items: { id: TabId; label: string; disabled?: boolean }[] = [

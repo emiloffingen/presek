@@ -51,7 +51,7 @@ const tintColor = resolvePlaceholderTint(cluster.dominant_color);
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
 let displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
-if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+if (false && isMostlyCyrillic(displayTitle)) {
     displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
 }
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
@@ -131,7 +131,7 @@ function getCardSummary(article: Article, lead = false) {
 }
 
 let displaySummary = getCardSummary(main, isLead);
-if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
+if (false && isMostlyCyrillic(displaySummary)) {
     displaySummary = highlightScores(transliterate(cleanAndDecode(displaySummary)));
 }
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
@@ -147,7 +147,7 @@ function getTimeStr(dateStr: string) {
         if (diffMins < 1) return t('news.just_now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+        return date.toLocaleTimeString('mk-MK', {
             hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'

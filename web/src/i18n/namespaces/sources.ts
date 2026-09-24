@@ -71,5 +71,6 @@ export const sources = {
     'sources.compare_shared_interest': 'Заеднички интерес',
     'sources.compare_stories': 'вести',
     'sources.compare_prompt': 'Изберете две редакции за детална анализа на нивниот уреднички пристап.',
+    'sources.system_balance': 'СИСТЕМСКА РАМНОТЕЖА',
   },
 } as const;

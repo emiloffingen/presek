@@ -4,7 +4,6 @@ import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { sources as sourcesNamespace } from '../i18n/namespaces/sources';
-import { briefing } from '../i18n/namespaces/briefing';
 import PresekAdRailSlot from './PresekAdRailSlot';
 import type { ui } from '../i18n/ui';
 
@@ -175,7 +174,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
-  const t = useClientTranslations(lang, sourcesNamespace, briefing);
+  const t = useClientTranslations(lang, sourcesNamespace);
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
@@ -648,7 +647,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
         <aside className="broadsheet-rail pl-0 md:pl-4">
           <PresekAdRailSlot lang={lang} />
           <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-presek-mark/5 border border-presek-mark/10 rounded-none">
-            <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
+            <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('sources.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
               {t('sources.qi_desc')}

@@ -9,10 +9,10 @@ export interface LeadStatus {
   tone: LeadStatusTone;
 }
 
-type LeadLang = 'sr' | 'mk';
+type LeadLang = string;
 
 function leadT(lang: LeadLang, key: string): string {
-  const dict = (home[lang] || home.mk) as Record<string, string>;
+  const dict = (home[lang as keyof typeof home] || home.mk) as Record<string, string>;
   return dict[key] ?? key;
 }
 

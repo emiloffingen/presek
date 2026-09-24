@@ -44,7 +44,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
           setLiveActivity((prev) => [
             {
               id: Math.random().toString(),
-              time: new Date().toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+              time: new Date().toLocaleTimeString('mk-MK', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
@@ -100,7 +100,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      alert(lang === 'sr' ? 'Greška pri učitavanju synthesis trace.' : 'Грешка при вчитување synthesis trace.');
+      alert('Грешка при вчитување synthesis trace.');
     }
   };
 
@@ -120,10 +120,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         setIsAuthenticated(true);
         fetchSynthesisTraces(activeToken);
       } else {
-        setError(lang === 'sr' ? 'Pristup je odbijen. Nevalidan token.' : 'Пристапот е одбиен. Невалиден токен.');
+        setError('Пристапот е одбиен. Невалиден токен.');
       }
     } catch {
-      setError(lang === 'sr' ? 'Greška pri povezivanju sa serverom.' : 'Грешка при поврзување со серверот.');
+      setError('Грешка при поврзување со серверот.');
     } finally {
       setLoading(false);
     }
@@ -136,9 +136,9 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const data = await res.json();
-      alert(data.message || (lang === 'sr' ? 'Bilten je aktiviran.' : 'Билтенот е активиран.'));
+      alert(data.message || ('Билтенот е активиран.'));
     } catch {
-      alert(lang === 'sr' ? 'Greška pri aktiviranju biltena.' : 'Грешка при активирање на билтенот.');
+      alert('Грешка при активирање на билтенот.');
     }
   };
 
@@ -150,7 +150,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       });
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri restartovanju zadataka.' : 'Грешка при рестартирање на задачите.');
+      alert('Грешка при рестартирање на задачите.');
     }
   };
 
@@ -161,10 +161,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Backlog osvežavanje pokrenuto.' : 'Backlog освежување е стартувано.'));
+      alert(payload.message || ('Backlog освежување е стартувано.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri osvežavanju zastarelih klastera.' : 'Грешка при освежување на застарени кластери.');
+      alert('Грешка при освежување на застарени кластери.');
     }
   };
 
@@ -175,10 +175,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Nadogradnja pokrenuta.' : 'Надградбата е стартувана.'));
+      alert(payload.message || ('Надградбата е стартувана.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri nadogradnji sinteze.' : 'Грешка при надградба на прегледот.');
+      alert('Грешка при надградба.');
     }
   };
 
@@ -189,10 +189,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Osvežavanje fallback sinteze pokrenuto.' : 'Освежување fallback преглед е стартувано.'));
+      alert(payload.message || ('Освежување е стартувано.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri osvežavanju fallback sinteze.' : 'Грешка при освежување fallback преглед.');
+      alert('Грешка при освежување.');
     }
   };
 
@@ -203,10 +203,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Osvežavanje niskog kvaliteta pokrenuto.' : 'Освежување низок квалитет е стартувано.'));
+      alert(payload.message || ('Освежување низок квалитет е стартувано.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri osvežavanju niskog kvaliteta.' : 'Грешка при освежување низок квалитет.');
+      alert('Грешка при освежување низок квалитет.');
     }
   };
 
@@ -217,10 +217,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Ingestija restartovana.' : 'Ingestijata е рестартирана.'));
+      alert(payload.message || ('Ingestijata е рестартирана.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri čišćenju ingestion grešaka.' : 'Грешка при чистење ingestion грешки.');
+      alert('Грешка при чистење ingestion грешки.');
     }
   };
 
@@ -234,7 +234,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      alert(lang === 'sr' ? 'Greška pri učitavanju nedeljnog izveštaja.' : 'Грешка при вчитување на неделен извештај.');
+      alert('Грешка при вчитување на неделен извештај.');
     }
   };
 
@@ -246,14 +246,14 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
             <div className="p-4 bg-nyt-accent/10 rounded-2xl mb-4">
               <Shield className="text-nyt-accent" size={32} />
             </div>
-            <h2 className="text-xl font-bold text-center uppercase tracking-tight">{lang === 'sr' ? 'ADMIN AUTENTIKACIJA' : 'ADMIN АВТЕНТИКАЦИЈА'}</h2>
+            <h2 className="text-xl font-bold text-center uppercase tracking-tight">{'ADMIN АВТЕНТИКАЦИЈА'}</h2>
           </div>
           <div className="space-y-4">
             <input
               type="password"
               value={token}
               onChange={(e) => setToken(e.target.value)}
-              placeholder={lang === 'sr' ? "UNESITE ADMIN TOKEN" : "ВНЕСЕТЕ АДМИН ТОКЕН"}
+              placeholder={"ВНЕСЕТЕ АДМИН ТОКЕН"}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 font-mono text-xs focus:ring-1 focus:ring-nyt-accent outline-none"
               onKeyDown={(e) => e.key === 'Enter' && fetchDashboard()}
             />
@@ -262,7 +262,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
               disabled={loading}
               className="w-full bg-zinc-100 text-black font-black text-xs py-3 rounded-lg hover:bg-white transition-all disabled:opacity-50"
             >
-              {loading ? (lang === 'sr' ? 'AUTENTIKACIJA...' : 'АВТЕНТИКАЦИЈА...') : (lang === 'sr' ? 'PRISTUP KOKPITU' : 'ПРИСТАП ДО КОКПИТ')}
+              {loading ? ('АВТЕНТИКАЦИЈА...') : ('ПРИСТАП ДО КОКПИТ')}
             </button>
             {error && <p className="text-red-500 text-[10px] font-mono text-center uppercase">{error}</p>}
           </div>
@@ -290,12 +290,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
-                {lang === 'sr' ? 'EDITORIAL OPS KOKPIT' : 'EDITORIAL OPS КОКПИТ'}
+                {'EDITORIAL OPS КОКПИТ'}
               </h2>
               <p className="text-[11px] text-zinc-500 mt-2 max-w-2xl">
-                {lang === 'sr'
-                  ? 'Jedan pogled: ingestija, backlog sinteze, redovi i zastareli klasteri.'
-                  : 'Еден поглед: инgestија, backlog на преглед, редови и застарени кластери.'}
+                'Еден поглед: инgestија, backlog, редови и застарени кластери.'
               </p>
             </div>
             <span className={`text-[10px] font-black uppercase px-3 py-1 rounded border ${opsStatusClass}`}>
@@ -305,34 +303,34 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-[var(--grid-gap)]">
             <OpsMetric
-              label={lang === 'sr' ? 'Ingestija' : 'Инgestија'}
+              label={'Инgestија'}
               value={ops.ingestion?.label || ops.ingestion?.freshness_status || '—'}
               sub={ops.ingestion?.age_minutes != null ? `${ops.ingestion.age_minutes} min` : '—'}
             />
             <OpsMetric
-              label={lang === 'sr' ? 'Nesintetizovano 24h' : 'Несинтетизирано 24ч'}
+              label={'Несинтетизирано 24ч'}
               value={ops.synthesis?.unsummarized_24h ?? '—'}
-              sub={`${ops.synthesis?.unsummarized_total ?? 0} ${lang === 'sr' ? 'ukupno' : 'вкупно'}`}
+              sub={`${ops.synthesis?.unsummarized_total ?? 0} ${'вкупно'}`}
             />
             <OpsMetric
-              label={lang === 'sr' ? 'Najopterećeniji red' : 'Најоптоварен ред'}
+              label={'Најоптоварен ред'}
               value={ops.queues?.busiest_queue_depth ?? '—'}
               sub={ops.queues?.busiest_queue || '—'}
             />
             <OpsMetric
-              label={lang === 'sr' ? 'Zastareli klasteri' : 'Застарени кластери'}
+              label={'Застарени кластери'}
               value={ops.stale_clusters?.count ?? 0}
-              sub={`${Math.round((ops.synthesis?.fallback_ratio_24h || 0) * 100)}% ${lang === 'sr' ? 'fallback 24h' : 'fallback 24ч'}`}
+              sub={`${Math.round((ops.synthesis?.fallback_ratio_24h || 0) * 100)}% ${'fallback 24ч'}`}
             />
             <OpsMetric
-              label={lang === 'sr' ? 'Provisional 24h' : 'Привремени 24ч'}
+              label={'Привремени 24ч'}
               value={ops.synthesis?.provisional_count_24h ?? 0}
-              sub={`${ops.synthesis?.stuck_fast_count ?? 0} ${lang === 'sr' ? 'zaglavljenih' : 'заглавени'}`}
+              sub={`${ops.synthesis?.stuck_fast_count ?? 0} ${'заглавени'}`}
             />
             <OpsMetric
-              label={lang === 'sr' ? 'Nizak kvalitet 24h' : 'Низок квалитет 24ч'}
+              label={'Низок квалитет 24ч'}
               value={ops.synthesis?.low_score_count_24h ?? 0}
-              sub={`${ops.synthesis?.fallback_count_24h ?? 0} ${lang === 'sr' ? 'fallback' : 'fallback'}`}
+              sub={`${ops.synthesis?.fallback_count_24h ?? 0} ${'fallback'}`}
             />
           </div>
 
@@ -357,7 +355,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
             </div>
           ) : (
             <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">
-              {lang === 'sr' ? 'Nema aktivnih ops upozorenja' : 'Нема активни ops предупредувања'}
+              {'Нема активни ops предупредувања'}
             </p>
           )}
 
@@ -376,37 +374,37 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
               onClick={drainStaleClusters}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
-              {lang === 'sr' ? 'Osveži zastarele' : 'Освежи застарени'}
+              {'Освежи застарени'}
             </button>
             <button
               onClick={upgradeStuckFastSyntheses}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
-              {lang === 'sr' ? 'Nadogradi zaglavljene' : 'Надгради заглавени'}
+              {'Надгради заглавени'}
             </button>
             <button
               onClick={refreshFallbackSyntheses}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
-              {lang === 'sr' ? 'Osveži fallback' : 'Освежи fallback'}
+              {'Освежи fallback'}
             </button>
             <button
               onClick={refreshLowScoreSyntheses}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
-              {lang === 'sr' ? 'Osveži nizak kvalitet' : 'Освежи низок квалитет'}
+              {'Освежи низок квалитет'}
             </button>
             <button
               onClick={clearFailedIngestion}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white"
             >
-              {lang === 'sr' ? 'Očisti ingestion' : 'Исчисти ingestion'}
+              {'Исчисти ingestion'}
             </button>
             <button
               onClick={openWeeklyReport}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white"
             >
-              {lang === 'sr' ? 'Nedeljni izveštaj' : 'Неделен извештај'}
+              {'Неделен извештај'}
             </button>
           </div>
         </section>
@@ -417,24 +415,22 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
-                {lang === 'sr' ? 'SYNTHESIS TRACE' : 'SYNTHESIS TRACE'}
+                {'SYNTHESIS TRACE'}
               </h2>
               <p className="text-[11px] text-zinc-500 mt-2">
-                {lang === 'sr'
-                  ? 'Provisional, fallback i zastareli klasteri sa preporučenim akcijama.'
-                  : 'Привремени, fallback и застарени кластери со препорачани акции.'}
+                'Привремени, fallback и застарени кластери со препорачани акции.'
               </p>
             </div>
             <button
               onClick={() => fetchSynthesisTraces()}
               className="text-[10px] font-black uppercase px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:text-white"
             >
-              {traceLoading ? '...' : (lang === 'sr' ? 'Osveži trace' : 'Освежи trace')}
+              {traceLoading ? '...' : ('Освежи trace')}
             </button>
           </div>
           {synthesisTraces.length === 0 ? (
             <p className="text-[10px] uppercase tracking-widest text-zinc-500">
-              {lang === 'sr' ? 'Nema problema za prikaz.' : 'Нема проблеми за приказ.'}
+              {'Нема проблеми за приказ.'}
             </p>
           ) : (
             <div className="space-y-2">
@@ -467,12 +463,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
-                {lang === 'sr' ? 'AKTIVNI OPERATIVNI TOK (REAL-TIME)' : 'АКТИВЕН ОПЕРАТИВЕН ТЕК (REAL-TIME)'}
+                {'АКТИВЕН ОПЕРАТИВЕН ТЕК (REAL-TIME)'}
               </h2>
               <p className="text-[11px] text-zinc-500 mt-2">
-                {lang === 'sr'
-                  ? 'Uživo praćenje scraper-a i AI syntezer-a bez potrebe za osvežavanjem stranice.'
-                  : 'Следење во живо на scraper и AI syntezer без потреба од освежување на страницата.'}
+                'Следење во живо на scraper и AI syntezer без потреба од освежување на страницата.'
               </p>
             </div>
             <div className="flex items-center gap-[var(--grid-gap)] text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
@@ -484,7 +478,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
           <div className="bg-black border border-zinc-800 font-mono text-[11px] p-4 rounded-lg overflow-y-auto max-h-60 space-y-1.5 select-text">
             {liveActivity.length === 0 ? (
               <p className="text-zinc-500 italic">
-                {lang === 'sr' ? '> Čekanje na sistemske događaje...' : '> Чекање на системски настани...'}
+                {'> Чекање на системски настани...'}
               </p>
             ) : (
               liveActivity.map((log: any) => {
@@ -509,31 +503,31 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[var(--grid-gap)]">
         <StatCard
           icon={<Zap size={18} />}
-          label={lang === 'sr' ? 'SINTETIČKI PREGLED' : 'СИНТЕТИЧКИ ПРЕГЛЕД'}
+          label={'СИСТЕМСКИ ПРЕГЛЕД'}
           value={data.clusters.total_summaries}
-          sub={`${data.clusters.total_clusters} ${lang === 'sr' ? 'KLASTERA UKUPNO' : 'КЛАСТЕРИ ВКУПНО'}`}
+          sub={`${data.clusters.total_clusters} ${'КЛАСТЕРИ ВКУПНО'}`}
           trend={systemOk ? 'SISTEM OK' : 'ISSUE'}
           color="text-nyt-accent"
         />
         <StatCard
           icon={<Globe size={18} />}
-          label={lang === 'sr' ? 'ZDRAVLJE KRAVLERA' : 'ЗДРАВЈЕ НА КРАВЛЕР'}
+          label={'ЗДРАВЈЕ НА КРАВЛЕР'}
           value={data.scrapers.healthy_feeds}
-          sub={`${data.scrapers.total_sources} ${lang === 'sr' ? 'AKTIVNIH IZVORA' : 'АКТИВНИ ИЗВОРИ'}`}
+          sub={`${data.scrapers.total_sources} ${'АКТИВНИ ИЗВОРИ'}`}
           trend={`${Math.round((data.scrapers.healthy_feeds / data.scrapers.total_feeds) * 100)}%`}
           color="text-emerald-500"
         />
         <StatCard
           icon={<Activity size={18} />}
-          label={lang === 'sr' ? 'INGESTIJA 24Č' : 'ИНГЕСТИЈА 24Ч'}
+          label={'ИНГЕСТИЈА 24Ч'}
           value={data.articles.last_24h}
-          sub={`${data.articles.last_1h} ${lang === 'sr' ? 'U POSLEDNJEM ČASU' : 'ВО ПОСЛЕДНИОТ ЧАС'}`}
+          sub={`${data.articles.last_1h} ${'ВО ПОСЛЕДНИОТ ЧАС'}`}
           trend="+4.2%"
           color="text-blue-500"
         />
         <StatCard
           icon={<AlertTriangle size={18} />}
-          label={lang === 'sr' ? 'NEUSPELI ZADACI' : 'НЕУСПЕШНИ ЗАДАЧИ'}
+          label={'НЕУСПЕШНИ ЗАДАЧИ'}
           value={data.tasks.failed_tasks}
           sub="CELERY QUEUE"
           trend={data.tasks.failed_tasks > 0 ? 'ACTION' : 'CLEAN'}
@@ -563,7 +557,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
               <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4">
                 <BarChart3 size={14} className="text-zinc-500" />
-                {lang === 'sr' ? 'CELERY REDOVI' : 'CELERY РЕДОВИ'}
+                {'CELERY РЕДОВИ'}
               </h3>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-black uppercase text-zinc-500">intel-heavy</span>
@@ -602,12 +596,12 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
 
           <div className="bg-nyt-accent/5 border border-nyt-accent/20 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-4 text-nyt-accent">
-              <Zap size={14} /> {lang === 'sr' ? 'SISTEMSKA KASKADA' : 'СИСТЕМСКА КАСКАДА'}
+              <Zap size={14} /> {'СИСТЕМСКА КАСКАДА'}
             </h3>
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-xl font-black uppercase">{data.ai.current_provider}</p>
-                <p className="text-[9px] text-zinc-500 uppercase font-mono tracking-tighter">{lang === 'sr' ? 'Primarni provajder' : 'Примарен провајдер'}</p>
+                <p className="text-[9px] text-zinc-500 uppercase font-mono tracking-tighter">{'Примарен провајдер'}</p>
               </div>
               <p className="text-xs font-bold text-zinc-400 text-right max-w-[55%]">{aiCascade}</p>
             </div>
@@ -618,7 +612,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-2xl overflow-hidden">
           <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)]">
-              <Layout size={14} className="text-zinc-500" /> {lang === 'sr' ? 'MONITORING IZVORA' : 'МОНИТОРИНГ НА ИЗВОРИ'}
+              <Layout size={14} className="text-zinc-500" /> {'МОНИТОРИНГ НА ИЗВОРИ'}
             </h3>
             <span className="px-3 py-1 bg-zinc-800 rounded-full text-[9px] font-black text-zinc-400">LATEST FEED UPDATES</span>
           </div>
@@ -626,10 +620,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
             <table className="w-full text-left text-[11px] font-mono">
               <thead>
                 <tr className="text-zinc-500 border-b border-zinc-800/50">
-                  <th className="p-4 font-black">{lang === 'sr' ? 'IZVOR' : 'ИЗВОР'}</th>
-                  <th className="p-4 font-black">{lang === 'sr' ? 'STATUS' : 'СТАТУС'}</th>
-                  <th className="p-4 font-black">{lang === 'sr' ? 'POSLEDNJE' : 'ПОСЛЕДНО'}</th>
-                  <th className="p-4 font-black">{lang === 'sr' ? 'VOLUMEN' : 'ВОЛУМЕН'}</th>
+                  <th className="p-4 font-black">{'ИЗВОР'}</th>
+                  <th className="p-4 font-black">{'СТАТУС'}</th>
+                  <th className="p-4 font-black">{'ПОСЛЕДНО'}</th>
+                  <th className="p-4 font-black">{'ВОЛУМЕН'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
@@ -655,7 +649,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--grid-gap)]">
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-6">
-              <Terminal size={14} className="text-zinc-500" /> {lang === 'sr' ? 'POSLEDNJE GREŠKE' : 'ПОСЛЕДНИ ГРЕШКИ'}
+              <Terminal size={14} className="text-zinc-500" /> {'ПОСЛЕДНИ ГРЕШКИ'}
             </h3>
             <div className="space-y-3">
               {data.tasks.recent_failures?.length > 0 ? (
@@ -670,13 +664,13 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
                     onClick={clearFailedTasks}
                     className="w-full mt-4 flex items-center justify-center gap-[var(--grid-gap)] bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
                   >
-                    {lang === 'sr' ? 'IZBRIŠI GREŠKE' : 'ИЗБРИШИ ГРЕШКИ'}
+                    {'ИЗБРИШИ ГРЕШКИ'}
                   </button>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-10 opacity-30">
                   <CheckCircle2 size={32} className="mb-3" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">{lang === 'sr' ? 'Nema aktivnih grešaka' : 'Нема активни грешки'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest">{'Нема активни грешки'}</p>
                 </div>
               )}
             </div>
@@ -684,20 +678,20 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
 
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-[var(--grid-gap)] mb-6">
-              <Settings size={14} className="text-zinc-500" /> {lang === 'sr' ? 'SISTEMSKE KONTROLE' : 'СИСТЕМСКИ КОНТРОЛИ'}
+              <Settings size={14} className="text-zinc-500" /> {'СИСТЕМСКИ КОНТРОЛИ'}
             </h3>
             <div className="grid grid-cols-1 gap-[var(--grid-gap)]">
                 <button
                   onClick={triggerNewsletter}
                   className="w-full flex items-center justify-center gap-[var(--grid-gap)] bg-nyt-accent hover:bg-nyt-accent/80 text-black text-[10px] font-black py-3 rounded-lg transition-all"
                 >
-                  <Zap size={14} /> {lang === 'sr' ? 'TRIGERUJ BILTEN' : 'ТРИГЕРУВАЈ БИЛТЕН'}
+                  <Zap size={14} /> {'ТРИГЕРУВАЈ БИЛТЕН'}
                 </button>
                 <button
                   onClick={() => fetchDashboard()}
                   className="w-full flex items-center justify-center gap-[var(--grid-gap)] bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-bold py-3 rounded-lg transition-all"
                 >
-                  <RefreshCw size={14} /> {lang === 'sr' ? 'OSVEŽI KOKPIT' : 'ОСВЕЖИ КОКПИТ'}
+                  <RefreshCw size={14} /> {'ОСВЕЖИ КОКПИТ'}
                 </button>
             </div>
           </div>

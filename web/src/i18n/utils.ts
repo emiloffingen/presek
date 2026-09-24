@@ -17,12 +17,13 @@ export function getLangFromUrl(url: URL, hostname?: string | null): Locale {
   return 'mk';
 }
 
-export function useTranslations(lang: keyof typeof ui) {
+export function useTranslations(lang: Locale | string) {
+  const activeLang: Locale = isLocale(lang as string) ? (lang as Locale) : defaultLang;
   return function t(
     key: keyof typeof ui[typeof defaultLang],
     params?: Record<string, string | number>
   ) {
-    let value: string = ui[lang][key] || ui[defaultLang][key];
+    let value: string = ui[activeLang][key] || ui[defaultLang][key];
 
     if (params) {
       for (const [paramKey, paramValue] of Object.entries(params)) {

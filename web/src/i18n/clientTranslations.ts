@@ -1,4 +1,4 @@
-import type { Locale } from './config';
+import { isLocale, defaultLang, type Locale } from './config';
 
 type NamespaceBundle = Record<Locale, Record<string, string>>;
 
@@ -12,10 +12,11 @@ function mergeNamespaces(lang: Locale, parts: readonly NamespaceBundle[]): Recor
 
 /** Client islands only — pass the namespace modules this island actually uses. */
 export function useClientTranslations(
-  lang: Locale,
+  lang: Locale | string,
   ...parts: NamespaceBundle[]
 ) {
-  const dict = mergeNamespaces(lang, parts);
+  const activeLang: Locale = isLocale(lang as string) ? (lang as Locale) : defaultLang;
+  const dict = mergeNamespaces(activeLang, parts);
   return function t(key: string, params?: Record<string, string | number>): string {
     let value = dict[key] ?? key;
     if (params) {

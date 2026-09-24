@@ -79,7 +79,7 @@ const isWarmTheme = stylePref === 'warm';
 ---
 
 <!doctype html>
-<html lang={lang === 'sr' ? 'sr-Latn' : 'mk'} data-proxy-base={proxyBase} data-page={pageKind}>
+<html lang="mk" data-proxy-base={proxyBase} data-page={pageKind}>
 	<head>
 		<LayoutHead
 			lang={lang}
@@ -101,7 +101,7 @@ const isWarmTheme = stylePref === 'warm';
 		id="top"
 		class:list={[
 			'antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full',
-			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk', 'theme-warm': isWarmTheme },
+			{ 'script-cyrillic': true, 'theme-warm': isWarmTheme },
 		]}
 	>
 		<SkipLink targetId="main-content" />
