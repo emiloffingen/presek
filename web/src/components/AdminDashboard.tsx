@@ -178,7 +178,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
       alert(payload.message || (lang === 'sr' ? 'Nadogradnja pokrenuta.' : 'Надградбата е стартувана.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri nadogradnji sinteze.' : 'Грешка при надградба на синтеза.');
+      alert(lang === 'sr' ? 'Greška pri nadogradnji sinteze.' : 'Грешка при надградба на прегледот.');
     }
   };
 
@@ -189,10 +189,10 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
         headers: { 'Authorization': `Bearer ${token}`, ...(await buildCsrfHeadersAsync()) }
       });
       const payload = await res.json();
-      alert(payload.message || (lang === 'sr' ? 'Osvežavanje fallback sinteze pokrenuto.' : 'Освежување fallback синтеза е стартувано.'));
+      alert(payload.message || (lang === 'sr' ? 'Osvežavanje fallback sinteze pokrenuto.' : 'Освежување fallback преглед е стартувано.'));
       fetchDashboard();
     } catch {
-      alert(lang === 'sr' ? 'Greška pri osvežavanju fallback sinteze.' : 'Грешка при освежување fallback синтеза.');
+      alert(lang === 'sr' ? 'Greška pri osvežavanju fallback sinteze.' : 'Грешка при освежување fallback преглед.');
     }
   };
 
@@ -295,7 +295,7 @@ export default function AdminDashboard({ lang = 'mk' }: { lang?: string }) {
               <p className="text-[11px] text-zinc-500 mt-2 max-w-2xl">
                 {lang === 'sr'
                   ? 'Jedan pogled: ingestija, backlog sinteze, redovi i zastareli klasteri.'
-                  : 'Еден поглед: инgestија, backlog на синтеза, редови и застарени кластери.'}
+                  : 'Еден поглед: инgestија, backlog на преглед, редови и застарени кластери.'}
               </p>
             </div>
             <span className={`text-[10px] font-black uppercase px-3 py-1 rounded border ${opsStatusClass}`}>

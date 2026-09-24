@@ -17,7 +17,7 @@ export const news = {
     'news.section_default': 'Вести',
     'news.source': 'извор',
     'news.sources': 'извори',
-    'news.synthesis': 'Системска синтеза на Пресек',
+    'news.synthesis': 'Системски преглед на Пресек',
     'news.tracked': 'Следена',
     'news.urgent': 'Итен развој',
   },

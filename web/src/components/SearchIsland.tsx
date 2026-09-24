@@ -13,7 +13,6 @@ import {
   Mic,
   SlidersHorizontal,
   Compass,
-  Activity,
   Archive,
 } from 'lucide-react';
 
@@ -122,28 +121,12 @@ export default function SearchIsland({
   const SEARCH_ACTIONS: SearchAction[] = useMemo(
     () => [
       {
-        id: 'act-briefing',
-        label: t('search.action_briefing_label'),
+        id: 'act-sources',
+        label: t('search.action_sources_label'),
         icon: Zap,
-        href: localePathForLang('/briefing', lang),
+        href: localePathForLang('/izvori', lang),
         category: 'NAVIGATION',
-        desc: t('search.action_briefing_desc'),
-      },
-      {
-        id: 'act-foryou',
-        label: t('search.action_foryou_label'),
-        icon: Compass,
-        href: localePathForLang('/for-you', lang),
-        category: 'NAVIGATION',
-        desc: t('search.action_foryou_desc'),
-      },
-      {
-        id: 'act-pulse',
-        label: t('search.action_pulse_label'),
-        icon: Activity,
-        href: localePathForLang('/pulse', lang),
-        category: 'NAVIGATION',
-        desc: t('search.action_pulse_desc'),
+        desc: t('search.action_sources_desc'),
       },
       {
         id: 'act-archive',
@@ -152,6 +135,14 @@ export default function SearchIsland({
         href: localePathForLang('/archive', lang),
         category: 'NAVIGATION',
         desc: t('search.action_archive_desc'),
+      },
+      {
+        id: 'act-methodology',
+        label: t('search.action_methodology_label'),
+        icon: Compass,
+        href: localePathForLang('/methodology', lang),
+        category: 'NAVIGATION',
+        desc: t('search.action_methodology_desc'),
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
     ],

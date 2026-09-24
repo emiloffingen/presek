@@ -131,19 +131,19 @@ export default function SettingsOverviewIsland({ lang = 'mk' }: { lang?: string 
       </div>
 
       <div className="settings-overview-links">
-        <a href={localePathForLang('/for-you', locale)} className="settings-overview-link">
+        <a href={localePathForLang('/izvori', locale)} className="settings-overview-link">
           <Compass size={16} />
           <span>
-            <strong>{t('settings.overview_link_foryou')}</strong>
-            <small>{t('settings.overview_link_foryou_desc')}</small>
+            <strong>{t('settings.overview_link_sources')}</strong>
+            <small>{t('settings.overview_link_sources_desc')}</small>
           </span>
           <ArrowUpRight size={14} />
         </a>
-        <a href={localePathForLang('/briefing', locale)} className="settings-overview-link">
+        <a href={localePathForLang('/methodology', locale)} className="settings-overview-link">
           <Newspaper size={16} />
           <span>
-            <strong>{t('settings.overview_link_briefing')}</strong>
-            <small>{t('settings.overview_link_briefing_desc')}</small>
+            <strong>{t('settings.overview_link_methodology')}</strong>
+            <small>{t('settings.overview_link_methodology_desc')}</small>
           </span>
           <ArrowUpRight size={14} />
         </a>

@@ -170,4 +170,66 @@
   }
   initParallax();
   document.addEventListener('astro:page-load', initParallax);
+
+  // Full original text (transparency mode): expandable per article.
+  function bindFulltextToggle() {
+    if (window.__presekFulltextBound) return;
+    window.__presekFulltextBound = true;
+    document.addEventListener('click', function (ev) {
+      const target = ev.target;
+      const btn = target && target.closest ? target.closest('.fulltext-toggle') : null;
+      if (!btn) return;
+      const wrap = btn.closest('.fulltext-wrap');
+      if (!wrap) return;
+      const panel = wrap.querySelector('.fulltext-panel');
+      const body = wrap.querySelector('.fulltext-body');
+      const label = btn.querySelector('.fulltext-toggle-label');
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+
+      if (expanded) {
+        btn.setAttribute('aria-expanded', 'false');
+        if (panel) panel.hidden = true;
+        if (label) label.textContent = btn.dataset.showLabel || '';
+        return;
+      }
+      if (panel) panel.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      if (label) label.textContent = btn.dataset.hideLabel || '';
+      if (body && body.dataset.loaded === 'true') return;
+
+      const id = wrap.dataset.articleId;
+      if (!id || !body) return;
+      body.textContent = wrap.dataset.loading || '';
+      body.dataset.loaded = 'error';
+      fetch('/api/article/' + encodeURIComponent(id) + '?lang=mk', {
+        headers: { Accept: 'application/json' },
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          if (data && data.full_content && data.full_text_allowed !== false) {
+            body.textContent = '';
+            String(data.full_content)
+              .split(/\n{2,}/)
+              .forEach(function (raw) {
+                const text = raw.trim();
+                if (!text) return;
+                const p = document.createElement('p');
+                p.textContent = text;
+                body.appendChild(p);
+              });
+            body.dataset.loaded = 'true';
+          } else {
+            body.textContent = wrap.dataset.unavailable || '';
+          }
+        })
+        .catch(function () {
+          body.textContent = wrap.dataset.error || '';
+        });
+    });
+  }
+  bindFulltextToggle();
+  document.addEventListener('astro:page-load', bindFulltextToggle);
 })();

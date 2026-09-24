@@ -2,7 +2,7 @@
 import { sanitizeHtml } from '../../lib/sanitize';
 import { getDisplayTitle, highlightScores, getDesignCardContext, transliterate } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
-import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
+import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
@@ -307,10 +307,6 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                     <span class="lead-value-detail">{item.detail}</span>
                 </div>
             ))}
-            <a class="lead-value-action" href={l('/for-you')}>
-                <span>{t('lead.value_action')}</span>
-                <ArrowRight size={13} aria-hidden="true" />
-            </a>
         </div>
         )}
 

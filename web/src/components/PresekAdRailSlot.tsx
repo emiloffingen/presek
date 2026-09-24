@@ -20,7 +20,7 @@ export default function PresekAdRailSlot({ lang = 'mk', className = '' }: Props)
 
   useEffect(() => {
     // Check if the current page path is an ad-free path
-    const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+    const adFreePaths = ['/marketing', '/mk/marketing'];
     const path = window.location.pathname;
     if (adFreePaths.some(p => path.endsWith(p))) {
       setLoading(false);

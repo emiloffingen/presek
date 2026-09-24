@@ -9,14 +9,14 @@ export const GET: APIRoute = async ({ request }) => {
   const scope = '/';
   const shortcuts = isMk
     ? [
-        { name: 'Дневен брифинг', short_name: 'Брифинг', url: '/briefing' },
-        { name: 'Медиумски пулс', short_name: 'Пулс', url: '/pulse' },
-        { name: 'Извори', short_name: 'Извори', url: '/izvori' },
+        { name: 'Медиумски извори', short_name: 'Извори', url: '/izvori' },
+        { name: 'Архива', short_name: 'Архива', url: '/archive' },
+        { name: 'Методологија', short_name: 'Методологија', url: '/methodology' },
       ]
     : [
-        { name: 'Dnevni brifing', short_name: 'Brifing', url: '/briefing' },
-        { name: 'Medijski puls', short_name: 'Puls', url: '/pulse' },
-        { name: 'Izvori', short_name: 'Izvori', url: '/izvori' },
+        { name: 'Medijski izvori', short_name: 'Izvori', url: '/izvori' },
+        { name: 'Arhiva', short_name: 'Arhiva', url: '/archive' },
+        { name: 'Metodologija', short_name: 'Metodologija', url: '/methodology' },
       ];
 
   const manifest = {

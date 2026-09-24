@@ -26,7 +26,6 @@ import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
-import HomeStartHere from './HomeStartHere.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -303,14 +302,8 @@ if (analizaNavItems.length > 0) {
                     </div>
                 )}
 
-                {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
-                    <div class="home-mobile-order-start-here home-feed-only home-edition-collapsed">
-                        <HomeStartHere lang={lang} />
-                    </div>
-                )}
-
                 {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only">
                         <PresekRailAd class="home-feed-rail-ad" />
                     </div>
                 )}

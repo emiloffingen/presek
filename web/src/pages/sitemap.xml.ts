@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request }) => {
         console.error("Sitemap fetch error:", e);
     }
 
-    const staticPages = ['', '/about', '/archive', '/izvori', '/pulse', '/editorial', '/privacy', '/terms', '/analize', '/methodology', '/contact', '/cookies'];
+    const staticPages = ['', '/about', '/archive', '/izvori', '/editorial', '/privacy', '/terms', '/methodology', '/contact', '/cookies'];
     const now = new Date().toISOString();
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

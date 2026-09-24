@@ -181,7 +181,7 @@ function getRelativeTimeStr(dateStr?: string) {
     }
 }
 
-const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+const adFreePaths = ['/marketing', '/mk/marketing'];
 const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
 ---
 
@@ -296,7 +296,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
 
             <div class="topbar-actions">
                 <div class="topbar-util">
-                    <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
                         <ScriptSwitcher />
                         <SimpleThemeToggle />
@@ -317,8 +316,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             >
                                 {t('search.dialog_label')}
                             </button>
-                            <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
-                            <a href={l('/briefing')} class="utility-menu-link">{t('nav.briefing')}</a>
                             <a href={l('/izvori')} class="utility-menu-link">{t('nav.sources')}</a>
                             <a href={l('/archive')} class="utility-menu-link">{t('nav.archive')}</a>
                             <ScriptSwitcher />

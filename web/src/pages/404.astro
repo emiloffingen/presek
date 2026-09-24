@@ -29,7 +29,7 @@ Astro.response.status = 404;
 				<div class="not-found-actions">
 					<a href={homePath(lang, hostHeader)} class="not-found-link not-found-link-primary">{t('not_found.home')}</a>
 					<a href={localePath('/archive', lang, hostHeader)} class="not-found-link">{t('not_found.archive')}</a>
-					<a href={localePath('/briefing', lang, hostHeader)} class="not-found-link">{t('not_found.briefing')}</a>
+					<a href={localePath('/izvori', lang, hostHeader)} class="not-found-link">{t('nav.sources')}</a>
 				</div>
 			</div>
 
@@ -52,7 +52,7 @@ Astro.response.status = 404;
 							<div class="not-found-list">
 								<a href={localePath('/archive', lang, hostHeader)}>{t('not_found.path_archive')}</a>
 								<a href={localePath('/izvori', lang, hostHeader)}>{t('not_found.path_sources')}</a>
-								<a href={localePath('/pulse', lang, hostHeader)}>{t('not_found.path_pulse')}</a>
+								<a href={localePath('/methodology', lang, hostHeader)}>{t('nav.methodology')}</a>
 								<a href={localePath('/contact', lang, hostHeader)}>{t('not_found.path_contact')}</a>
 							</div>
 						</div>

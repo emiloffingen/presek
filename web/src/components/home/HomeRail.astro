@@ -1,5 +1,4 @@
 ---
-import { TrendingUp } from 'lucide-react';
 import NationalMoodIsland from '../NationalMoodIsland.tsx';
 import HomeRailSuggestionsIsland from '../HomeRailSuggestionsIsland.tsx';
 import SourceMapIsland from '../SourceMapIsland.tsx';
@@ -68,7 +67,6 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 			<p class="rail-brief-text">
 				{getBriefingSnippet(briefing.content)}
 			</p>
-			<a href={l('/briefing')} class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
 		</section>
 	)}
 

@@ -13,7 +13,7 @@ const urlLang = getLangFromUrl(Astro.url, hostHeader);
 const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
 const { modeLabel = null, stats = null } = Astro.props;
 const t = useTranslations(lang);
-const pulsePath = localePath('/pulse', lang, hostHeader);
+const sourcesPath = localePath('/izvori', lang, hostHeader);
 
 const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-MK', {
     weekday: 'long',
@@ -31,11 +31,11 @@ const editionDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-M
         {modeLabel && <span class="daily-edition-mode">{modeLabel}</span>}
         <span class="daily-edition-date">{editionDate}</span>
         {stats && (
-            <span class="daily-edition-coverage" aria-label={t('home.stats_open_pulse')}>
+            <span class="daily-edition-coverage" aria-label={t('home.stats_open_sources')}>
                 <span>{stats.total_feeds || 0} {t('home.stats_media')}</span>
                 <span aria-hidden="true">·</span>
                 <span>{stats.last_24h || 0} {t('home.stats_posts_24h')}</span>
-                <a href={pulsePath}>{t('home.stats_open_pulse')}</a>
+                <a href={sourcesPath}>{t('home.stats_open_sources')}</a>
             </span>
         )}
     </div>

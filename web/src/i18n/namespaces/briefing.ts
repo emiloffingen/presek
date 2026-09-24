@@ -8,7 +8,7 @@ export const briefing = {
     'briefing.report_subtitle': 'брифинг',
     'briefing.report_title': 'Уреднички',
     'briefing.sidebar_context': 'Контекст и архива',
-    'briefing.synthesis_geo': 'ДНЕВНА СИНТЕЗА ЗА МАКЕДОНИЈА',
+    'briefing.synthesis_geo': 'ДНЕВЕН ПРЕГЛЕД ЗА МАКЕДОНИЈА',
     'briefing.system_balance': 'СИСТЕМСКА РАМНОТЕЖА',
     'briefing.trust_note': 'Пресек групира јавно достапни извори, ги издвојува совпаѓањата и означува теми што бараат дополнителна потврда.',
     'briefing.trust_note_label': 'Како да го читате овој брифинг',

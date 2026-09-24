@@ -155,7 +155,7 @@ self.addEventListener('fetch', (e) => {
 });
 
 self.addEventListener('push', (event) => {
-  let payload = { title: 'Presek', message: '', click_url: '/briefing' };
+  let payload = { title: 'Presek', message: '', click_url: '/' };
   try {
     if (event.data) {
       payload = { ...payload, ...event.data.json() };
@@ -169,7 +169,7 @@ self.addEventListener('push', (event) => {
       body: payload.message || '',
       icon: '/img/icons/presek-icon-192.png',
       badge: '/img/icons/presek-maskable-192.png',
-      data: { url: payload.click_url || '/briefing' },
+      data: { url: payload.click_url || '/' },
       tag: 'presek-briefing',
       renotify: true,
     })
@@ -178,7 +178,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || '/briefing';
+  const targetUrl = event.notification.data?.url || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

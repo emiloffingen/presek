@@ -106,66 +106,6 @@ const copyrightNotice = t('cluster.fulltext.copyright', { source: a.source });
     )}
 </div>
 
-<script>
-    (() => {
-        const w = window as any;
-        if (w.__presekFulltextInit) return;
-        w.__presekFulltextInit = true;
-
-        document.addEventListener('click', async (ev: Event) => {
-            const target = ev.target as HTMLElement | null;
-            const btn = target?.closest('.fulltext-toggle') as HTMLElement | null;
-            if (!btn) return;
-            const wrap = btn.closest('.fulltext-wrap') as HTMLElement | null;
-            if (!wrap) return;
-            const panel = wrap.querySelector('.fulltext-panel') as HTMLElement | null;
-            const body = wrap.querySelector('.fulltext-body') as HTMLElement | null;
-            const label = btn.querySelector('.fulltext-toggle-label');
-            const expanded = btn.getAttribute('aria-expanded') === 'true';
-
-            if (expanded) {
-                btn.setAttribute('aria-expanded', 'false');
-                if (panel) panel.hidden = true;
-                if (label) label.textContent = btn.dataset.showLabel || '';
-                return;
-            }
-
-            if (panel) panel.hidden = false;
-            btn.setAttribute('aria-expanded', 'true');
-            if (label) label.textContent = btn.dataset.hideLabel || '';
-            if (body && body.dataset.loaded === 'true') return;
-
-            const id = wrap.dataset.articleId;
-            if (!id || !body) return;
-
-            body.textContent = wrap.dataset.loading || '';
-            body.dataset.loaded = 'error';
-            try {
-                const res = await fetch(`/api/article/${encodeURIComponent(id)}?lang=mk`, {
-                    headers: { Accept: 'application/json' },
-                });
-                if (!res.ok) throw new Error('http ' + res.status);
-                const data = await res.json();
-                if (data && data.full_content && data.full_text_allowed !== false) {
-                    body.textContent = '';
-                    const paragraphs = String(data.full_content).split(/\n{2,}/);
-                    for (const raw of paragraphs) {
-                        const text = raw.trim();
-                        if (!text) continue;
-                        const p = document.createElement('p');
-                        p.textContent = text;
-                        body.appendChild(p);
-                    }
-                    body.dataset.loaded = 'true';
-                } else {
-                    body.textContent = wrap.dataset.unavailable || '';
-                }
-            } catch (e) {
-                body.textContent = wrap.dataset.error || '';
-            }
-        });
-    })();
-</script>
 
 <style>
 	.article-editorial-row {
