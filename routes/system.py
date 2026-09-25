@@ -126,13 +126,15 @@ async def health(request: Request):
 
 
 @router.get("/system/media-quality")
-async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):
+async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "mk"):
     """Report recent clusters with missing or weak representative imagery."""
     cache_key = f"system:media-quality:v1:{lang}:{limit}"
     cached = cached_response(cache_key, ttl=300)
     if cached:
         return cached
 
+    # The articles table has no `lang` column; edition is expressed by `country`.
+    country = "MK" if (lang or "mk") == "mk" else "RS"
     rows = await db.async_execute(
         """
         SELECT
@@ -145,12 +147,12 @@ async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optio
         FROM cluster_metadata cm
         JOIN articles a ON a.cluster_id = cm.cluster_id
         LEFT JOIN cluster_summaries s ON s.cluster_id = cm.cluster_id
-        WHERE COALESCE(a.lang, %s) = %s
+        WHERE a.country = %s
         GROUP BY cm.cluster_id, cm.representative_image, cm.dominant_color, s.synthetic_headline
         ORDER BY latest_at DESC NULLS LAST
         LIMIT %s
         """,
-        (lang, lang, limit),
+        (country, limit),
     )
 
     items = []

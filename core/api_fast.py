@@ -760,7 +760,7 @@ def trigger_reclustering(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
+        task = celery_app.send_task("tasks.extractive.recluster_recent_articles_task", args=[hours, limit])
 
         return {
             "status": "success",
@@ -784,7 +784,7 @@ def trigger_storyline_discovery(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task("tasks.intelligence.discover_storylines_task")
+        task = celery_app.send_task("tasks.extractive.discover_storylines_task")
 
         return {
             "status": "success",

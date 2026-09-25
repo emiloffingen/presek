@@ -153,7 +153,7 @@ def synthesize_cluster_task(self, cluster_id: int):
     max_retries=1,
     default_retry_delay=120,
 )
-def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60):
+def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, cluster_ids: list[str] | None = None):
     """Build deterministic (LLM-free) overviews for clusters missing synthesis.
 
     Runs when the AI kill-switch is active. Produces the same shape the UI
@@ -163,24 +163,35 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60):
     from nlp.extractive import build_extractive_synthesis
 
     try:
-        clusters = db_manager.execute(
-            """
-            SELECT a.cluster_id AS cluster_id,
-                   COUNT(*) AS n,
-                   COUNT(DISTINCT a.source) AS src
-            FROM articles a
-            WHERE a.cluster_id IS NOT NULL
-              AND COALESCE(a.ingested_at, a.created_at) >= NOW() - make_interval(hours => %s)
-              AND a.cluster_id NOT IN (
-                  SELECT cluster_id FROM cluster_summaries
-                  WHERE created_at >= NOW() - make_interval(hours => %s)
-              )
-            GROUP BY a.cluster_id
-            ORDER BY MAX(COALESCE(a.ingested_at, a.created_at)) DESC
-            LIMIT %s
-            """,
-            (hours, hours, limit),
-        )
+        if cluster_ids:
+            clusters = db_manager.execute(
+                """
+                SELECT a.cluster_id AS cluster_id
+                FROM articles a
+                WHERE a.cluster_id = ANY(%s)
+                GROUP BY a.cluster_id
+                """,
+                (list(cluster_ids),),
+            )
+        else:
+            clusters = db_manager.execute(
+                """
+                SELECT a.cluster_id AS cluster_id,
+                       COUNT(*) AS n,
+                       COUNT(DISTINCT a.source) AS src
+                FROM articles a
+                WHERE a.cluster_id IS NOT NULL
+                  AND COALESCE(a.ingested_at, a.created_at) >= NOW() - make_interval(hours => %s)
+                  AND a.cluster_id NOT IN (
+                      SELECT cluster_id FROM cluster_summaries
+                      WHERE created_at >= NOW() - make_interval(hours => %s)
+                  )
+                GROUP BY a.cluster_id
+                ORDER BY MAX(COALESCE(a.ingested_at, a.created_at)) DESC
+                LIMIT %s
+                """,
+                (hours, hours, limit),
+            )
 
         if not clusters:
             return {"status": "success", "built": 0}

@@ -1031,8 +1031,8 @@ def _maybe_enqueue_missing_synthesis(cluster_id: str, freshness: dict, unique_so
             return
 
         celery_app.send_task(
-            "tasks.intelligence.auto_summarize_task",
-            args=[[cluster_id]],
+            "tasks.summarization.build_extractive_clusters_task",
+            kwargs={"cluster_ids": [cluster_id]},
             countdown=5,
         )
         log.info("[cluster] JIT synthesis enqueued for %s (%s sources)", cluster_id, unique_sources)
@@ -1057,6 +1057,93 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
             )
     except Exception as e:
         log.debug("[cluster] JIT synthesis cache hook failed for %s: %s", cluster_id, e)
+
+
+@router.get("/entity-graph/{entity_name}")
+async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
+    """Entity context card: bio, importance, recency, mentions and relations.
+
+    Backed by entity_knowledge, knowledge_entities, cluster_entities and
+    knowledge_relationships. Returns {status, data} as the frontend expects.
+    """
+    name = cleanAndDecode(entity_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="entity name required")
+
+    cache_key = f"api:entity-graph:v1:{name.lower()}:{lang}"
+    cached = cached_response(cache_key, ttl=300)
+    if cached:
+        return cached
+
+    try:
+        knowledge = await db.async_execute_one(
+            "SELECT entity_name, bio_summary, importance_score, last_seen, category "
+            "FROM entity_knowledge WHERE LOWER(entity_name) = LOWER(%s)",
+            (name,),
+        )
+        ent = await db.async_execute_one(
+            "SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score "
+            "FROM knowledge_entities WHERE LOWER(name) = LOWER(%s)",
+            (name,),
+        )
+        mentions = await db.async_execute_one(
+            "SELECT COUNT(DISTINCT cluster_id) AS n FROM cluster_entities "
+            "WHERE LOWER(entity_name) = LOWER(%s)",
+            (name,),
+        )
+        rels = await db.async_execute(
+            """
+            SELECT entity_b AS related, weight FROM knowledge_relationships
+            WHERE LOWER(entity_a) = LOWER(%s)
+            UNION
+            SELECT entity_a AS related, weight FROM knowledge_relationships
+            WHERE LOWER(entity_b) = LOWER(%s)
+            ORDER BY weight DESC
+            LIMIT 8
+            """,
+            (name, name),
+        )
+
+        if not (knowledge or ent):
+            result = {"status": "not_found", "data": None}
+            set_cache(cache_key, result, ttl=120)
+            return result
+
+        def _pick(primary, secondary=None):
+            if primary is not None and primary != "":
+                return primary
+            return secondary
+
+        last_seen = _pick(
+            (knowledge or {}).get("last_seen"),
+            (ent or {}).get("last_seen"),
+        )
+        data = {
+            "name": (knowledge or {}).get("entity_name") or (ent or {}).get("name") or name,
+            "bio_summary": (knowledge or {}).get("bio_summary") or "",
+            "summary": (knowledge or {}).get("bio_summary") or "",
+            "importance_score": _pick(
+                (knowledge or {}).get("importance_score"),
+                (ent or {}).get("total_mentions"),
+            ),
+            "category": (knowledge or {}).get("category") or (ent or {}).get("type") or "",
+            "last_seen": last_seen,
+            "first_seen": (ent or {}).get("first_seen"),
+            "total_mentions": (ent or {}).get("total_mentions"),
+            "cluster_count": (mentions or {}).get("n", 0),
+            "sentiment_score": (ent or {}).get("sentiment_score"),
+            "related": [
+                {"name": r.get("related"), "weight": r.get("weight")}
+                for r in (rels or [])
+                if r.get("related")
+            ],
+        }
+        result = {"status": "success", "data": data}
+        set_cache(cache_key, result, ttl=300)
+        return result
+    except Exception as e:
+        log.debug("[entity-graph] lookup failed for %s: %s", name, e)
+        return {"status": "error", "data": None}
 
 
 @router.get("/article/{article_id}")

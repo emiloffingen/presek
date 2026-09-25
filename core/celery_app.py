@@ -114,6 +114,7 @@ celery_app = Celery(
         "tasks.ingestion_task",
         "tasks.intelligence",
         "tasks.summarization",
+        "tasks.extractive_maintenance",
         "tasks.delivery",
         "tasks.maintenance",
     ],
@@ -174,24 +175,24 @@ celery_app.conf.update(
             "options": {"expires": 540},
         },
         "recluster-recent-articles": {
-            "task": "tasks.intelligence.recluster_recent_articles_task",
+            "task": "tasks.extractive.recluster_recent_articles_task",
             "schedule": 1200.0,
         },
         "repair-split-clusters": {
-            "task": "tasks.intelligence.repair_split_clusters_task",
+            "task": "tasks.extractive.repair_split_clusters_task",
             "schedule": 1800.0,
         },
         "refine-knowledge-graph-sentiment": {
-            "task": "tasks.intelligence.refine_knowledge_graph_sentiment_task",
+            "task": "tasks.extractive.refine_knowledge_graph_sentiment_task",
             "schedule": 1800.0,  # Every 30 minutes
         },
         "backfill-cluster-summaries-sr": {
-            "task": "tasks.intelligence.schedule_backfill_cluster_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_cluster_summaries_task",
             "kwargs": {"lang": "sr"},
             "schedule": crontab(hour="*/6"),  # Every 6 hours for Serbian
         },
         "backfill-cluster-summaries-mk": {
-            "task": "tasks.intelligence.schedule_backfill_cluster_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_cluster_summaries_task",
             "kwargs": {"lang": "mk"},
             "schedule": crontab(hour="*/6"),  # Every 6 hours for Macedonian
         },
@@ -276,7 +277,7 @@ celery_app.conf.update(
             "options": {"expires": 810},
         },
         "backfill-historical-summaries": {
-            "task": "tasks.intelligence.schedule_backfill_historical_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_historical_summaries_task",
             "schedule": 1800.0,  # Every 30 minutes, Gemma-only
         },
         "generate-daily-briefing-sr": {
@@ -310,7 +311,7 @@ celery_app.conf.update(
             "schedule": 600.0,  # Increased from 3m to 10m
         },
         "backfill-cover-art": {
-            "task": "tasks.intelligence.backfill_cover_art_task",
+            "task": "tasks.extractive.backfill_cover_art_task",
             "schedule": 3600.0,  # Increased from 30m to 1h
         },
         "auto-repair-sources": {
@@ -318,7 +319,7 @@ celery_app.conf.update(
             "schedule": crontab(hour="*/6", minute=30),  # Every 6 hours
         },
         "discover-storylines": {
-            "task": "tasks.intelligence.discover_storylines_task",
+            "task": "tasks.extractive.discover_storylines_task",
             "schedule": crontab(minute="15", hour="*/2"),  # Every 2 hours
         },
         "validate-cluster-images": {
