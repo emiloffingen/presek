@@ -498,6 +498,18 @@ class GeminiProvider(OpenAICompatibleProvider):
         )
 
 
+class Gemini2Provider(OpenAICompatibleProvider):
+    """Second Google account (separate key) for extra free quota."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "gemini2",
+            api_key,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            model,
+        )
+
+
 class GroqProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, model: str):
         super().__init__(
@@ -512,6 +524,18 @@ class MistralProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, model: str):
         super().__init__(
             "mistral",
+            api_key,
+            "https://api.mistral.ai/v1/chat/completions",
+            model,
+        )
+
+
+class Mistral2Provider(OpenAICompatibleProvider):
+    """Second Mistral account (separate key + model) for extra free quota."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "mistral2",
             api_key,
             "https://api.mistral.ai/v1/chat/completions",
             model,
@@ -551,6 +575,10 @@ PROVIDERS = {
         api_key=os.environ.get("MISTRAL_API_KEY", ""),
         model=os.environ.get("MISTRAL_MODEL", "mistral-small-latest"),
     ),
+    "mistral2": Mistral2Provider(
+        api_key=os.environ.get("MISTRAL2_API_KEY", ""),
+        model=os.environ.get("MISTRAL2_MODEL", "mistral-medium-latest"),
+    ),
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
@@ -560,9 +588,13 @@ PROVIDERS = {
         api_key=os.environ.get("GEMINI_API_KEY", ""),
         model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
     ),
+    "gemini2": Gemini2Provider(
+        api_key=os.environ.get("GEMINI2_API_KEY", ""),
+        model=os.environ.get("GEMINI2_MODEL", "gemini-flash-latest"),
+    ),
     "groq": GroqProvider(
         api_key=os.environ.get("GROQ_API_KEY", ""),
-        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
     ),
     "local": LocalProvider(),
 }

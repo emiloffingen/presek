@@ -642,9 +642,9 @@ def resolve_primary_database_url() -> str:
 
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]
-PROVIDER_FALLBACK_ORDER = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]  # default
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini2", "gemini", "groq", "mistral", "mistral2", "openrouter", "cerebras", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini2", "gemini", "groq", "mistral", "mistral2", "openrouter", "cerebras", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini2", "gemini", "groq", "mistral", "mistral2", "openrouter", "cerebras", "nvidia", "local"]  # default
 
 # Providers reserved exclusively for synthesis tasks.
 # When set, these providers are excluded from summarize/research/default cascades

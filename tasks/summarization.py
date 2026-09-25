@@ -147,6 +147,55 @@ def synthesize_cluster_task(self, cluster_id: int):
         raise self.retry(exc=e)
 
 
+def _ai_cluster_synthesis(articles: list[dict]) -> dict | None:
+    """Generate a cluster synthesis via the remote provider cascade.
+
+    Returns {headline, summary, key_facts, provider} or None if unavailable.
+    """
+    from core.ai_engine import sync_call_ai
+
+    articles_text = ""
+    for i, article in enumerate(articles[:10], 1):
+        title = (article.get("title") or "").strip()
+        desc = (article.get("summary") or article.get("description") or "")[:500]
+        source = article.get("source") or ""
+        articles_text += f"{i}. [{source}] {title}\n   {desc}\n\n"
+
+    prompt = (
+        "Ти си новинарски уредник. На основа на следниве вести за истата тема, "
+        "напиши редакциски преглед на македонски јазик.\n\n"
+        f"Вести:\n{articles_text}\n"
+        "Одговори САМО со валиден JSON без markdown:\n"
+        '{"headline": "Краток наслов", "summary": "Резиме од 3-4 реченици", '
+        '"key_facts": ["факт 1", "факт 2", "факт 3"]}'
+    )
+
+    result = sync_call_ai(
+        prompt,
+        "Ти си уредник кој пишува на македонски јазик. Враќаш само JSON.",
+        task_type="synthesis",
+        max_tokens=600,
+        json_mode=True,
+        lang="mk",
+    )
+    # sync_call_ai may return (text, provider) or text depending on version.
+    provider = "ai"
+    text = result
+    if isinstance(result, tuple):
+        text, provider = result[0], result[1]
+
+    from core.ai_engine import clean_json_response
+
+    parsed = clean_json_response(text or "")
+    if not isinstance(parsed, dict) or not parsed:
+        return None
+    return {
+        "headline": (parsed.get("headline") or "").strip(),
+        "summary": (parsed.get("summary") or "").strip(),
+        "key_facts": parsed.get("key_facts") or [],
+        "provider": provider or "ai",
+    }
+
 @shared_task(
     name="tasks.summarization.build_extractive_clusters_task",
     bind=True,
@@ -211,7 +260,24 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
             )
             if not articles:
                 continue
-            synth = build_extractive_synthesis(articles)
+
+            # Prefer real LLM synthesis when AI is enabled; fall back to the
+            # deterministic extractive overview when providers are unavailable.
+            synth = None
+            provider = "extractive"
+            try:
+                from core.ai_engine import AI_ENABLED
+                if AI_ENABLED:
+                    synth = _ai_cluster_synthesis(articles)
+                    if synth and synth.get("summary"):
+                        provider = synth.get("provider", "ai")
+            except Exception as ai_err:
+                log.warning(f"[synthesis] AI path failed for {cid}: {ai_err}")
+
+            if not synth or not synth.get("summary"):
+                synth = build_extractive_synthesis(articles)
+                provider = "extractive"
+
             summary = (synth.get("summary") or "").strip()
             if not summary:
                 continue
@@ -220,7 +286,7 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
                 INSERT INTO cluster_summaries
                     (cluster_id, summary, synthetic_headline, synthetic_standfirst,
                      generated_article, key_facts, generation_provider, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s::jsonb, 'extractive', NOW())
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, NOW())
                 ON CONFLICT (cluster_id) DO UPDATE SET
                     summary = EXCLUDED.summary,
                     synthetic_headline = EXCLUDED.synthetic_headline,
@@ -237,12 +303,13 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
                     synth.get("headline", ""),
                     summary,
                     json.dumps(synth.get("key_facts", [])),
+                    provider,
                 ),
                 fetch=False,
             )
             built += 1
 
-        log.info(f"[extractive] Built {built} cluster overviews")
+        log.info(f"[synthesis] Built {built} cluster overviews")
         return {"status": "success", "built": built}
 
     except Exception as e:
