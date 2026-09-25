@@ -113,6 +113,7 @@ celery_app = Celery(
     include=[
         "tasks.ingestion_task",
         "tasks.intelligence",
+        "tasks.summarization",
         "tasks.delivery",
         "tasks.maintenance",
     ],
@@ -165,6 +166,12 @@ celery_app.conf.update(
         "auto-summarize-clusters": {
             "task": "tasks.intelligence.auto_summarize_task",
             "schedule": 900.0,  # Increased from 3m to 15m
+        },
+        "build-extractive-overviews": {
+            # Deterministic, LLM-free cluster overviews (AI kill-switch path).
+            "task": "tasks.summarization.build_extractive_clusters_task",
+            "schedule": 600.0,  # Every 10 minutes
+            "options": {"expires": 540},
         },
         "recluster-recent-articles": {
             "task": "tasks.intelligence.recluster_recent_articles_task",

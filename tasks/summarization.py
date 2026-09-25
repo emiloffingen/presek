@@ -147,6 +147,98 @@ def synthesize_cluster_task(self, cluster_id: int):
         raise self.retry(exc=e)
 
 
+@shared_task(
+    name="tasks.summarization.build_extractive_clusters_task",
+    bind=True,
+    max_retries=1,
+    default_retry_delay=120,
+)
+def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60):
+    """Build deterministic (LLM-free) overviews for clusters missing synthesis.
+
+    Runs when the AI kill-switch is active. Produces the same shape the UI
+    expects (synthetic_headline / summary / key_facts) from source article text.
+    """
+    from core.database import db_manager
+    from nlp.extractive import build_extractive_synthesis
+
+    try:
+        clusters = db_manager.execute(
+            """
+            SELECT a.cluster_id AS cluster_id,
+                   COUNT(*) AS n,
+                   COUNT(DISTINCT a.source) AS src
+            FROM articles a
+            WHERE a.cluster_id IS NOT NULL
+              AND COALESCE(a.ingested_at, a.created_at) >= NOW() - make_interval(hours => %s)
+              AND a.cluster_id NOT IN (
+                  SELECT cluster_id FROM cluster_summaries
+                  WHERE created_at >= NOW() - make_interval(hours => %s)
+              )
+            GROUP BY a.cluster_id
+            ORDER BY MAX(COALESCE(a.ingested_at, a.created_at)) DESC
+            LIMIT %s
+            """,
+            (hours, hours, limit),
+        )
+
+        if not clusters:
+            return {"status": "success", "built": 0}
+
+        built = 0
+        for row in clusters:
+            cid = row["cluster_id"]
+            articles = db_manager.execute(
+                """
+                SELECT title, description, summary, source
+                FROM articles
+                WHERE cluster_id = %s
+                ORDER BY created_at DESC
+                LIMIT 10
+                """,
+                (cid,),
+            )
+            if not articles:
+                continue
+            synth = build_extractive_synthesis(articles)
+            summary = (synth.get("summary") or "").strip()
+            if not summary:
+                continue
+            db_manager.execute(
+                """
+                INSERT INTO cluster_summaries
+                    (cluster_id, summary, synthetic_headline, synthetic_standfirst,
+                     generated_article, key_facts, generation_provider, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, 'extractive', NOW())
+                ON CONFLICT (cluster_id) DO UPDATE SET
+                    summary = EXCLUDED.summary,
+                    synthetic_headline = EXCLUDED.synthetic_headline,
+                    synthetic_standfirst = EXCLUDED.synthetic_standfirst,
+                    generated_article = EXCLUDED.generated_article,
+                    key_facts = EXCLUDED.key_facts,
+                    generation_provider = EXCLUDED.generation_provider,
+                    created_at = NOW()
+                """,
+                (
+                    cid,
+                    summary,
+                    synth.get("headline", ""),
+                    synth.get("headline", ""),
+                    summary,
+                    json.dumps(synth.get("key_facts", [])),
+                ),
+                fetch=False,
+            )
+            built += 1
+
+        log.info(f"[extractive] Built {built} cluster overviews")
+        return {"status": "success", "built": built}
+
+    except Exception as e:
+        log.error(f"[extractive] Failed to build cluster overviews: {e}")
+        raise self.retry(exc=e)
+
+
 @shared_task(name="tasks.summarization.auto_summarize_task")
 def auto_summarize_task():
     """Auto-summarize recent articles and clusters that need processing.
