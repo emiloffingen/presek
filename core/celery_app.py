@@ -174,6 +174,13 @@ celery_app.conf.update(
             "schedule": 600.0,  # Every 10 minutes
             "options": {"expires": 540},
         },
+        "upgrade-overviews-to-ai": {
+            # Progressively regenerate extractive overviews with a real LLM
+            # (no-op when AI is disabled). Small batches to respect rate limits.
+            "task": "tasks.summarization.upgrade_extractive_to_ai_task",
+            "schedule": 300.0,  # Every 5 minutes
+            "options": {"expires": 290},
+        },
         "recluster-recent-articles": {
             "task": "tasks.extractive.recluster_recent_articles_task",
             "schedule": 1200.0,

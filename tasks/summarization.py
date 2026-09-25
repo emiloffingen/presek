@@ -317,6 +317,91 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
         raise self.retry(exc=e)
 
 
+@shared_task(
+    name="tasks.summarization.upgrade_extractive_to_ai_task",
+    bind=True,
+    max_retries=1,
+    default_retry_delay=120,
+)
+def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
+    """Regenerate extractive overviews with a real LLM (throttled, AI-gated).
+
+    No-op when AI is disabled. Processes a small batch per run to respect
+    free-tier rate limits; the beat schedule drains the backlog over time.
+    """
+    from core.ai_engine import AI_ENABLED
+    from core.database import db_manager
+
+    if not AI_ENABLED:
+        return {"status": "skipped", "reason": "ai_disabled"}
+
+    from nlp.extractive import build_extractive_synthesis
+
+    try:
+        rows = db_manager.execute(
+            """
+            SELECT cs.cluster_id
+            FROM cluster_summaries cs
+            JOIN articles a ON a.cluster_id = cs.cluster_id
+            WHERE cs.generation_provider = 'extractive'
+              AND cs.created_at >= NOW() - make_interval(days => %s)
+            GROUP BY cs.cluster_id
+            HAVING COUNT(*) >= 2
+            ORDER BY MAX(COALESCE(a.ingested_at, a.created_at)) DESC
+            LIMIT %s
+            """,
+            (max_age_days, limit),
+        )
+        upgraded = 0
+        for row in rows or []:
+            cid = row["cluster_id"]
+            articles = db_manager.execute(
+                """
+                SELECT title, description, summary, source
+                FROM articles WHERE cluster_id = %s
+                ORDER BY created_at DESC LIMIT 10
+                """,
+                (cid,),
+            )
+            if not articles:
+                continue
+            synth = _ai_cluster_synthesis(articles)
+            if not synth or not synth.get("summary"):
+                continue
+            summary = synth["summary"].strip()
+            if not summary:
+                continue
+            db_manager.execute(
+                """
+                UPDATE cluster_summaries SET
+                    summary = %s,
+                    synthetic_headline = %s,
+                    synthetic_standfirst = %s,
+                    generated_article = %s,
+                    key_facts = %s::jsonb,
+                    generation_provider = %s,
+                    created_at = NOW()
+                WHERE cluster_id = %s
+                """,
+                (
+                    summary,
+                    synth.get("headline", ""),
+                    synth.get("headline", ""),
+                    summary,
+                    json.dumps(synth.get("key_facts", [])),
+                    synth.get("provider", "ai"),
+                    cid,
+                ),
+                fetch=False,
+            )
+            upgraded += 1
+        log.info(f"[synthesis] Upgraded {upgraded} extractive overviews to AI")
+        return {"status": "success", "upgraded": upgraded}
+    except Exception as e:
+        log.error(f"[synthesis] upgrade_extractive_to_ai failed: {e}")
+        raise self.retry(exc=e)
+
+
 @shared_task(name="tasks.summarization.auto_summarize_task")
 def auto_summarize_task():
     """Auto-summarize recent articles and clusters that need processing.
