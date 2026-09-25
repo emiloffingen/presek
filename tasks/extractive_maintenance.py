@@ -131,17 +131,20 @@ def refine_knowledge_graph_sentiment_task(limit: int = 400):
 
 @celery_app.task(name="tasks.extractive.discover_storylines_task")
 def discover_storylines_task(min_shared: int = 2, limit: int = 500):
-    """Link clusters that share >= min_shared entities into knowledge_relationships."""
+    """Relate co-occurring entities in knowledge_relationships (entity graph).
+
+    knowledge_relationships links entity -> entity by name, so we weight edges
+    by how often two entities appear in the same cluster.
+    """
     try:
         rows = db.execute(
             """
-            SELECT ce1.cluster_id AS a, ce2.cluster_id AS b, COUNT(*) AS shared
+            SELECT ce1.entity_name AS a, ce2.entity_name AS b, COUNT(*) AS shared
             FROM cluster_entities ce1
             JOIN cluster_entities ce2
-              ON ce1.entity_name = ce2.entity_name
-             AND ce1.cluster_id < ce2.cluster_id
-            WHERE COALESCE(ce1.entity_type, '') <> 'MISC'
-            GROUP BY ce1.cluster_id, ce2.cluster_id
+              ON ce1.cluster_id = ce2.cluster_id
+             AND ce1.entity_name < ce2.entity_name
+            GROUP BY ce1.entity_name, ce2.entity_name
             HAVING COUNT(*) >= %s
             ORDER BY shared DESC
             LIMIT %s
@@ -150,6 +153,20 @@ def discover_storylines_task(min_shared: int = 2, limit: int = 500):
         )
         links = 0
         for r in rows or []:
+            a, b = r.get("a"), r.get("b")
+            if not a or not b:
+                continue
+            # Ensure both endpoints exist (FK target) before linking.
+            for name in (a, b):
+                db.execute(
+                    """
+                    INSERT INTO knowledge_entities (name, type, total_mentions)
+                    VALUES (%s, 'MISC', 1)
+                    ON CONFLICT (name) DO NOTHING
+                    """,
+                    (name,),
+                    fetch=False,
+                )
             db.execute(
                 """
                 INSERT INTO knowledge_relationships (entity_a, entity_b, weight, last_seen)
@@ -157,11 +174,11 @@ def discover_storylines_task(min_shared: int = 2, limit: int = 500):
                 ON CONFLICT (entity_a, entity_b) DO UPDATE SET
                     weight = EXCLUDED.weight, last_seen = NOW()
                 """,
-                (r.get("a"), r.get("b"), r.get("shared")),
+                (a, b, r.get("shared")),
                 fetch=False,
             )
             links += 1
-        log.info("[extractive] discover_storylines: %s links", links)
+        log.info("[extractive] discover_storylines: %s entity links", links)
         return {"status": "success", "links": links}
     except Exception as e:
         log.error("[extractive] discover_storylines failed: %s", e)
@@ -252,9 +269,8 @@ def repair_split_clusters_task(hours: int = 48, limit: int = 300):
                         fetch=False,
                     )
                     db.execute(
-                        "INSERT INTO knowledge_relationships (entity_a, entity_b, weight) "
-                        "VALUES (%s, %s, 1) ON CONFLICT DO NOTHING",
-                        (a["cluster_id"], b["cluster_id"]),
+                        "DELETE FROM cluster_entities WHERE cluster_id = %s",
+                        (b["cluster_id"],),
                         fetch=False,
                     )
                     b["cluster_id"] = a["cluster_id"]  # avoid re-merging

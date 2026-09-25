@@ -1076,11 +1076,6 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
         return cached
 
     try:
-        knowledge = await db.async_execute_one(
-            "SELECT entity_name, bio_summary, importance_score, last_seen, category "
-            "FROM entity_knowledge WHERE LOWER(entity_name) = LOWER(%s)",
-            (name,),
-        )
         ent = await db.async_execute_one(
             "SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score "
             "FROM knowledge_entities WHERE LOWER(name) = LOWER(%s)",
@@ -1104,33 +1099,30 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
             (name, name),
         )
 
-        if not (knowledge or ent):
+        cluster_count = (mentions or {}).get("n", 0)
+        if not ent and not cluster_count:
             result = {"status": "not_found", "data": None}
             set_cache(cache_key, result, ttl=120)
             return result
 
-        def _pick(primary, secondary=None):
-            if primary is not None and primary != "":
-                return primary
-            return secondary
-
-        last_seen = _pick(
-            (knowledge or {}).get("last_seen"),
-            (ent or {}).get("last_seen"),
+        mentions_total = (ent or {}).get("total_mentions") or cluster_count or 1
+        # Lightweight extractive bio: how often and where the entity appears.
+        etype = (ent or {}).get("type") or "MISC"
+        bio = (
+            f"{name} се појавува во {cluster_count} кластери "
+            f"({mentions_total} споменувања)."
         )
         data = {
-            "name": (knowledge or {}).get("entity_name") or (ent or {}).get("name") or name,
-            "bio_summary": (knowledge or {}).get("bio_summary") or "",
-            "summary": (knowledge or {}).get("bio_summary") or "",
-            "importance_score": _pick(
-                (knowledge or {}).get("importance_score"),
-                (ent or {}).get("total_mentions"),
-            ),
-            "category": (knowledge or {}).get("category") or (ent or {}).get("type") or "",
-            "last_seen": last_seen,
+            "name": (ent or {}).get("name") or name,
+            "bio_summary": bio,
+            "summary": bio,
+            "importance_score": mentions_total,
+            "category": etype,
+            "type": etype,
+            "last_seen": (ent or {}).get("last_seen"),
             "first_seen": (ent or {}).get("first_seen"),
-            "total_mentions": (ent or {}).get("total_mentions"),
-            "cluster_count": (mentions or {}).get("n", 0),
+            "total_mentions": mentions_total,
+            "cluster_count": cluster_count,
             "sentiment_score": (ent or {}).get("sentiment_score"),
             "related": [
                 {"name": r.get("related"), "weight": r.get("weight")}
