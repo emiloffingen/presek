@@ -141,3 +141,7 @@ certs/
 
 # Previews
 previews/
+
+web/public/downloads/
+docs/tablet-mcp-setup.txt
+.pubkey
