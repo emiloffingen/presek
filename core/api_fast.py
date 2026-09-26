@@ -491,16 +491,16 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
         return []
 
 
-def _ai_quota_payload() -> dict:
+async def _ai_quota_payload() -> dict:
     """Compact per-provider daily AI budget for the status page."""
     try:
         from core.config import AI_ENABLED
 
         if not AI_ENABLED:
             return {"enabled": False, "providers": {}}
-        from core.ai_quota import snapshot
+        from core.ai_quota import async_snapshot
 
-        return {"enabled": True, "providers": snapshot()}
+        return {"enabled": True, "providers": await async_snapshot()}
     except Exception as exc:  # never let quota reporting break /health
         log.debug("[health] ai quota snapshot failed: %s", exc)
         return {"enabled": None, "providers": {}}
@@ -552,7 +552,7 @@ async def health_check(request: Request):
         payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
         payload["celery_queue"] = celery_public
         payload["synthesis_quality"] = synthesis_quality
-        payload["ai"] = _ai_quota_payload()
+        payload["ai"] = await _ai_quota_payload()
 
     return payload
 

@@ -570,6 +570,18 @@ class Gemini2Provider(OpenAICompatibleProvider):
         )
 
 
+class Gemini3Provider(OpenAICompatibleProvider):
+    """Third Google account (separate key) for extra free quota."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "gemini3",
+            api_key,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            model,
+        )
+
+
 class GroqProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, model: str):
         super().__init__(
@@ -651,6 +663,10 @@ PROVIDERS = {
     "gemini2": Gemini2Provider(
         api_key=os.environ.get("GEMINI2_API_KEY", ""),
         model=os.environ.get("GEMINI2_MODEL", "gemini-flash-lite-latest"),
+    ),
+    "gemini3": Gemini3Provider(
+        api_key=os.environ.get("GEMINI3_API_KEY", ""),
+        model=os.environ.get("GEMINI3_MODEL", "gemini-3.5-flash-lite"),
     ),
     "groq": GroqProvider(
         api_key=os.environ.get("GROQ_API_KEY", ""),
@@ -853,13 +869,13 @@ async def _call_ai_async(
                 f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
             )
             continue
-        if ai_quota.is_exhausted(provider_name):
+        if await ai_quota.async_is_exhausted(provider_name):
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
             log.warning(
                 f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping"
             )
             continue
-        ai_quota.record_usage(provider_name)
+        await ai_quota.async_record_usage(provider_name)
         start_time = time.time()
         try:
             if stream:
