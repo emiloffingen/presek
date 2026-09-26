@@ -570,7 +570,7 @@ class CerebrasProvider(OpenAICompatibleProvider):
 PROVIDERS = {
     "openrouter": OpenRouterProvider(
         api_key=os.environ.get("OPENROUTER_API_KEY", ""),
-        model=os.environ.get("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"),
+        model=os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free"),
     ),
     "cerebras": CerebrasProvider(
         api_key=os.environ.get("CEREBRAS_API_KEY", ""),
