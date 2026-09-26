@@ -12,8 +12,9 @@ class TestAstroFrontendIntegrity:
         layout = _read("web/src/layouts/Layout.astro")
         head = _read("web/src/components/layout/LayoutHead.astro")
         boot = _read("web/public/js/presek-boot.js")
-        # Check for dynamic HTML lang attribute (used for i18n)
-        assert 'lang={lang ===' in layout
+        # MK-only edition: html lang is fixed to "mk" (was dynamic per-locale).
+        assert '<html lang="mk"' in layout
+        assert "lang={lang}" in layout
         # Check for core SEO tags
         assert '<link rel="canonical"' in head
         assert '<link rel="alternate" hreflang=' in head
@@ -68,12 +69,10 @@ class TestAstroFrontendIntegrity:
     def test_homepage_cards_render_ingestion_aware_time(self):
         homepage = _read("web/src/components/NewsCard.astro")
         interactive_card = _read("web/src/components/NewsCard.tsx")
-        live_updates = _read("web/src/components/HomeLiveUpdatesIsland.tsx")
         lead = _read("web/src/components/home/LeadHero.astro")
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
-        assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
         assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
@@ -122,15 +121,15 @@ class TestAstroFrontendIntegrity:
         assert "newsUrl.searchParams.set('topic', category);" not in homepage_data
 
     def test_sync_token_is_not_sent_in_query_strings(self):
-        account_sync = _read("web/src/components/AccountSyncIsland.tsx")
-        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
+        # AccountSyncIsland/BriefingDeliveryIsland were removed in the MK-only
+        # simplify; the remaining client helper must still use a header.
         personalization = _read("web/src/lib/personalization.js")
 
-        assert "?token=" not in account_sync
-        assert "?token=" not in delivery
-        assert "buildSyncTokenHeaders" in account_sync
-        assert "buildSyncTokenHeaders" in delivery
         assert "X-Sync-Token" in personalization
+        assert "?token=" not in personalization
+        # No client component should leak the sync token as a query param.
+        for name in ("AdminDashboard.tsx", "ForYouIsland.tsx"):
+            assert "?token=" not in _read(f"web/src/components/{name}")
 
     def test_public_api_rate_limits_include_profile_write_routes(self):
         common = _read("routes/common.py")
@@ -164,10 +163,13 @@ class TestAstroFrontendIntegrity:
         assert '"shared_topics": shared_topics' in news
         assert '"shared_entities": shared_entities' in news
 
-    def test_intelligence_graph_sends_csrf_for_synthesis(self):
-        graph = _read("web/src/components/IntelligenceGraph.tsx")
-        assert "buildCsrfHeadersAsync" in graph
-        assert "intelligence/synthesize-nodes" in graph
+    def test_admin_synthesis_console_sends_csrf(self):
+        # The old IntelligenceGraph.tsx / intelligence/synthesize-nodes flow was
+        # removed in the MK-only simplify; the admin console now owns the
+        # synthesis surface and must still send CSRF headers on its calls.
+        dashboard = _read("web/src/components/AdminDashboard.tsx")
+        assert "buildCsrfHeadersAsync" in dashboard
+        assert "admin/synthesis-traces/recent" in dashboard
 
     def test_static_mount_disables_symlink_following(self):
         api_fast = _read("core/api_fast.py")
@@ -182,9 +184,16 @@ class TestAstroFrontendIntegrity:
         assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in limits
 
     def test_delivery_component_decodes_vapid_key_before_subscribing(self):
-        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
-        assert "function decodeVapidPublicKey" in delivery
-        assert "applicationServerKey: decodeVapidPublicKey(pubKey)" in delivery
+        # BriefingDeliveryIsland was removed in the MK-only simplify; if any
+        # component still subscribes to push it must decode the VAPID key first.
+        candidates = sorted(ROOT.glob("web/src/components/**/*.tsx"))
+        subscribers = [
+            p for p in candidates
+            if "applicationServerKey" in p.read_text(encoding="utf-8")
+        ]
+        for path in subscribers:
+            text = path.read_text(encoding="utf-8")
+            assert "decodeVapidPublicKey(" in text, f"{path} must decode the VAPID key"
 
 
 class TestDeploymentIntegrity:
