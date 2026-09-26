@@ -48,7 +48,7 @@ _LOCAL_UNAVAILABLE_WARNED = False
 def _provider_configured(provider_name: str) -> bool:
     """True when a provider has credentials (or no key is needed).
 
-    Providers like nvidia/cerebras ship in PROVIDER_FALLBACK_ORDER but may have
+    Providers ship in PROVIDER_FALLBACK_ORDER but may have
     no API key configured; keeping them in the cascade burns a no-op iteration.
     Mock providers in tests expose an ``api_key`` attribute, so they stay.
     """
@@ -592,28 +592,6 @@ class GroqProvider(OpenAICompatibleProvider):
         )
 
 
-class MistralProvider(OpenAICompatibleProvider):
-    def __init__(self, api_key: str, model: str):
-        super().__init__(
-            "mistral",
-            api_key,
-            "https://api.mistral.ai/v1/chat/completions",
-            model,
-        )
-
-
-class Mistral2Provider(OpenAICompatibleProvider):
-    """Second Mistral account (separate key + model) for extra free quota."""
-
-    def __init__(self, api_key: str, model: str):
-        super().__init__(
-            "mistral2",
-            api_key,
-            "https://api.mistral.ai/v1/chat/completions",
-            model,
-        )
-
-
 class OpenRouterProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, model: str):
         super().__init__(
@@ -624,37 +602,15 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         )
 
 
-class CerebrasProvider(OpenAICompatibleProvider):
-    def __init__(self, api_key: str, model: str):
-        super().__init__(
-            "cerebras",
-            api_key,
-            "https://api.cerebras.ai/v1/chat/completions",
-            model,
-        )
-
-
 PROVIDERS = {
     "openrouter": OpenRouterProvider(
         api_key=os.environ.get("OPENROUTER_API_KEY", ""),
         model=os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free"),
     ),
-    "cerebras": CerebrasProvider(
-        api_key=os.environ.get("CEREBRAS_API_KEY", ""),
-        model=os.environ.get("CEREBRAS_MODEL", "gpt-oss-120b"),
-    ),
-    "mistral": MistralProvider(
-        api_key=os.environ.get("MISTRAL_API_KEY", ""),
-        model=os.environ.get("MISTRAL_MODEL", "mistral-small-latest"),
-    ),
-    "mistral2": Mistral2Provider(
-        api_key=os.environ.get("MISTRAL2_API_KEY", ""),
-        model=os.environ.get("MISTRAL2_MODEL", "mistral-medium-latest"),
-    ),
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
-        model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
+        model=os.environ.get("NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b"),
     ),
     "gemini": GeminiProvider(
         api_key=os.environ.get("GEMINI_API_KEY", ""),

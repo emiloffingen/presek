@@ -391,24 +391,15 @@ def test_local_provider_returns_none_when_analyst_missing(monkeypatch):
 def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
     from core import ai_quota
 
-    class FakeRedis:
-        def __init__(self):
-            self.store = {}
-
-        def get(self, key):
-            return self.store.get(key)
-
-        def incrby(self, key, amount):
-            self.store[key] = self.store.get(key, 0) + amount
-            return self.store[key]
-
-        def expire(self, key, ttl):
-            return True
-
-    fake = FakeRedis()
-    monkeypatch.setattr(ai_quota, "_client", lambda: fake)
+    store: dict[str, int] = {}
+    monkeypatch.setattr(
+        ai_quota, "_db_add_usage", lambda provider, amount: store.__setitem__(provider, store.get(provider, 0) + amount) or store[provider]
+    )
+    monkeypatch.setattr(ai_quota, "_db_get_usage", lambda provider: store.get(provider, 0))
+    ai_quota.reset_cache()
     monkeypatch.setenv("AI_DAILY_LIMIT_GROQ", "10")
     monkeypatch.setenv("AI_QUOTA_SKIP_RATIO", "0.9")
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
 
     assert ai_quota.daily_limit("groq") == 10
     assert ai_quota.daily_limit("local") is None
@@ -421,12 +412,46 @@ def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
     assert ai_quota.is_exhausted("groq") is True  # 9 >= int(10 * 0.9)
 
 
+def test_ai_quota_async_path(monkeypatch):
+    import asyncio
+    from core import ai_quota
+
+    store: dict[str, int] = {}
+    monkeypatch.setenv("AI_DAILY_LIMIT_GROQ", "4")
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
+    ai_quota.reset_cache()
+
+    async def fake_add(provider, amount):
+        store[provider] = store.get(provider, 0) + amount
+        return store[provider]
+
+    async def fake_get(provider):
+        return store.get(provider, 0)
+
+    monkeypatch.setattr(ai_quota, "_db_add_usage_async", fake_add)
+    monkeypatch.setattr(ai_quota, "_db_get_usage_async", fake_get)
+
+    async def scenario():
+        await ai_quota.async_record_usage("groq")
+        await ai_quota.async_record_usage("groq")
+        assert await ai_quota.async_usage("groq") == 2
+        assert await ai_quota.async_is_exhausted("groq") is False
+        await ai_quota.async_record_usage("groq")
+        await ai_quota.async_record_usage("groq")
+        assert await ai_quota.async_is_exhausted("groq") is True  # 4 >= int(4 * 0.9)=3
+
+    asyncio.run(scenario())
+
+
 def test_ai_quota_zero_limit_disables_provider(monkeypatch):
     from core import ai_quota
 
-    monkeypatch.setattr(ai_quota, "_client", lambda: object())
-    assert ai_quota.daily_limit("mistral") == 0
-    assert ai_quota.is_exhausted("mistral") is True
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
+    # Any provider can be disabled with a 0 limit; mistral is no longer a
+    # default, but the override path must still hard-disable.
+    monkeypatch.setenv("AI_DAILY_LIMIT_FAKE", "0")
+    assert ai_quota.daily_limit("fake") == 0
+    assert ai_quota.is_exhausted("fake") is True
 
 
 def test_call_ai_skips_quota_exhausted_provider(monkeypatch):

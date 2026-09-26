@@ -36,9 +36,8 @@ DEFAULT_DAILY_LIMITS: dict[str, int] = {
     "gemini": 1000,
     "gemini2": 1000,
     "gemini3": 1000,
+    "nvidia": 1000,
     "openrouter": 50,
-    "mistral": 0,
-    "mistral2": 0,
 }
 
 _TABLE = "ai_provider_usage"
