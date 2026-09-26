@@ -306,8 +306,13 @@ class OpenAICompatibleProvider(AIProvider):
         except (KeyError, IndexError, TypeError) as e:
             log.warning(f"[ai/{self.provider_name}] Unexpected response format from {self.model}: {e}")
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
+            code = e.response.status_code
+            if code == 429:
                 _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
+            elif code in (500, 502, 503, 504):
+                # Transient provider overload: short cooldown so the cascade
+                # moves on to the next provider instead of hammering this one.
+                _mark_provider_cooldown(self.provider_name, "20")
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
         except httpx.RequestError as e:
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
@@ -586,11 +591,11 @@ PROVIDERS = {
     ),
     "gemini": GeminiProvider(
         api_key=os.environ.get("GEMINI_API_KEY", ""),
-        model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite"),
     ),
     "gemini2": Gemini2Provider(
         api_key=os.environ.get("GEMINI2_API_KEY", ""),
-        model=os.environ.get("GEMINI2_MODEL", "gemini-flash-latest"),
+        model=os.environ.get("GEMINI2_MODEL", "gemini-flash-lite-latest"),
     ),
     "groq": GroqProvider(
         api_key=os.environ.get("GROQ_API_KEY", ""),
