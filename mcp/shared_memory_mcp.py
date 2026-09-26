@@ -147,6 +147,26 @@ def _require_write() -> dict | None:
     return {"error": "shared memory is read-only (PRESEK_SHARED_MEMORY=0)"}
 
 
+def _friendly_error(tool: str, exc: Exception) -> str:
+    """Translate internal exceptions into actionable, non-leaky messages."""
+    kind = type(exc).__name__
+    text = str(exc)
+    low = text.lower()
+    if isinstance(exc, ModuleNotFoundError) and "alembic" in low:
+        return (
+            "shared memory backend unavailable: the repo did not import cleanly "
+            "(a dependency is missing). Ensure the server runs with the project "
+            "virtualenv: /root/presek/.venv/bin/python3."
+        )
+    if "database" in low or "psycopg" in low or "connection" in low:
+        return f"shared memory database unavailable ({kind}). Check DATABASE_URL and connectivity."
+    if isinstance(exc, KeyError):
+        return f"missing required field for '{tool}': {text}"
+    if isinstance(exc, (ValueError, TypeError)):
+        return f"invalid arguments for '{tool}': {text}"
+    return f"'{tool}' failed due to an internal error ({kind}). See the server stderr log for details."
+
+
 # --------------------------------------------------------------------------
 # Tools
 # --------------------------------------------------------------------------
@@ -625,13 +645,26 @@ def handle_request(msg: dict):
         args = params.get("arguments") or {}
         spec = TOOLS.get(name)
         if spec is None:
-            return _ok(req_id, {"content": [{"type": "text", "text": f"Unknown tool: {name}"}], "isError": True})
+            known = ", ".join(TOOLS)
+            return _ok(
+                req_id,
+                {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"Unknown tool '{name}'. Available tools: {known}",
+                        }
+                    ],
+                    "isError": True,
+                },
+            )
         try:
             payload = spec["handler"](args)
             is_error = isinstance(payload, dict) and "error" in payload and len(payload) == 1
             text = json.dumps(payload, indent=2, ensure_ascii=False, default=str)
         except Exception as exc:
-            text = json.dumps({"error": f"{type(exc).__name__}: {exc}"}, ensure_ascii=False)
+            log(f"tool '{name}' failed: {type(exc).__name__}: {exc}")
+            text = json.dumps({"error": _friendly_error(name, exc)}, ensure_ascii=False)
             is_error = True
         return _ok(req_id, {"content": [{"type": "text", "text": text}], "isError": is_error})
 
