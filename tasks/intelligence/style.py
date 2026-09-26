@@ -1,73 +1,20 @@
+"""Detects whether a Macedonian article mirrors a foreign/global report.
+
+The former local style-normalization task lived here too; it depended on the
+removed local analyst and was disabled (ENABLE_EXPENSIVE_STYLE_TASKS=false), so
+it was dropped. Ingestion-time headline cleanup is still done by the rule-based
+``nlp.categories.normalize_headline``.
+"""
+
 import json
 
-from nlp.local_analyst import analyst
 from tasks.intelligence._constants import *  # noqa: F403,F405
 from tasks.utils import (
     log,
 )
 
 
-@celery_app.task(
-    name="tasks.intelligence.standardize_article_style_task",
-    rate_limit="10/m",
-    autoretry_for=(Exception,),
-    retry_backoff=True,
-    max_retries=2,
-)
-def standardize_article_style_task(article_id):
-    """Refines article linguistic style using the local style normalizer."""
-    from core.config import ENABLE_EXPENSIVE_STYLE_TASKS
-
-    if not ENABLE_EXPENSIVE_STYLE_TASKS:
-        return
-
-    row = db.execute_one(
-        "SELECT title, description, topic, category, country FROM articles WHERE id = %s",
-        (article_id,),
-    )
-    if not row:
-        return
-
-    title = row.get("title", "")
-    topic = row.get("topic") or ""
-    category = row.get("category") or ""
-    country = row.get("country") or "MK"
-    lang = COUNTRY_LANG.get(country, "mk")
-
-    if not title or len(title) < 25:
-        return  # Skip very short headlines
-
-    try:
-        # Topic-Aware Bypass: Don't over-polish sports or entertainment as it kills the "vibe"
-        if topic == "Sport" or category == "Sport":
-            return
-
-        # Use the local style normalizer for literary normalization.
-        final_title = analyst.normalize_headline(title, lang=lang)
-
-        if final_title and final_title.strip().lower() != title.strip().lower():
-            # Check semantic similarity to ensure we didn't lose the plot
-            from nlp.text_processing import _jaccard_similarity
-
-            if _jaccard_similarity(title, final_title) < 0.35:
-                log.warning(f"[style] Rejected over-aggressive polish for {article_id}")
-                return
-
-            # Preserve original for transparency/debugging
-            db.execute(
-                "UPDATE articles SET title = %s, original_title = %s, is_translated = 1 WHERE id = %s",
-                (final_title, title, article_id),
-                fetch=False,
-            )
-            log.info(f"[style] Standardized title for article {article_id} using local style normalizer")
-            # Re-trigger summary if title changed significantly
-            summarize_article_task.delay(article_id, final_title)
-
-    except Exception as e:
-        log.error(f"[style] Normalization failed for {article_id}: {e}")
-
-
-@celery_app.task(
+@celery_app.task(  # noqa: F405
     name="tasks.intelligence.detect_global_story_task",
     rate_limit="15/m",
     autoretry_for=(Exception,),
@@ -81,7 +28,7 @@ def detect_global_story_task(article_id):
     if not LOCAL_TRANSLATION_ENABLED:
         return
 
-    row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))
+    row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))  # noqa: F405
     if not row or not row.get("title"):
         return
 
@@ -113,7 +60,7 @@ def detect_global_story_task(article_id):
 
         # 4. Verdict (0.82 is a strong semantic match for cross-lingual pairs)
         if best_similarity > 0.82:
-            db.execute(
+            db.execute(  # noqa: F405
                 "UPDATE articles SET is_global = TRUE WHERE id = %s",
                 (article_id,),
                 fetch=False,

@@ -202,7 +202,6 @@ MAINTENANCE_SINGLETON_TASKS = frozenset(
 INTEL_DEFERRABLE_TASKS = frozenset(
     {
         "tasks.intelligence.detect_global_stories_batch_task",
-        "tasks.intelligence.standardize_article_styles_batch_task",
         "tasks.intelligence.backfill_cluster_summaries_task",
         "tasks.intelligence.classify_topics_task",
         "tasks.intelligence.recategorize_clusters_task",
@@ -213,7 +212,6 @@ INTEL_DEFERRABLE_TASKS = frozenset(
         "tasks.intelligence.extract_entities_task",
         "tasks.intelligence.discover_storylines_task",
         "tasks.intelligence.detect_global_story_task",
-        "tasks.intelligence.standardize_article_style_task",
         "tasks.intelligence.schedule_backfill_historical_summaries_task",
         "tasks.intelligence.backfill_historical_article_summaries_task",
     }

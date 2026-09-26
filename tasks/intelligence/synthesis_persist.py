@@ -6,50 +6,15 @@ import datetime
 import json
 import os
 
-from core.ai_engine import clean_json_response
 from nlp import generate_local_placeholder
 from tasks.intelligence._constants import (
     STRONG_IMAGE_SQL_FILTER,
-    _call_ai,
     db,
     generate_cover_art,
 )
 from tasks.intelligence.synthesis_bundle import _fallback_key_facts
 from tasks.intelligence.synthesis_scheduling import _schedule_deep_analyst_work
 from tasks.utils import invalidate_cluster_caches, log
-
-
-def _translate_key_facts_to_mk(key_facts: list) -> list:
-    if not key_facts:
-        return key_facts
-
-    facts_text = "\n".join(f"- {fact}" for fact in key_facts)
-    translate_prompt = (
-        "Преведи ги следните клучни факти од српски (латиница) на чист македонски литературен јазик (кирилица).\n"
-        'Врати ги преведените факти како чист JSON од тип {"facts": ["факт 1", "факт 2", ...]} '
-        "без никакви дополнителни објаснувања, markdown или воведи.\n\n"
-        f"{facts_text}"
-    )
-    try:
-        raw_trans, _ = _call_ai(
-            prompt=translate_prompt,
-            system="Ти си професионален преведувач за вести од српски на македонски јазик.",
-            task_type="translation",
-            max_tokens=500,
-            json_mode=True,
-            lang="mk",
-        )
-        if not raw_trans:
-            return key_facts
-        trans_data = clean_json_response(raw_trans)
-        if isinstance(trans_data, dict) and trans_data.get("facts"):
-            translated_facts = trans_data["facts"]
-            if isinstance(translated_facts, list) and len(translated_facts) == len(key_facts):
-                log.info("Successfully translated key_facts from Serbian to Macedonian")
-                return translated_facts
-    except Exception as exc:
-        log.warning(f"Failed to translate key_facts to Macedonian: {exc}")
-    return key_facts
 
 
 def persist_lang_synthesis(
@@ -95,9 +60,6 @@ def persist_lang_synthesis(
     key_facts = res_data.get("key_facts")
     if not key_facts or not isinstance(key_facts, list):
         key_facts = shared_metrics["deep_metadata"].get("facts") or _fallback_key_facts(article_rows, summary)
-
-    if lang == "mk" and key_facts:
-        key_facts = _translate_key_facts_to_mk(key_facts)
 
     db.execute(
         """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason)

@@ -39,8 +39,6 @@ SYNTHESIS_PROFILE = (os.environ.get("SYNTHESIS_PROFILE") or "balanced").strip().
 SYNTHESIS_QUALITY_MIN_LOCAL = float(os.environ.get("SYNTHESIS_QUALITY_MIN_LOCAL", "0.65"))
 SYNTHESIS_QUALITY_MIN_NVIDIA = float(os.environ.get("SYNTHESIS_QUALITY_MIN_NVIDIA", "0.70"))
 
-SYNTHESIS_MK_TRANSLATE_FROM_SR = os.environ.get("SYNTHESIS_MK_TRANSLATE_FROM_SR", "true").lower() == "true"
-
 
 def synthesis_local_only() -> bool:
     """When true, cluster synthesis and related translation use Gemma only (no remote LLMs)."""

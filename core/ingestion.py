@@ -1243,7 +1243,6 @@ async def ingest_all_sources_async():
                     detect_global_stories_batch_task,
                     intelligence_batches_deferred,
                     intelligence_soft_deferred,
-                    standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
                 from tasks.utils import crawl_dispatch_cap, crawl_dispatches_deferred
@@ -1283,11 +1282,6 @@ async def ingest_all_sources_async():
                 else:
                     # Batch global story detection
                     _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
-
-                    # Batch style normalization (low-credibility sources only)
-                    credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
-                    if credibility_ids:
-                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

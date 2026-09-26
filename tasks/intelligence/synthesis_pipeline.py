@@ -24,7 +24,6 @@ from tasks.intelligence.synthesis_scheduling import (
     _schedule_fast_synthesis_upgrade,
 )
 from tasks.intelligence.synthesis_scoring import _compute_lightweight_quality_score
-from tasks.intelligence.synthesis_translation import try_translate_synthesis_to_mk as _try_translate_synthesis_to_mk
 from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
 from tasks.utils import log
 
@@ -61,7 +60,6 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
     shared_computed = False
     fast_synthesis_succeeded = False
     synthesis_persisted = False
-    sr_success_bundle = None
 
     for lang in target_langs:
         current_impact_score = 0.0
@@ -71,14 +69,7 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
         try:
             log.info(f"Generating synthesis for cluster {cluster_id} in {lang}")
 
-            if lang == "mk" and sr_success_bundle:
-                translated = _try_translate_synthesis_to_mk(sr_success_bundle, article_rows, fast_mode=fast_mode)
-                if translated and translated.get("status") == "success":
-                    cascade = translated
-                else:
-                    cascade = None
-            else:
-                cascade = None
+            cascade = None
 
             if cascade is None:
                 prompt_parts = []
@@ -202,23 +193,6 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                     from core.llm_router import SmartModelRouter
 
                     SmartModelRouter._record_quality_feedback(provider, cluster_id, quality_score)
-
-                if lang == "sr" and cascade["status"] == "success":
-                    sr_success_bundle = {
-                        "synthetic_headline": synthetic_headline,
-                        "synthetic_standfirst": synthetic_standfirst,
-                        "summary": summary,
-                        "generated_article": generated_article,
-                        "key_facts": res_data.get("key_facts", []),
-                        "perspectives": perspectives,
-                        "verification_report": verification_report,
-                        "sentiment": res_data.get("sentiment", {}),
-                        "tone_analysis": res_data.get("tone_analysis", {}),
-                        "story_so_far": current_story_so_far,
-                        "impact_analysis": impact_data,
-                        "quote": quote,
-                        "quality_score": quality_score,
-                    }
 
             else:
                 if cascade["status"] == "deterministic":
