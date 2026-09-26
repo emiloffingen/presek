@@ -17,6 +17,25 @@ export class ErrorBoundary extends React.Component<Props, { hasError: boolean }>
 
   componentDidCatch(error: any, errorInfo: any) {
     console.error("Island crashed:", error, errorInfo);
+    try {
+      const reportUrl = import.meta.env.PUBLIC_ERROR_REPORT_URL as string | undefined;
+      if (reportUrl && typeof fetch === 'function') {
+        fetch(reportUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({
+            message: String(error?.message || error),
+            stack: String(error?.stack || ''),
+            componentStack: String(errorInfo?.componentStack || ''),
+            url: typeof location !== 'undefined' ? location.href : '',
+            ts: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+    } catch {
+      /* reporting must never throw */
+    }
   }
 
   render() {

@@ -1,8 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Footer from '../../components/Footer.astro';
-import AdminDashboard from '../../components/AdminDashboard.tsx';
-import { ErrorBoundary } from '../../components/ui/ErrorBoundary.tsx';
+import AdminDashboardIsland from '../../components/AdminDashboardIsland.tsx';
 import { APP_VERSION } from '../../lib/version';
 
 const versionLabel = APP_VERSION;
@@ -34,9 +33,7 @@ const versionLabel = APP_VERSION;
         </header>
 
         <main class="max-w-7xl mx-auto px-6 py-12">
-            <ErrorBoundary client:idle lang="sr">
-                <AdminDashboard client:idle />
-            </ErrorBoundary>
+            <AdminDashboardIsland client:idle lang="sr" />
         </main>
 
         <Footer />

@@ -274,7 +274,7 @@
   --border-color: var(--border);
   --accent-color: var(--nyt-red);
   --nyt-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --nyt-font-sans: "IBM Plex Sans", "Noto Sans", sans-serif;
+  --nyt-font-sans: "IBM Plex Sans", sans-serif;
 }
 
 /* ── Masthead ── */
