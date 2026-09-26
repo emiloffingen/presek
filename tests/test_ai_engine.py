@@ -367,3 +367,91 @@ def test_groq_provider_initialization(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "gsk-testkey")
     assert _default_remote_provider() == "groq"
 
+
+def test_effective_max_tokens_enforces_groq_floor():
+    from core.ai_engine import _effective_max_tokens
+
+    assert _effective_max_tokens("groq", 100) == 600
+    assert _effective_max_tokens("groq", 1200) == 1200
+    assert _effective_max_tokens("gemini", 100) == 100
+    assert _effective_max_tokens("openrouter", 100) == 100
+
+
+def test_local_provider_returns_none_when_analyst_missing(monkeypatch):
+    """The local analyst is a stub with no `analyst`; the provider must not raise."""
+    from core import ai_engine
+
+    module = types.ModuleType("nlp.local_analyst")  # present but no `analyst` attr
+    monkeypatch.setitem(sys.modules, "nlp.local_analyst", module)
+
+    provider = ai_engine.LocalProvider()
+    assert provider.call("prompt", "system", 256, False) is None
+
+
+def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
+    from core import ai_quota
+
+    class FakeRedis:
+        def __init__(self):
+            self.store = {}
+
+        def get(self, key):
+            return self.store.get(key)
+
+        def incrby(self, key, amount):
+            self.store[key] = self.store.get(key, 0) + amount
+            return self.store[key]
+
+        def expire(self, key, ttl):
+            return True
+
+    fake = FakeRedis()
+    monkeypatch.setattr(ai_quota, "_client", lambda: fake)
+    monkeypatch.setenv("AI_DAILY_LIMIT_GROQ", "10")
+    monkeypatch.setenv("AI_QUOTA_SKIP_RATIO", "0.9")
+
+    assert ai_quota.daily_limit("groq") == 10
+    assert ai_quota.daily_limit("local") is None
+    assert ai_quota.is_exhausted("groq") is False
+
+    for _ in range(9):
+        ai_quota.record_usage("groq")
+
+    assert ai_quota.usage("groq") == 9
+    assert ai_quota.is_exhausted("groq") is True  # 9 >= int(10 * 0.9)
+
+
+def test_ai_quota_zero_limit_disables_provider(monkeypatch):
+    from core import ai_quota
+
+    monkeypatch.setattr(ai_quota, "_client", lambda: object())
+    assert ai_quota.daily_limit("mistral") == 0
+    assert ai_quota.is_exhausted("mistral") is True
+
+
+def test_call_ai_skips_quota_exhausted_provider(monkeypatch):
+    from core import ai_engine
+
+    exhausted = Mock()
+    exhausted.call.return_value = '{"summary":["a"],"article":"a"}'
+    healthy = Mock()
+    healthy.call.return_value = '{"summary":["ok"],"article":"ok"}'
+
+    monkeypatch.setattr(ai_engine, "PROVIDERS", {"a": exhausted, "b": healthy})
+    monkeypatch.setattr(ai_engine, "PROVIDER_FALLBACK_ORDER_SUMMARY", ["a", "b"])
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["a", "b"],
+    )
+    monkeypatch.setattr(ai_engine.ai_quota, "is_exhausted", lambda provider: provider == "a")
+    monkeypatch.setattr(ai_engine.ai_quota, "record_usage", lambda provider, amount=1: 0)
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
+
+    raw, provider = ai_engine._call_ai("prompt", "system", task_type="synthesis", json_mode=True)
+
+    assert provider == "b"
+    assert raw == '{"summary":["ok"],"article":"ok"}'
+    exhausted.call.assert_not_called()
+    healthy.call.assert_called_once()
+
+

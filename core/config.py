@@ -642,9 +642,12 @@ def resolve_primary_database_url() -> str:
 
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "mistral", "mistral2", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "mistral", "mistral2", "local"]
-PROVIDER_FALLBACK_ORDER = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "mistral", "mistral2", "local"]  # default
+# NOTE: mistral/mistral2 are intentionally omitted — their free tier returned
+# `x-ratelimit-limit-req-minute: 0` (no usable quota) in Sep 2026, so they only
+# wasted cascade round-trips. PROVIDERS still defines them for manual override.
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini2", "gemini", "groq", "openrouter", "cerebras", "nvidia", "local"]  # default
 
 # Providers reserved exclusively for synthesis tasks.
 # When set, these providers are excluded from summarize/research/default cascades

@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
+from core import ai_quota
 from core.config import (
     AI_ENABLED,
     PROVIDER_FALLBACK_ORDER,
@@ -24,6 +25,39 @@ log = logging.getLogger("presek")
 
 PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS = int(os.environ.get("PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS", "300"))
 _PROVIDER_COOLDOWN_UNTIL: dict[str, float] = {}
+
+# Some providers serve reasoning models (Groq gpt-oss, Gemini 3.x thinking) that
+# spend part of the token budget on hidden reasoning. With a tiny max_tokens the
+# visible answer comes back empty even though the HTTP request succeeded, so we
+# enforce a floor per provider.
+PROVIDER_MIN_MAX_TOKENS: dict[str, int] = {
+    "groq": int(os.environ.get("GROQ_MIN_MAX_TOKENS", "600")),
+}
+
+
+def _effective_max_tokens(provider_name: str, max_tokens: int) -> int:
+    floor = PROVIDER_MIN_MAX_TOKENS.get(provider_name)
+    if floor and max_tokens and max_tokens < floor:
+        return floor
+    return max_tokens
+
+
+_LOCAL_UNAVAILABLE_WARNED = False
+
+
+def _warn_local_unavailable(exc: Exception | None) -> None:
+    """The local analyst was removed in the mk-only simplify; degrade quietly.
+
+    Without this guard every cascade that falls through to ``local`` raised an
+    ImportError, which the cascade logged as a provider failure on each call.
+    """
+    global _LOCAL_UNAVAILABLE_WARNED
+    if not _LOCAL_UNAVAILABLE_WARNED:
+        detail = f": {exc}" if exc else ""
+        log.warning(
+            "[ai/local] local analyst unavailable, local provider disabled%s", detail
+        )
+        _LOCAL_UNAVAILABLE_WARNED = True
 
 
 def _provider_cooldown_remaining(provider_name: str) -> float:
@@ -420,7 +454,14 @@ class LocalProvider(AIProvider):
         lang: str = "sr",
         response_schema: Any = None,
     ) -> str | None:
-        from nlp.local_analyst import analyst
+        try:
+            from nlp.local_analyst import analyst
+        except Exception as exc:
+            _warn_local_unavailable(exc)
+            return None
+        if analyst is None:
+            _warn_local_unavailable(None)
+            return None
 
         lowered_system = (system or "").lower()
 
@@ -721,10 +762,12 @@ def _invoke_provider_call(
     lang: str,
     response_schema: Any,
 ) -> str | None:
+    """Invoke a provider, retrying once when JSON mode returns malformed JSON."""
+    effective_max_tokens = _effective_max_tokens(provider_name, max_tokens)
     res = provider.call(
         prompt,
         system,
-        max_tokens,
+        effective_max_tokens,
         json_mode,
         topic=topic,
         task_type=task_type,
@@ -737,7 +780,7 @@ def _invoke_provider_call(
         res = provider.call(
             prompt + "\n\nCRITICAL: Return valid JSON only.",
             system,
-            max_tokens,
+            effective_max_tokens,
             json_mode,
             topic=topic,
             task_type=task_type,
@@ -792,10 +835,17 @@ async def _call_ai_async(
                 f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
             )
             continue
+        if ai_quota.is_exhausted(provider_name):
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
+            log.warning(
+                f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping"
+            )
+            continue
+        ai_quota.record_usage(provider_name)
         start_time = time.time()
         try:
             if stream:
-                generator = provider.stream_call(prompt, system, max_tokens)
+                generator = provider.stream_call(prompt, system, _effective_max_tokens(provider_name, max_tokens))
                 try:
                     first_chunk = await anext(generator)
                 except StopAsyncIteration:
@@ -890,6 +940,13 @@ def _call_ai(
                 f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
             )
             continue
+        if ai_quota.is_exhausted(provider_name):
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
+            log.warning(
+                f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping"
+            )
+            continue
+        ai_quota.record_usage(provider_name)
         start_time = time.time()
         try:
             res = _invoke_provider_call(
