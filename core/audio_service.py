@@ -44,23 +44,21 @@ def _normalize_for_speech(text: str) -> str:
     return re.sub(r"\s+([.!?…,:;])", r"\1", text).strip()
 
 
-def _xml_escape(text: str) -> str:
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+def _sentences(text: str) -> list[str]:
+    """Split narration into sentences so we can insert natural pauses."""
+    return [s.strip() for s in _SENT_SPLIT_RE.split(text) if s.strip()]
 
 
-def _to_ssml(text: str, voice: str, lang: str) -> str:
-    """Wrap narration in SSML: news-reader pacing with pauses between sentences.
+def _join_for_speech(text: str) -> str:
+    """Plain text with punctuation-only pauses.
 
-    Plain-text TTS reads headlines as one flat run-on stream. Sentence breaks
-    plus a slightly reduced rate give it a human newsreader cadence.
+    edge-tts does NOT accept raw SSML: it escapes whatever we pass and wraps it
+    in its own <speak>/<prosody>, so sending ``<break>``/``<prosody>`` markup
+    made the voice read the tags literally (garbled, hugely padded audio). We
+    therefore send plain text and add breathing room between sentences using
+    punctuation the engine already pauses on.
     """
-    locale = "sr-RS" if lang.startswith("sr") else "mk-MK"
-    sentences = [s.strip() for s in _SENT_SPLIT_RE.split(text) if s.strip()]
-    body = '<break time="450ms"/>'.join(_xml_escape(s) for s in sentences)
-    return (
-        f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{locale}">'
-        f'<voice name="{voice}"><prosody rate="-6%">{body}</prosody></voice></speak>'
-    )
+    return " … ".join(_sentences(text))
 
 
 def _voice_for_lang(lang: str | None) -> str:
@@ -68,6 +66,11 @@ def _voice_for_lang(lang: str | None) -> str:
     if lang.startswith("sr"):
         return os.environ.get("TTS_VOICE_SR", "sr-RS-SophieNeural")
     return os.environ.get("TTS_VOICE_MK", "mk-MK-MarijaNeural")
+
+
+def _rate_for_lang(lang: str | None) -> str:
+    """Slightly slower-than-default newsreader cadence (edge-tts prosody rate)."""
+    return os.environ.get("TTS_RATE", "-6%")
 
 
 def _clean_text(text: str | None) -> str:
@@ -94,10 +97,12 @@ def _audio_dir() -> str:
     return d
 
 
-async def _synthesize_async(ssml: str, voice: str, path: str) -> None:
+async def _synthesize_async(text: str, voice: str, path: str, rate: str = "-6%") -> None:
     import edge_tts
 
-    communicator = edge_tts.Communicate(ssml, voice)
+    # Plain text only: edge-tts escapes the input and wraps it in its own SSML,
+    # so rate/pitch/volume must be passed as parameters, never as markup.
+    communicator = edge_tts.Communicate(text, voice, rate=rate)
     await communicator.save(path)
 
 
@@ -144,13 +149,15 @@ class AudioService:
             return None
         lang = (lang or "mk").lower()
         voice = _voice_for_lang(lang)
+        rate = _rate_for_lang(lang)
+        speech_text = _join_for_speech(text)
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
-        digest = hashlib.sha1(f"{voice}|{text}".encode("utf-8")).hexdigest()[:10]
+        digest = hashlib.sha1(f"{voice}|{rate}|{speech_text}".encode("utf-8")).hexdigest()[:10]
         path, url = AudioService.get_cluster_audio_path_and_url(safe_cluster, lang, digest)
         if os.path.isfile(path) and os.path.getsize(path) > 1024:
             return url
         try:
-            asyncio.run(_synthesize_async(_to_ssml(text, voice, lang), voice, path))
+            asyncio.run(_synthesize_async(speech_text, voice, path, rate))
         except Exception as e:
             log.warning("Edge TTS synthesis failed for cluster %s: %s", cluster_id, e)
             try:
