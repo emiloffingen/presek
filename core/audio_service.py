@@ -21,26 +21,69 @@ MAX_TTS_CHARS = 3500
 _TAG_RE = re.compile(r"<[^>]+>")
 _MD_RE = re.compile(r"[#>*_`~\-]{1,3}")
 _URL_RE = re.compile(r"https?://\S+")
-_SENT_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
+_SENT_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+|\n+")
+_WS_RE = re.compile(r"\s+")
 
 # Spoken-form replacements so the voice doesn't read symbols literally.
+# Order matters: multi-char units must be replaced before their prefixes.
 _SPEECH_SUBS = (
+    ("°C", " степени целзиусови "),
+    ("°", " степени "),
     ("%", " проценти "),
     ("&", " и "),
     ("€", " евра "),
     ("$", " долари "),
-    ("°C", " степени целзиусови "),
-    ("°", " степени "),
     ("+", " плус "),
     ("=", " еднакво на "),
+    ("№", " број "),
+    ("→", " кон "),
+)
+
+# Long digit runs are read as one giant number; group them so the voice chunks
+# (e.g. "2028" stays fine, but "1234567" becomes "1 234 567").
+_BIG_NUMBER_RE = re.compile(r"\d{5,}")
+
+# Scorelines like "3:2" / "3-0" / "2 : 1" are read as times or subtraction.
+_SCORE_RE = re.compile(r"(?<![\d])(\d{1,2})\s*[:\-–]\s*(\d{1,2})(?![\d])")
+
+# Abbreviations the voice spells as one odd word need dots so it reads letters.
+_ABBREV_SUBS = (
+    ("САД", "С.А.Д."),
+    ("ЕУ", "Е.У."),
+    ("ЕН", "Е.Н."),
+    ("МВР", "М.В.Р."),
+    ("МАНУ", "М.А.Н.У."),
+    ("ООН", "О.О.Н."),
+    ("НАТО", "НАТО"),  # NATO is said as a word, keep as-is
+    ("ФИФА", "ФИФА"),
+    ("УЕФА", "УЕФА"),
 )
 
 
+def _score_to_words(match: re.Match) -> str:
+    return f"{match.group(1)} спрема {match.group(2)}"
+
+
+def _group_digits(match: re.Match) -> str:
+    digits = match.group(0)
+    groups = []
+    while len(digits) > 3:
+        groups.insert(0, digits[-3:])
+        digits = digits[:-3]
+    groups.insert(0, digits)
+    return " ".join(groups)
+
+
 def _normalize_for_speech(text: str) -> str:
-    """Expand symbols/units into spoken words so the voice reads naturally."""
+    """Expand symbols/units/scorelines into spoken words so the voice reads naturally."""
+    text = _BIG_NUMBER_RE.sub(_group_digits, text)
+    text = _SCORE_RE.sub(_score_to_words, text)
     for src, dst in _SPEECH_SUBS:
         text = text.replace(src, dst)
-    text = re.sub(r"\s+", " ", text)
+    for src, dst in _ABBREV_SUBS:
+        # Whole-word only, so "ЕУ" doesn't match inside another word.
+        text = re.sub(rf"(?<!\w){re.escape(src)}(?!\w)", dst, text)
+    text = _WS_RE.sub(" ", text)
     return re.sub(r"\s+([.!?…,:;])", r"\1", text).strip()
 
 
@@ -50,15 +93,24 @@ def _sentences(text: str) -> list[str]:
 
 
 def _join_for_speech(text: str) -> str:
-    """Plain text with punctuation-only pauses.
+    """Plain text with sentence breaks the engine pauses on naturally.
 
     edge-tts does NOT accept raw SSML: it escapes whatever we pass and wraps it
     in its own <speak>/<prosody>, so sending ``<break>``/``<prosody>`` markup
     made the voice read the tags literally (garbled, hugely padded audio). We
-    therefore send plain text and add breathing room between sentences using
-    punctuation the engine already pauses on.
+    send plain text and let the voice's own sentence prosody do the pacing.
+    We only ensure each sentence ends with terminal punctuation so the engine
+    registers the boundary (headlines often arrive without a trailing period).
     """
-    return " … ".join(_sentences(text))
+    sentences = _sentences(text)
+    if not sentences:
+        return text
+    out = []
+    for s in sentences:
+        if s[-1] not in ".!?…":
+            s = f"{s}."
+        out.append(s)
+    return " ".join(out)
 
 
 def _voice_for_lang(lang: str | None) -> str:
@@ -69,8 +121,17 @@ def _voice_for_lang(lang: str | None) -> str:
 
 
 def _rate_for_lang(lang: str | None) -> str:
-    """Slightly slower-than-default newsreader cadence (edge-tts prosody rate)."""
-    return os.environ.get("TTS_RATE", "-6%")
+    """Newsreader cadence: a touch slower than default for clarity."""
+    return os.environ.get("TTS_RATE", "-8%")
+
+
+def _pitch_for_lang(lang: str | None) -> str:
+    """Slightly lowered pitch reads warmer/less robotic than the flat default."""
+    return os.environ.get("TTS_PITCH", "-2Hz")
+
+
+def _volume_for_lang(lang: str | None) -> str:
+    return os.environ.get("TTS_VOLUME", "+0%")
 
 
 def _clean_text(text: str | None) -> str:
@@ -97,12 +158,14 @@ def _audio_dir() -> str:
     return d
 
 
-async def _synthesize_async(text: str, voice: str, path: str, rate: str = "-6%") -> None:
+async def _synthesize_async(
+    text: str, voice: str, path: str, rate: str = "-8%", pitch: str = "-2Hz", volume: str = "+0%"
+) -> None:
     import edge_tts
 
     # Plain text only: edge-tts escapes the input and wraps it in its own SSML,
     # so rate/pitch/volume must be passed as parameters, never as markup.
-    communicator = edge_tts.Communicate(text, voice, rate=rate)
+    communicator = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, volume=volume)
     await communicator.save(path)
 
 
@@ -150,14 +213,18 @@ class AudioService:
         lang = (lang or "mk").lower()
         voice = _voice_for_lang(lang)
         rate = _rate_for_lang(lang)
+        pitch = _pitch_for_lang(lang)
+        volume = _volume_for_lang(lang)
         speech_text = _join_for_speech(text)
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
-        digest = hashlib.sha1(f"{voice}|{rate}|{speech_text}".encode("utf-8")).hexdigest()[:10]
+        digest = hashlib.sha1(
+            f"{voice}|{rate}|{pitch}|{volume}|{speech_text}".encode("utf-8")
+        ).hexdigest()[:10]
         path, url = AudioService.get_cluster_audio_path_and_url(safe_cluster, lang, digest)
         if os.path.isfile(path) and os.path.getsize(path) > 1024:
             return url
         try:
-            asyncio.run(_synthesize_async(speech_text, voice, path, rate))
+            asyncio.run(_synthesize_async(speech_text, voice, path, rate, pitch, volume))
         except Exception as e:
             log.warning("Edge TTS synthesis failed for cluster %s: %s", cluster_id, e)
             try:
