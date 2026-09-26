@@ -45,6 +45,20 @@ def _effective_max_tokens(provider_name: str, max_tokens: int) -> int:
 _LOCAL_UNAVAILABLE_WARNED = False
 
 
+def _provider_configured(provider_name: str) -> bool:
+    """True when a provider has credentials (or no key is needed).
+
+    Providers like nvidia/cerebras ship in PROVIDER_FALLBACK_ORDER but may have
+    no API key configured; keeping them in the cascade burns a no-op iteration.
+    Mock providers in tests expose an ``api_key`` attribute, so they stay.
+    """
+    provider = PROVIDERS.get(provider_name)
+    if provider is None:
+        return False
+    api_key = getattr(provider, "api_key", None)
+    return bool(api_key)
+
+
 def _warn_local_unavailable(exc: Exception | None) -> None:
     """The local analyst was removed in the mk-only simplify; degrade quietly.
 
@@ -738,7 +752,11 @@ def build_provider_fallback_order(
                 )
                 excluded.add(reserved)
 
-    return [provider for provider in order if provider not in excluded]
+    return [
+        provider
+        for provider in order
+        if provider not in excluded and _provider_configured(provider)
+    ]
 
 
 def _record_provider_outcome(provider_name: str, task_type: str, success: bool, duration: float) -> None:

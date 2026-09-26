@@ -101,6 +101,21 @@ _WMO_ICON = {
 from routes.security import admin_auth  # noqa: F401
 
 
+def _ai_quota_payload() -> dict:
+    """Compact per-provider daily AI budget for the public status page."""
+    try:
+        from core.config import AI_ENABLED
+
+        if not AI_ENABLED:
+            return {"enabled": False, "providers": {}}
+        from core.ai_quota import snapshot
+
+        return {"enabled": True, "providers": snapshot()}
+    except Exception as exc:  # never let quota reporting break /health
+        log.debug("[health] ai quota snapshot failed: %s", exc)
+        return {"enabled": None, "providers": {}}
+
+
 @router.get("/health")
 async def health(request: Request):
     """Public health payload with internal connection details stripped."""
@@ -120,6 +135,7 @@ async def health(request: Request):
         "uptime_seconds": int(time.time() - _STARTED_AT),
         "database": db_public,
         "redis": redis_public,
+        "ai": _ai_quota_payload(),
         "time": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     return payload

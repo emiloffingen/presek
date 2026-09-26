@@ -28,6 +28,7 @@ let healthData = {
         queues: {},
     },
     synthesis_quality: {},
+    ai: { enabled: true, providers: {} as Record<string, { limit: number; used: number }> },
 };
 
 try {
@@ -67,6 +68,12 @@ const synthesisDetail = stuckFastCount > 0
     : fallbackRatio > 0
         ? `${t('status.pipeline_synthesis_sub')} · ${Math.round(fallbackRatio * 100)}% fallback`
         : t('status.pipeline_synthesis_sub');
+
+const aiQuota = ((healthData as any).ai || {}) as { enabled: boolean | null; providers: Record<string, { limit: number; used: number }> };
+const activeAiProviders = Object.entries(aiQuota.providers || {})
+    .filter(([, v]) => v && Number(v.limit) > 0)
+    .sort((a, b) => Number(b[1].limit) - Number(a[1].limit));
+const quotaPct = (used: number, limit: number) => Math.min(100, Math.round((Number(used) / Math.max(1, Number(limit))) * 100));
 
 const formattedUptime = (seconds: number) => {
     if (!seconds) return "0s";
@@ -176,6 +183,28 @@ const formattedUptime = (seconds: number) => {
                     </div>
                 </div>
             </section>
+
+            {aiQuota.enabled && activeAiProviders.length > 0 && (
+                <section class="pipeline-status-card">
+                    <div class="pipeline-status-header">
+                        <div>
+                            <h2 class="status-title">{t('status.ai_title')}</h2>
+                            <p class="pipeline-status-intro">{t('status.ai_intro')}</p>
+                        </div>
+                    </div>
+                    <div class="ai-quota-list">
+                        {activeAiProviders.map(([name, quota]) => (
+                            <div class="ai-quota-row">
+                                <span class="ai-quota-name">{name}</span>
+                                <div class="ai-quota-track">
+                                    <div class="ai-quota-fill" style={`width: ${quotaPct(quota.used, quota.limit)}%`} />
+                                </div>
+                                <span class="ai-quota-count">{quota.used}/{quota.limit}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     </main>
     <Footer />
@@ -289,6 +318,51 @@ const formattedUptime = (seconds: number) => {
         letter-spacing: 0.08em;
         border: 1px solid transparent;
         white-space: nowrap;
+    }
+
+    .ai-quota-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .ai-quota-row {
+        display: grid;
+        grid-template-columns: 6.5rem 1fr 5rem;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .ai-quota-name {
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ai-quota-track {
+        height: 0.55rem;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--secondary) 40%, var(--background));
+        overflow: hidden;
+    }
+
+    .ai-quota-fill {
+        height: 100%;
+        background: var(--presek-mark);
+    }
+
+    .ai-quota-count {
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        color: var(--muted-foreground);
     }
 
     .pipeline-pill.ok {

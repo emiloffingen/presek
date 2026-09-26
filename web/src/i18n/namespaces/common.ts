@@ -151,6 +151,8 @@ export const common = {
     'onboarding_ui.step2_title': 'Преглед = уреднички преглед',
     'onboarding_ui.step3_body': 'Висок плурализам значи различни агли; низок значи дека медиумите ја пренесуваат слична приказна.',
     'onboarding_ui.step3_title': 'Плурализмот ги покажува разликите',
+    'status.ai_intro': 'Дневни бесплатни квоти на AI провајдерите — искористени барања денес.',
+    'status.ai_title': 'AI КВОТИ НА ПРОВАЈДЕРИ',
     'status.articles': 'артикли',
     'status.database': 'БАЗА НА ПОДАТОЦИ',
     'status.degraded': 'ДЕГРАДИРАН',
