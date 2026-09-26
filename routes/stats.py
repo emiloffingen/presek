@@ -826,6 +826,11 @@ async def get_stats_full(request: Request, lang: str = "sr", authorized: str = D
 
 @router.get("/sources")
 async def get_sources_route():
+    cache_key = f"api:sources:v2:all"
+    cached = cached_response(cache_key, ttl=120)
+    if cached:
+        return cached
+
     rows = await db.async_execute(
         "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC"
     )
@@ -841,7 +846,9 @@ async def get_sources_route():
     cats = await db.async_execute(
         f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"  # nosec B608 - static freshness constant, no params
     )
-    return build_source_reputation_rows(rows, pulse, speed, history, cats)
+    result = build_source_reputation_rows(rows, pulse, speed, history, cats)
+    set_cache(cache_key, result, ttl=120)
+    return {"status": "success", "data": result}
 
 
 @router.post("/sources/{name}/control")
