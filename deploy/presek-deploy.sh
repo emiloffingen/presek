@@ -38,6 +38,17 @@ fi
 
 cd "$APP_DIR" || { log "APP_DIR missing: $APP_DIR"; exit 1; }
 
+# Load .env so build-time PUBLIC_* values are IDENTICAL on every host. Without
+# this, one host may define PUBLIC_PROMO_DISCOUNT and another may not, producing
+# different Vite chunk hashes for the same source (split-brain across the tunnel).
+if [ -f "$APP_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$APP_DIR/.env" 2>/dev/null || true
+  set +a
+  log "loaded .env for build consistency"
+fi
+
 FORCE_BUILD=0
 DO_PULL=1
 SRC_BUNDLE=""

@@ -71,7 +71,10 @@ scp $SCP_OPTS "$SRC" "$DIST" "$SHIELD_HOST:$STAGE/" || { log "scp failed"; exit 
 log "=== deploy on shield ==="
 ssh $SSH_OPTS "$SHIELD_HOST" "proot-distro login debian -- /bin/sh -c '
   cd /root/presek || exit 1
-  tar xzf $STAGE/web_dist.tgz -C web --overwrite 2>/dev/null
+  # Replace dist wholesale so stale chunks from earlier builds cannot linger
+  # (leftover hashes cause split-brain across the tunnel).
+  rm -rf web/dist
+  tar xzf $STAGE/web_dist.tgz -C web
   bash deploy/presek-deploy.sh --no-pull --src=$STAGE/$(basename "$SRC") 2>&1 | tail -8
 '" || { log "shield deploy failed"; exit 1; }
 
