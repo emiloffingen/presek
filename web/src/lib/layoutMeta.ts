@@ -12,6 +12,24 @@ export function buildPageTitle(title: string, lang: Locale): string {
   return `${title} | ${siteName}`;
 }
 
+/**
+ * Social profile URLs for a locale. Profiles are keyed off the site's own TLD so
+ * a .mk deployment never advertises .rs (Serbian) accounts, and vice versa.
+ */
+export function socialProfiles(lang: Locale): string[] {
+  return lang === 'sr'
+    ? [
+        'https://twitter.com/presek_rs',
+        'https://facebook.com/presek.rs',
+        'https://instagram.com/presek.rs',
+      ]
+    : [
+        'https://twitter.com/presek_mk',
+        'https://facebook.com/presek.mk',
+        'https://instagram.com/presek.mk',
+      ];
+}
+
 export function buildOrganizationSchema(lang: Locale) {
   const siteUrl = siteOrigin(lang);
   const siteName = siteDisplayName(lang);
@@ -27,11 +45,7 @@ export function buildOrganizationSchema(lang: Locale) {
       width: 512,
       height: 512,
     },
-    sameAs: [
-      'https://twitter.com/presek_rs',
-      'https://facebook.com/presek.rs',
-      'https://instagram.com/presek.rs',
-    ],
+    sameAs: socialProfiles(lang),
   };
 }
 
