@@ -132,6 +132,16 @@ fi
 
 # --- 3. web build ----------------------------------------------------------
 if [ "${SKIP_WEB:-0}" != "1" ]; then
+  # Sync web dependencies from the lockfile when manifests changed, or when a
+  # deploy is forced. Divergent node_modules between hosts (e.g. different
+  # @tailwindcss internals) produce different CSS/JS hashes for identical
+  # source -> asset split-brain over a shared tunnel. `npm ci` pins them.
+  if [ "${SKIP_NPM:-0}" != "1" ] && [ -f "$WEB_DIR/package-lock.json" ]; then
+    if [ "$FORCE_BUILD" = "1" ] || printf '%s\n' "$CHANGED" | grep -qE '^web/(package\.json|package-lock\.json)$'; then
+      log "syncing web dependencies (npm ci)"
+      (cd "$WEB_DIR" && npm ci --no-audit --no-fund) && log "npm ci ok" || log "npm ci failed (continuing with existing node_modules)"
+    fi
+  fi
   # Clear caches that make builds non-deterministic across hosts: a warm
   # .astro/Vite cache can yield a different CSS/JS hash than a cold build,
   # which shows up as asset split-brain when two hosts share one tunnel.
