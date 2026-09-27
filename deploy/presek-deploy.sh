@@ -40,13 +40,33 @@ cd "$APP_DIR" || { log "APP_DIR missing: $APP_DIR"; exit 1; }
 
 FORCE_BUILD=0
 DO_PULL=1
+SRC_BUNDLE=""
 for arg in "$@"; do
   case "$arg" in
     --build) FORCE_BUILD=1 ;;
     --no-pull) DO_PULL=0 ;;
+    --src=*) SRC_BUNDLE="${arg#--src=}" ;;
     *) log "unknown arg: $arg" ;;
   esac
 done
+
+# --- 0. optional source bundle (hosts without a git checkout) --------------
+# A bundle is a git-archive tarball of tracked files produced on a host that
+# DOES have the repo (e.g. `git archive --format=tar.gz -o src.tgz HEAD`).
+# Extracting it makes "source" match exactly, so a bundle-deployed host can no
+# longer rebuild stale code (the class of bug that broke /izvori).
+if [ -n "$SRC_BUNDLE" ]; then
+  if [ -f "$SRC_BUNDLE" ]; then
+    log "applying source bundle: $SRC_BUNDLE"
+    if tar xzf "$SRC_BUNDLE" -C "$APP_DIR" 2>/dev/null; then
+      log "source bundle applied"
+    else
+      log "source bundle extraction FAILED"
+    fi
+  else
+    log "source bundle not found: $SRC_BUNDLE (skipping)"
+  fi
+fi
 
 # --- 1. git pull -----------------------------------------------------------
 OLD=""
