@@ -132,6 +132,10 @@ fi
 
 # --- 3. web build ----------------------------------------------------------
 if [ "${SKIP_WEB:-0}" != "1" ]; then
+  # Clear caches that make builds non-deterministic across hosts: a warm
+  # .astro/Vite cache can yield a different CSS/JS hash than a cold build,
+  # which shows up as asset split-brain when two hosts share one tunnel.
+  rm -rf "$WEB_DIR/.astro" "$WEB_DIR/node_modules/.vite" "$WEB_DIR/node_modules/.cache" 2>/dev/null || true
   if [ -x "$APP_DIR/deploy/ensure_astro_build.sh" ]; then
     log "ensuring web build"
     APP_ROOT="$APP_DIR" WEB_DIR="$WEB_DIR" \
