@@ -31,7 +31,18 @@ fi
 mkdir -p "$CFDIR"; chmod 700 "$CFDIR" 2>/dev/null || true
 
 # 2. credentials JSON from the tunnel token (token keys a/t/s -> CF key names)
-TOKEN="eyJhIjoiZjM2OGVhY2M4MGJlNGRkY2ZhMWQ2ZmY0OTcxNzI3NWIiLCJ0IjoiM2EyZDJhNDctMzZhZi00OTI4LTljMGEtYWUyNGU3NTdjNzJhIiwicyI6Ik9FT3RHdk5jdkRKMXVxUGU5REJLbzR3SXJpU29SOUg5ZXFtc2xZMHdxbThOMkNoOVJWWmJTK1psL3Ryelh2V0VvaDViWTRiS3lsa2VhUFpkSmVvODBnPT0ifQ=="
+# The token is NOT stored in the repo. Provide it one of these ways:
+#   - export PRESEK_TABLET_TUNNEL_TOKEN=... before running, or
+#   - place it in ~/.cloudflared/presek-tablet.token
+# Get it from: Cloudflare dashboard > Zero Trust > Networks > Tunnels >
+#   presek-tablet > Configure. (Also in the shared memory / password manager.)
+TOKEN="${PRESEK_TABLET_TUNNEL_TOKEN:-}"
+if [ -z "$TOKEN" ] && [ -f "$CFDIR/presek-tablet.token" ]; then
+  TOKEN="$(tr -d '\n' < "$CFDIR/presek-tablet.token")"
+fi
+if [ -z "$TOKEN" ]; then
+  log "ERROR: tunnel token not provided (PRESEK_TABLET_TUNNEL_TOKEN or $CFDIR/presek-tablet.token)"; exit 1
+fi
 python3 - "$TOKEN" <<'PY'
 import base64, json, sys
 tok = sys.argv[1].strip()
