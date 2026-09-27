@@ -1,11 +1,21 @@
 import { homePath, localePathForLang } from '../lib/localePaths';
 import React, { useEffect, useMemo, useState } from 'react';
-import { apiBaseUrl } from '../lib/apiBase';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { sources as sourcesNamespace } from '../i18n/namespaces/sources';
 import PresekAdRailSlot from './PresekAdRailSlot';
 import type { ui } from '../i18n/ui';
+
+// Inlined API base so this island does not import the shared apiBase chunk.
+// That chunk (/ _astro/apiBase.*.js) was intermittently 404ing on the public
+// edge, which broke the island's module graph and left /izvori stuck on its
+// loading spinner. Keeping the value local makes the island self-contained.
+function apiBaseUrl(): string {
+  const fromEnv = import.meta.env?.PUBLIC_API_URL;
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined') return '/api';
+  return (typeof process !== 'undefined' && process.env.INTERNAL_API_URL) || 'http://127.0.0.1:5001/api';
+}
 
 interface SourceRow {
   source: string;
