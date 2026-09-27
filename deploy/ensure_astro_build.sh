@@ -99,6 +99,10 @@ rebuild_dist() {
   local backup_dir="$WEB_DIR/.dist-backup.$$"
 
   rm -rf "$backup_dir"
+  # Clear the Astro/Vite build caches so output is deterministic across hosts.
+  # A warm cache yields different CSS/JS hashes than a cold build, which causes
+  # asset split-brain when two hosts share one tunnel.
+  rm -rf "$WEB_DIR/.astro" "$WEB_DIR/node_modules/.vite" "$WEB_DIR/node_modules/.cache"
   mkdir -p "$WEB_DIR/.astro/collections"
   if [ -d "$dist_dir" ]; then
     mv "$dist_dir" "$backup_dir"
