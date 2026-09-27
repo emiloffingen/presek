@@ -3,6 +3,7 @@
 import '../../styles/home-page.css';
 import '../../styles/home-feed.css';
 import '../../styles/next-level-home.css';
+import '../../styles/home-v4.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
 import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
@@ -10,6 +11,7 @@ import Footer from '../Footer.astro';
 
 import ForYouIsland from '../ForYouIsland.tsx';
 import LeadHero from './LeadHero.astro';
+import SourceComparisonPanel from './SourceComparisonPanel.astro';
 import SupportingBand from './SupportingBand.astro';
 import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import SynthesisPicksSection from './SynthesisPicksSection.astro';
@@ -262,7 +264,7 @@ if (analizaNavItems.length > 0) {
                             showHeroVisual={showLeadHeroVisual}
                             pipelineBusy={pipelineBusy}
 						/>
-                        {leadStatus && leadEvidenceItems.length > 0 && (
+						{leadStatus && leadEvidenceItems.length > 0 && (
                             <div class="homepage-analiza-only">
                                 <LeadEvidenceChips
                                     statusLabel={leadStatus.label}
@@ -273,6 +275,9 @@ if (analizaNavItems.length > 0) {
                                 />
                             </div>
                         )}
+                        <div class="home-source-compare-slot">
+                            <SourceComparisonPanel cluster={leadCluster} lang={lang} />
+                        </div>
 					</div>
 				)}
 
