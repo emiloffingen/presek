@@ -38,15 +38,21 @@ fi
 
 cd "$APP_DIR" || { log "APP_DIR missing: $APP_DIR"; exit 1; }
 
-# Load .env so build-time PUBLIC_* values are IDENTICAL on every host. Without
-# this, one host may define PUBLIC_PROMO_DISCOUNT and another may not, producing
-# different Vite chunk hashes for the same source (split-brain across the tunnel).
+# Make build-time values IDENTICAL on every host. Without this, one host may
+# define PUBLIC_PROMO_DISCOUNT and another may not, producing different Vite
+# chunk hashes for the same source (split-brain across the tunnel).
+#
+# We deliberately do NOT source the whole .env: exporting backend secrets and
+# loopback URLs into the Astro build would inline them into the client bundle
+# (PUBLIC_* is baked at build time). Only the build-safe knobs are pulled, and
+# PUBLIC_API_URL is forced relative so browsers never get 127.0.0.1.
 if [ -f "$APP_DIR/.env" ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . "$APP_DIR/.env" 2>/dev/null || true
-  set +a
-  log "loaded .env for build consistency"
+  _promo="$(grep -E '^PROMO_DISCOUNT=' "$APP_DIR/.env" | tail -1 | cut -d= -f2- | tr -d '"'"'"' ')"
+  [ -n "$_promo" ] && export PUBLIC_PROMO_DISCOUNT="${PUBLIC_PROMO_DISCOUNT:-$_promo}"
+  _site="$(grep -E '^PUBLIC_SITE_URL=' "$APP_DIR/.env" | tail -1 | cut -d= -f2- | tr -d '"'"'"' ')"
+  [ -n "$_site" ] && export PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-$_site}"
+  export PUBLIC_API_URL="/api"
+  log "applied build env (PUBLIC_PROMO_DISCOUNT=${PUBLIC_PROMO_DISCOUNT:-unset}, PUBLIC_API_URL=/api)"
 fi
 
 FORCE_BUILD=0
