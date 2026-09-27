@@ -1,32 +1,28 @@
 #!/bin/bash
 # presek-fleet-deploy — deploy every Presek host from the phone in one command.
 #
-# The phone is the source of truth (it has the git checkout). This script:
-#   1. deploys the phone itself (presek-deploy.sh)
-#   2. archives the exact tracked source + web dist
-#   3. ships them to the Shield and runs presek-deploy.sh --src=... there
-#
-# The Shield is bundle-deployed (no git checkout), so shipping source is what
-# prevents the stale-rebuild class of bug (the /izvori breakage).
+# Design: the phone is the ONLY builder. It builds its own dist, then ships that
+# exact dist to the Shield and (re)starts services there. The Shield never
+# rebuilds, so its assets are byte-identical to the phone's — no cross-host
+# chunk-hash divergence, no tunnel split-brain, no stale-source rebuilds.
 #
 # Usage:
-#   deploy/presek-fleet-deploy.sh                 # both hosts
-#   deploy/presek-fleet-deploy.sh --shield-only
+#   deploy/presek-fleet-deploy.sh                 # phone + shield
 #   deploy/presek-fleet-deploy.sh --phone-only
+#   deploy/presek-fleet-deploy.sh --shield-only
 #
-# Env:
-#   SHIELD_HOST   ssh target (default u0_a106@192.168.0.60, port 8022)
-#   SSH_KEY       identity file (default /root/.ssh/termux_test)
+# Env: SHIELD_HOST, SHIELD_PORT, SSH_KEY
 set -uo pipefail
 
 APP_DIR="${PRESEK_APP_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+WEB_DIR="$APP_DIR/web"
 STAGE=/sdcard/presek_stage
 SHIELD_HOST="${SHIELD_HOST:-u0_a106@192.168.0.60}"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="${SSH_KEY:-/root/.ssh/termux_test}"
-COMMON_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes"
-SSH_OPTS="-i $SSH_KEY -p $SHIELD_PORT $COMMON_OPTS"
-SCP_OPTS="-i $SSH_KEY -P $SHIELD_PORT $COMMON_OPTS"
+COMMON="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes"
+SSH_OPTS="-i $SSH_KEY -p $SHIELD_PORT $COMMON"
+SCP_OPTS="-i $SSH_KEY -P $SHIELD_PORT $COMMON"
 
 log() { echo "[$(date '+%F %T')] [fleet] $*"; }
 
@@ -41,9 +37,10 @@ done
 
 cd "$APP_DIR" || { log "APP_DIR missing"; exit 1; }
 
+# --- 1. build on the phone (the single builder) ----------------------------
 if [ "$DO_PHONE" = "1" ]; then
-  log "=== deploy phone ==="
-  bash "$APP_DIR/deploy/presek-deploy.sh" "$@"
+  log "=== deploy phone (build + restart) ==="
+  bash "$APP_DIR/deploy/presek-deploy.sh" "$@" || { log "phone deploy failed"; exit 1; }
 fi
 
 if [ "$DO_SHIELD" = "0" ]; then
@@ -51,32 +48,30 @@ if [ "$DO_SHIELD" = "0" ]; then
   exit 0
 fi
 
-log "=== build source + dist bundles for the shield ==="
+# --- 2. ship the phone's built dist to the shield --------------------------
+[ -f "$WEB_DIR/dist/server/entry.mjs" ] || { log "no phone dist; run without --shield-only first"; exit 1; }
+
 TMP="$(mktemp -d)"
-SRC="$TMP/presek_src.tgz"
 DIST="$TMP/web_dist.tgz"
-if [ -d "$APP_DIR/.git" ]; then
-  git archive --format=tar.gz -o "$SRC" HEAD || { log "git archive failed"; exit 1; }
-else
-  log "no .git on this host; uploading source bundle is not possible"
-  exit 1
-fi
-tar czf "$DIST" -C "$APP_DIR/web" dist || { log "dist archive failed"; exit 1; }
-log "src=$(du -h "$SRC" | cut -f1) dist=$(du -h "$DIST" | cut -f1)"
+log "=== packaging phone dist ==="
+tar czf "$DIST" -C "$WEB_DIR" dist || { log "dist archive failed"; exit 1; }
+log "dist=$(du -h "$DIST" | cut -f1)"
 
 log "=== ship to shield ($SHIELD_HOST) ==="
 ssh $SSH_OPTS "$SHIELD_HOST" "mkdir -p $STAGE" || { log "could not create $STAGE on shield"; exit 1; }
-scp $SCP_OPTS "$SRC" "$DIST" "$SHIELD_HOST:$STAGE/" || { log "scp failed"; exit 1; }
+scp $SCP_OPTS "$DIST" "$SHIELD_HOST:$STAGE/" || { log "scp failed"; exit 1; }
 
-log "=== deploy on shield ==="
+# --- 3. apply dist verbatim + restart (NO rebuild on the shield) -----------
+log "=== apply dist on shield and restart ==="
 ssh $SSH_OPTS "$SHIELD_HOST" "proot-distro login debian -- /bin/sh -c '
-  cd /root/presek || exit 1
-  # Replace dist wholesale so stale chunks from earlier builds cannot linger
-  # (leftover hashes cause split-brain across the tunnel).
-  rm -rf web/dist
-  tar xzf $STAGE/web_dist.tgz -C web
-  bash deploy/presek-deploy.sh --no-pull --src=$STAGE/$(basename "$SRC") 2>&1 | tail -8
-'" || { log "shield deploy failed"; exit 1; }
+  cd /root/presek/web || exit 1
+  rm -rf dist
+  tar xzf $STAGE/web_dist.tgz || exit 1
+  [ -f dist/server/entry.mjs ] || { echo NO_ENTRY; exit 1; }
+  U=\"core.api\"\"_fast:app\"; W=\"core.\"\"celery_app worker\"; B=\"core.\"\"celery_app beat\"
+  pkill -f \"\$U\"; pkill -f \"\$W\"; pkill -f \"\$B\"; pkill -f dist/server/entry.mjs
+  echo SHIELD_DIST_APPLIED
+'" || { log "shield apply failed"; exit 1; }
 
-log "fleet deploy complete"
+log "fleet deploy complete (phone builds, shield serves the same dist)"
 rm -rf "$TMP"
