@@ -11,37 +11,31 @@
  * client-side callers we always prefer the relative `/api` and only accept an
  * absolute PUBLIC_API_URL when it is a real public origin.
  */
-function isBrowserSafeApiBase(value: string): boolean {
-  if (!value) return false;
-  if (value.startsWith('/')) return true; // relative, always safe
-  try {
-    const host = new URL(value).hostname;
-    return !(host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '0.0.0.0');
-  } catch {
-    return false;
-  }
-}
-
 export function apiBaseUrl(): string {
-  const fromEnv = import.meta.env?.PUBLIC_API_URL;
-
+  // Client (browser): always use the relative /api. Never a loopback/internal
+  // URL — PUBLIC_API_URL is baked in at build time and .env holds the internal
+  // container address, which no browser can reach.
   if (typeof window !== 'undefined') {
-    // Client: never use a loopback/internal URL.
-    return isBrowserSafeApiBase(fromEnv || '') && (fromEnv as string).startsWith('/')
-      ? (fromEnv as string)
-      : '/api';
+    return '/api';
   }
 
-  // Server (SSR): allow the internal URL for server-side fetches.
-  if (fromEnv) return fromEnv;
+  // Server (SSR): Node fetch needs an absolute URL, so use the internal one.
+  const fromEnv = import.meta.env?.PUBLIC_API_URL;
+  if (fromEnv && !fromEnv.startsWith('/')) return fromEnv;
   return (typeof process !== 'undefined' && process.env.INTERNAL_API_URL)
     || 'http://127.0.0.1:5001/api';
 }
 
 export function proxyBaseUrl(): string {
   const apiBase = import.meta.env?.PUBLIC_API_URL || '';
-  if (!apiBase || !isBrowserSafeApiBase(apiBase)) return '';
-  if (apiBase.startsWith('/')) return '';
+  if (!apiBase || apiBase.startsWith('/')) return '';
+  // A loopback/internal origin is not a public proxy origin.
+  try {
+    const host = new URL(apiBase).hostname;
+    if (host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '0.0.0.0') return '';
+  } catch {
+    return '';
+  }
 
   try {
     const url = new URL(apiBase, 'https://presek.mk');
