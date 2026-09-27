@@ -26,7 +26,10 @@ log()  { echo "[$(date '+%F %T')] [go-live] $*"; }
 warn() { echo "[$(date '+%F %T')] [go-live] !! $*"; }
 
 DO_PHONE=1; DO_SHIELD=1
-for a in "$@"; do [ "$a" = "--phone-only" ] && DO_SHIELD=0; done
+for a in "$@"; do
+  [ "$a" = "--phone-only" ] && DO_SHIELD=0
+  [ "$a" = "--no-build" ] && DO_PHONE=0
+done
 
 # --- 1. locate the shield ---------------------------------------------------
 detect_shield() {
@@ -89,9 +92,14 @@ if [ "$DO_SHIELD" = "1" ]; then
     cd /root/presek/web || exit 1
     rm -rf dist && tar xzf /sdcard/presek_stage/web_dist.tgz || exit 1
     [ -f dist/server/entry.mjs ] || { echo NO_ENTRY; exit 1; }
-    pkill -f \"scss\"; pkill -f \"dist/server/entry.mjs\"
+    # Restart the Astro server so the new dist is served (kill the old node).
+    pkill -f "dist/server/entry.mjs" 2>/dev/null
+    pkill -f "core.api_fast" 2>/dev/null
+    pkill -f "core.celery_app" 2>/dev/null
     echo SHIELD_DIST_APPLIED
   '" || { warn "shield apply failed"; exit 1; }
+  # Give the shield's watchdog a moment to respawn its services on the new dist.
+  sleep 25
   rm -rf "$TMP"
 fi
 
