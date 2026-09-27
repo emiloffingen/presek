@@ -66,11 +66,27 @@ done
 # DOES have the repo (e.g. `git archive --format=tar.gz -o src.tgz HEAD`).
 # Extracting it makes "source" match exactly, so a bundle-deployed host can no
 # longer rebuild stale code (the class of bug that broke /izvori).
+#
+# The bundle only ADDS/OVERWRITES files, so files deleted upstream would linger
+# on this host and get picked up by the bundler (e.g. Tailwind scanning dead
+# components -> a different CSS hash). We therefore prune tracked source dirs of
+# anything the bundle does not contain.
 if [ -n "$SRC_BUNDLE" ]; then
   if [ -f "$SRC_BUNDLE" ]; then
     log "applying source bundle: $SRC_BUNDLE"
+    MANIFEST="$APP_DIR/.src-bundle.manifest"
+    tar tzf "$SRC_BUNDLE" | sed 's|/$||' | sort -u > "$MANIFEST" 2>/dev/null || true
     if tar xzf "$SRC_BUNDLE" -C "$APP_DIR" 2>/dev/null; then
       log "source bundle applied"
+      # Prune files under tracked source roots that the bundle does not list.
+      for root in web/src web/public mcp tasks core routes nlp utils; do
+        [ -d "$APP_DIR/$root" ] || continue
+        while IFS= read -r f; do
+          rel="${f#$APP_DIR/}"
+          grep -qxF "$rel" "$MANIFEST" || rm -f "$f"
+        done < <(find "$APP_DIR/$root" -type f 2>/dev/null)
+      done
+      log "pruned files absent from the bundle"
     else
       log "source bundle extraction FAILED"
     fi
