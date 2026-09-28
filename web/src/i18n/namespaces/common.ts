@@ -140,6 +140,7 @@ export const common = {
     'offline.description': 'Во моментов немате активна интернет врска. Сепак, можете да пристапите до содржината што вашиот уред веќе ја има зачувано во својата меморија.',
     'offline.heading': 'Врската е прекината',
     'offline.title': 'Врската е изгубена — Пресек',
+    'pwa.install': 'Инсталирај апликација',
     'onboarding_ui.back': 'Назад',
     'onboarding_ui.done': 'Разбирам',
     'onboarding_ui.kicker': 'Брз водич',

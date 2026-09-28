@@ -58,3 +58,14 @@ export function shouldStoreApiResponse(response) {
   }
   return true;
 }
+
+/**
+ * Pick the offline fallback page for a navigation request. The site serves the
+ * Macedonian edition from both `/` and `/mk/*`, so a request under `/mk` falls
+ * back to `/mk/offline` and everything else to `/offline`.
+ */
+export function offlinePageForPath(pathname) {
+  const p = pathname || '';
+  if (p === '/mk' || p.startsWith('/mk/')) return '/mk/offline';
+  return '/offline';
+}

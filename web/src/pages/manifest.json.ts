@@ -31,9 +31,12 @@ export const GET: APIRoute = async ({ request }) => {
     "lang": isMk ? "mk" : "sr-Latn",
     "dir": "ltr",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+    "launch_handler": { "client_mode": "navigate-existing" },
+    "background_color": "#fdfdfa",
     "theme_color": "#0a192f",
     "orientation": "portrait",
+    "prefer_related_applications": false,
     "icons": [
       {
         "src": "/img/icons/presek-icon-192.png",
@@ -67,6 +70,22 @@ export const GET: APIRoute = async ({ request }) => {
       }
     ],
     "categories": ["news", "politics"],
+    "screenshots": [
+      {
+        "src": "/img/screenshot-narrow.png",
+        "sizes": "1080x1920",
+        "type": "image/png",
+        "form_factor": "narrow",
+        "label": isMk ? "Почетна страница на Пресек" : "Presek home"
+      },
+      {
+        "src": "/img/screenshot-wide.png",
+        "sizes": "1920x1080",
+        "type": "image/png",
+        "form_factor": "wide",
+        "label": isMk ? "Преглед на извори и кластери" : "Sources and clusters"
+      }
+    ],
     "shortcuts": shortcuts.map(shortcut => ({
       ...shortcut,
       icons: [{ "src": "/img/icons/presek-icon-192.png", "sizes": "192x192", "type": "image/png" }]

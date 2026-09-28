@@ -1,11 +1,17 @@
-// Presek — Service Worker v30
+// Presek — Service Worker v31
 // Allowlisted stale-while-revalidate for public API reads only.
 
-import { shouldCacheApiPath, shouldStoreApiResponse } from './sw-cache-policy.js';
+import { shouldCacheApiPath, shouldStoreApiResponse, offlinePageForPath } from './sw-cache-policy.js';
 
-const CACHE_NAME = 'presek-v30';
-const API_CACHE_NAME = 'presek-api-v30';
+const CACHE_NAME = 'presek-v31';
+const API_CACHE_NAME = 'presek-api-v31';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+
+const OFFLINE_URL = '/offline';
+
+function offlinePageFor(url) {
+  return offlinePageForPath(url && url.pathname);
+}
 
 const STATIC_ASSETS = [
   '/logo.svg?v=3',
@@ -17,7 +23,8 @@ const STATIC_ASSETS = [
   '/img/icons/presek-apple-touch.png',
   '/img/placeholder.svg',
   '/manifest.json',
-  '/offline',
+  OFFLINE_URL,
+  '/mk/offline',
 ];
 
 function offlineApiResponse() {
@@ -25,10 +32,6 @@ function offlineApiResponse() {
     status: 503,
     headers: { 'Content-Type': 'application/json; charset=utf-8' }
   });
-}
-
-function offlinePageFor(url) {
-  return '/offline';
 }
 
 function networkOnly(request) {
@@ -65,15 +68,26 @@ function staleWhileRevalidate(request, cache) {
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((c) => c.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      // Precache best-effort: a single missing asset must not abort the whole
+      // install (addAll is all-or-nothing). Keep whatever resolves.
+      .then((c) => Promise.all(
+        STATIC_ASSETS.map((url) => c.add(url).catch(() => null))
+      ))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME).map((k) => caches.delete(k))
-    )).then(() => self.clients.claim())
+    Promise.all([
+      caches.keys().then((keys) => Promise.all(
+        keys.filter((k) => k !== CACHE_NAME && k !== API_CACHE_NAME).map((k) => caches.delete(k))
+      )),
+      self.registration.navigationPreload
+        ? self.registration.navigationPreload.enable()
+        : Promise.resolve(),
+    ]).then(() => self.clients.claim())
   );
 });
 
@@ -131,19 +145,29 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  if (e.request.headers.get('accept')?.includes('text/html')) {
+  if (e.request.mode === 'navigate' || e.request.headers.get('accept')?.includes('text/html')) {
+    // Navigation preload: the browser starts the network request in parallel
+    // with SW startup, removing SW boot latency from the critical path.
+    const preload = e.preloadResponse ? e.preloadResponse.catch(() => null) : Promise.resolve(null);
     e.respondWith(
-      fetch(e.request).then((resp) => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
+      preload.then((preloaded) => {
+        if (preloaded && preloaded.status === 200) {
+          const clone = preloaded.clone();
           caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          return preloaded;
         }
-        return resp;
+        return fetch(e.request).then((resp) => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(e.request, clone));
+          }
+          return resp;
+        });
       }).catch(async () => {
         const cached = await caches.match(e.request);
         if (cached) return cached;
         const localizedOffline = await caches.match(offlinePageFor(url));
-        return localizedOffline || caches.match('/offline');
+        return localizedOffline || caches.match(OFFLINE_URL);
       })
     );
     return;

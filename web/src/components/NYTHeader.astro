@@ -297,6 +297,14 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
             <div class="topbar-actions">
                 <div class="topbar-util">
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
+                        <button
+                            type="button"
+                            class="utility-menu-link pwa-install-btn"
+                            data-pwa-install
+                            hidden
+                        >
+                            {t('pwa.install')}
+                        </button>
                         <ScriptSwitcher />
                         <SimpleThemeToggle />
                         <TextScaleIsland client:load lang={lang} />
@@ -318,6 +326,14 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             </button>
                             <a href={l('/izvori')} class="utility-menu-link">{t('nav.sources')}</a>
                             <a href={l('/archive')} class="utility-menu-link">{t('nav.archive')}</a>
+                            <button
+                                type="button"
+                                class="utility-menu-link pwa-install-btn"
+                                data-pwa-install
+                                hidden
+                            >
+                                {t('pwa.install')}
+                            </button>
                             <ScriptSwitcher />
                             <TextScaleIsland client:load lang={lang} />
                         </div>

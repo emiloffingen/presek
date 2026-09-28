@@ -60,6 +60,48 @@
     document.addEventListener('astro:page-load', schedulePrefetch);
   }
 
+  // PWA install prompt: reveal install buttons only when the browser offers it.
+  let deferredInstallPrompt = null;
+  function bindPwaInstall() {
+    const btns = document.querySelectorAll('[data-pwa-install]');
+    if (!btns.length) return;
+    if (deferredInstallPrompt) {
+      btns.forEach((b) => { b.hidden = false; });
+    }
+    btns.forEach((btn) => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!deferredInstallPrompt) return;
+        const panel = btn.closest('.utility-menu-panel');
+        const details = btn.closest('details');
+        if (panel && details) details.open = false;
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice
+          .then(() => { deferredInstallPrompt = null; })
+          .catch(() => {})
+          .finally(() => {
+            document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = true; });
+          });
+      });
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = false; });
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = true; });
+  });
+
+  bindPwaInstall();
+  document.addEventListener('astro:page-load', bindPwaInstall);
+
   const bindSearchFab = () => {
     document.querySelectorAll('[data-presek-search-fab]').forEach((fab) => {
       if (!(fab instanceof HTMLElement) || fab.dataset.bound === '1') return;
