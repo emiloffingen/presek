@@ -391,8 +391,47 @@ export function buildLeadViewModel(options: {
     };
 }
 
+/**
+ * Pick the homepage lead.
+ *
+ * Presek's differentiator is showing how several outlets cover the same story,
+ * so a multi-source cluster makes a far better lead than a single-source one.
+ * We therefore prefer the best-scoring cluster that has >= 2 distinct sources,
+ * falling back to the top cluster when none qualifies (or when the candidate is
+ * too far down the ranking, so we never promote a weak story just for its count).
+ */
+export function selectLeadCluster(
+    clusters: NewsCluster[] | null | undefined,
+    options: { minSources?: number; maxRankPenalty?: number } = {},
+): NewsCluster | null {
+    const list = Array.isArray(clusters) ? clusters : [];
+    if (list.length === 0) return null;
+
+    const minSources = options.minSources ?? 2;
+    const maxRankPenalty = options.maxRankPenalty ?? 3;
+
+    const sourceCountOf = (cluster: NewsCluster): number => {
+        const distinct = new Set(
+            (cluster.articles || [])
+                .map((a) => (a.source || '').trim())
+                .filter(Boolean),
+        );
+        return distinct.size || Number((cluster as any).source_count || 0) || 0;
+    };
+
+    const best = list[0];
+    if (sourceCountOf(best) >= minSources) return best;
+
+    const searchLimit = Math.min(list.length, maxRankPenalty + 1);
+    for (let i = 1; i < searchLimit; i += 1) {
+        if (sourceCountOf(list[i]) >= minSources) return list[i];
+    }
+
+    return best;
+}
+
 export function buildHomepageFlags(state: HomepageDataState, isHomepage: boolean) {
-    const leadCluster = state.clusters[0] ?? null;
+    const leadCluster = selectLeadCluster(state.clusters);
     const hasPartialFeedContent = Boolean(
         leadCluster
         || state.supportingClusters.length > 0
