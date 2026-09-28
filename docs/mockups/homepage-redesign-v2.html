@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESEK.mk — Homepage redesign mockup (Option A+B)</title>
+<style>
+  :root{
+    --ink:#121315; --paper:#fbfaf7; --muted:#6b6f76; --rule:#dcd8d0;
+    --accent:#173f7a; --gold:#b8862b; --consensus:#2e7d4f; --divergence:#b23a34;
+    --serif:"Noto Serif",Georgia,"Times New Roman",serif;
+    --sans:"Manrope","IBM Plex Sans",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .topbar{border-bottom:3px double var(--ink);padding:10px 0;display:flex;justify-content:space-between;font-family:var(--sans);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .masthead{text-align:center;padding:22px 0 14px;border-bottom:1px solid var(--rule)}
+  .masthead h1{font-family:var(--serif);font-size:44px;margin:0;letter-spacing:.02em}
+  .masthead .tag{font-family:var(--sans);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+  nav.river{border-bottom:1px solid var(--rule);padding:9px 0;font-family:var(--sans);font-size:13px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+  nav.river a{color:var(--ink);text-decoration:none;padding-bottom:2px}
+  nav.river a.on{border-bottom:2px solid var(--gold)}
+
+  /* ---- LEAD: transparency-first ---- */
+  .lead{display:grid;grid-template-columns:1.55fr 1fr;gap:34px;padding:30px 0 8px;border-bottom:1px solid var(--rule)}
+  .lead h2{font-size:38px;line-height:1.12;margin:10px 0 14px}
+  .lead .standfirst{font-size:18px;color:#303338;margin:0 0 16px}
+  .kicker{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .byline{font-family:var(--sans);font-size:12px;color:var(--muted);margin-top:14px}
+
+  /* source-comparison panel = the differentiator */
+  .compare{border:1px solid var(--rule);background:#fff;padding:18px}
+  .compare h3{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  .verdict{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:3px;background:#eaf4ee;border-left:4px solid var(--consensus);margin-bottom:14px}
+  .verdict .score{font-family:var(--sans);font-size:26px;font-weight:800;color:var(--consensus)}
+  .verdict .meta{font-family:var(--sans);font-size:12.5px;color:#255c3d}
+  .srcrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--rule);font-family:var(--sans);font-size:13.5px}
+  .srcrow:last-child{border-bottom:0}
+  .srcrow .name{font-weight:700}
+  .srcrow .stance{font-size:11px;color:var(--muted)}
+  .bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--consensus),#7fb894)}
+  .metrics{display:flex;gap:16px;margin-top:14px;font-family:var(--sans)}
+  .metric{flex:1;text-align:center;border:1px solid var(--rule);padding:8px 4px}
+  .metric b{display:block;font-size:19px}
+  .metric span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+  /* ---- secondary stories ---- */
+  .band{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;padding:26px 0;border-bottom:1px solid var(--rule)}
+  .band article h4{font-size:21px;line-height:1.2;margin:6px 0 8px}
+  .band article p{font-size:14.5px;color:#3a3d42;margin:0}
+  .srcline{font-family:var(--sans);font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:.04em}
+  .srcline b{color:var(--accent)}
+
+  /* ---- river ---- */
+  .river-head{display:flex;justify-content:space-between;align-items:baseline;padding:24px 0 6px}
+  .river-head h3{font-family:var(--sans);font-size:13px;letter-spacing:.16em;text-transform:uppercase;margin:0}
+  .river-head .feed{font-family:var(--sans);font-size:12px;color:var(--muted)}
+  .cols{column-count:3;column-gap:30px;padding-bottom:34px}
+  .cols article{break-inside:avoid;padding:14px 0;border-top:1px solid var(--rule)}
+  .cols h4{font-size:17.5px;line-height:1.22;margin:4px 0 6px}
+  .cols p{font-size:13.5px;color:#3a3d42;margin:0}
+
+  .mockbadge{background:#fff4d6;border:1px solid #e2c473;font-family:var(--sans);font-size:11px;padding:6px 10px;text-align:center;color:#6b5714}
+  @media(max-width:860px){
+    .lead{grid-template-columns:1fr}
+    .band{grid-template-columns:1fr}
+    .cols{column-count:1}
+    .masthead h1{font-size:34px}
+    .lead h2{font-size:29px}
+  }
+</style>
+</head>
+<body>
+<div class="mockbadge">MOCKUP — proposed homepage (Option A+B: clean broadsheet + transparency-first lead). Not live.</div>
+
+<div class="wrap">
+  <div class="topbar">
+    <span>недела, 27 септември 2026</span>
+    <span>PRESEK · Медиумска транспарентност</span>
+  </div>
+
+  <header class="masthead">
+    <h1>ПРЕСЕК</h1>
+    <div class="tag">Дигитален сервис за медиумски увид</div>
+  </header>
+
+  <nav class="river">
+    <a class="on" href="#">Издание</a>
+    <a href="#">Македонија</a>
+    <a href="#">Регион</a>
+    <a href="#">Свет</a>
+    <a href="#">Извори</a>
+    <a href="#">Архива</a>
+    <a href="#">Анализа</a>
+  </nav>
+
+  <!-- LEAD: a story shown through its sources -->
+  <section class="lead">
+    <div>
+      <div class="kicker">Плурализам · 3 извори</div>
+      <h2>Реакција на организаторите на „Разговори за иднината“ по прес-конференцијата на Филипче</h2>
+      <p class="standfirst">Три медиуми известуваат за истиот настан, но со различен акцент. Пресек ги споредува, наместо да избере еден.</p>
+      <p style="font-size:14.5px;color:#3a3d42">Организаторите на платформата „12:05“ одговорија на изјавите дадени на денешната прес-конференција, додека изворите се разликуваат во тонот и во тоа кој дел од расправата го истакнуваат.</p>
+      <div class="byline">Пресек редакција · 12 мин читање · ажурирано 15:18</div>
+    </div>
+
+    <aside class="compare">
+      <h3>Како известуваат изворите</h3>
+      <div class="verdict">
+        <span class="score">55</span>
+        <span class="meta"><b>Консензус</b><br>3 извори покриваат иста приказна. Синтезата се ажурира.</span>
+      </div>
+
+      <div class="srcrow"><span class="name">Telma</span><span class="stance">детално · неутрално</span></div>
+      <div class="srcrow"><span class="name">Plusinfo</span><span class="stance">кратко · акцент на реакцијата</span></div>
+      <div class="srcrow"><span class="name">A1on</span><span class="stance">контекст на платформата</span></div>
+
+      <div class="metrics">
+        <div class="metric"><b>3</b><span>Извори</span></div>
+        <div class="metric"><b>55</b><span>Доверба</span></div>
+        <div class="metric"><b>12м</b><span>Читање</span></div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- SECONDARY BAND -->
+  <section class="band">
+    <article>
+      <div class="kicker" style="color:var(--gold)">Земјотрес</div>
+      <h4>Земјотрес од 3,3 степени во преспанското подрачје</h4>
+      <p>Почувствуван во Битола и околните места; нема пријавени штети.</p>
+      <div class="srcline">Извори: <b>Telma, Plusinfo</b></div>
+    </article>
+    <article>
+      <div class="kicker" style="color:var(--gold)">Истрага</div>
+      <h4>Човечки леш пронајден во канал во Бардовци</h4>
+      <p>Телото е пронајдено во близина на населбата; полицијата води истрага.</p>
+      <div class="srcline">Извори: <b>Plusinfo, A1on, Sitel</b></div>
+    </article>
+    <article>
+      <div class="kicker" style="color:var(--gold)">Закон</div>
+      <h4>Нема „абер“ од новиот закон за пушење</h4>
+      <p>Регулативата останува заглавена и покрај најавите.</p>
+      <div class="srcline">Извори: <b>Telma</b></div>
+    </article>
+  </section>
+
+  <!-- RIVER -->
+  <div class="river-head">
+    <h3>Најново</h3>
+    <span class="feed">ажурирано пред 4 минути · 82 објави · 14 извори</span>
+  </div>
+  <div class="cols">
+    <article><div class="kicker" style="color:var(--muted)">Спорт</div><h4>„Пауза за освежување“ со пиво и шнапс — хит-сцена на мечот на легенди</h4><p>Неформалниот момент стана главна тема на натпреварот.</p></article>
+    <article><div class="kicker" style="color:var(--muted)">Култура</div><h4>Вечерва македонска премиера на видео-танцот „Миревица“</h4><p>Премиерата се одржува во Националната галерија.</p></article>
+    <article><div class="kicker" style="color:var(--muted)">Време</div><h4>Променливо облачно со подолги сончеви периоди</h4><p>Прогноза за следните денови низ земјава.</p></article>
+    <article><div class="kicker" style="color:var(--muted)">Политика</div><h4>Обидот за дефокус преку Платформата за промени во СДСМ нема да успее</h4><p>Реакција од партиски извори.</p></article>
+    <article><div class="kicker" style="color:var(--muted)">Регион</div><h4>Со Клоп некое ново лице на Германија: „Спремни сме заедно да минеме низ оган!“</h4><p>Германскиот селектор со порака пред натпреварот.</p></article>
+    <article><div class="kicker" style="color:var(--muted)">Регион</div><h4>Помилувања и аболиции пред оставката — Вучиќ не откри за кого ќе важат</h4><p>Најавата доаѓа во пресрет на неговата оставка.</p></article>
+  </div>
+</div>
+</body>
+</html>

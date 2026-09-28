@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESEK.mk — Homepage mockup v4 (Times-dense broadsheet)</title>
+<style>
+  :root{
+    --ink:#14161a; --paper:#ffffff; --muted:#6a7078; --faint:#9aa0a8; --rule:#e6e8eb;
+    --accent:#9b1c1c; --link:#1a4a86;
+    --serif:"Noto Serif",Georgia,"Times New Roman",serif;
+    --sans:"Manrope","IBM Plex Sans",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);line-height:1.38}
+  a{color:inherit;text-decoration:none}
+  a:hover h3,a:hover h4{text-decoration:underline;text-decoration-thickness:1px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+  .mockbadge{background:#fff3cd;border-bottom:1px solid #e2c473;font-family:var(--sans);font-size:11px;padding:5px 0;text-align:center;color:#6b5714}
+
+  /* masthead */
+  .mast{display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;border-bottom:1px solid var(--ink)}
+  .mast .logo{font-size:30px;font-weight:800;letter-spacing:.02em}
+  .mast .side{font-family:var(--sans);font-size:11px;color:var(--muted);text-align:right}
+  .mast .side b{color:var(--accent)}
+  nav.mk{border-bottom:3px double var(--ink);font-family:var(--sans);font-size:12.5px;display:flex;gap:0;overflow-x:auto}
+  nav.mk a{padding:8px 13px;color:var(--ink);white-space:nowrap;border-right:1px solid var(--rule)}
+  nav.mk a:first-child{padding-left:0}
+  nav.mk a.on{color:var(--accent);font-weight:700}
+
+  /* top strip: 4 stories + lead block */
+  .top{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:22px;padding:16px 0;border-bottom:1px solid var(--rule)}
+  .brief{font-family:var(--sans)}
+  .brief h3{font-family:var(--serif);font-size:17px;line-height:1.22;margin:0 0 5px;font-weight:700}
+  .brief p{font-size:13px;color:#3c4046;margin:0;font-family:var(--serif)}
+  .brief .meta{font-size:10.5px;color:var(--faint);margin-top:5px;text-transform:uppercase;letter-spacing:.04em}
+  .brief + .brief{margin-top:14px;padding-top:14px;border-top:1px solid var(--rule)}
+  .kicker{font-family:var(--sans);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+
+  /* lead center */
+  .leadcenter{padding-left:22px;border-left:1px solid var(--rule)}
+  .leadcenter h2{font-size:26px;line-height:1.14;margin:4px 0 8px;font-weight:800}
+  .leadcenter .stand{font-size:15px;color:#3c4046;margin:0 0 12px}
+
+  /* source-comparison box */
+  .compare{border:1px solid var(--rule);border-top:3px solid var(--ink);background:#fcfcfd;padding:11px 13px;font-family:var(--sans)}
+  .compare .h{display:flex;justify-content:space-between;align-items:baseline;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .verdict{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .verdict .sc{font-size:22px;font-weight:800;color:#1c6b3f}
+  .verdict .lb{font-size:12px;color:#245c3a;font-weight:700}
+  .verdict .lb span{display:block;font-weight:400;color:var(--muted)}
+  .srow{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px dotted var(--rule);font-size:12.5px}
+  .srow .n{font-weight:700}
+  .srow .d{color:var(--muted);text-align:right;font-size:11.5px}
+  .metrics{display:flex;gap:0;margin-top:9px;border-top:1px solid var(--rule);padding-top:8px}
+  .metrics div{flex:1;text-align:center;border-right:1px solid var(--rule)}
+  .metrics div:last-child{border-right:0}
+  .metrics b{display:block;font-size:16px}
+  .metrics span{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+
+  /* dense river */
+  .riverhead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 0;padding-bottom:6px;border-bottom:1px solid var(--ink)}
+  .riverhead h3{font-family:var(--sans);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0}
+  .riverhead .f{font-family:var(--sans);font-size:11px;color:var(--faint)}
+  .cols{column-count:4;column-gap:24px;column-rule:1px solid var(--rule);padding:10px 0 30px}
+  .item{break-inside:avoid;padding:9px 0;border-bottom:1px solid var(--rule)}
+  .item .cat{font-family:var(--sans);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .item h4{font-size:14.5px;line-height:1.24;margin:3px 0 4px;font-weight:700}
+  .item p{font-size:12px;color:#4a4f55;margin:0;line-height:1.35}
+  .item .src{font-family:var(--sans);font-size:10.5px;color:var(--faint);margin-top:4px}
+  .item .src b{color:var(--link);font-weight:700}
+
+  @media(max-width:960px){
+    .top{grid-template-columns:1fr 1fr}
+    .leadcenter{grid-column:1/-1;padding-left:0;border-left:0;border-top:1px solid var(--rule);padding-top:14px}
+    .cols{column-count:2}
+  }
+  @media(max-width:640px){.top{grid-template-columns:1fr}.cols{column-count:1}}
+</style>
+</head>
+<body>
+<div class="mockbadge">MOCKUP v4 — Times-dense broadsheet. Compare: v1 (NYT-wide) /homepage-mockup.html · v2 dashboard · v3 bloomberg. Not live.</div>
+
+<div class="wrap">
+  <div class="mast">
+    <div class="logo">ПРЕСЕК</div>
+    <div class="side">
+      недела, 27 септември 2026 · <b>14 извори · 82 објави</b><br>
+      Дигитален сервис за медиумска транспарентност
+    </div>
+  </div>
+  <nav class="mk">
+    <a class="on">Издание</a><a>Македонија</a><a>Регион</a><a>Свет</a><a>Бизнис</a><a>Спорт</a><a>Култура</a><a>Извори</a><a>Анализа</a><a>Архива</a>
+  </nav>
+
+  <!-- TOP: 4 briefs (left) + lead & comparison (right) -->
+  <section class="top">
+    <div>
+      <div class="brief">
+        <div class="kicker">Земјотрес</div>
+        <h3>Земјотрес од 3,3 степени во преспанското подрачје</h3>
+        <div class="meta">2 извори · 14:40</div>
+      </div>
+      <div class="brief">
+        <div class="kicker">Истрага</div>
+        <h3>Човечки леш пронајден во канал во Бардовци</h3>
+        <div class="meta">3 извори · 13:55</div>
+      </div>
+      <div class="brief">
+        <div class="kicker">Скопје</div>
+        <h3>Масочна тепачка во центарот на Скопје — приведени осуммина</h3>
+        <div class="meta">1 извор · 13:20</div>
+      </div>
+    </div>
+    <div>
+      <div class="brief">
+        <div class="kicker">Регион</div>
+        <h3>Вучиќ, пред оставката, најави помилувања и аболиции</h3>
+        <div class="meta">2 извори · 14:58</div>
+      </div>
+      <div class="brief">
+        <div class="kicker">Политика</div>
+        <h3>„Филипче е во очајна состојба“, реагира СДС</h3>
+        <div class="meta">1 извор · 14:10</div>
+      </div>
+      <div class="brief">
+        <div class="kicker">Култура</div>
+        <h3>Вечерва македонска премиера на видео-танцот „Миревица“</h3>
+        <div class="meta">1 извор · 12:50</div>
+      </div>
+    </div>
+
+    <div class="leadcenter">
+      <div class="kicker">Плурализам · 3 извори</div>
+      <h2>Реакција на организаторите на „Разговори за иднината“ по прес-конференцијата на Филипче</h2>
+      <p class="stand">Три медиуми известуваат за истиот настан, но со различен акцент. Пресек ги споредува, наместо да избере еден.</p>
+
+      <div class="compare">
+        <div class="h"><span>КАКО ИЗВЕСТУВААТ</span><span>ажурирано 15:18</span></div>
+        <div class="verdict">
+          <span class="sc">55</span>
+          <span class="lb">Консензус<span>3 извори · синтезата се ажурира</span></span>
+        </div>
+        <div class="srow"><span class="n">Telma</span><span class="d">разбирање · манипулации</span></div>
+        <div class="srow"><span class="n">Plusinfo</span><span class="d">обвинување на СДСМ</span></div>
+        <div class="srow"><span class="n">A1on</span><span class="d">контекст на платформата</span></div>
+        <div class="metrics">
+          <div><b>3</b><span>Извори</span></div>
+          <div><b>55</b><span>Доверба</span></div>
+          <div><b>12м</b><span>Читање</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DENSE RIVER: 4 columns, many stories -->
+  <div class="riverhead"><h3>Најново</h3><span class="f">ажурирано пред 4 минути</span></div>
+  <div class="cols">
+    <div class="item"><div class="cat">Политика</div><h4>„Видовме мала група на пучисти, луѓе од ЗНАМ и левица“ — Филипче жестоко против „12:05“</h4><p>Продолжува расправијата по прес-конференцијата.</p><div class="src">Извори: <b>Telma, Plusinfo, A1on</b></div></div>
+    <div class="item"><div class="cat">Спорт</div><h4>Халанд на мегдан со Роналдо — Холандија гостува во Белград</h4><p>Натпревар од квалификациите.</p><div class="src">Извор: <b>Sitel</b></div></div>
+    <div class="item"><div class="cat">Свет</div><h4>Иран инсистира на дипломатско решение откако Трамп го отфрли мировниот план</h4><div class="src">Извор: <b>Vecer</b></div></div>
+    <div class="item"><div class="cat">Политика</div><h4>„Можеме да ја собориме која било влада на Балканот“, порача опозицијата</h4><div class="src">Извор: <b>Vecer</b></div></div>
+    <div class="item"><div class="cat">Економија</div><h4>Лобист на „Актор“ ја придружувал амбасадорката на САД на состаноци</h4><div class="src">Извор: <b>360 Stepeni</b></div></div>
+    <div class="item"><div class="cat">Скопје</div><h4>Скопјанец нападнал сопруга во полициско одделение Шуто Оризари</h4><div class="src">Извор: <b>Plusinfo</b></div></div>
+    <div class="item"><div class="cat">Транспорт</div><h4>Крај за чекањето по шалтери — студентите во Скопје добиваат дигит-услуги</h4><div class="src">Извор: <b>A1on</b></div></div>
+    <div class="item"><div class="cat">Криминал</div><h4>88-годишник од Струга измамен за 300.000 денари — ветиле награда</h4><div class="src">Извор: <b>Sitel</b></div></div>
+    <div class="item"><div class="cat">Свет</div><h4>Министерството за финансии на САД објави успех во кампањата за економски притисок</h4><div class="src">Извор: <b>Vecer</b></div></div>
+    <div class="item"><div class="cat">Спорт</div><h4>„Пауза за освежување“ со пиво и шнапс — хит-сцена на мечот на легенди</h4><div class="src">Извор: <b>Plusinfo</b></div></div>
+    <div class="item"><div class="cat">Здравство</div><h4>Нема „абер“ од новиот закон за пушење</h4><div class="src">Извор: <b>Telma</b></div></div>
+    <div class="item"><div class="cat">Медиуми</div><h4>Добивме опомена за тужба од „АТС груп“, но нема да се извиниме</h4><div class="src">Извор: <b>360 Stepeni</b></div></div>
+    <div class="item"><div class="cat">Политика</div><h4>„Бугарскиот конзул Филипче“ и растот на тензиите во СДСМ</h4><div class="src">Извор: <b>Vecer</b></div></div>
+    <div class="item"><div class="cat">Политика</div><h4>Не бегаме од одговорноста — излегуваме со отчет пред граѓаните</h4><div class="src">Извор: <b>SDK</b></div></div>
+    <div class="item"><div class="cat">Време</div><h4>Променливо облачно со подолги сончеви периоди — прогноза за 28 септември</h4><div class="src">Извори: <b>Telma, 360 Stepeni</b></div></div>
+    <div class="item"><div class="cat">Општо</div><h4>Државни пари за здруженија и фондации — кои се добитниците</h4><div class="src">Извор: <b>A1on</b></div></div>
+  </div>
+</div>
+</body>
+</html>

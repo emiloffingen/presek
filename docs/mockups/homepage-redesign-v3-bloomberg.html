@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESEK.mk — Homepage mockup v3 (Bloomberg terminal style)</title>
+<style>
+  :root{
+    --bg:#0a0c0e; --panel:#12151a; --panel2:#161a20; --line:#242b34;
+    --txt:#e6e9ee; --dim:#8b93a1; --dim2:#5b636f;
+    --amber:#ff9f1c; --amber-dim:#8a5a12; --cyan:#3dd6d0; --green:#4ade80; --red:#ff5c5c;
+    --mono:"IBM Plex Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Manrope","IBM Plex Sans",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13px;line-height:1.4}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1400px;margin:0 auto;padding:0 14px}
+
+  /* top bar */
+  .bar{background:#05070a;border-bottom:1px solid var(--line);font-size:11px}
+  .bar .wrap{display:flex;justify-content:space-between;align-items:center;height:30px;color:var(--dim)}
+  .bar .l{display:flex;gap:14px}
+  .brand{color:#fff;font-weight:700;letter-spacing:.1em}
+  .brand b{color:var(--amber)}
+  .live{color:var(--green)} .live i{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:5px;animation:b 1.4s infinite}
+  @keyframes b{50%{opacity:.25}}
+
+  .mockbadge{background:var(--amber);color:#1a1206;font-size:11px;font-weight:700;text-align:center;padding:5px 0;letter-spacing:.04em}
+
+  /* ticker */
+  .ticker{border-bottom:1px solid var(--line);background:#0d1014;overflow:hidden;white-space:nowrap;height:34px;display:flex;align-items:center}
+  .ticker .inner{display:inline-block;animation:sc 60s linear infinite;padding-left:100%}
+  @keyframes sc{to{transform:translateX(-100%)}}
+  .tick{display:inline-block;margin:0 22px;font-size:12px}
+  .tick .sym{color:var(--amber);font-weight:700}
+  .tick .px{color:var(--txt)}
+  .tick .up{color:var(--green)} .tick .dn{color:var(--red)}
+
+  /* nav */
+  nav.mk{border-bottom:1px solid var(--line);background:var(--panel);font-size:12px}
+  nav.mk .wrap{display:flex;gap:0;overflow-x:auto}
+  nav.mk a{padding:9px 14px;color:var(--dim);border-right:1px solid var(--line);white-space:nowrap}
+  nav.mk a.on{color:var(--amber);background:var(--panel2);border-bottom:2px solid var(--amber)}
+
+  /* layout */
+  .main{display:grid;grid-template-columns:1fr 1fr 340px;gap:1px;background:var(--line);margin-top:12px}
+  .col{background:var(--bg);padding:14px}
+  .colhead{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:10px;font-size:11px;letter-spacing:.12em;color:var(--amber);text-transform:uppercase}
+  .colhead .c{color:var(--dim2);letter-spacing:0;text-transform:none}
+
+  /* lead */
+  .leadline{font-family:var(--sans);font-size:26px;line-height:1.15;font-weight:800;color:#fff;margin:0 0 8px}
+  .sub{color:var(--dim);font-size:13px;font-family:var(--sans);margin-bottom:12px}
+  .kv{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:5px 0;font-size:12px}
+  .kv .k{color:var(--dim2)} .kv .v{color:var(--txt)}
+  .pill{font-size:10.5px;padding:1px 7px;border-radius:2px;font-weight:700}
+  .p-g{background:#12351f;color:var(--green)} .p-a{background:#3a2c0c;color:var(--amber)} .p-r{background:#3a1414;color:var(--red)}
+
+  /* source matrix */
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;color:var(--dim2);font-weight:400;border-bottom:1px solid var(--line);padding:5px 4px;font-size:10.5px;letter-spacing:.06em}
+  td{padding:6px 4px;border-bottom:1px solid #1a1f26}
+  tr:hover td{background:var(--panel2)}
+  .srcname{color:var(--cyan);font-weight:700}
+  .bar{height:6px;background:#232a33;border-radius:1px;position:relative;overflow:hidden}
+  .bar i{display:block;height:100%}
+  .up{color:var(--green)} .dn{color:var(--red)} .fl{color:var(--dim)}
+
+  /* right rail watchlist */
+  .row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid #1a1f26;font-size:12px}
+  .row .n{color:var(--txt)} .row .t{color:var(--dim);text-align:right}
+  .row .dv{color:var(--green)}
+
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);margin-top:10px}
+  .stat{background:var(--panel);padding:10px}
+  .stat .k{color:var(--dim2);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .stat .v{font-size:22px;font-weight:800;color:#fff;font-family:var(--sans)}
+  .stat .v small{font-size:12px;color:var(--dim)}
+
+  .foot{margin:14px 0 30px;padding:10px 0;border-top:1px solid var(--line);color:var(--dim2);font-size:11px;display:flex;justify-content:space-between}
+
+  @media(max-width:1000px){.main{grid-template-columns:1fr}.thenav{display:none}}
+</style>
+</head>
+<body>
+<div class="mockbadge">MOCKUP v3 — “Bloomberg terminal” (dark, dense, data-first). Compare: /homepage-mockup.html (broadsheet) · /homepage-mockup-v2.html (dashboard).</div>
+
+<div class="bar"><div class="wrap">
+  <div class="l">
+    <span class="brand">ПРЕ<b>СЕК</b></span>
+    <span>МЕДИУМСКИ ТЕРМИНАЛ</span>
+    <span>MK · MKD</span>
+  </div>
+  <div class="l">
+    <span class="live"><i></i>ВО ЖИВО</span>
+    <span>нед 27 сеп · 15:18 CET</span>
+    <span>14 извори · 82 објави/24ч</span>
+  </div>
+</div></div>
+
+<div class="ticker"><div class="inner">
+  <span class="tick"><span class="sym">PLUSINFO</span> <span class="px">19 објави</span> <span class="up">▲ 4</span></span>
+  <span class="tick"><span class="sym">TELMA</span> <span class="px">16 објави</span> <span class="up">▲ 2</span></span>
+  <span class="tick"><span class="sym">VECER</span> <span class="px">14 објави</span> <span class="dn">▼ 1</span></span>
+  <span class="tick"><span class="sym">360STEPENI</span> <span class="px">11 објави</span> <span class="up">▲ 1</span></span>
+  <span class="tick"><span class="sym">A1ON</span> <span class="px">11 објави</span> <span class="fl">■ 0</span></span>
+  <span class="tick"><span class="sym">SITEL</span> <span class="px">11 објави</span> <span class="dn">▼ 2</span></span>
+  <span class="tick"><span class="sym">SDK</span> <span class="px">6 објави</span> <span class="fl">■ 0</span></span>
+  <span class="tick"><span class="sym">MIA</span> <span class="px">4 објави</span> <span class="up">▲ 1</span></span>
+  <span class="tick" style="color:var(--dim)">ПЛУРАЛИЗАМ 0.00% <span class="p-a pill">ЧЕКА</span></span>
+  <span class="tick" style="color:var(--dim)">СВЕЖИНА 141м <span class="p-r pill">ЗАДОЦНУВА</span></span>
+</div></div>
+
+<nav class="mk thenav"><div class="wrap">
+  <a class="on">ИЗДАНИЕ</a><a>МАКЕДОНИЈА</a><a>РЕГИОН</a><a>СВЕТ</a><a>БИЗНИС</a><a>ИЗВОРИ</a><a>АНАЛИЗА</a><a>АРХИВА</a><a>СТАТУС</a>
+</div></nav>
+
+<div class="wrap">
+  <div class="main">
+    <!-- COL 1: the story terminal -->
+    <div class="col">
+      <div class="colhead"><span>◆ ВОДЕЧКА ПРИКАЗНА</span><span class="c">ID #CL-4471</span></div>
+      <h1 class="leadline">Реакција на организаторите на „Разговори за иднината“ по прес-конференцијата на Филипче</h1>
+      <div class="sub">Три извори известуваат. Пресек ги споредува — не избира еден.</div>
+
+      <div class="kv"><span class="k">ПОКРИЕНО ОД</span><span class="v">3 медиума</span></div>
+      <div class="kv"><span class="k">СОГЛАСНОСТ</span><span class="v">55 / 100 <span class="p-g pill">КОНСЕНЗУС</span></span></div>
+      <div class="kv"><span class="k">ЧИТАЊЕ</span><span class="v">12 мин</span></div>
+      <div class="kv"><span class="k">АЖУРИРАНО</span><span class="v">15:18</span></div>
+      <div class="kv"><span class="k">СТАТУС СИНТЕЗА</span><span class="v"><span class="p-a pill">СЕ АЖУРИРА</span></span></div>
+    </div>
+
+    <!-- COL 2: source matrix -->
+    <div class="col">
+      <div class="colhead"><span>▦ МАТРИЦА НА ИЗВОРИ</span><span class="c">денес</span></div>
+      <table>
+        <thead><tr><th>ИЗВОР</th><th>ТОН</th><th>ФОКУС</th><th style="width:70px">СОГЛ.</th></tr></thead>
+        <tbody>
+          <tr><td class="srcname">TELMA</td><td class="fl">неутрален</td><td class="fl">детално</td><td><div class="bar"><i style="width:62%;background:var(--green)"></i></div></td></tr>
+          <tr><td class="srcname">PLUSINFO</td><td class="fl">реакција</td><td class="fl">кратко</td><td><div class="bar"><i style="width:48%;background:var(--amber)"></i></div></td></tr>
+          <tr><td class="srcname">A1ON</td><td class="fl">контекст</td><td class="fl">платформа</td><td><div class="bar"><i style="width:55%;background:var(--green)"></i></div></td></tr>
+          <tr><td class="srcname">VECER</td><td class="fl">регион</td><td class="fl">Германија</td><td><div class="bar"><i style="width:31%;background:var(--red)"></i></div></td></tr>
+          <tr><td class="srcname">360STEPENI</td><td class="fl">критичен</td><td class="fl">СДСМ</td><td><div class="bar"><i style="width:44%;background:var(--amber)"></i></div></td></tr>
+          <tr><td class="srcname">SITEL</td><td class="fl">фактички</td><td class="fl">настан</td><td><div class="bar"><i style="width:70%;background:var(--green)"></i></div></td></tr>
+        </tbody>
+      </table>
+
+      <div class="colhead" style="margin-top:16px"><span>◆ ТОК НА ВЕСТИ</span><span class="c">по минута</span></div>
+      <div class="kv"><span class="k">15:18</span><span class="v">Филипче / „12:05“ реакција <span style="color:var(--dim2)">· 3 src</span></span></div>
+      <div class="kv"><span class="k">15:08</span><span class="v">Клоп · Германија <span style="color:var(--dim2)">· 1 src</span></span></div>
+      <div class="kv"><span class="k">14:58</span><span class="v">Вучиќ · помилувања <span style="color:var(--dim2)">· 1 src</span></span></div>
+      <div class="kv"><span class="k">14:40</span><span class="v">Земјотрес · Битола <span style="color:var(--dim2)">· 2 src</span></span></div>
+      <div class="kv"><span class="k">13:55</span><span class="v">Бардовци · истрага <span style="color:var(--dim2)">· 3 src</span></span></div>
+    </div>
+
+    <!-- COL 3: watchlist / stats -->
+    <div class="col">
+      <div class="colhead"><span>▤ ИЗВОРИ · ДЕНЕС</span><span class="c">објави</span></div>
+      <div class="row"><span class="n">Plusinfo</span><span class="t">19 <span class="dv">▲4</span></span></div>
+      <div class="row"><span class="n">Telma</span><span class="t">16 <span class="dv">▲2</span></span></div>
+      <div class="row"><span class="n">Vecer</span><span class="t">14 <span class="dn">▼1</span></span></div>
+      <div class="row"><span class="n">360 Stepeni</span><span class="t">11 <span class="dv">▲1</span></span></div>
+      <div class="row"><span class="n">A1on</span><span class="t">11 <span class="fl">■0</span></span></div>
+      <div class="row"><span class="n">Sitel</span><span class="t">11 <span class="dn">▼2</span></span></div>
+      <div class="row"><span class="n">SDK</span><span class="t">6 <span class="fl">■0</span></span></div>
+      <div class="row"><span class="n">MIA</span><span class="t">4 <span class="dv">▲1</span></span></div>
+
+      <div class="statgrid">
+        <div class="stat"><div class="k">Извори</div><div class="v">14</div></div>
+        <div class="stat"><div class="k">Објави 24ч</div><div class="v">82</div></div>
+        <div class="stat"><div class="k">Плурализам</div><div class="v">0<small>%</small></div></div>
+        <div class="stat"><div class="k">Свежина</div><div class="v">141<small>м</small></div></div>
+      </div>
+
+      <div class="colhead" style="margin-top:16px"><span>▸ ТЕМИ</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span class="pill p-a">ФИЛИПЧЕ</span><span class="pill p-a">СДСМ</span>
+        <span class="pill p-a">ИЗБОРИ</span><span class="pill p-a">ВУЧИЌ</span>
+        <span class="pill p-a">ГЕРМАНИЈА</span><span class="pill p-a">БИТОЛА</span>
+      </div>
+
+      <div class="colhead" style="margin-top:16px"><span>▸ СИСТЕМ</span></div>
+      <div class="kv"><span class="k">Собирање</span><span class="v"><span class="p-a pill">141м</span></span></div>
+      <div class="kv"><span class="k">Синтеза</span><span class="v"><span class="p-g pill">ОК</span></span></div>
+      <div class="kv"><span class="k">Анализа</span><span class="v"><span class="p-g pill">ОК</span></span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>PRESEK TERMINAL · податоците се обработуваат од јавно достапни извори</span>
+    <span>F1 ПОМОШ · F2 ИЗВОРИ · F3 АНАЛИЗА · <span style="color:var(--amber)">ALT+Y</span></span>
+  </div>
+</div>
+</body>
+</html>
