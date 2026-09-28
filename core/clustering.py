@@ -10,6 +10,17 @@ from core.language import transliterate_cyr_to_lat
 
 MAX_CLUSTER_SIZE = 40
 VECTOR_THRESHOLD = 0.28
+# Title-overlap merge thresholds. The old single gate (instant 0.92 / best 0.52)
+# under-merged badly: semantically identical headlines about one event scored
+# 0.27-0.53 and split into separate clusters, which starved pluralism and
+# synthesis (91% of clusters ended up single-source). We now merge on two bands:
+#   * INSTANT: near-identical headlines.
+#   * BEST:    strong combined signal (overlap + shared named entities + topic).
+#   * ANCHORED: weaker overlap, but at least one shared named entity (e.g. the
+#     same person/place), which is a reliable same-story signal for news.
+_TITLE_INSTANT_MERGE = 0.72
+_TITLE_BEST_MERGE = 0.40
+_TITLE_ANCHORED_MERGE = 0.32
 _STOPWORDS = {
     "а",
     "и",
@@ -30,6 +41,13 @@ _STOPWORDS = {
     "ова",
     "овој",
     "оваа",
+    # Broadcast/format noise: these prefixes appear on unrelated headlines from
+    # the same outlets and inflate title overlap (e.g. "(ВИДЕО) ...").
+    "видео",
+    "фото",
+    "фотографии",
+    "погледнете",
+    "ексклузивно",
     "the",
     "and",
     "for",
@@ -149,21 +167,35 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
 
     best_id = None
     best_score = 0.0
+    best_anchored = False
     for cluster_id, articles in candidates.items():
         if len(articles) >= MAX_CLUSTER_SIZE:
             continue
         for article in articles[:3]:
             other_title = str(article.get("title") or "")
             overlap = _cluster_title_overlap(title, other_title)
-            if overlap >= 0.92:
+            if overlap >= _TITLE_INSTANT_MERGE:
                 return cluster_id
             shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
-            score = overlap + (0.12 if len(shared) >= 2 else 0.05 if shared else 0.0)
+            same_topic = bool(topic and article.get("topic") and topic == article["topic"])
+            score = overlap
+            if shared:
+                score += 0.15
+            if len(shared) >= 2:
+                score += 0.05
+            if same_topic:
+                score += 0.06
             if source and article.get("source") == source:
                 score -= 0.04
-            if topic and article.get("topic") and topic == article["topic"]:
-                score += 0.04
             if score > best_score:
-                best_id, best_score = cluster_id, score
+                best_id, best_score, best_anchored = cluster_id, score, bool(shared)
 
-    return best_id if best_score >= 0.52 else uuid.uuid4().hex[:12]
+    if best_id is None:
+        return uuid.uuid4().hex[:12]
+    if best_score >= _TITLE_BEST_MERGE:
+        return best_id
+    # Low band: only merge when the match is anchored by a shared named entity,
+    # so unrelated stories that merely share topic words stay separate.
+    if best_score >= _TITLE_ANCHORED_MERGE and best_anchored:
+        return best_id
+    return uuid.uuid4().hex[:12]

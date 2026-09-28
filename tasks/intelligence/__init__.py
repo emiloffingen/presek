@@ -25,9 +25,15 @@ discover_storylines_task = _task("tasks.intelligence.discover_storylines_task")
 extract_entities_task = _task("tasks.intelligence.extract_entities_task")
 generate_cluster_metadata_task = _task("tasks.intelligence.generate_cluster_metadata_task")
 generate_embeddings_task = _task("tasks.intelligence.generate_embeddings_task")
-recluster_recent_articles_task = _task("tasks.intelligence.recluster_recent_articles_task")
+# Real implementations (see cluster_ops). These must NOT be no-op stubs: cluster
+# repair is what merges same-story clusters that ingestion split apart, and
+# without it those clusters stay single-source and never get a synthesis.
+from tasks.intelligence.cluster_ops import (  # noqa: E402
+    recluster_recent_articles_task,
+    repair_split_clusters_task,
+)
+
 refine_knowledge_graph_sentiment_task = _task("tasks.intelligence.refine_knowledge_graph_sentiment_task")
-repair_split_clusters_task = _task("tasks.intelligence.repair_split_clusters_task")
 summarize_article_task = _task("tasks.intelligence.summarize_article_task")
 summarize_articles_batch_task = _task("tasks.intelligence.summarize_articles_batch_task")
 summarize_articles_local_batch_task = _task("tasks.intelligence.summarize_articles_local_batch_task")
