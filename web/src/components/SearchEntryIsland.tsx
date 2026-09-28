@@ -77,11 +77,22 @@ function SearchEntryIslandContent({
 
     const handleOpenEvent = () => open();
 
+    const handleFabClick = (e: MouseEvent) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('[data-presek-search-fab]')) {
+        e.preventDefault();
+        open();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('presek:open-search', handleOpenEvent);
+    document.addEventListener('click', handleFabClick);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('presek:open-search', handleOpenEvent);
+      document.removeEventListener('click', handleFabClick);
     };
   }, [open]);
 

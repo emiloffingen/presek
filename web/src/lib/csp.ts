@@ -55,11 +55,16 @@ export function computeInlineHashes(html: string): CspHashes {
 
 export function buildCspPolicy(nonce: string, hashes: CspHashes = { scripts: [], styles: [] }): string {
   const scriptHashes = hashes.scripts.length ? ' ' + hashes.scripts.join(' ') : '';
-  const styleHashes = hashes.styles.length ? ' ' + hashes.styles.join(' ') : '';
   return (
     "default-src 'self'; " +
     `script-src 'self' 'nonce-${nonce}'${scriptHashes} https://www.googletagmanager.com; ` +
-    `style-src 'self' 'nonce-${nonce}'${styleHashes} https://fonts.googleapis.com https://cdn.jsdelivr.net; ` +
+    // style-src deliberately uses 'unsafe-inline' with NO nonce/hash: a nonce or
+    // hash in a source list makes browsers ignore 'unsafe-inline'. Astro's island
+    // runtime and React set inline `style` attributes, and style attributes can
+    // never be authorised by nonce/hash (only by 'unsafe-hashes' + the exact
+    // value). Without this, hydration silently aborts and every island is inert.
+    // Script execution stays locked to nonce + hashes.
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "img-src 'self' data: https: blob: https://www.google-analytics.com https://www.googletagmanager.com; " +
     "connect-src 'self' https://presek.live https://www.presek.live https://presek.mk https://www.presek.mk https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://region1.google-analytics.com wss://presek.live wss://presek.mk; " +

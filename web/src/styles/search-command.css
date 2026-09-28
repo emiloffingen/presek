@@ -220,7 +220,45 @@
 }
 
 @media (max-width: 768px) {
-  .presek-search-trigger {
+  /* Home: keep a real, tappable search bar instead of collapsing to a bare icon. */
+  html[data-page="home"] .presek-search-trigger {
+    justify-content: flex-start;
+    width: 100%;
+    min-width: 6.5rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.55rem;
+    gap: 0.5rem;
+    background: color-mix(in srgb, var(--background) 84%, var(--secondary));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--background) 65%, transparent),
+      0 1px 1px color-mix(in srgb, var(--foreground) 3%, transparent);
+  }
+
+  html[data-page="home"] .search-trigger-copy {
+    display: flex;
+    flex: 1;
+  }
+
+  html[data-page="home"] .search-trigger-hint,
+  html[data-page="home"] .search-trigger-shortcuts {
+    display: none;
+  }
+
+  html[data-page="home"] .search-trigger-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground));
+  }
+
+  html[data-page="home"] .search-trigger-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    background: transparent;
+    border-color: transparent;
+  }
+
+  /* Other pages: compact icon trigger, as before. */
+  html:not([data-page="home"]) .presek-search-trigger {
     justify-content: center;
     width: 2.25rem;
     min-width: 2.25rem;
@@ -231,18 +269,13 @@
     box-shadow: none;
   }
 
-  .search-trigger-copy,
-  .search-trigger-hint,
-  .search-trigger-shortcuts {
+  html:not([data-page="home"]) .search-trigger-copy,
+  html:not([data-page="home"]) .search-trigger-hint,
+  html:not([data-page="home"]) .search-trigger-shortcuts {
     display: none;
   }
 
-  .search-trigger-label {
-    font-size: var(--text-ui-min);
-    font-weight: 600;
-  }
-
-  .search-trigger-icon {
+  html:not([data-page="home"]) .search-trigger-icon {
     width: 1.9rem;
     height: 1.9rem;
     background: color-mix(in srgb, var(--secondary) 62%, transparent);
@@ -250,16 +283,14 @@
 }
 
 @media (max-width: 480px) {
-  .presek-search-trigger {
+  html[data-page="home"] .presek-search-trigger {
+    min-width: 4.5rem;
     min-height: 2rem;
-    padding: 0.3rem 0.4rem;
+    padding: 0.28rem 0.5rem;
   }
 
-  .search-trigger-copy {
-    display: none;
-  }
-
-  .presek-search-trigger {
+  html:not([data-page="home"]) .presek-search-trigger {
+    min-height: 2rem;
     justify-content: center;
     width: 2.35rem;
     min-width: 2.35rem;
