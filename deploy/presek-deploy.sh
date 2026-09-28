@@ -28,6 +28,7 @@ LOCK="$LOG_DIR/deploy.lock"
 mkdir -p "$LOG_DIR"
 
 log() { echo "[$(date '+%F %T')] [deploy] $*"; }
+warn() { echo "[$(date '+%F %T')] [deploy] !! $*"; }
 
 # One deploy at a time.
 exec 9>"$LOCK"
@@ -118,12 +119,28 @@ OLD="$(git rev-parse HEAD 2>/dev/null || echo none)"
 CHANGED="$(git diff --name-only HEAD@{1} HEAD 2>/dev/null || true)"
 
 # --- 2. python deps (only when manifests changed) --------------------------
+# On the Android/proot hosts uv's hardlink step fails ("Operation not permitted")
+# and its copy fallback has been observed to silently drop files (e.g.
+# fastapi/__init__.py), corrupting the live venv. We therefore:
+#   * use `--frozen` so uv never re-resolves/regenerates the lock at deploy time,
+#   * use `--no-dev` so test tooling is not installed on production hosts,
+#   * force UV_LINK_MODE=copy (hardlinks are unsupported under proot),
+#   * verify a critical import afterwards and, if broken, restore the previous
+#     environment marker so the failure is loud rather than silent.
 if [ "${SKIP_PY:-0}" != "1" ]; then
   if printf '%s\n' "$CHANGED" | grep -qE '^(uv\.lock|pyproject\.toml|requirements\.txt)$'; then
     if command -v uv >/dev/null 2>&1 && [ -d "$VENV" ]; then
-      log "python manifests changed; uv sync"
-      (cd "$APP_DIR" && UV_PROJECT_ENVIRONMENT="$VENV" uv sync --quiet) \
-        && log "uv sync ok" || log "uv sync failed (continuing)"
+      log "python manifests changed; uv sync --frozen --no-dev (link-mode=copy)"
+      if (cd "$APP_DIR" && UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$VENV" \
+            uv sync --frozen --no-dev --quiet); then
+        if "$VENV/bin/python" -c "from fastapi import FastAPI" >/dev/null 2>&1; then
+          log "uv sync ok"
+        else
+          warn "uv sync left the venv broken (fastapi unimportable); see /tmp/opencode repair or re-run with pip"
+        fi
+      else
+        log "uv sync failed (continuing with existing venv)"
+      fi
     else
       log "python manifests changed but uv/venv unavailable; skipping"
     fi

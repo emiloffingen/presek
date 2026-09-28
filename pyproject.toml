@@ -97,7 +97,11 @@ dev = [
 ]
 
 [tool.uv]
-default-groups = ["api", "worker"]
+# `worker` (llama-cpp-python) is intentionally NOT a default group. The MK
+# deployment uses the hosted AI cascade, not local Gemma, and llama-cpp-python
+# cannot be built on the Android/proot hosts (hardlink + C++ toolchain limits).
+# Install it explicitly where needed: `uv sync --group worker`.
+default-groups = ["api"]
 
 [tool.ruff]
 line-length = 120
