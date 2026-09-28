@@ -77,28 +77,93 @@ def _title_phrase_overlap(left: str, right: str, *args, **kwargs) -> float:
     return _cluster_title_overlap(left, right)
 
 
+def _normalize_entity_token(value) -> str:
+    """Casefold, transliterate and strip diacritics so cyr/lat forms compare equal."""
+    return (
+        transliterate_cyr_to_lat(str(value).casefold())
+        .replace("č", "c")
+        .replace("ć", "c")
+        .replace("š", "s")
+        .replace("ž", "z")
+    )
+
+
+# High-frequency, story-agnostic tokens that must never count as a shared "named
+# entity" anchor. Headlines about wholly different events constantly share these
+# (Европа, Македонија, претседател, влада...), so treating them as anchors chained
+# unrelated stories into one cluster. Stored in normalized Latin form (see
+# `_normalize_entity_token`). Specific proper nouns (people, clubs, brands) are
+# intentionally NOT listed here and remain valid anchors.
+_GENERIC_ENTITY_TOKENS = {
+    # geography / geopolitics
+    "evropa", "evropata", "evropski", "evropska", "evropskiot", "evropskite", "evropskata",
+    "makedonija", "makedonijata", "makedonski", "makedonska",
+    "srbija", "srbijata", "srpski", "srpska",
+    "svet", "svetot", "svetski", "svetska",
+    "balkan", "balkanot", "balkanski",
+    "region", "regionot", "regionalni",
+    "skopje", "beograd", "zagreb", "kosovo", "albanija", "bugarija", "grcija",
+    "germanija", "francija", "rusija", "ukraina", "amerika", "sad",
+    "britanija", "anglija", "kitajska", "indija", "iran", "izrael", "palestina",
+    "njujork", "vasinton", "moskva", "berlin", "pariz", "london",
+    # Macedonian cities/regions that appear in a large share of local headlines
+    "bitola", "ohrid", "kumanovo", "tetovo", "gostivar", "strumica", "vele",
+    "prilep", "stip", "gevgelija", "kavadarci", "struga", "debar", "krusevo",
+    "eu", "unija", "nato", "oon", "un", "zapad", "istok", "sever", "jug", "evroatlantski",
+    # nationality/derived adjective forms (appear in a huge share of world-news headlines)
+    "amerikanski", "amerikanska", "amerikanskite", "amerikanec", "amerikanka",
+    "ruski", "ruska", "ruskite", "rusite", "rusi", "ruskoto",
+    "britanski", "britanska", "britancite", "angliski", "angliska",
+    "germanski", "germanska", "francuski", "francuska", "grcki", "grchkata",
+    "kitajski", "kitajska", "indiski", "indiska", "iranski", "iranska",
+    "evropskoto", "svetskoto", "balkanskite", "makedonskite", "srpskite",
+    # institutions / offices / generic actors
+    "vlada", "vladata", "vlast", "vlasta", "republika", "republikata", "drzava", "drzavata",
+    "pretsedatel", "pretsedatelot", "pretsedatelka", "premier", "premiera", "premijer", "premijerot",
+    "minister", "ministerot", "ministerka", "ministerstvoto", "ministerstvata", "ministar",
+    "parlament", "parlamentot", "sobranie", "sobranieto", "vladata",
+    "opstina", "opstinata", "opstinite", "grad", "gradot", "gradonacelnik", "gradonacelnikot",
+    "sud", "sudot", "policija", "policijata", "armija", "vojska", "vojskata",
+    "crkva", "crkvata", "kompanija", "banka", "univerzitet", "institut",
+    # generic time words capitalised at sentence start
+    "godina", "godinava", "godini", "denes", "utre", "vcera", "nedela", "mesec",
+    # sentence-initial question/metric words that are not proper nouns
+    "zosto", "kako", "koga", "kade", "dali", "kolku", "poveke", "najmalku",
+    "pari", "cena", "ceni", "crite", "vesti", "novosti", "video", "foto",
+    # parties (appear in a large share of political headlines)
+    "vmro", "dpmne", "sdsm", "dui", "levica", "alternativa",
+}
+
+# Nationality/geography roots whose inflected forms are all story-agnostic. A
+# prefix test avoids enumerating every case/gender/definite ending.
+_GENERIC_ENTITY_PREFIXES = (
+    "evrop", "makedon", "srb", "balkan", "amerikan", "rusk", "rusit", "rusi",
+    "britan", "anglis", "germansk", "francusk", "grchk", "grck", "kitajsk",
+    "indisk", "iransk", "izraelsk", "palestin", "njujork", "vasington",
+    "mosk", "berlin", "pariz", "london", "zapadnobalk", "evroatlant",
+)
+
+
 def _extract_title_entities(title: str, *args, **kwargs) -> set[str]:
     text = str(title or "")
     entities = set(re.findall(r"\b\d[\d.,]*\b", text))
-    entities.update(
-        token.casefold()
-        for token in re.findall(r"\b[А-ШЃЌЅЉЊЏA-Z][\w-]{2,}\b", text)
-        if token.casefold() not in _STOPWORDS
-    )
+    for token in re.findall(r"\b[А-ШЃЌЅЉЊЏA-Z][\w-]{2,}\b", text):
+        folded = token.casefold()
+        if folded in _STOPWORDS:
+            continue
+        normalized = _normalize_entity_token(token)
+        if normalized in _GENERIC_ENTITY_TOKENS:
+            continue
+        if normalized.startswith(_GENERIC_ENTITY_PREFIXES):
+            continue
+        entities.add(folded)
     return entities
 
 
 def _entity_token_overlap(left, right, *args, **kwargs):
-    def normalize(value):
-        return (
-            transliterate_cyr_to_lat(str(value).casefold())
-            .replace("č", "c")
-            .replace("ć", "c")
-            .replace("š", "s")
-            .replace("ž", "z")
-        )
-
-    return {normalize(item) for item in (left or set())} & {normalize(item) for item in (right or set())}
+    return {_normalize_entity_token(item) for item in (left or set())} & {
+        _normalize_entity_token(item) for item in (right or set())
+    }
 
 
 def _meaningful_entity_token_overlap(left, right, *args, **kwargs) -> float:

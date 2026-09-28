@@ -33,6 +33,7 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
         _entity_token_overlap,
         _TITLE_INSTANT_MERGE,
         _TITLE_BEST_MERGE,
+        _TITLE_ANCHORED_MERGE,
     )
 
     other_title = str(other.get("title") or "")
@@ -44,6 +45,11 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
     shared = _entity_token_overlap(rep_entities, _extract_title_entities(other_title))
     named_shared = {s for s in shared if not s.isdigit()}
     if not named_shared:
+        return False
+    # A single shared entity must be backed by meaningful headline overlap;
+    # otherwise a person/place mentioned in two unrelated stories would chain
+    # them together. Two or more shared entities is a stronger same-story signal.
+    if len(named_shared) < 2 and overlap < _TITLE_ANCHORED_MERGE:
         return False
     # Category disagreement is common even for the same story (one outlet files
     # it under Makedonija, another under Srbija), so do not block on it alone
