@@ -10,6 +10,22 @@ from PIL import Image
 log = logging.getLogger("presek")
 
 
+def _is_public_ip(ip: str) -> bool:
+    """True when `ip` is a routable public address (safe to fetch from)."""
+    try:
+        addr = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return not (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_multicast
+        or addr.is_reserved
+        or addr.is_unspecified
+    )
+
+
 def _resolve_public_ips(candidate_url: str) -> List[str]:
     parsed = urllib.parse.urlparse(candidate_url)
     hostname = (parsed.hostname or "").lower()
@@ -28,23 +44,28 @@ def _resolve_public_ips(candidate_url: str) -> List[str]:
     safe = []
     for info in resolved:
         ip = info[4][0]
-        try:
-            addr = ipaddress.ip_address(ip)
-            if not (
-                addr.is_private
-                or addr.is_loopback
-                or addr.is_link_local
-                or addr.is_multicast
-                or addr.is_reserved
-                or addr.is_unspecified
-            ):
-                if ip not in safe:
-                    safe.append(ip)
-        except ValueError:
-            continue
+        if _is_public_ip(ip) and ip not in safe:
+            safe.append(ip)
     if not safe:
         raise PermissionError("Blocked URL (Private/Reserved IP)")
     return safe
+
+
+def _peer_is_public(response) -> bool:
+    """Verify the *connected* peer is a public IP.
+
+    The previous guard required the connected peer IP to be one of the
+    DNS-resolved addresses. That rejects every CDN/proxy-fronted host (the TCP
+    connection lands on a different anycast edge than DNS returned), which broke
+    image downloads for most modern sites. We only need to ensure the request
+    did not land on an internal/private address, so validate the peer directly.
+    """
+    ip = _peer_ip(response)
+    if not ip:
+        # Could not introspect the socket; fall back to the DNS allow-list check
+        # at the call site rather than silently allowing.
+        return False
+    return _is_public_ip(ip)
 
 
 def _peer_ip(response) -> Optional[str]:
@@ -93,7 +114,7 @@ async def get_dominant_color(url: str) -> str:
 
         async with httpx.AsyncClient(timeout=4.0, follow_redirects=True, max_redirects=2) as client:
             try:
-                safe_ips = _resolve_public_ips(url)
+                _resolve_public_ips(url)
             except Exception as e:
                 log.debug(f"Failed to resolve public IPs for {url}: {e}")
                 return ""
@@ -102,9 +123,8 @@ async def get_dominant_color(url: str) -> str:
                 if response.status_code != 200:
                     return ""
 
-                p_ip = _peer_ip(response)
-                if not p_ip or p_ip not in safe_ips:
-                    log.warning(f"[utils] color extraction blocked: IP mismatch/private for {url}")
+                if not _peer_is_public(response):
+                    log.warning(f"[utils] color extraction blocked: private/unresolvable peer for {url}")
                     return ""
 
                 content = await response.aread()

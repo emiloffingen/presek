@@ -55,3 +55,50 @@ def test_resolve_safe_static_relative_blocks_traversal():
     assert _resolve_safe_static_relative("../../../etc/passwd") is None
     assert _resolve_safe_static_relative("/etc/passwd") is None
     assert _resolve_safe_static_relative("uploads\\art_1.webp") is None
+
+
+class TestPeerPublicGuard:
+    """The SSRF guard must judge the *connected peer*, not DNS equality.
+
+    Requiring the connected peer IP to be one of the DNS-resolved addresses
+    rejected every CDN/proxy-fronted host (anycast edge IP != DNS answer), which
+    silently dropped images and crawls for most of the MK outlets.
+    """
+
+    def test_public_anycast_peer_allowed(self):
+        from utils.network import _is_public_ip
+
+        # Cloudflare / Bunny CDN edge ranges seen in production logs.
+        assert _is_public_ip("188.114.96.12") is True
+        assert _is_public_ip("188.114.97.12") is True
+        assert _is_public_ip("185.111.111.158") is True
+
+    def test_private_and_reserved_peers_blocked(self):
+        from utils.network import _is_public_ip
+
+        for ip in (
+            "10.0.0.1",
+            "192.168.1.1",
+            "172.16.0.1",
+            "127.0.0.1",
+            "169.254.169.254",  # cloud metadata
+            "0.0.0.0",
+        ):
+            assert _is_public_ip(ip) is False, ip
+
+    def test_peer_is_public_uses_connected_ip(self):
+        from utils.network import _peer_is_public
+
+        class _Resp:
+            def __init__(self, ip):
+                self.extensions = {"network_stream": _Stream(ip)}
+
+        class _Stream:
+            def __init__(self, ip):
+                self._ip = ip
+
+            def get_extra_info(self, _name):
+                return (self._ip, 443)
+
+        assert _peer_is_public(_Resp("188.114.96.12")) is True
+        assert _peer_is_public(_Resp("10.0.0.1")) is False

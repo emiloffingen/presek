@@ -12,7 +12,7 @@ import trafilatura
 
 from core.config import BOT_USER_AGENT
 from core.text_extraction import clean_extracted_article_text
-from utils import _peer_ip, _resolve_public_ips
+from utils import _peer_ip, _peer_is_public, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
 
@@ -39,15 +39,14 @@ async def _robots_allows(url: str) -> bool:
         rp = None
         try:
             robots_url = f"{origin}/robots.txt"
-            safe_ips = _resolve_public_ips(robots_url)
+            _resolve_public_ips(robots_url)
             async with httpx.AsyncClient(
                 headers={"User-Agent": BOT_USER_AGENT},
                 follow_redirects=True,
                 timeout=10.0,
             ) as client:
                 async with client.stream("GET", robots_url) as resp:
-                    peer = _peer_ip(resp)
-                    if peer and safe_ips and peer not in safe_ips:
+                    if not _peer_is_public(resp):
                         rp = None
                     elif resp.status_code == 200:
                         await resp.aread()
@@ -234,12 +233,11 @@ class CrawlerService:
 
         try:
             headers = self._get_headers()
-            safe_ips = _resolve_public_ips(url)
+            _resolve_public_ips(url)
             async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
                 async with client.stream("GET", url) as resp:
-                    p_ip = _peer_ip(resp)
-                    if not p_ip or p_ip not in safe_ips:
-                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
+                    if not _peer_is_public(resp):
+                        log.warning(f"SSRF blocked: peer not public for {url}")
                         return {
                             "url": url,
                             "error": "Security block: peer IP mismatch",
