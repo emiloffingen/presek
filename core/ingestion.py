@@ -75,6 +75,36 @@ _BROWSER_LIKE_HEADERS = {
     "Sec-Fetch-Site": "none",
     "Sec-Fetch-User": "?1",
 }
+
+
+def _brotli_available() -> bool:
+    """Whether httpx can transparently decode Brotli responses.
+
+    httpx only decodes ``Content-Encoding: br`` when the optional ``brotli``
+    (or ``brotlicffi``) package is installed. Several MK outlets (meta.mk,
+    republika.mk, kurir.mk, kanal5, ...) serve feeds as Brotli, so requesting
+    ``br`` without a decoder hands raw compressed bytes to feedparser, which
+    silently parses zero entries and the source stops producing articles.
+    """
+    try:
+        import brotli  # noqa: F401
+        return True
+    except ImportError:
+        try:
+            import brotlicffi  # noqa: F401
+            return True
+        except ImportError:
+            return False
+
+
+if not _brotli_available():
+    # Don't advertise an encoding we cannot decode.
+    _BROWSER_LIKE_HEADERS["Accept-Encoding"] = "gzip, deflate"
+    logging.getLogger("presek").warning(
+        "[ingest] brotli not installed: dropping 'br' from Accept-Encoding. "
+        "Feeds served with Brotli will be requested uncompressed; install the "
+        "'brotli' package to restore full encoding support."
+    )
 _OG_IMAGE_SKIP_DOMAINS = {
     "fokus.mk",
 }
