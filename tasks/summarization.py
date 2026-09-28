@@ -122,9 +122,9 @@ def synthesize_cluster_task(self, cluster_id: int):
         # Store synthesis
         db_manager.execute(
             """INSERT INTO cluster_summaries 
-               (cluster_id, summary, synthetic_headline, generated_article, key_facts)
-               VALUES (%s, %s, %s, %s, %s::jsonb)
-               ON CONFLICT (cluster_id) DO UPDATE SET
+               (cluster_id, lang, summary, synthetic_headline, generated_article, key_facts)
+               VALUES (%s, 'mk', %s, %s, %s, %s::jsonb)
+               ON CONFLICT (cluster_id, lang) DO UPDATE SET
                  summary = EXCLUDED.summary,
                  synthetic_headline = EXCLUDED.synthetic_headline,
                  generated_article = EXCLUDED.generated_article,
@@ -284,10 +284,10 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
             db_manager.execute(
                 """
                 INSERT INTO cluster_summaries
-                    (cluster_id, summary, synthetic_headline, synthetic_standfirst,
+                    (cluster_id, lang, summary, synthetic_headline, synthetic_standfirst,
                      generated_article, key_facts, generation_provider, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, NOW())
-                ON CONFLICT (cluster_id) DO UPDATE SET
+                VALUES (%s, 'mk', %s, %s, %s, %s, %s::jsonb, %s, NOW())
+                ON CONFLICT (cluster_id, lang) DO UPDATE SET
                     summary = EXCLUDED.summary,
                     synthetic_headline = EXCLUDED.synthetic_headline,
                     synthetic_standfirst = EXCLUDED.synthetic_standfirst,

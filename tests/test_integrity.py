@@ -352,3 +352,56 @@ class TestRuntimeDependencyIntegrity:
         }
         assert "fastapi" in pkg_names
         assert "uvicorn" in pkg_names
+
+
+class TestClusterSummariesConstraint:
+    """cluster_summaries INSERT ... ON CONFLICT must match a real constraint.
+
+    A migration once dropped the `lang` column, which silently dropped the
+    composite primary key (cluster_id, lang). Every synthesis insert then failed
+    with "no unique or exclusion constraint matching the ON CONFLICT
+    specification" and the table stayed empty, so cluster pages showed a
+    placeholder. These tests guard the code half of that contract.
+    """
+
+    def test_all_cluster_summaries_conflicts_use_cluster_id_lang(self):
+        for rel in (
+            "tasks/summarization.py",
+            "tasks/intelligence/synthesis_persist.py",
+            "tasks/intelligence/backfill.py",
+        ):
+            src = _read(rel)
+            assert "ON CONFLICT (cluster_id)" not in src, (
+                f"{rel} uses ON CONFLICT (cluster_id); cluster_summaries is keyed "
+                "by (cluster_id, lang)"
+            )
+
+    def test_cluster_summaries_inserts_set_lang(self):
+        import re
+
+        src = _read("tasks/summarization.py")
+        # Both insert sites must assign lang so the (cluster_id, lang) PK is
+        # always satisfied.
+        assert src.count("INSERT INTO cluster_summaries") >= 2
+        inserts = re.findall(
+            r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.S
+        )
+        assert inserts, "no cluster_summaries inserts found"
+        for cols in inserts:
+            normalized = " ".join(cols.split())
+            assert normalized.startswith("cluster_id, lang"), (
+                "cluster_summaries insert must set (cluster_id, lang); got "
+                f"{normalized!r}"
+            )
+
+    def test_restore_pk_migration_exists(self):
+        migrations = [
+            p.name for p in (ROOT / "migrations" / "versions").glob("*.py")
+        ]
+        assert any("restore_cluster_summaries_pk" in name for name in migrations)
+        src = next(
+            p.read_text(encoding="utf-8")
+            for p in (ROOT / "migrations" / "versions").glob("*restore_cluster_summaries_pk.py")
+        )
+        assert '["cluster_id", "lang"]' in src
+
