@@ -296,12 +296,38 @@ DB_POOL_TIMEOUT = max(5, _int_env("DB_POOL_TIMEOUT", 60))
 DB_POOL_MAX_LIFETIME = max(60, _int_env("DB_POOL_MAX_LIFETIME", 1800))
 
 
+def _use_server_side_prepared_statements() -> bool:
+    """Whether psycopg may use server-side prepared statements.
+
+    Supabase (and any PgBouncer transaction pooler) reuses server sessions
+    across client connections, so a statement prepared on one client can be
+    executed against a different backend. psycopg's cached plan then mismatches
+    the new query ("bind message supplies N parameters, but prepared statement
+    requires M"), which intermittently breaks queries. psycopg's docs say to set
+    ``prepare_threshold=None`` behind such middleware.
+
+    Default: disabled when the DSN points at a pooler port (6543) or a
+    ``pooler`` host; can be forced with PRESEK_PREPARED_STATEMENTS=1/0.
+    """
+    override = os.environ.get("PRESEK_PREPARED_STATEMENTS", "").strip().lower()
+    if override in ("1", "true", "yes", "on"):
+        return True
+    if override in ("0", "false", "no", "off"):
+        return False
+    dsn = (DATABASE_URL or "").lower()
+    return not (":6543" in dsn or "pooler" in dsn or "pgbouncer" in dsn)
+
+
 def _pool_common_kwargs() -> dict:
-    return {
+    kwargs = {
         "row_factory": dict_row,
         "connect_timeout": 5,
         "options": DB_SESSION_OPTIONS,
     }
+    if not _use_server_side_prepared_statements():
+        # None disables automatic PREPARE; queries run as simple/extended binds.
+        kwargs["prepare_threshold"] = None
+    return kwargs
 
 
 def _connection_is_usable(conn) -> bool:
@@ -608,7 +634,7 @@ class DatabaseManager:
 
     def get_conn(self):
         if not self._pool:
-            return psycopg.connect(DATABASE_URL, row_factory=dict_row, options=DB_SESSION_OPTIONS)
+            return psycopg.connect(DATABASE_URL, **_pool_common_kwargs())
         return self._pool.getconn()
 
     def put_conn(self, conn):
