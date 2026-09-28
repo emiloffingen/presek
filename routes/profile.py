@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from core.api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
-from core.config import BREAKING_SCORE_THRESHOLD
+from core.config import BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
 from core.limiter import custom_rate_limit
 from utils import annotate_cluster_articles, delete_cache, is_balanced, score_cluster, score_cluster_for_homepage
@@ -300,7 +300,7 @@ async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(ver
     return {"status": "success", "subscription": sub}
 
 
-async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = "sr") -> List[dict]:
+async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = DEFAULT_LANG) -> List[dict]:
     """
     Core personalization search using pgvector. Computes dynamic interest vectors
     from recently read articles or followed topics, and returns semantically matching clusters.

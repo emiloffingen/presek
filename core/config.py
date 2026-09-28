@@ -134,6 +134,12 @@ FULLTEXT_MAX_CHARS = int(os.environ.get("FULLTEXT_MAX_CHARS", "20000"))
 # MK-only product: ingest only Macedonian sources and never translate.
 MK_ONLY = os.environ.get("MK_ONLY", "true").strip().lower() in ("1", "true", "yes", "on")
 
+# Default language for API endpoints when the caller omits `lang`.
+# The deployment is MK-only and the Serbian dataset was purged, so "sr" filters
+# (country='RS') match no rows and silently return empty responses. Keep this in
+# sync with MK_ONLY: MK deployment -> "mk".
+DEFAULT_LANG = os.environ.get("PRESEK_DEFAULT_LANG", "mk" if MK_ONLY else "sr")
+
 # Identifying crawler UA (robots.txt compliance / attribution friendliness).
 BOT_USER_AGENT = os.environ.get(
     "BOT_USER_AGENT",

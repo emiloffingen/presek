@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from prometheus_client import REGISTRY, Counter
 
+from core.config import DEFAULT_LANG
 from core.database import db_manager as db
 from utils import cached_response, set_cache
 
@@ -221,7 +222,7 @@ async def get_categories():
 
 
 @router.get("/weather")
-async def get_weather(lang: Optional[str] = "sr"):
+async def get_weather(lang: Optional[str] = DEFAULT_LANG):
     city = "skopje" if lang == "mk" else "beograd"
     cache_key = f"weather:{city}"
     cached = cached_response(cache_key, ttl=900)
@@ -258,7 +259,7 @@ async def get_weather(lang: Optional[str] = "sr"):
 
 
 @router.get("/trending")
-async def get_trending_route(lang: Optional[str] = "sr"):
+async def get_trending_route(lang: Optional[str] = DEFAULT_LANG):
     cache_key = f"api:trending:v5:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -296,7 +297,7 @@ async def get_trending_route(lang: Optional[str] = "sr"):
 
 
 @router.get("/navigation")
-async def get_navigation(lang: Optional[str] = "sr"):
+async def get_navigation(lang: Optional[str] = DEFAULT_LANG):
     """Returns high-intelligence dynamic navigation with activity thresholds."""
     cache_key = f"api:navigation:v6:{lang}"
     cached = cached_response(cache_key)

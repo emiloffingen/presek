@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from core.api_errors import soft_error
-from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
+from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
 from core.input_validation import validate_cluster_id as validate_cluster_id_input
 from core.input_validation import validate_language_code
@@ -145,7 +145,7 @@ _ARTICLE_LIST_COLUMNS = (
 )
 
 
-def _public_article_payload(article, lang="sr", include_full_content: bool = False):
+def _public_article_payload(article, lang=DEFAULT_LANG, include_full_content: bool = False):
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 
@@ -390,7 +390,7 @@ async def fetch_news_data(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = DEFAULT_LANG,
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
@@ -824,7 +824,7 @@ async def fetch_news_data(
 async def semantic_search(
     q: str = Query(..., min_length=3, max_length=API_MAX_Q_LEN),
     limit: int = Query(24, ge=1, le=50),
-    lang: str = "sr",
+    lang: str = DEFAULT_LANG,
 ):
     """
     Explicit Semantic Search endpoint.
@@ -1139,7 +1139,7 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
 
 
 @router.get("/article/{article_id}")
-async def get_article_detail(article_id: int, lang: Optional[str] = "sr"):
+async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG):
     """Full original text for a single article, with source attribution.
 
     The body is only returned when the source allows full-text display
@@ -1189,7 +1189,7 @@ async def get_article_detail(article_id: int, lang: Optional[str] = "sr"):
 
 
 @router.get("/cluster/{cluster_id}")
-async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     # Validate cluster_id using comprehensive validation
     validate_cluster_id_input(cluster_id)
     # Validate language code
@@ -1699,7 +1699,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
 
 
 @router.get("/cluster/{cluster_id}/history")
-async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_history(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     """
     Returns the historical versions of a cluster synthesis.
     """
@@ -1835,7 +1835,7 @@ async def get_live_route(request: Request):
 
 
 @router.get("/cluster/{cluster_id}/audio")
-async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_audio(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
     validate_cluster_id(cluster_id)
 

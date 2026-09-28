@@ -206,3 +206,28 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
 
 
 
+
+
+def test_api_default_language_is_mk():
+    """MK-only deployment: endpoints must default to 'mk', not 'sr'.
+
+    'sr' filters country='RS' and the Serbian dataset was purged, so any
+    endpoint whose default was 'sr' silently returned empty payloads
+    (e.g. GET /api/home with no ?lang returned total_articles=0).
+    """
+    import inspect
+
+    from core.config import DEFAULT_LANG
+
+    assert DEFAULT_LANG == "mk"
+
+    # The home endpoint's lang parameter must default to DEFAULT_LANG.
+    from routes import home as home_routes
+
+    sig = inspect.signature(home_routes.get_home)
+    assert sig.parameters["lang"].default == DEFAULT_LANG
+
+    from routes import news as news_routes
+
+    sig2 = inspect.signature(news_routes._public_article_payload)
+    assert sig2.parameters["lang"].default == DEFAULT_LANG

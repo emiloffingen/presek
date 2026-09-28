@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 
 from core.api_errors import api_error_response, rate_limit_payload
+from core.config import DEFAULT_LANG
 from core.database import db_manager as db
 from nlp.utils import cleanAndDecode
 
@@ -301,7 +302,7 @@ async def build_intelligence_summary_payload(
     last_24h: int,
     category: Optional[str] = None,
     runtime_events: Optional[dict] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = DEFAULT_LANG,
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     import asyncio

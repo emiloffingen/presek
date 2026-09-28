@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from core.api_errors import soft_error
 from core.audio_service import AudioService
+from core.config import DEFAULT_LANG
 from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
 from utils import cached_response, set_cache
@@ -651,7 +652,7 @@ def _rank_latest_wire_articles(items, limit=15):
     return selected
 
 
-def _build_lead_display(cluster, lang: Optional[str] = "sr"):
+def _build_lead_display(cluster, lang: Optional[str] = DEFAULT_LANG):
     article = _primary_article(cluster)
     if not article:
         return {}
@@ -845,18 +846,18 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     return formatted_clusters
 
 
-async def fetch_synthesis_hero_candidates(lang: str = "sr", limit: int = 24) -> List[Dict[str, Any]]:
+async def fetch_synthesis_hero_candidates(lang: str = DEFAULT_LANG, limit: int = 24) -> List[Dict[str, Any]]:
     """Return the strongest recent synthesized clusters for homepage hero backfill."""
     return await _fetch_synthesized_clusters(lang, limit=limit)
 
 
-async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
+async def fetch_synthesis_picks(lang: str = DEFAULT_LANG) -> List[Dict[str, Any]]:
     """Fetches the latest clusters that have a generated synthesis for the given language."""
     return await _fetch_synthesized_clusters(lang, limit=4)
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home(request: Request = None, lang: Optional[str] = "sr"):
+async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
     # Support legacy tests passing lang as a positional argument
     if isinstance(request, str):
         lang = request
@@ -1109,7 +1110,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
 
 @router.get("/home/live-now")
-async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
+async def get_home_live_now(exclude: str = "", lang: Optional[str] = DEFAULT_LANG):
     cache_key = f"api:home:live-now:v3:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
     if cached:
@@ -1132,7 +1133,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
 
 
 @router.get("/home/latest-wire")
-async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
+async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = DEFAULT_LANG):
     bounded_limit = max(1, min(int(limit or 15), 30))
     cache_key = f"api:home:latest-wire:v3:{bounded_limit}:{lang}"
     cached = cached_response(cache_key, ttl=120)
