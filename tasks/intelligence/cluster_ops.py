@@ -20,11 +20,11 @@ log = logging.getLogger("presek")
 def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
     """Return True when a representative article pair is the same story.
 
-    Used for the repair pass, which is stricter than ingestion: unions are
-    transitive, so a single permissive edge can chain unrelated stories together
-    through broad tokens. We therefore only merge on (a) near-identical titles or
-    (b) a strong combined score anchored by a shared *named* entity. Topic/category
-    agreement alone is never enough.
+    Used for the repair pass, which is stricter than ingestion: every star member
+    is merged straight into the hub, so a single permissive edge still glues an
+    unrelated story onto a cluster. We therefore only merge on (a) near-identical
+    titles or (b) a strong combined score anchored by a shared *named* entity.
+    Topic/category agreement alone is never enough.
     """
     from core.clustering import (
         _age_hours,
@@ -74,16 +74,15 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
 def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
     """Group article rows that describe the same story into merge sets.
 
-    `articles` is an iterable of mappings with at least: id, cluster_id, title,
-    source, topic, category, created_at. Returns a list of
-    (canonical_cluster_id, [duplicate_cluster_id, ...], merged_article_count),
-    one entry per connected component that contains more than one cluster.
+    `articles` is an iterable of mappings with at least: id, cluster_id,
+    title, source, topic, category, created_at. Returns a list of
+    (canonical_cluster_id, [duplicate_cluster_id, ...], merged_article_count).
 
-    Pure function: no DB access, so it is unit-testable. Uses pairwise
-    same-story matching between clusters and a union-find, so chained matches
-    (A~B, B~C) collapse into a single cluster instead of depending on the order
-    clusters are visited. Matching mirrors the ingestion heuristics so behaviour
-    stays consistent as the algorithm evolves.
+    Uses **bounded star merge** instead of union-find: a merge group is formed
+    around a single hub cluster, and every member must pass the pairwise match
+    gate *against the hub directly* (depth 1, no transitive chaining). Union-find
+    collapsed A~B~C~D chains where no story actually connected the ends — that
+    chaining was the dominant source of mixed-story bags.
     """
     from core.clustering import _cluster_title_overlap, _extract_title_entities, _entity_token_overlap
 
@@ -111,41 +110,45 @@ def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
         }
 
     ids = list(clusters.keys())
-    parent = {cid: cid for cid in ids}
 
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    def union(a, b):
-        ra, rb = find(a), find(b)
-        if ra != rb:
-            parent[rb] = ra
-
+    # Collect every pair that passes the match gate, scored by headline overlap.
+    neighbors = {cid: [] for cid in ids}  # cid -> [(overlap, other_cid)]
     for i in range(len(ids)):
         for j in range(i + 1, len(ids)):
             a, b = ids[i], ids[j]
             rep_a, rep_b = reps[a], reps[b]
-            if _clusters_match(rep_a["title"], rep_a["entities"], rep_a, rep_b, max_age_hours):
-                union(a, b)
+            if not _clusters_match(rep_a["title"], rep_a["entities"], rep_a, rep_b, max_age_hours):
+                continue
+            overlap = _cluster_title_overlap(rep_a["title"], rep_b["title"])
+            neighbors[a].append((overlap, b))
+            neighbors[b].append((overlap, a))
 
-    components = {}
-    for cid in ids:
-        components.setdefault(find(cid), []).append(cid)
+    # Hub order: highest degree first (most direct matches), then the usual
+    # canonical preference (most articles, most sources, stable id).
+    hub_order = sorted(
+        ids,
+        key=lambda c: (
+            -len(neighbors[c]),
+            -len(clusters[c]),
+            -source_count(clusters[c]),
+            c,
+        ),
+    )
 
+    matched = set()
     merges = []
-    for root, members in components.items():
-        if len(members) < 2:
+    for hub in hub_order:
+        if hub in matched:
             continue
-        # Canonical: most articles, then most sources, then oldest first_seen
-        # (favour the earliest cluster so existing URLs/history stay valid).
-        canonical = min(
-            members,
-            key=lambda c: (-len(clusters[c]), -source_count(clusters[c]), c),
+        members = sorted(
+            {other for _ov, other in neighbors[hub] if other not in matched}
         )
-        dups = [c for c in members if c != canonical]
+        if not members:
+            continue
+        star = [hub] + members
+        matched.update(star)
+        canonical = min(star, key=lambda c: (-len(clusters[c]), -source_count(clusters[c]), c))
+        dups = [c for c in star if c != canonical]
         dup_count = sum(len(clusters[c]) for c in dups)
         merges.append((canonical, dups, dup_count))
 

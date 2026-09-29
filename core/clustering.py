@@ -109,6 +109,14 @@ _GENERIC_ENTITY_TOKENS = {
     # Macedonian cities/regions that appear in a large share of local headlines
     "bitola", "ohrid", "kumanovo", "tetovo", "gostivar", "strumica", "vele",
     "prilep", "stip", "gevgelija", "kavadarci", "struga", "debar", "krusevo",
+    # remaining municipalities/regions — a location alone is rarely the story, so
+    # treating these as anchors chained unrelated local items into one bag
+    "veles", "berovo", "brvenica", "prespa", "delcevo", "kocani", "resen",
+    "negotino", "valandovo", "dojran", "pehcevo", "kratovo", "vinica",
+    "probistip", "bogdanci", "radovis", "kicevo", "kamenica", "brod",
+    "demir hisar", "demir kapija", "sveti nikole", "saraj", "cair", "butel",
+    "karpos", "aerodrom", "kisela voda", "gazi baba", "gorce petrov",
+    "suto orizari", "zlokukani", "reka", "resan", "prespansko", "ohridsko",
     "eu", "unija", "nato", "oon", "un", "zapad", "istok", "sever", "jug", "evroatlantski",
     # nationality/derived adjective forms (appear in a huge share of world-news headlines)
     "amerikanski", "amerikanska", "amerikanskite", "amerikanec", "amerikanka",
@@ -236,24 +244,29 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
     for cluster_id, articles in candidates.items():
         if len(articles) >= MAX_CLUSTER_SIZE:
             continue
-        for article in articles[:3]:
-            other_title = str(article.get("title") or "")
-            overlap = _cluster_title_overlap(title, other_title)
-            if overlap >= _TITLE_INSTANT_MERGE:
-                return cluster_id
-            shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
-            same_topic = bool(topic and article.get("topic") and topic == article["topic"])
-            score = overlap
-            if shared:
-                score += 0.15
-            if len(shared) >= 2:
-                score += 0.05
-            if same_topic:
-                score += 0.06
-            if source and article.get("source") == source:
-                score -= 0.04
-            if score > best_score:
-                best_id, best_score, best_anchored = cluster_id, score, bool(shared)
+        # Star anchor: compare against the cluster's oldest in-window article
+        # (the seed) only. Matching against any of the 3 newest members let a
+        # heterogeneous bag drift — each new headline only had to resemble one
+        # off-topic member to join — so every member must match this single
+        # stable seed instead (depth 1, no transitive chaining).
+        article = articles[-1]
+        other_title = str(article.get("title") or "")
+        overlap = _cluster_title_overlap(title, other_title)
+        if overlap >= _TITLE_INSTANT_MERGE:
+            return cluster_id
+        shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
+        same_topic = bool(topic and article.get("topic") and topic == article["topic"])
+        score = overlap
+        if shared:
+            score += 0.15
+        if len(shared) >= 2:
+            score += 0.05
+        if same_topic:
+            score += 0.06
+        if source and article.get("source") == source:
+            score -= 0.04
+        if score > best_score:
+            best_id, best_score, best_anchored = cluster_id, score, bool(shared)
 
     if best_id is None:
         return uuid.uuid4().hex[:12]
