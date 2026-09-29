@@ -131,12 +131,42 @@ if [ "${SKIP_PY:-0}" != "1" ]; then
   if printf '%s\n' "$CHANGED" | grep -qE '^(uv\.lock|pyproject\.toml|requirements\.txt)$'; then
     if command -v uv >/dev/null 2>&1 && [ -d "$VENV" ]; then
       log "python manifests changed; uv sync --frozen --no-dev (link-mode=copy)"
-      if (cd "$APP_DIR" && UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$VENV" \
+      # Snapshot the working venv first: uv copy-mode under proot has been
+      # observed to silently drop files (e.g. fastapi/__init__.py). If the
+      # post-sync verification fails we restore this backup and ABORT the
+      # deploy (exit 1) before the web build/restart, so the old processes
+      # keep serving instead of crash-looping on a corrupt venv.
+      VENV_BACKUP="$LOG_DIR/venv-backup.tar.gz"
+      VENV_BACKUP_FRESH=0
+      rm -f "$VENV_BACKUP"
+      if tar czf "$VENV_BACKUP" -C "$APP_DIR" .venv 2>/dev/null; then
+        log "venv backup saved to $VENV_BACKUP"
+        VENV_BACKUP_FRESH=1
+      else
+        warn "venv backup FAILED; skipping python sync to protect the live venv"
+        rm -f "$VENV_BACKUP"
+      fi
+      if [ "$VENV_BACKUP_FRESH" = "1" ] && (cd "$APP_DIR" && UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$VENV" \
             uv sync --frozen --no-dev --quiet); then
-        if "$VENV/bin/python" -c "from fastapi import FastAPI" >/dev/null 2>&1; then
-          log "uv sync ok"
+        VERIFY_FAIL=""
+        for pymod in "fastapi:FastAPI" "pydantic:BaseModel" "sqlalchemy:__version__" "celery:__version__" "psycopg:__version__"; do
+          pkg="${pymod%%:*}"; attr="${pymod##*:}"
+          if ! "$VENV/bin/python" -c "import $pkg; $pkg.$attr" >/dev/null 2>&1; then
+            VERIFY_FAIL="$VERIFY_FAIL $pkg"
+          fi
+        done
+        if [ -z "$VERIFY_FAIL" ]; then
+          log "uv sync ok (verified: fastapi/pydantic/sqlalchemy/celery/psycopg importable)"
         else
-          warn "uv sync left the venv broken (fastapi unimportable); see /tmp/opencode repair or re-run with pip"
+          warn "uv sync CORRUPTED the venv (unimportable:$VERIFY_FAIL); restoring backup and ABORTING deploy"
+          rm -rf "$VENV"
+          if tar xzf "$VENV_BACKUP" -C "$APP_DIR" 2>/dev/null && \
+             "$VENV/bin/python" -c "from fastapi import FastAPI" >/dev/null 2>&1; then
+            log "venv restored from backup; old code keeps serving. Fix deps and re-run deploy."
+          else
+            warn "venv RESTORE FAILED; manual recovery required before restart"
+          fi
+          exit 1
         fi
       else
         log "uv sync failed (continuing with existing venv)"
