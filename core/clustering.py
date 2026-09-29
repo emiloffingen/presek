@@ -41,6 +41,18 @@ _STOPWORDS = {
     "ова",
     "овој",
     "оваа",
+    # Prepositions/conjunctions (len>=3, so _tokens would otherwise keep them
+    # and they inflate overlap: "без дозвола", "над 90 милиони"...). They also
+    # occur sentence-initially capitalised ("Без струја..."), where the entity
+    # extractor would otherwise treat them as named-entity anchors.
+    "без",
+    "над",
+    "под",
+    "пред",
+    "меѓу",
+    "при",
+    "кон",
+    "низ",
     # Broadcast/format noise: these prefixes appear on unrelated headlines from
     # the same outlets and inflate title overlap (e.g. "(ВИДЕО) ...").
     "видео",
@@ -116,6 +128,13 @@ _GENERIC_ENTITY_TOKENS = {
     "probistip", "bogdanci", "radovis", "kicevo", "kamenica", "brod",
     "demir hisar", "demir kapija", "sveti nikole", "saraj", "cair", "butel",
     "karpos", "aerodrom", "kisela voda", "gazi baba", "gorce petrov",
+    # single-word components of the multi-word place names above (entity
+    # extraction yields single tokens, so "kisela voda" never matched; the two
+    # halves anchored unrelated Kisela Voda items into one bag). Common nouns
+    # among them (voda=water, baba=grandmother) are never story anchors.
+    "kisela", "voda", "sveti", "gazi", "baba", "suto", "orizari",
+    # company/product words that behave like the above ("Водовод", "Неделен")
+    "vodovod", "nedelen",
     "suto orizari", "zlokukani", "reka", "resan", "prespansko", "ohridsko",
     "eu", "unija", "nato", "oon", "un", "zapad", "istok", "sever", "jug", "evroatlantski",
     # nationality/derived adjective forms (appear in a huge share of world-news headlines)
@@ -138,6 +157,28 @@ _GENERIC_ENTITY_TOKENS = {
     # sentence-initial question/metric words that are not proper nouns
     "zosto", "kako", "koga", "kade", "dali", "kolku", "poveke", "najmalku",
     "pari", "cena", "ceni", "crite", "vesti", "novosti", "video", "foto",
+    # sentence-initial adjectives/verbs/nouns that the entity regex picks up
+    # (capitalised first word) but that never identify a story: "Тешка
+    # сообраќајка...", "Може ли...", "Нема...", "Голема акција...",
+    # "Уапсен маж...", "Приведен возач...", "Двајца браќа...", weather
+    # ("Променливо облачно..."), "ЦЕЛ БАНКОК...", demographics ("Скопјанка...").
+    "teska", "teski", "tezok", "golema", "golemi", "golem",
+    "nova", "novi", "novo", "promenlivo", "severna", "severen",
+    "zapaden", "zapadna", "dvajca", "petmina", "nema", "moze", "ima",
+    "uapsen", "uapseni", "priveden", "privedeni", "akcija", "centar",
+    "cel", "cela", "celo",
+    # topic words shared across DIFFERENT stories on the same beat
+    "ddv", "dizelot", "dizel", "skopjanka", "skopjanec", "fon",
+    # country/capital names in the same story-agnostic class as the geography
+    # entries above (shared by unrelated world-news items)
+    "slovenija", "turcija", "portugalija", "kina", "kiev", "ljubljana",
+    "mancester", "sofija", "atina", "podgorica", "sarajevo", "pristina",
+    "tirana",
+    # party-acronym forms the existing entries miss ("СДС" != "sdsm",
+    # hyphenated "ВМРО-ДПМНЕ" != "vmro"/"dpmne")
+    "sds", "vmro-dpmne",
+    # spelling fix: ќ transliterates to c, so the old "poveke" never matched
+    "povece",
     # parties (appear in a large share of political headlines)
     "vmro", "dpmne", "sdsm", "dui", "levica", "alternativa",
 }
@@ -154,7 +195,11 @@ _GENERIC_ENTITY_PREFIXES = (
 
 def _extract_title_entities(title: str, *args, **kwargs) -> set[str]:
     text = str(title or "")
-    entities = set(re.findall(r"\b\d[\d.,]*\b", text))
+    # NOTE: bare numbers ("21", "2025", "500", "4,5") are deliberately NOT
+    # entities. They anchored unrelated stories that happened to share a
+    # figure ("21-годишен син" vs "21-годишник приведен", "2025" reports vs
+    # alcohol stats) via the +0.15 shared-entity bonus.
+    entities = set()
     for token in re.findall(r"\b[А-ШЃЌЅЉЊЏA-Z][\w-]{2,}\b", text):
         folded = token.casefold()
         if folded in _STOPWORDS:
