@@ -1197,8 +1197,18 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG
     cache_key = f"api:cluster:detail:v3:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
+        if isinstance(cached, dict) and cached.get("__missing"):
+            # Negative cache: known-missing cluster (crawler sweep of
+            # purged/merged IDs). Short TTL so newly-ingested IDs recover fast.
+            raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         _maybe_enqueue_missing_synthesis_from_cache(cluster_id, cached)
         return cached
+
+    def _remember_missing():
+        try:
+            set_cache(cache_key, {"__missing": True}, ttl=120)
+        except Exception:
+            log.debug("[cluster] negative cache write failed for %s", cluster_id)
 
     try:
         # Map language to country for article filtering
@@ -1209,9 +1219,11 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG
             read_only=True,
         )
         if not rows:
+            _remember_missing()
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         rows = [row for row in rows if _is_publicly_displayable_article(row)]
         if not rows:
+            _remember_missing()
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
