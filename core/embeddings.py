@@ -164,5 +164,33 @@ def parse_embedding_value(value, *a, **kw):
     return []
 
 
+def average_embeddings(values) -> list | None:
+    """Compute a centroid from mixed embedding payloads, skipping malformed rows."""
+    vectors = []
+    for value in values or []:
+        parsed = parse_embedding_value(value)
+        if parsed:
+            vectors.append(parsed)
+
+    if not vectors:
+        return None
+
+    dims = len(vectors[0])
+    totals = [0.0] * dims
+    count = 0
+
+    for vector in vectors:
+        if len(vector) != dims:
+            continue
+        for idx, item in enumerate(vector):
+            totals[idx] += float(item)
+        count += 1
+
+    if count == 0:
+        return None
+
+    return [value / count for value in totals]
+
+
 def shutdown_embedding_executor(*a, **kw):
     return None

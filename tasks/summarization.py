@@ -189,11 +189,30 @@ def _ai_cluster_synthesis(articles: list[dict]) -> dict | None:
     parsed = clean_json_response(text or "")
     if not isinstance(parsed, dict) or not parsed:
         return None
+    headline = (parsed.get("headline") or "").strip()
+    summary = (parsed.get("summary") or "").strip()
+    key_facts = parsed.get("key_facts") or []
+    # Persist provenance/quality so observability (and low-score regeneration)
+    # works on the light scheduled path too. The heavy cascade records these in
+    # tasks/intelligence/backfill.py; this path previously dropped them.
+    model = None
+    quality_score = None
+    try:
+        from tasks.intelligence.synthesis_generation import _resolve_generation_model
+        from tasks.intelligence.synthesis_scoring import _compute_lightweight_quality_score
+
+        model = _resolve_generation_model(provider)
+        quality_score = _compute_lightweight_quality_score(headline, summary, summary, key_facts, "mk")
+    except Exception as e:  # scoring/provenance must never break generation
+        log.debug(f"[synthesis] quality/model resolution skipped: {e}")
     return {
-        "headline": (parsed.get("headline") or "").strip(),
-        "summary": (parsed.get("summary") or "").strip(),
-        "key_facts": parsed.get("key_facts") or [],
+        "headline": headline,
+        "summary": summary,
+        "key_facts": key_facts,
         "provider": provider or "ai",
+        "model": model,
+        "quality_score": quality_score,
+        "fallback_reason": None,
     }
 
 @shared_task(
@@ -281,12 +300,29 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
             summary = (synth.get("summary") or "").strip()
             if not summary:
                 continue
+
+            generation_model = synth.get("model")
+            quality_score = synth.get("quality_score")
+            fallback_reason = synth.get("fallback_reason")
+            if provider == "extractive":
+                fallback_reason = fallback_reason or "extractive_fallback"
+            if quality_score is None:
+                try:
+                    from tasks.intelligence.synthesis_scoring import _compute_lightweight_quality_score
+
+                    quality_score = _compute_lightweight_quality_score(
+                        synth.get("headline", ""), summary, summary, synth.get("key_facts", []), "mk"
+                    )
+                except Exception as e:
+                    log.debug(f"[synthesis] lightweight scoring skipped: {e}")
+
             db_manager.execute(
                 """
                 INSERT INTO cluster_summaries
                     (cluster_id, lang, summary, synthetic_headline, synthetic_standfirst,
-                     generated_article, key_facts, generation_provider, created_at)
-                VALUES (%s, 'mk', %s, %s, %s, %s, %s::jsonb, %s, NOW())
+                     generated_article, key_facts, generation_provider, generation_model,
+                     quality_score, fallback_reason, created_at)
+                VALUES (%s, 'mk', %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, NOW())
                 ON CONFLICT (cluster_id, lang) DO UPDATE SET
                     summary = EXCLUDED.summary,
                     synthetic_headline = EXCLUDED.synthetic_headline,
@@ -294,6 +330,9 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
                     generated_article = EXCLUDED.generated_article,
                     key_facts = EXCLUDED.key_facts,
                     generation_provider = EXCLUDED.generation_provider,
+                    generation_model = EXCLUDED.generation_model,
+                    quality_score = EXCLUDED.quality_score,
+                    fallback_reason = EXCLUDED.fallback_reason,
                     created_at = NOW()
                 """,
                 (
@@ -304,6 +343,9 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
                     summary,
                     json.dumps(synth.get("key_facts", [])),
                     provider,
+                    generation_model,
+                    quality_score,
+                    fallback_reason,
                 ),
                 fetch=False,
             )
@@ -380,6 +422,9 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
                     generated_article = %s,
                     key_facts = %s::jsonb,
                     generation_provider = %s,
+                    generation_model = %s,
+                    quality_score = %s,
+                    fallback_reason = NULL,
                     created_at = NOW()
                 WHERE cluster_id = %s
                 """,
@@ -390,6 +435,8 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
                     summary,
                     json.dumps(synth.get("key_facts", [])),
                     synth.get("provider", "ai"),
+                    synth.get("model"),
+                    synth.get("quality_score"),
                     cid,
                 ),
                 fetch=False,
