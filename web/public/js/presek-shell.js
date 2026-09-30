@@ -116,6 +116,35 @@
   bindSearchFab();
   document.addEventListener('astro:page-load', bindSearchFab);
 
+  // CSP-safe replacements for former inline handlers. A nonce/hash script-src
+  // makes the browser block `script-src-attr` (onclick/onload/...), so these
+  // are delegated here instead of living on the elements.
+  const prefetchedLinks = new Set();
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target;
+    const link = target && target.closest ? target.closest('a[data-testid="cluster-link"]') : null;
+    if (!link || prefetchedLinks.has(link.href)) return;
+    prefetchedLinks.add(link.href);
+    fetch(link.href, { priority: 'low' }).catch(() => {});
+  }, { passive: true });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    const el = target && target.closest ? target.closest('[data-reload]') : null;
+    if (el) {
+      e.preventDefault();
+      window.location.reload();
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const target = e.target;
+    const el = target && target.closest ? target.closest('[data-autosubmit]') : null;
+    if (el && el.form) {
+      el.form.submit();
+    }
+  });
+
   function initHeaderScroll() {
     const header = document.getElementById('main-header');
     if (!header) return undefined;

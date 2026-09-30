@@ -47,7 +47,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
             </a>
         </div>
 
-        <button onclick="window.location.reload()" class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
+        <button data-reload class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
             {t('offline.button_retry')}
         </button>
     </main>
