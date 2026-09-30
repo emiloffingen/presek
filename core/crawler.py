@@ -204,8 +204,12 @@ class CrawlerService:
         ]
 
     def _get_headers(self):
+        # Content fetches use a browser UA: several MK outlets (e.g. ohridnews)
+        # return 403 for unknown/polite bot UAs at the WAF level. robots.txt is
+        # still evaluated against BOT_USER_AGENT in `_robots_allows`, so we stay
+        # compliant while actually getting the HTML.
         return {
-            "User-Agent": BOT_USER_AGENT,
+            "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "mk,en;q=0.8",
             "Referer": "https://presek.mk/",
@@ -284,6 +288,19 @@ class CrawlerService:
             include_tables=True,
             no_fallback=False,
         )
+        # Boilerplate pruning is over-aggressive on some CMS layouts (fokus.mk,
+        # provereno.mk) and strips the whole article. Keep the pruned result
+        # only when it is actually better than extracting the raw HTML.
+        if not content or len(content) < 200:
+            raw_content = trafilatura.extract(
+                html,
+                url=url,
+                include_comments=False,
+                include_tables=True,
+                no_fallback=False,
+            )
+            if raw_content and len(raw_content) > len(content or ""):
+                content = raw_content
         metadata = trafilatura.metadata.extract_metadata(html, default_url=url)
 
         return {
