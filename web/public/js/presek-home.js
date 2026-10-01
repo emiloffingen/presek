@@ -1,6 +1,8 @@
 (function presekHome() {
   'use strict';
 
+  var lastVisitIncrement = 0;
+
   function readJson(id, fallback) {
     var el = document.getElementById(id);
     if (!el) return fallback;
@@ -43,9 +45,14 @@
       root.classList.add('home-analysis-expanded');
     }
     syncHomeModeDock(root);
-    try {
-      localStorage.setItem(visitKey, String(visits + 1));
-    } catch (_) {}
+    // boot() + astro:page-load both fire on first load; don't double-count.
+    var now = Date.now();
+    if (now - lastVisitIncrement > 1500) {
+      lastVisitIncrement = now;
+      try {
+        localStorage.setItem(visitKey, String(visits + 1));
+      } catch (_) {}
+    }
   }
 
   function expandHomeAnalysis() {
@@ -135,12 +142,6 @@
     applyAnalizaDefaults();
   }
 
-  function homeExpandAnalysis() {
-    var button = document.querySelector('[data-expand-home-analysis]');
-    if (!button || button.dataset.bound) return;
-    button.dataset.bound = '1';
-    button.addEventListener('click', expandHomeAnalysis);
-  }
 
   function bindHomeFeedFilter() {
     function applyFilter(root, filter) {
@@ -156,6 +157,17 @@
         var visible = active === 'all' || bucket === active;
         item.classList.toggle('is-filtered-out', !visible);
         item.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      });
+      // Banded (?banded=1) view wraps items in per-bucket bands; hide the whole
+      // band (header/count/grid) and the mid-feed ad so no empty shells remain.
+      root.querySelectorAll('[data-feed-band]').forEach(function (band) {
+        var bucket = band.getAttribute('data-feed-band');
+        var visible = active === 'all' || bucket === active;
+        band.classList.toggle('is-filtered-out', !visible);
+        band.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      });
+      root.querySelectorAll('.home-feed-ad-break').forEach(function (ad) {
+        ad.classList.toggle('is-filtered-out', active !== 'all');
       });
     }
 
@@ -174,59 +186,6 @@
     });
   }
 
-  function bindAnalizaNav() {
-    function setActiveChip(selector) {
-      document.querySelectorAll('[data-analiza-target]').forEach(function (button) {
-        var active = button.getAttribute('data-analiza-target') === selector;
-        button.classList.toggle('is-active', active);
-        button.setAttribute('aria-current', active ? 'true' : 'false');
-      });
-    }
-
-    function scrollToBand(selector) {
-      var target = document.querySelector(selector);
-      if (!target) return;
-      if (target.tagName === 'DETAILS') {
-        target.open = true;
-      }
-      setActiveChip(selector);
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    document.querySelectorAll('[data-analiza-target]').forEach(function (button) {
-      if (button.dataset.bound) return;
-      button.dataset.bound = '1';
-      button.addEventListener('click', function () {
-        scrollToBand(button.getAttribute('data-analiza-target'));
-      });
-    });
-
-    var tracked = Array.from(document.querySelectorAll('[data-analiza-target]'))
-      .map(function (button) {
-        var selector = button.getAttribute('data-analiza-target');
-        var target = selector ? document.querySelector(selector) : null;
-        return target ? { selector: selector, target: target } : null;
-      })
-      .filter(Boolean);
-
-    if (!tracked.length) return;
-    if (window.__presekAnalizaObserver) {
-      window.__presekAnalizaObserver.disconnect();
-    }
-    var observer = new IntersectionObserver(function (entries) {
-      var visible = entries
-        .filter(function (entry) { return entry.isIntersecting; })
-        .sort(function (a, b) { return b.intersectionRatio - a.intersectionRatio; })[0];
-      if (!visible) return;
-      var match = tracked.find(function (item) { return item.target === visible.target; });
-      if (match && match.selector) setActiveChip(match.selector);
-    }, {
-      rootMargin: '-18% 0px -62% 0px',
-      threshold: [0.08, 0.22, 0.4],
-    });
-    tracked.forEach(function (item) { observer.observe(item.target); });
-    window.__presekAnalizaObserver = observer;
-  }
 
   function bindLeadFeedScroll() {
     document.querySelectorAll('[data-scroll-home-feed]').forEach(function (button) {
@@ -241,223 +200,8 @@
     });
   }
 
-  function initTrendingPaint() {
-    var trendItems = readJson('presek-trending-data', []);
-    var root = document.querySelector('[data-trending-strip]');
-    if (!root || !Array.isArray(trendItems) || trendItems.length === 0) return;
 
-    var mount = root.querySelector('[data-trending-mount]');
-    if (!mount) return;
 
-    function paint() {
-      if (mount.dataset.ready === '1') return;
-      mount.dataset.ready = '1';
-      var frag = document.createDocumentFragment();
-      for (var i = 0; i < trendItems.length; i++) {
-        var item = trendItems[i];
-        var link = document.createElement('a');
-        link.href = item.href;
-        link.className = 'trending-card';
-
-        var chip = document.createElement('span');
-        chip.className = 'trend-chip';
-        chip.textContent = item.chip || '';
-
-        var title = document.createElement('h3');
-        title.className = 'trending-card-title';
-        title.textContent = item.title || '';
-
-        var source = document.createElement('p');
-        source.className = 'trending-card-source';
-        source.textContent = item.source || '';
-
-        link.append(chip, title, source);
-        frag.appendChild(link);
-      }
-      mount.appendChild(frag);
-    }
-
-    function maybePaint() {
-      if (root.open) paint();
-    }
-
-    root.addEventListener('toggle', maybePaint);
-
-    if ('IntersectionObserver' in window) {
-      var observer = new IntersectionObserver(function (entries) {
-        if (entries.some(function (entry) { return entry.isIntersecting; })) {
-          maybePaint();
-          observer.disconnect();
-        }
-      }, { rootMargin: '200px' });
-      observer.observe(root);
-    }
-  }
-
-  function initLivePaint() {
-    var wireItems = readJson('presek-live-data', []);
-    var root = document.querySelector('[data-live-strip]');
-    if (!root) return;
-
-    var mount = root.querySelector('[data-live-mount]');
-    if (!mount) return;
-
-    var lang = root.dataset.lang || 'sr';
-
-    function paintItem(item, isNew) {
-      var link = document.createElement('a');
-      link.href = item.href;
-      link.className = 'home-live-item' + (isNew ? ' home-live-item-pulse' : '');
-
-      var meta = document.createElement('div');
-      meta.className = 'home-live-meta';
-
-      var time = document.createElement('span');
-      time.textContent = item.time || '';
-
-      var source = document.createElement('strong');
-      source.textContent = item.source || '';
-
-      meta.append(time, source);
-
-      var title = document.createElement('p');
-      title.textContent = item.title || '';
-
-      link.append(meta, title);
-      return link;
-    }
-
-    function paint() {
-      if (mount.dataset.ready === '1') return;
-      mount.dataset.ready = '1';
-      var frag = document.createDocumentFragment();
-      for (var i = 0; i < wireItems.length; i++) {
-        frag.appendChild(paintItem(wireItems[i], false));
-      }
-      mount.appendChild(frag);
-    }
-
-    function maybePaint() {
-      if (root.open) paint();
-    }
-
-    root.addEventListener('toggle', maybePaint);
-
-    if ('IntersectionObserver' in window) {
-      var observer = new IntersectionObserver(function (entries) {
-        if (entries.some(function (entry) { return entry.isIntersecting; })) {
-          maybePaint();
-          observer.disconnect();
-        }
-      }, { rootMargin: '160px' });
-      observer.observe(root);
-    }
-
-    // Connect to SSE stream
-    if (window.EventSource && !root.dataset.liveConnected) {
-      root.dataset.liveConnected = '1';
-      var source = new EventSource('/api/live');
-      
-      // Keep track of connection for cleanup on Astro page transitions
-      var onPageUnload = function () {
-        source.close();
-        document.removeEventListener('astro:before-swap', onPageUnload);
-      };
-      document.addEventListener('astro:before-swap', onPageUnload);
-
-      source.onmessage = function (event) {
-        try {
-          var payload = JSON.parse(event.data);
-          if (payload && payload.type === 'new_article') {
-            var prefix = lang === 'mk' ? '/mk' : '';
-            var item = {
-              href: prefix + '/cluster/' + payload.cluster_id,
-              time: lang === 'mk' ? 'Сега' : 'Sada',
-              source: payload.source || '',
-              title: payload.title || ''
-            };
-
-            // 1. Add to beginning of wireItems array
-            wireItems.unshift(item);
-
-            // 2. Prepend to DOM if already painted
-            if (mount.dataset.ready === '1') {
-              var element = paintItem(item, true);
-              mount.insertBefore(element, mount.firstChild);
-            }
-
-            // 3. Update summary badge and teaser
-            var countEl = root.querySelector('.home-live-count');
-            if (countEl) {
-              countEl.textContent = Number(countEl.textContent || 0) + 1;
-            }
-            var teaserEl = root.querySelector('.home-live-summary-teaser');
-            if (teaserEl) {
-              var newLabel = lang === 'mk' ? '[НОВО]' : '[NOVO]';
-              teaserEl.textContent = newLabel + ' ' + item.source + ': ' + item.title;
-            }
-
-            // 4. Fire a beautiful glassmorphic toast notification
-            showLiveToast(item, lang);
-          }
-        } catch (e) {
-          console.warn('[SSE-Live] Error handling message:', e);
-        }
-      };
-
-      source.onerror = function () {
-        // Soft close, let EventSource automatic reconnect handle it
-      };
-    }
-  }
-
-  function showLiveToast(item, lang) {
-    var container = document.getElementById('presek-toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'presek-toast-container';
-      document.body.appendChild(container);
-    }
-
-    var toast = document.createElement('div');
-    toast.className = 'presek-toast';
-
-    var header = document.createElement('div');
-    header.className = 'presek-toast-header';
-
-    var meta = document.createElement('span');
-    meta.className = 'presek-toast-meta';
-    meta.textContent = lang === 'mk' ? '📡 Нова Вест' : '📡 Nova Vest';
-
-    var source = document.createElement('span');
-    source.className = 'presek-toast-source';
-    source.textContent = item.source || '';
-
-    header.append(meta, source);
-
-    var body = document.createElement('p');
-    body.className = 'presek-toast-body';
-    body.textContent = item.title || '';
-
-    toast.append(header, body);
-
-    // Make toast clickable to navigate directly
-    toast.style.cursor = 'pointer';
-    toast.addEventListener('click', function () {
-      window.location.href = item.href;
-    });
-
-    container.appendChild(toast);
-
-    // Trigger exit animation after 5.5s
-    setTimeout(function () {
-      toast.classList.add('toast-exit');
-      // Remove from DOM after exit transition
-      setTimeout(function () {
-        toast.remove();
-      }, 400);
-    }, 5500);
-  }
 
   function initAnalysisBandsPaint() {
     var payload = readJson('presek-analysis-bands-data', null);
@@ -627,6 +371,8 @@
     function bindBand(detailsSelector, mountSelector, items, painter, afterPaint) {
       var details = document.querySelector(detailsSelector);
       if (!details) return;
+      if (details.dataset.bandsBound === '1') return;
+      details.dataset.bandsBound = '1';
       var mount = details.querySelector(mountSelector);
       if (!mount) return;
 
@@ -669,12 +415,8 @@
     initHomepageSession();
     bindHomeModeDock();
     homeDetailsDefaults();
-    homeExpandAnalysis();
     bindHomeFeedFilter();
-    bindAnalizaNav();
     bindLeadFeedScroll();
-    initTrendingPaint();
-    initLivePaint();
     initAnalysisBandsPaint();
   }
 

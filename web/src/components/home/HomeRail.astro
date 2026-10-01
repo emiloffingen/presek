@@ -41,8 +41,11 @@ for (const ent of focusEntities) {
     let name = normalizeFocusEntitySurface(rawName);
     let lowerName = name.toLowerCase();
 
-    // Skip short words or stop words
-    if (lowerName.length <= 3 || STOP_WORDS.has(lowerName)) {
+    // Skip short words or stop words. Multi-word entries (e.g. "oglasio se")
+    // and phrases whose every token is a stop word must be filtered too, which a
+    // plain Set.has(lowerName) lookup never matched.
+    const tokens = lowerName.split(/\s+/).filter(Boolean);
+    if (lowerName.length <= 3 || STOP_WORDS.has(lowerName) || (tokens.length > 1 && tokens.every((token) => STOP_WORDS.has(token)))) {
         continue;
     }
 
