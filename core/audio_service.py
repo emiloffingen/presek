@@ -169,6 +169,28 @@ async def _synthesize_async(
     await communicator.save(path)
 
 
+def _run_synthesis_sync(text: str, voice: str, path: str, rate: str, pitch: str, volume: str) -> None:
+    """Run the async edge-tts call from sync code, even inside a running event loop.
+
+    routes/news.py runs generate_cluster_audio in the default executor (no loop),
+    but routes/home.py schedules it on the main loop while it's running, where
+    asyncio.run() raises "cannot be called from a running event loop". In that
+    case run the coroutine on a dedicated thread with its own loop.
+    """
+    def factory():
+        return _synthesize_async(text, voice, path, rate, pitch, volume)
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(factory())
+        return
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        executor.submit(lambda: asyncio.run(factory())).result()
+
+
 def _prune_older_variants(directory: str, cluster_id: str, lang: str, keep_filename: str) -> None:
     prefix = f"tts_{cluster_id}.{lang}."
     try:
@@ -224,7 +246,7 @@ class AudioService:
         if os.path.isfile(path) and os.path.getsize(path) > 1024:
             return url
         try:
-            asyncio.run(_synthesize_async(speech_text, voice, path, rate, pitch, volume))
+            _run_synthesis_sync(speech_text, voice, path, rate, pitch, volume)
         except Exception as e:
             log.warning("Edge TTS synthesis failed for cluster %s: %s", cluster_id, e)
             try:
