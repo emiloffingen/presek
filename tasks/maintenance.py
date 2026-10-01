@@ -993,6 +993,22 @@ def self_heal_low_score_syntheses_task(min_score=None, limit=None):
     return {"regenerated": regenerated, "candidates": len(rows)}
 
 
+@maintenance_task(name="tasks.maintenance.embed_recent_articles_task")
+def embed_recent_articles_task(hours=24, limit=120):
+    """Keep a rolling window of article embeddings fresh for semantic clustering.
+
+    Jina only (no LLM), bounded per run. Ingestion now persists embeddings for new
+    articles; this catches gaps from earlier rows (or Jina failures) so
+    find_or_create_cluster has vectors to match against.
+    """
+    from core.embeddings import embed_recent_articles
+
+    embedded = embed_recent_articles(hours=int(hours), limit=int(limit))
+    if embedded:
+        log.info("[maintenance] embedded %s recent articles", embedded)
+    return {"embedded": embedded}
+
+
 @maintenance_task
 def validate_cluster_images_task():
     """

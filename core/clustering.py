@@ -21,6 +21,15 @@ VECTOR_THRESHOLD = 0.28
 _TITLE_INSTANT_MERGE = 0.72
 _TITLE_BEST_MERGE = 0.40
 _TITLE_ANCHORED_MERGE = 0.32
+# Semantic (embedding) recall. Jina cosine >= floor means two headlines are about
+# the same event even with little lexical overlap (paraphrase / different outlets).
+# Kept conservative: a high-similarity match promotes an otherwise-weak candidate
+# over the ANCHORED gate but never bypasses the category guard already applied to
+# candidates, and the bonus is capped well below the lexical BEST gate.
+_SEMANTIC_SIM_FLOOR = 0.80
+_SEMANTIC_SIM_INSTANT = 0.90
+_SEMANTIC_BONUS_MAX = 0.22
+_SEMANTIC_ANCHOR = 0.86
 _STOPWORDS = {
     "а",
     "и",
@@ -250,6 +259,49 @@ def get_cosine(left: Counter, right: Counter) -> float:
     return numerator / (left_norm * right_norm) if left_norm and right_norm else 0.0
 
 
+def _parse_vector(value) -> list:
+    """Normalize a stored embedding (pgvector string, list, or None) to floats."""
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        try:
+            return [float(x) for x in value]
+        except (TypeError, ValueError):
+            return []
+    if isinstance(value, str):
+        s = value.strip()
+        if s.startswith("[") and s.endswith("]"):
+            s = s[1:-1]
+        if not s.strip():
+            return []
+        try:
+            return [float(x) for x in s.split(",")]
+        except ValueError:
+            return []
+    return []
+
+
+def _cosine_of_vectors(a: list, b: list) -> float:
+    """Cosine similarity of two already-parsed float vectors."""
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = 0.0
+    norm_a = 0.0
+    norm_b = 0.0
+    for x, y in zip(a, b):
+        dot += x * y
+        norm_a += x * x
+        norm_b += y * y
+    if not norm_a or not norm_b:
+        return 0.0
+    return dot / ((norm_a**0.5) * (norm_b**0.5))
+
+
+def _cosine_similarity(left, right) -> float:
+    """Cosine similarity of two embeddings; accepts float lists or pgvector strings."""
+    return _cosine_of_vectors(_parse_vector(left), _parse_vector(right))
+
+
 def sr_stem(word: str) -> str:
     value = str(word or "")
     if len(value) < 4:
@@ -273,6 +325,7 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
     category = kwargs.get("category")
     topic = kwargs.get("topic")
     source = kwargs.get("source")
+    incoming_vec = _parse_vector(kwargs.get("embedding"))
     title_entities = _extract_title_entities(title)
     candidates = {}
     for article in recent_articles or []:
@@ -286,6 +339,8 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
     best_id = None
     best_score = 0.0
     best_anchored = False
+    best_semantic = 0.0
+    seed_vecs: dict = {}
     for cluster_id, articles in candidates.items():
         if len(articles) >= MAX_CLUSTER_SIZE:
             continue
@@ -297,10 +352,21 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
         article = articles[-1]
         other_title = str(article.get("title") or "")
         overlap = _cluster_title_overlap(title, other_title)
-        if overlap >= _TITLE_INSTANT_MERGE:
-            return cluster_id
         shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
         same_topic = bool(topic and article.get("topic") and topic == article["topic"])
+        sim = 0.0
+        if incoming_vec:
+            seed_vec = seed_vecs.get(cluster_id)
+            if seed_vec is None:
+                seed_vec = _parse_vector(article.get("embedding"))
+                seed_vecs[cluster_id] = seed_vec
+            sim = _cosine_of_vectors(incoming_vec, seed_vec)
+        if overlap >= _TITLE_INSTANT_MERGE:
+            return cluster_id
+        # Near-duplicate vectors for the same topic and a shared name are a
+        # reliable same-story signal even when the wording was rewritten.
+        if sim >= _SEMANTIC_SIM_INSTANT and same_topic and shared:
+            return cluster_id
         score = overlap
         if shared:
             score += 0.15
@@ -308,17 +374,20 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
             score += 0.05
         if same_topic:
             score += 0.06
+        if sim > _SEMANTIC_SIM_FLOOR:
+            score += _SEMANTIC_BONUS_MAX * min((sim - _SEMANTIC_SIM_FLOOR) / (1.0 - _SEMANTIC_SIM_FLOOR), 1.0)
         if source and article.get("source") == source:
             score -= 0.04
         if score > best_score:
-            best_id, best_score, best_anchored = cluster_id, score, bool(shared)
+            best_id, best_score, best_anchored, best_semantic = cluster_id, score, bool(shared), sim
 
     if best_id is None:
         return uuid.uuid4().hex[:12]
     if best_score >= _TITLE_BEST_MERGE:
         return best_id
-    # Low band: only merge when the match is anchored by a shared named entity,
-    # so unrelated stories that merely share topic words stay separate.
-    if best_score >= _TITLE_ANCHORED_MERGE and best_anchored:
+    # Low band: only merge when the match is anchored by a shared named entity —
+    # or by a strong semantic match (paraphrased headline, same event) — so
+    # unrelated stories that merely share topic words stay separate.
+    if best_score >= _TITLE_ANCHORED_MERGE and (best_anchored or best_semantic >= _SEMANTIC_ANCHOR):
         return best_id
     return uuid.uuid4().hex[:12]

@@ -270,6 +270,13 @@ celery_app.conf.update(
             "schedule": 3600.0,
             "options": {"expires": 3300},
         },
+        "embed-recent-articles": {
+            # Rolling Jina embeddings for recent articles (no LLM), so semantic
+            # clustering recall (find_or_create_cluster) has vectors to match.
+            "task": "tasks.maintenance.embed_recent_articles_task",
+            "schedule": 1800.0,  # Every 30 minutes
+            "options": {"expires": 1620},
+        },
         "prune-ingestion-queue": {
             "task": "tasks.maintenance.prune_ingestion_queue_task",
             "schedule": 900.0,

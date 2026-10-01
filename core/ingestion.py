@@ -1047,7 +1047,7 @@ async def ingest_all_sources_async():
     with db.connection() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT title, cluster_id, created_at, category, topic FROM articles ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at, category, topic, embedding::text AS embedding FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,),
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
@@ -1086,6 +1086,7 @@ async def ingest_all_sources_async():
                 is_intl = c["country"] != "RS"
                 # Always normalize headlines to strip VIDEO, FOTO, etc.
                 display_title = normalize_headline(c["title"])
+                emb_literal = "[" + ",".join(map(str, emb)) + "]" if emb else None
 
                 cluster_id = None
                 if emb:
@@ -1147,6 +1148,7 @@ async def ingest_all_sources_async():
                         0,
                         topic,
                         is_fact,
+                        emb_literal,
                     )
                 )
 
@@ -1169,6 +1171,7 @@ async def ingest_all_sources_async():
                         "created_at": created_at,
                         "category": category,
                         "topic": topic,
+                        "embedding": emb_literal,
                     },
                 )
                 if len(recent_articles) > CLUSTER_LOOKBACK:
@@ -1191,9 +1194,9 @@ async def ingest_all_sources_async():
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory,
                     cluster_id, created_at, ingested_at, image_url, description, original_description,
-                    country, is_translated, topic, is_fact_check
+                    country, is_translated, topic, is_fact_check, embedding
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector
                 ) ON CONFLICT (link) DO NOTHING RETURNING id
             """
             cur.executemany(sql, prepared_rows, returning=True)
