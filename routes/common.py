@@ -60,7 +60,7 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
             raise HTTPException(status_code=400, detail="Nedostasuva kluc za sinhronizacija")
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
-        raise HTTPException(status_code=400, detail="Nevaliden format na klucot za sinhronizacija")
+        raise HTTPException(status_code=400, detail="Невалиден формат на клучот за синхронизација")
     return token
 
 

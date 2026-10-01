@@ -77,6 +77,24 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
 };
 
+// Build an /archive URL preserving the current filters unless overridden.
+const buildArchiveHref = (overrides: { date?: string; q?: string; source?: string; topic?: string } = {}) => {
+  const params = new URLSearchParams();
+  const d = overrides.date !== undefined ? overrides.date : date;
+  const qq = overrides.q !== undefined ? overrides.q : q;
+  const ss = overrides.source !== undefined ? overrides.source : source;
+  const tt = overrides.topic !== undefined ? overrides.topic : topic;
+  if (d) params.set('date', d);
+  if (qq) params.set('q', qq);
+  if (ss) params.set('source', ss);
+  if (tt) params.set('topic', tt);
+  return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
+};
+
+const todayStr = new Date().toISOString().split('T')[0];
+const prevDateStr = new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0];
+const nextDateStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
+
 const formattedDisplayDate = new Date(archive.date).toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
 
 const briefingItems: string[] = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
@@ -154,6 +172,9 @@ function formatBriefingItem(item: string) {
             <div class="flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
                 <div class="flex items-center gap-[var(--grid-gap)] flex-wrap">
                     <form method="get" class="date-select-form">
+                        <input type="hidden" name="q" value={q} />
+                        <input type="hidden" name="source" value={source} />
+                        <input type="hidden" name="topic" value={topic} />
                         <div class="relative group">
                             <input
                                 type="date"
@@ -170,17 +191,22 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a
-                            href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
+                            href={buildArchiveHref({ date: prevDateStr })}
                             class="archive-nav-btn"
                         >
                             ← {t('archive.previous')}
                         </a>
-                        {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
+                        {new Date(date) < new Date(todayStr) && (
                             <a
-                                  href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  href={buildArchiveHref({ date: nextDateStr })}
                                   class="archive-nav-btn"
                             >
                                 {t('archive.next')} →
+                            </a>
+                        )}
+                        {date !== todayStr && (
+                            <a href={buildArchiveHref({ date: todayStr })} class="archive-nav-btn">
+                                {t('archive.today')}
                             </a>
                         )}
                     </div>
@@ -188,6 +214,8 @@ function formatBriefingItem(item: string) {
 
                 <form method="get" class="w-full md:w-80">
                     <input type="hidden" name="date" value={date} />
+                    <input type="hidden" name="source" value={source} />
+                    <input type="hidden" name="topic" value={topic} />
                     <div class="relative">
                         <input
                             type="text"
@@ -222,7 +250,7 @@ function formatBriefingItem(item: string) {
             </div>
         </summary>
         <div class="p-8 border-t border-border bg-card/80">
-            <ArchiveHeatmapIsland client:visible selectedDate={date} lang={lang} />
+            <ArchiveHeatmapIsland client:visible selectedDate={date} lang={lang} q={q} source={source} topic={topic} />
         </div>
     </details>
 

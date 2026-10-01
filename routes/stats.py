@@ -176,9 +176,9 @@ async def get_archive(
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
 
         if page < 0 or page > 1000:
-            raise HTTPException(status_code=400, detail="Nevaliden broj na stranica")
+            raise HTTPException(status_code=400, detail="Невалиден број на страница")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(status_code=400, detail="Nevalidna golemina na stranica (1-50)")
+            raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
 
         # 1. Caching - Only for historical dates (older than today)
         cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
@@ -355,7 +355,7 @@ async def get_archive(
         raise HTTPException(status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD")
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Neuspešno učitavanje arhive")
+        raise HTTPException(status_code=500, detail="Неуспешно вчитување на архивата")
 
 
 @router.get("/archive/daily-briefing")
@@ -551,7 +551,7 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     email = validate_email(body.get("email", ""), "email")
     locale = "mk" if str(body.get("locale") or "sr").strip().lower() == "mk" else "sr"
     try:
@@ -862,7 +862,7 @@ async def control_source_route(name: str, request: Request, csrf_valid: bool = D
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     action = str(payload.get("action", "")).strip().lower()
     source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source:
@@ -961,7 +961,7 @@ async def get_sentiment_trends(lang: Optional[str] = DEFAULT_LANG):
         return res
     except Exception as e:
         log.error(f"Sentiment Trends Error: {e}")
-        return soft_error(message="Neuspešno učitavanje sentimenta")
+        return soft_error(message="Неуспешно вчитување на сентиментот")
 
 
 @router.get("/stats/mood")

@@ -841,7 +841,7 @@ async def semantic_search(
         query_vec = await get_query_embedding_async(q)
         if not query_vec:
             detail = (
-                "Neuspešno generisanje vektora za pretraživanje"
+                "Неуспешно генерирање вектори за пребарување"
                 if lang == "sr"
                 else "Неуспешно генерирање на вектор за пребарување"
             )
@@ -1879,14 +1879,14 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = DEFAULT_LANG)
         headlines = [str(r.get("title") or "").strip() for r in a_rows]
         headlines = [h for h in headlines if h]
         if not headlines:
-            raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
+            raise HTTPException(status_code=404, detail="Не е пронајдена синтеза за овој кластер.")
         lead = str((a_rows[0] or {}).get("description") or "").strip()
         narration = "Вести: " + ". ".join(headlines)
         if lead:
             narration += ". " + lead
         content = select_cluster_audio_text(None, narration)
     if not content:
-        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
+        raise HTTPException(status_code=404, detail="Не е пронајдена синтеза за овој кластер.")
     loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(None, AudioService.generate_cluster_audio, cluster_id, content, lang)
 

@@ -342,7 +342,7 @@ async def get_cluster_synthesis_trace(
 
     trace = await build_cluster_synthesis_trace(cluster_id, lang=lang)
     if not trace.get("article_count"):
-        raise HTTPException(status_code=404, detail="Klaster nije pronađen.")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден.")
     return {"status": "success", "trace": trace}
 
 

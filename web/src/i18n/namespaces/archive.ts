@@ -37,6 +37,7 @@ export const archive = {
     'archive.close_overview': 'Затвори преглед',
     'archive.tema': 'Теми',
     'archive.title': 'Архива',
+    'archive.today': 'Денес',
     'archive.years_ago': 'Пред {n} години',
   },
 } as const;

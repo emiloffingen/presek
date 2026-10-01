@@ -92,10 +92,10 @@ async def verify_csrf_token(request: Request):
             log.debug("CSRF form parse failed")
 
     if header_token and cookie_token and header_token != cookie_token:
-        raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
+        raise HTTPException(status_code=403, detail="Невалиден CSRF токен")
 
     if not validate_csrf_token(csrf_token):
-        raise HTTPException(status_code=403, detail="Nevaliden CSRF token")
+        raise HTTPException(status_code=403, detail="Невалиден CSRF токен")
 
     if os.environ.get("ENV") == "production" and not cookie_token:
         raise HTTPException(status_code=403, detail="CSRF cookie required")
@@ -343,7 +343,7 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                 if int(content_length) > MAX_REQUEST_BODY_SIZE:
                     _raise_http_error(413, "Request body exceeds maximum size")
             except ValueError:
-                raise HTTPException(status_code=400, detail="Nevaliden Content-Length naslov")
+                raise HTTPException(status_code=400, detail="Невалидно Content-Length заглавје")
 
         # Check query parameters
         for key, value in request.query_params.items():
