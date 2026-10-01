@@ -162,7 +162,7 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'more'}
             className="cluster-sidebar-panel cluster-sidebar-more"
           >
-            <NewsletterIsland lang={locale} />
+            <NewsletterIsland lang="mk" />
             <ClusterFollowSuggestionsIsland
               topic={topic}
               source={source}
