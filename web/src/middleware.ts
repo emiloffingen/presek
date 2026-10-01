@@ -77,13 +77,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return new Response('Not found', { status: 404 });
   }
 
-  const adminPageToken = process.env.ADMIN_PAGE_TOKEN?.trim();
-  if (
-    isProductionHost
-    && adminPageToken
-    && pathname.startsWith('/admin')
-    && pathname !== '/admin/status'
-  ) {
+  // /admin is token-gated on production; /admin/status stays public. Deny by
+  // default when no token is configured so the dashboard is never exposed.
+  if (isProductionHost && pathname.startsWith('/admin') && pathname !== '/admin/status') {
+    const adminPageToken = process.env.ADMIN_PAGE_TOKEN?.trim();
+    if (!adminPageToken) {
+      return new Response('Not found', { status: 404 });
+    }
     const provided = context.request.headers.get('x-admin-page-token') || '';
     const expected = Buffer.from(adminPageToken);
     const actual = Buffer.from(provided);
