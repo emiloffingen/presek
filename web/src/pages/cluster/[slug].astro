@@ -506,12 +506,9 @@ const describeRelatedEvidence = (rel: any) => {
 
 // --- Momentum Kicker Logic ---
 const totalSourcesCount = cluster?.articles?.length || 0;
-const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
 let momentumKicker = { label: t('cluster.momentum.editorial'), color: 'text-muted-foreground' };
-if (isBreakingFlag && totalSourcesCount >= 4) {
-    momentumKicker = { label: t('cluster.momentum.breaking'), color: 'text-nyt-red' };
-} else if (conflictsCount >= 3) {
+if (conflictsCount >= 3) {
     momentumKicker = { label: t('cluster.momentum.contradictory'), color: 'cluster-tone-watch' };
 } else if (totalSourcesCount >= 6) {
     momentumKicker = { label: t('cluster.momentum.wide_interest'), color: 'cluster-tone-positive' };

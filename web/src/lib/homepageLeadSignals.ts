@@ -34,14 +34,6 @@ export function buildLeadStatus(cluster: NewsCluster | null, lang: LeadLang): Le
     || new Set(cluster.articles.map((article) => article.source).filter(Boolean)).size,
   );
 
-  if (cluster.is_breaking) {
-    return {
-      label: leadT(lang, 'home.lead_status_live_label'),
-      note: leadT(lang, 'home.lead_status_live_note'),
-      tone: 'live',
-    };
-  }
-
   if (uniqueSources <= 1) {
     return {
       label: leadT(lang, 'home.lead_status_early_label'),

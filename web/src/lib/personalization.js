@@ -791,9 +791,6 @@ export function scoreClusterForReader(cluster, profile, lang = 'mk') {
     }
   }
 
-  if (cluster.is_breaking) {
-    score += 0.65;
-  }
   score += Math.min(0.9, ((cluster.articles || []).length - 1) * 0.12);
   if (seenClusterIds.has(cluster.cluster_id)) {
     score -= 1.2;

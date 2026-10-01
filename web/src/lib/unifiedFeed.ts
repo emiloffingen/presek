@@ -30,7 +30,6 @@ export function isStubFeedCluster(cluster: NewsCluster): boolean {
 function clusterTrendScore(cluster: NewsCluster) {
     const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return Number(cluster.homepage_score || 0)
-        + (cluster.is_breaking ? 100 : 0)
         + Math.min(sourceCount, 8) * 5;
 }
 

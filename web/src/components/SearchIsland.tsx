@@ -463,7 +463,7 @@ export default function SearchIsland({
                 sourceCount: Array.isArray(clusterRecord.articles) ? clusterRecord.articles.length : 0,
                 pulse_score: typeof clusterRecord.pulse_score === 'number' ? clusterRecord.pulse_score : undefined,
                 has_synthesis: Boolean(clusterRecord.has_synthesis),
-                matchLabel: clusterRecord.is_breaking ? t('search.match_urgent') : t('search.match_story'),
+                matchLabel: t('search.match_story'),
               };
             })
           : [];

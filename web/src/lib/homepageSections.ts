@@ -51,7 +51,6 @@ function toForYouCluster(cluster: NewsCluster) {
 function clusterTrendScore(cluster: NewsCluster) {
     const sourceCount = clusterSourceCount(cluster);
     return Number(cluster.homepage_score || 0)
-        + (cluster.is_breaking ? 100 : 0)
         + Math.min(sourceCount, 8) * 5;
 }
 

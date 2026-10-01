@@ -33,13 +33,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   if (!main) return null;
 
   const totalSources = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles.length);
-  const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
-
-  const significanceLabel =
-    totalSources >= 6 ? t('news.breaking') :
-    totalSources >= 4 ? t('news.tracked') :
-    cluster.is_breaking ? t('news.urgent') :
-    t('news.ongoing');
 
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', locale);
   const thumbSrc = selectedImage.proxiedUrl;
@@ -136,9 +129,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="article-meta-v2">
           <div className="kicker-group">
             <span className="kicker">{main.source}</span>
-            {cluster.is_breaking && (
-              <span className="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
-            )}
           </div>
         </div>
 

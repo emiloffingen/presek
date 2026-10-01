@@ -33,12 +33,6 @@ if (!main) return;
 const sourceSignal = main?.source_signal || {};
 const totalSources = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles.length);
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
-const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
-const significanceLabel =
-	totalSources >= 6 ? t('news.breaking') :
-	totalSources >= 4 ? t('news.tracked') :
-	cluster.is_breaking ? t('news.urgent') :
-	t('news.ongoing');
 
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang as 'sr' | 'mk');
 const thumbSrc = selectedImage.proxiedUrl;
@@ -163,9 +157,6 @@ function getTimeStr(dateStr: string) {
         <div class="article-meta-v2">
             <div class="kicker-group">
                 <span class="kicker">{main.source}</span>
-                {cluster.is_breaking && (
-                    <span class="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
-                )}
             </div>
         </div>
 

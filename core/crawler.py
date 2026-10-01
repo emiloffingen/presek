@@ -288,19 +288,25 @@ class CrawlerService:
             include_tables=True,
             no_fallback=False,
         )
-        # Boilerplate pruning is over-aggressive on some CMS layouts (fokus.mk,
-        # provereno.mk) and strips the whole article. Keep the pruned result
-        # only when it is actually better than extracting the raw HTML.
-        if not content or len(content) < 200:
-            raw_content = trafilatura.extract(
-                html,
-                url=url,
-                include_comments=False,
-                include_tables=True,
-                no_fallback=False,
-            )
-            if raw_content and len(raw_content) > len(content or ""):
-                content = raw_content
+        # Boilerplate pruning is over-aggressive on some CMS layouts and can
+        # return a short-but-plausible wrong block (e.g. telma.com.mk's cookie
+        # consent banner extracts to ~235 chars, which clears the 200-char
+        # gate and suppressed the old raw retry). Always extract the raw HTML
+        # too and keep it when the pruned result is missing, tiny, or
+        # materially shorter.
+        raw_content = trafilatura.extract(
+            html,
+            url=url,
+            include_comments=False,
+            include_tables=True,
+            no_fallback=False,
+        )
+        if raw_content and (
+            not content
+            or len(content) < 200
+            or len(raw_content) > len(content) * 1.5
+        ):
+            content = raw_content
         metadata = trafilatura.metadata.extract_metadata(html, default_url=url)
 
         return {
