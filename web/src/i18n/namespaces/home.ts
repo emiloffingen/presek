@@ -64,7 +64,6 @@ export const home = {
     'home.global_desc': 'Системски преглед на меѓународните случувања од водечките новински агенции.',
     'home.global_title': 'Глобална Сцена',
     'home.lead_agenda': 'Приказна што ја придвижува домашната агенда',
-    'home.lead_breaking': 'Најбрз развој денес',
     'home.lead_follow': 'развој што вреди да се следи',
     'home.lead_spreading': 'Тема што брзо се шири низ редакциите',
     'home.lead_evidence_sources': 'Редакции',

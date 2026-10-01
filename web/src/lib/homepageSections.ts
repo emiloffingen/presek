@@ -33,7 +33,6 @@ function toForYouCluster(cluster: NewsCluster) {
     const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return {
         cluster_id: cluster.cluster_id,
-        is_breaking: cluster.is_breaking,
         topics: cluster.topics,
         tags: cluster.tags,
         homepage_score: cluster.homepage_score,

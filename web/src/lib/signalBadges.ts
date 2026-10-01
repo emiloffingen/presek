@@ -3,7 +3,6 @@ export type SiteLang = 'sr' | 'mk';
 export type ClusterSignalInput = {
   pluralismScore?: number | null;
   pulseScore?: number | null;
-  isBreaking?: boolean;
   topic?: string;
 };
 

@@ -83,7 +83,7 @@ try {
                 return {
                     label: cluster?.synthetic_headline || lead?.title || t('header.latest'),
                     href: `${l('/cluster/')}${cluster?.cluster_id}`,
-                    type: cluster?.is_breaking ? 'breaking' : 'latest',
+                    type: 'latest',
                     created_at: lead?.ingested_at || lead?.created_at || null,
                 };
             }).filter((item: any) => item.href && item.label).slice(0, 6);

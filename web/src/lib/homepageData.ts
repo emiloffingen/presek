@@ -88,7 +88,6 @@ export function normalizeForYouCluster(cluster: any): NewsCluster {
     const article = cluster.articles?.[0] || {};
     return ({
         cluster_id: cluster.cluster_id,
-        is_breaking: cluster.is_breaking,
         topics: cluster.topics,
         tags: cluster.tags,
         homepage_score: cluster.homepage_score,
@@ -352,7 +351,6 @@ export function buildLeadViewModel(options: {
 
     const getLeadSignal = (cluster: NewsCluster) => {
         const count = cluster?.articles?.length || 0;
-        if (cluster?.is_breaking) return t('home.lead_breaking');
         if (count >= 6) return t('home.lead_agenda');
         if (count >= 4) return t('home.lead_spreading');
         return t('home.lead_follow');

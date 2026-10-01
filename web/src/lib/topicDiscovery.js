@@ -37,14 +37,12 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
       const entry = topicMap.get(normalizedTopic) || {
         topic: normalizedTopic,
         clusterCount: 0,
-        breakingCount: 0,
         sharedSourceCount: 0,
         sharedTagCount: 0,
         tags: new Set(),
       };
 
       entry.clusterCount += 1;
-      if (cluster?.is_breaking) entry.breakingCount += 1;
       entry.sharedSourceCount += sharedSourceCount;
       entry.sharedTagCount += sharedTagCount;
       detailTags.forEach((tag) => {
@@ -62,17 +60,13 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
     .map((entry) => {
       const score =
         entry.clusterCount * 1.2 +
-        entry.breakingCount * 1.15 +
         entry.sharedTagCount * 0.38 +
         entry.sharedSourceCount * 0.26;
 
       let relationshipLabel = 'Povrzana tema';
       let relationshipNote = `${entry.clusterCount} klasteri vece se prelevaat od ${currentTopic} kon ${entry.topic}.`;
 
-      if (entry.breakingCount >= 2) {
-        relationshipLabel = 'Следна развојна линија';
-        relationshipNote = `${entry.topic} станува следниот фронт на приказната, со ${entry.breakingCount} активни развои што се надоврзуваат на ${currentTopic}.`;
-      } else if (entry.sharedTagCount >= 3) {
+      if (entry.sharedTagCount >= 3) {
         relationshipLabel = 'Posiroka ramka';
         relationshipNote = `${entry.topic} ja siri istata prica preku isti iminja i agli, ne samo preku povrsna tematska bliskost.`;
       } else if (entry.sharedSourceCount >= 3) {
@@ -84,7 +78,6 @@ export function buildTopicConnections(currentTopic, clusters = [], details = [],
         topic: entry.topic,
         score,
         clusterCount: entry.clusterCount,
-        breakingCount: entry.breakingCount,
         sharedSourceCount: entry.sharedSourceCount,
         sharedTagCount: entry.sharedTagCount,
         sampleTags: Array.from(entry.tags).slice(0, 3),

@@ -108,7 +108,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const slimCluster = {
     cluster_id: cluster.cluster_id,
-    is_breaking: cluster.is_breaking,
     topics: cluster.topics,
     tags: cluster.tags,
     homepage_score: cluster.homepage_score,
