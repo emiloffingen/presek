@@ -13,7 +13,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const retiredPublicPrefixes = [
     '/for-you', '/briefing', '/pulse', '/graf', '/grafik',
-    '/settings', '/pregled', '/analize', '/subjekt', '/debug', '/admin',
+    '/settings', '/pregled', '/analize', '/debug',
   ];
   if (
     (hostname === 'presek.mk' || hostname === 'www.presek.mk')

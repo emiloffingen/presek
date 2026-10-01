@@ -166,7 +166,7 @@ export default function UiConceptOnboarding({ lang = 'mk' }: { lang?: string }) 
       localStorage.setItem(STORAGE_KEY, '1');
     } catch (e) {}
     setVisible(false);
-    window.location.assign(localePathForLang('/pregled', lang as 'sr' | 'mk'));
+    window.location.assign(localePathForLang('/?analiza=1', lang as 'sr' | 'mk'));
   };
 
   useEffect(() => {

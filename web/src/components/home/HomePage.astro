@@ -55,13 +55,21 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 const API_URL = apiBaseUrl();
 
 async function fetchJson(url: string) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        const err: any = new Error(`Request failed: ${response.status} ${url}`);
-        err.status = response.status;
-        throw err;
+    // Bound the primary SSR fetch so a hung backend can't hold the whole
+    // homepage render open (the fallback path should still get a chance).
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) {
+            const err: any = new Error(`Request failed: ${response.status} ${url}`);
+            err.status = response.status;
+            throw err;
+        }
+        return response.json();
+    } finally {
+        clearTimeout(timer);
     }
-    return response.json();
 }
 
 const homepageVm = await loadHomepageViewModel({
@@ -464,7 +472,7 @@ if (analizaNavItems.length > 0) {
                 </div>
 
                 {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
-                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-analiza-deferred home-feed-only">
+                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only">
                         <HomeSynthesisTeaser
                             cluster={feedSynthesisTeaser}
                             lang={lang}
