@@ -152,7 +152,9 @@ export default function SearchIsland({
   const CATEGORIES: CategoryOption[] = useMemo(
     () => [
       { id: 'all', labelKey: 'search.category_all', apiValue: '', color: 'bg-foreground' },
-      { id: 'country', labelKey: 'search.category_country', apiValue: t('search.category_country_value'), color: 'bg-nyt-red' },
+      // The API stores the domestic category in Latin ("Makedonija"); sending
+      // the cyrillic label filtered every row out.
+      { id: 'country', labelKey: 'search.category_country', apiValue: 'Makedonija', color: 'bg-nyt-red' },
       { id: 'politics', labelKey: 'search.category_politika', apiValue: 'Politika', color: 'bg-blue-600' },
       { id: 'economy', labelKey: 'search.category_ekonomija', apiValue: 'Ekonomija', color: 'bg-emerald-600' },
       { id: 'sports', labelKey: 'search.category_sport', apiValue: 'Sport', color: 'bg-orange-500' },
@@ -239,8 +241,10 @@ export default function SearchIsland({
       }
       if (e.key === 'Escape') closeSearch();
 
-      // Numerical hotkeys for Quick Actions when search query is empty
-      if (isOpen && !queryRef.current.trim()) {
+      // Numerical hotkeys for Quick Actions when search query is empty.
+      // Skip while the user is editing: the search input is auto-focused, so
+      // otherwise typing a leading digit would navigate away instead.
+      if (isOpen && !queryRef.current.trim() && !isEditableTarget(e.target)) {
         const keyNum = parseInt(e.key, 10);
         if (keyNum >= 1 && keyNum <= 4) {
           const action = SEARCH_ACTIONS[keyNum - 1];
@@ -469,7 +473,7 @@ export default function SearchIsland({
       aborter.abort();
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
-  }, [query, isOpen, timespan, categoryFilter, lang, t, activeCategory]);
+  }, [query, isOpen, timespan, categoryFilter, lang, activeCategory]);
 
   // Auto-scroll highlighted keyboard navigation element into view. Skip the
   // default "search all" selection (activeIndex === -1) to avoid smooth-scroll
@@ -725,6 +729,7 @@ export default function SearchIsland({
             onRemoveRecentSearch={handleRemoveRecentSearch}
             onClearRecentSearches={handleClearRecentSearches}
             searchTime={searchTime}
+            error={error}
             closeSearch={closeSearch}
             t={t}
             scrollRef={scrollRef}

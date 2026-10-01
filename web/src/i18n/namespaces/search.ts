@@ -29,6 +29,8 @@ export const search = {
     'search.match_urgent': 'ИТНО',
     'search.match_story': 'вест',
     'search.error': 'Грешка',
+    'search.error_title': 'Пребарувањето не успеа',
+    'search.error_desc': 'Проверете ја врската и обидете се повторно.',
     'search.filters_title': 'Филтри за пребарување',
     'search.listening': 'Ве слушам...',
     'search.cancel': 'Откажи',

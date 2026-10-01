@@ -1,5 +1,5 @@
 import { navigate } from 'astro:transitions/client';
-import { History, Search, TrendingUp, Zap, ArrowUpRight, X, Trash2 } from 'lucide-react';
+import { History, Search, TrendingUp, Zap, ArrowUpRight, X, Trash2, AlertTriangle } from 'lucide-react';
 import React from 'react';
 import { SearchSkeleton } from './SearchSkeleton';
 import { SearchResultItem } from './SearchResultItem';
@@ -30,6 +30,7 @@ type SearchResultsProps = {
   onRemoveRecentSearch: (q: string) => void;
   onClearRecentSearches?: () => void;
   searchTime?: number | null;
+  error?: string | null;
   closeSearch: () => void;
   t: TFunction;
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -53,6 +54,7 @@ export const SearchResults = React.memo(function SearchResults({
   onRemoveRecentSearch,
   onClearRecentSearches,
   searchTime,
+  error,
   closeSearch,
   t,
   scrollRef,
@@ -287,7 +289,21 @@ export const SearchResults = React.memo(function SearchResults({
             </section>
           )}
 
-          {!isLoading && suggestions.length === 0 && !entityResult && filteredActions.length === 0 && (
+          {!isLoading && error && (
+            <div className="py-14 sm:py-20 flex flex-col items-center text-center">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 rounded-none flex items-center justify-center mb-5 sm:mb-6">
+                <AlertTriangle size={32} className="text-amber-500/60" />
+              </div>
+              <h4 className="font-serif font-black text-xl sm:text-2xl mb-2">
+                {t('search.error_title')}
+              </h4>
+              <p className="text-muted-foreground text-[13px] sm:text-sm max-w-xs">
+                {t('search.error_desc')}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !error && suggestions.length === 0 && !entityResult && filteredActions.length === 0 && (
             <div className="py-14 sm:py-20 flex flex-col items-center text-center">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 rounded-none flex items-center justify-center mb-5 sm:mb-6">
                 <Search size={32} className="text-muted-foreground/30" />
