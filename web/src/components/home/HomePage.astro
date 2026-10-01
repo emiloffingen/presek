@@ -27,6 +27,7 @@ import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
+import HomeStatsStrip from './HomeStatsStrip.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -203,6 +204,9 @@ if (analizaNavItems.length > 0) {
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
                         <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} stats={stats} />
+                        {!q && !category && !topic && !entity && !subcategory && clusters.length > 0 && (
+                            <HomeStatsStrip clusters={clusters} lang={lang} />
+                        )}
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
                         )}
@@ -434,31 +438,21 @@ if (analizaNavItems.length > 0) {
 
 				</div>
 
-                <div id="home-core-feed" class:list={['home-mobile-order-feed-extended home-feed-core home-feed-only', isHomepage ? 'homepage-analiza-only' : 'home-filtered-feed-extended']}>
+                {!isHomepage && (
+                <div id="home-core-feed" class="home-mobile-order-feed-extended home-feed-core home-feed-only home-filtered-feed-extended">
                 {!error && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
                     <div class="section-wrapper presek-section-mark">
                         <DevelopmentsSection
-                            title={isHomepage ? t('home.developing_title') : (activeFilterLabel || t('home.feed_title'))}
-                            note={isHomepage ? t('home.developing_desc') : t('layout.filtered_description')}
+                            title={activeFilterLabel || t('home.feed_title')}
+                            note={t('layout.filtered_description')}
                             developmentsFeatured={developmentsFeatured}
                             developmentsCompact={developmentsCompact}
-                            tone={isHomepage ? 'developing' : 'default'}
-                        />
-                    </div>
-                )}
-                {!error && isHomepage && !isPregled && wireClusters.length > 0 && (
-                    <div class="section-wrapper presek-section-mark">
-                        <DevelopmentsSection
-                            title={t('home.wire_title')}
-                            note={t('home.wire_desc')}
-                            developmentsFeatured={wireClusters}
-                            developmentsCompact={[]}
-                            variant="wire"
-                            tone="wire"
+                            tone="default"
                         />
                     </div>
                 )}
                 </div>
+                )}
 
                 <div class="home-mobile-order-feed-extended homepage-analiza-only">
                 {isHomepage && forYouClusters.length > 0 && (

@@ -156,6 +156,9 @@ function getTimeStr(dateStr: string) {
         <div class="article-meta-v2">
             <div class="kicker-group">
                 <span class="kicker">{main.source}</span>
+                {totalSources >= 2 && (
+                    <span class="corroboration-chip" title={t('news.sources')}>{totalSources} {t('news.sources')}</span>
+                )}
             </div>
         </div>
 
@@ -382,21 +385,17 @@ function getTimeStr(dateStr: string) {
         white-space: nowrap;
     }
 
-    .significance-badge {
+    .corroboration-chip {
         font-family: var(--font-ui-condensed);
-        font-size: 0.62rem;
+        font-size: 0.6rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--nyt-red);
-        padding: 0.1rem 0.35rem;
-        border: 1px solid var(--nyt-red);
+        letter-spacing: 0.06em;
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
+        padding: 0.08rem 0.34rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
         line-height: 1;
-    }
-
-    .significance-badge.is-breaking {
-        color: white;
-        background: var(--nyt-red);
+        white-space: nowrap;
     }
 
     .article-footer-meta {

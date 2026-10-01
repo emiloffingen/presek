@@ -327,10 +327,8 @@
   margin-top: 1.25rem;
 }
 
-/* Analysis mode renders the extended core feed AND the analysis sections, so
-   hide the daily unified feed and the synthesis teaser to avoid showing the
-   same stories (developments/wire + first synthesis pick) twice. */
-.home-page-variant-feed.home-analysis-expanded #home-unified-feed,
+/* Analysis mode reuses the daily unified feed and shows the analysis sections;
+   only the daily synthesis teaser is suppressed (SynthesisPicksSection covers it). */
 .home-page-variant-feed.home-analysis-expanded .home-mobile-order-synthesis-teaser {
   display: none !important;
 }

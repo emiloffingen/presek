@@ -38,8 +38,12 @@ export function buildUnifiedFeedItems(input: {
     developmentsCompact: NewsCluster[];
     globalClusters: NewsCluster[];
     wireClusters: NewsCluster[];
+    excludeIds?: Iterable<string>;
 }): UnifiedFeedItem[] {
     const seen = new Set<string>();
+    for (const id of input.excludeIds || []) {
+        if (id) seen.add(id);
+    }
     const items: UnifiedFeedItem[] = [];
 
     const push = (cluster: NewsCluster, bucket: FeedBucket, variant: UnifiedFeedItem['variant']) => {

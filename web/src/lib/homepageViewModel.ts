@@ -169,12 +169,26 @@ export function buildHomepageViewModel(options: {
         topWireArticles,
     } = homepageSections;
 
+    const feedExcludeIds = new Set<string>();
+    [
+        leadCluster,
+        ...supportingFeatured,
+        ...supportingCompact,
+        ...consensusClusters,
+        ...perspectivesClusters,
+        ...radarClusters,
+        ...displayedTrendingClusters,
+    ].forEach((cluster) => {
+        if (cluster?.cluster_id) feedExcludeIds.add(cluster.cluster_id);
+    });
+
     const unifiedFeedItems = isHomepage
         ? buildUnifiedFeedItems({
             developmentsFeatured,
             developmentsCompact,
             globalClusters,
             wireClusters,
+            excludeIds: feedExcludeIds,
         })
         : [];
     const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;

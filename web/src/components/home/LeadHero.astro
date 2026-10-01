@@ -201,6 +201,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
             <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
             <span class="lead-edition-note">
                 {t('lead.consensus_prefix')} {Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length)} {consensusSuffix}
+                <a href={l('/methodology')} class="lead-edition-link">{t('lead.methodology_link')}</a>
             </span>
         </div>
         <div class="lead-kicker-v2 mb-4">

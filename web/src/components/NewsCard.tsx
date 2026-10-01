@@ -128,6 +128,9 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="article-meta-v2">
           <div className="kicker-group">
             <span className="kicker">{main.source}</span>
+            {totalSources >= 2 && (
+              <span className="corroboration-chip" title={t('news.sources')}>{totalSources} {t('news.sources')}</span>
+            )}
           </div>
         </div>
 
