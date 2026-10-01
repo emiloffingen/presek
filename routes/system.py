@@ -204,8 +204,8 @@ async def robots_txt():
             "Disallow: /api/\n"
             "Disallow: /admin/\n"
             "Disallow: /debug/\n\n"
-            "Sitemap: https://presek.live/sitemap.xml\n"
-            "Sitemap: https://presek.live/rss.xml\n"
+            "Sitemap: https://presek.mk/sitemap.xml\n"
+            "Sitemap: https://presek.mk/rss.xml\n"
         ),
         media_type="text/plain",
     )

@@ -1,6 +1,6 @@
 [project]
 name = "presek"
-version = "9.0.0"
+version = "8.3.8"
 description = "Macedonian news aggregation platform with minimal local AI"
 readme = "README.md"
 requires-python = ">=3.13"

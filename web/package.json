@@ -2,7 +2,7 @@
   "name": "presek-mk-web",
   "description": "Macedonian frontend for Presek (presek.mk)",
   "type": "module",
-  "version": "8.2.3",
+  "version": "8.3.8",
   "engines": {
     "node": ">=22.12.0"
   },

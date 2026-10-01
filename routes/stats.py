@@ -278,20 +278,24 @@ async def get_archive(
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
 
         if q:
-            import numpy as np
+            from core.embeddings import get_query_embedding_async, parse_embedding_value
 
-            from core.embeddings import generate_query_embedding, parse_embedding_value
-
-            query_vec = generate_query_embedding(q)
+            query_vec = await get_query_embedding_async(q)
             if query_vec:
+                q_norm = sum(v * v for v in query_vec) ** 0.5
                 for arts in ranked:
-                    best_sim = 0
+                    best_sim = 0.0
                     for a in arts:
                         if a.get("embedding"):
                             a_vec = parse_embedding_value(a["embedding"])
-                            sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
-                            if sim > best_sim:
-                                best_sim = sim
+                            if not a_vec:
+                                continue
+                            dot = sum(x * y for x, y in zip(query_vec, a_vec))
+                            a_norm = sum(v * v for v in a_vec) ** 0.5
+                            if q_norm and a_norm:
+                                sim = dot / (q_norm * a_norm)
+                                if sim > best_sim:
+                                    best_sim = sim
                     arts[0]["match_score"] = best_sim
                 ranked.sort(key=lambda x: x[0].get("match_score", 0), reverse=True)
         else:
