@@ -20,8 +20,20 @@ _PROPER_NOUN = re.compile(
 )
 
 _STOPWORDS = {
-    "The", "This", "That", "With", "From", "But", "And", "For",
-    "Reuters", "Photo", "Read", "More", "News", "Video",
+    "The",
+    "This",
+    "That",
+    "With",
+    "From",
+    "But",
+    "And",
+    "For",
+    "Reuters",
+    "Photo",
+    "Read",
+    "More",
+    "News",
+    "Video",
 }
 
 _KNOWN_PERSON_HINTS = ("Скопје", "Македонија")

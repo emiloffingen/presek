@@ -62,7 +62,6 @@ async def _robots_allows(url: str) -> bool:
         return True
 
 
-
 def prune_boilerplate_html(html_str: str) -> str:
     """
     Remove non-article structures (header, footer, sidebars, related widgets, comment blocks, etc.)
@@ -297,11 +296,7 @@ class CrawlerService:
             include_tables=True,
             no_fallback=False,
         )
-        if raw_content and (
-            not content
-            or len(content) < 200
-            or len(raw_content) > len(content) * 1.5
-        ):
+        if raw_content and (not content or len(content) < 200 or len(raw_content) > len(content) * 1.5):
             content = raw_content
         metadata = trafilatura.metadata.extract_metadata(html, default_url=url)
 

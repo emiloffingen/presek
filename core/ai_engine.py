@@ -68,9 +68,7 @@ def _warn_local_unavailable(exc: Exception | None) -> None:
     global _LOCAL_UNAVAILABLE_WARNED
     if not _LOCAL_UNAVAILABLE_WARNED:
         detail = f": {exc}" if exc else ""
-        log.warning(
-            "[ai/local] local analyst unavailable, local provider disabled%s", detail
-        )
+        log.warning("[ai/local] local analyst unavailable, local provider disabled%s", detail)
         _LOCAL_UNAVAILABLE_WARNED = True
 
 
@@ -724,11 +722,7 @@ def build_provider_fallback_order(
                 )
                 excluded.add(reserved)
 
-    return [
-        provider
-        for provider in order
-        if provider not in excluded and _provider_configured(provider)
-    ]
+    return [provider for provider in order if provider not in excluded and _provider_configured(provider)]
 
 
 def _record_provider_outcome(provider_name: str, task_type: str, success: bool, duration: float) -> None:
@@ -827,9 +821,7 @@ async def _call_ai_async(
             continue
         if await ai_quota.async_is_exhausted(provider_name):
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
-            log.warning(
-                f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping"
-            )
+            log.warning(f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping")
             continue
         await ai_quota.async_record_usage(provider_name)
         start_time = time.time()
@@ -932,9 +924,7 @@ def _call_ai(
             continue
         if ai_quota.is_exhausted(provider_name):
             AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
-            log.warning(
-                f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping"
-            )
+            log.warning(f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping")
             continue
         ai_quota.record_usage(provider_name)
         start_time = time.time()

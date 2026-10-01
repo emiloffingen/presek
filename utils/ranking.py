@@ -323,7 +323,9 @@ def build_read_next_clusters(
     return sorted(results, key=lambda x: x["score"], reverse=True)[:limit]
 
 
-def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None, daily_rows=None):
+def build_source_reputation_rows(
+    source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None, daily_rows=None
+):
     pulse_map = {str(i.get("source")): int(i.get("count") or i.get("n") or 0) for i in (pulse_rows or [])}
     speed_map = {str(i.get("source")): int(i.get("first_count") or 0) for i in (speed_rows or [])}
     history_map = {str(i.get("source")): i for i in (history_rows or [])}

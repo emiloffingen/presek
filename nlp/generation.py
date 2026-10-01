@@ -54,7 +54,7 @@ def generate_local_placeholder(cid="", title="", category="", theme=None, lang="
   <rect x="48" y="48" width="704" height="354" fill="none" stroke="{accent}" stroke-opacity="0.35"/>
   <rect x="48" y="48" width="5" height="354" fill="{accent}"/>
   <text x="80" y="96" font-family="system-ui,sans-serif" font-size="10" font-weight="800" letter-spacing="3" fill="{muted}">{kicker}</text>
-  {''.join(text_nodes)}
+  {"".join(text_nodes)}
   <text x="80" y="380" font-family="system-ui,sans-serif" font-size="11" font-weight="800" letter-spacing="2" fill="{accent}">{brand}</text>
   <text x="720" y="380" text-anchor="end" font-family="system-ui,sans-serif" font-size="11" fill="{muted}">{_html.escape(category[:24])}</text>
 </svg>'''
@@ -62,7 +62,24 @@ def generate_local_placeholder(cid="", title="", category="", theme=None, lang="
 
 def _placeholder_palette_key(category: str) -> str:
     c = str(category or "").lower()
-    if any(k in c for k in ("sport", "fudbal", "košarka", "kosarka", "tenis", "liga", "gol", "спорт", "фудбал", "кошарка", "тенис", "лига", "гол")):
+    if any(
+        k in c
+        for k in (
+            "sport",
+            "fudbal",
+            "košarka",
+            "kosarka",
+            "tenis",
+            "liga",
+            "gol",
+            "спорт",
+            "фудбал",
+            "кошарка",
+            "тенис",
+            "лига",
+            "гол",
+        )
+    ):
         return "Sport"
     if any(k in c for k in ("ekonom", "biznis", "finans", "berza", "економ", "бизнис", "финанс", "берза")):
         return "Ekonomija"

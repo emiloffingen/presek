@@ -232,9 +232,7 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
     texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
     vectors = generate_embeddings_batch(texts)
     valid_pairs = [
-        ("[" + ",".join(map(str, vec)) + "]", row["id"])
-        for row, vec in zip(rows, vectors)
-        if vec is not None
+        ("[" + ",".join(map(str, vec)) + "]", row["id"]) for row, vec in zip(rows, vectors) if vec is not None
     ]
     embedded = 0
     if valid_pairs:

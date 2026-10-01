@@ -140,9 +140,7 @@ def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
     for hub in hub_order:
         if hub in matched:
             continue
-        members = sorted(
-            {other for _ov, other in neighbors[hub] if other not in matched}
-        )
+        members = sorted({other for _ov, other in neighbors[hub] if other not in matched})
         if not members:
             continue
         star = [hub] + members

@@ -83,11 +83,7 @@ def get_async_client(
         entry = _async_clients.get(key)
         if entry is not None:
             entry_loop, client = entry
-            if (
-                entry_loop is not None
-                and not entry_loop.is_closed()
-                and not client.is_closed
-            ):
+            if entry_loop is not None and not entry_loop.is_closed() and not client.is_closed:
                 return client
         client = httpx.AsyncClient(
             timeout=timeout,

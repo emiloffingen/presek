@@ -11,6 +11,7 @@ import re
 try:  # pydantic ships with the API stack; fall back to a plain class otherwise
     from pydantic import BaseModel as _BaseModel
 except Exception:  # pragma: no cover
+
     class _BaseModel:  # type: ignore
         pass
 

@@ -71,8 +71,7 @@ def crawl_article_task(article_id, url):
             allowed = True
             try:
                 rows = db.execute(
-                    "SELECT s.full_text_allowed FROM articles a "
-                    "JOIN sources s ON a.source = s.name WHERE a.id = %s",
+                    "SELECT s.full_text_allowed FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = %s",
                     (article_id,),
                 )
                 if rows:

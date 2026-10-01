@@ -215,6 +215,7 @@ def _ai_cluster_synthesis(articles: list[dict]) -> dict | None:
         "fallback_reason": None,
     }
 
+
 @shared_task(
     name="tasks.summarization.build_extractive_clusters_task",
     bind=True,
@@ -286,6 +287,7 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
             provider = "extractive"
             try:
                 from core.ai_engine import AI_ENABLED
+
                 if AI_ENABLED:
                     synth = _ai_cluster_synthesis(articles)
                     if synth and synth.get("summary"):
@@ -376,7 +378,6 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
 
     if not AI_ENABLED:
         return {"status": "skipped", "reason": "ai_disabled"}
-
 
     try:
         rows = db_manager.execute(

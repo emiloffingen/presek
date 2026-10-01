@@ -37,9 +37,7 @@ if STRIPE_API_VERSION:
 # Stripe Managed Payments is enabled by default on this account and adds
 # merchant-of-record/tax handling. Ad checkout is a plain card payment, so it is
 # disabled by default; enabling it requires a product tax code.
-MANAGED_PAYMENTS_ENABLED = (
-    os.environ.get("STRIPE_MANAGED_PAYMENTS_ENABLED", "false").lower() == "true"
-)
+MANAGED_PAYMENTS_ENABLED = os.environ.get("STRIPE_MANAGED_PAYMENTS_ENABLED", "false").lower() == "true"
 STRIPE_PRODUCT_TAX_CODE = os.environ.get("STRIPE_PRODUCT_TAX_CODE", "").strip()
 
 # Minimums enforced server-side so they cannot be bypassed by crafting requests.
@@ -59,6 +57,8 @@ CPM_BASE_EUR = {
     "sidebar": 2.93,  # ~180 MKD — 300x250 / 300x600
     "mobile_content": 3.25,  # ~200 MKD — 300x250
 }
+
+
 def _env_promo_discount() -> float:
     """Introductory discount from PROMO_DISCOUNT (0-0.95). Set 0 to end the promo."""
     try:
@@ -69,9 +69,7 @@ def _env_promo_discount() -> float:
 
 
 PROMO_DISCOUNT = _env_promo_discount()
-CPM_RATES_EUR = {
-    slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()
-}
+CPM_RATES_EUR = {slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()}
 
 
 def _amount_cents(slot_id: str, target_impressions: int) -> int:
@@ -183,9 +181,7 @@ async def create_ad_checkout(
                         if "url" in prior and prior["url"]:
                             existing_url = prior["url"]
                     except Exception as retrieve_err:
-                        log.warning(
-                            f"[marketing] idempotent session retrieve failed: {retrieve_err}"
-                        )
+                        log.warning(f"[marketing] idempotent session retrieve failed: {retrieve_err}")
                 return {
                     "status": "success",
                     "checkout_url": existing_url,
@@ -388,8 +384,7 @@ async def stripe_webhook(request: Request):
         payment_intent = charge.get("payment_intent")
         is_dispute = event_type == "charge.dispute.created"
         fully_refunded = bool(charge.get("refunded")) or (
-            charge.get("amount")
-            and charge.get("amount_refunded", 0) >= charge.get("amount")
+            charge.get("amount") and charge.get("amount_refunded", 0) >= charge.get("amount")
         )
         if payment_intent and (is_dispute or fully_refunded):
             await db.async_execute(
@@ -402,9 +397,7 @@ async def stripe_webhook(request: Request):
                 (payment_intent,),
                 fetch=False,
             )
-            log.info(
-                f"[marketing] Campaign for payment_intent {payment_intent} suspended ({event_type})."
-            )
+            log.info(f"[marketing] Campaign for payment_intent {payment_intent} suspended ({event_type}).")
 
     return {"status": "ok"}
 

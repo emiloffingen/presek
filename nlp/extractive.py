@@ -76,9 +76,7 @@ def build_extractive_synthesis(articles: list[dict[str, Any]], cluster_title: st
     if not articles:
         return {"headline": "", "summary": "", "key_facts": []}
 
-    sources = _dedupe(
-        [_clean(a.get("source")) for a in articles if _clean(a.get("source"))]
-    )
+    sources = _dedupe([_clean(a.get("source")) for a in articles if _clean(a.get("source"))])
 
     # Headline: representative title, or the strongest (longest) source headline.
     headline = _clean(cluster_title)
@@ -129,9 +127,7 @@ def build_extractive_synthesis(articles: list[dict[str, Any]], cluster_title: st
     for art in ordered:
         if art is primary:
             continue
-        token = _first_sentences(
-            art.get("summary") or art.get("description") or "", max_sentences=1, limit=220
-        )
+        token = _first_sentences(art.get("summary") or art.get("description") or "", max_sentences=1, limit=220)
         if not token:
             continue
         if any(token[:60].lower() in p.lower() for p in paragraphs):
@@ -145,10 +141,7 @@ def build_extractive_synthesis(articles: list[dict[str, Any]], cluster_title: st
 
     # Key facts: distinct one-line leads (capped).
     key_facts = _dedupe(
-        [
-            _first_sentences(a.get("title") or a.get("description") or "", max_sentences=1, limit=160)
-            for a in ordered
-        ]
+        [_first_sentences(a.get("title") or a.get("description") or "", max_sentences=1, limit=160) for a in ordered]
     )[:5]
 
     return {

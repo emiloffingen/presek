@@ -177,6 +177,7 @@ def _run_synthesis_sync(text: str, voice: str, path: str, rate: str, pitch: str,
     asyncio.run() raises "cannot be called from a running event loop". In that
     case run the coroutine on a dedicated thread with its own loop.
     """
+
     def factory():
         return _synthesize_async(text, voice, path, rate, pitch, volume)
 
@@ -239,9 +240,7 @@ class AudioService:
         volume = _volume_for_lang(lang)
         speech_text = _join_for_speech(text)
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
-        digest = hashlib.sha1(
-            f"{voice}|{rate}|{pitch}|{volume}|{speech_text}".encode("utf-8")
-        ).hexdigest()[:10]
+        digest = hashlib.sha1(f"{voice}|{rate}|{pitch}|{volume}|{speech_text}".encode("utf-8")).hexdigest()[:10]
         path, url = AudioService.get_cluster_audio_path_and_url(safe_cluster, lang, digest)
         if os.path.isfile(path) and os.path.getsize(path) > 1024:
             return url
@@ -263,6 +262,4 @@ class AudioService:
     async def generate_audio(self, text: str, lang: str = "mk", key: str = "misc"):
         """Async variant: synthesize ad-hoc text, cached by content hash."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None, AudioService.generate_cluster_audio, f"adhoc_{key}", text, lang
-        )
+        return await loop.run_in_executor(None, AudioService.generate_cluster_audio, f"adhoc_{key}", text, lang)

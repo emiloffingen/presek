@@ -88,10 +88,12 @@ def _brotli_available() -> bool:
     """
     try:
         import brotli  # noqa: F401
+
         return True
     except ImportError:
         try:
             import brotlicffi  # noqa: F401
+
             return True
         except ImportError:
             return False

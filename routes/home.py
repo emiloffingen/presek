@@ -923,11 +923,7 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
             log.error(f"Failed to fetch briefing for home: {briefing_result}")
             briefing_result = None
 
-        analysis_pool = (
-            analysis_result.get("clusters")
-            if isinstance(analysis_result, dict)
-            else []
-        ) or []
+        analysis_pool = (analysis_result.get("clusters") if isinstance(analysis_result, dict) else []) or []
 
         briefing = (
             briefing_result

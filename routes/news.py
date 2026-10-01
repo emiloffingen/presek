@@ -1082,8 +1082,7 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
             (name,),
         )
         mentions = await db.async_execute_one(
-            "SELECT COUNT(DISTINCT cluster_id) AS n FROM cluster_entities "
-            "WHERE LOWER(entity_name) = LOWER(%s)",
+            "SELECT COUNT(DISTINCT cluster_id) AS n FROM cluster_entities WHERE LOWER(entity_name) = LOWER(%s)",
             (name,),
         )
         rels = await db.async_execute(
@@ -1108,10 +1107,7 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
         mentions_total = (ent or {}).get("total_mentions") or cluster_count or 1
         # Lightweight extractive bio: how often and where the entity appears.
         etype = (ent or {}).get("type") or "MISC"
-        bio = (
-            f"{name} се појавува во {cluster_count} кластери "
-            f"({mentions_total} споменувања)."
-        )
+        bio = f"{name} се појавува во {cluster_count} кластери ({mentions_total} споменувања)."
         data = {
             "name": (ent or {}).get("name") or name,
             "bio_summary": bio,
@@ -1125,9 +1121,7 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
             "cluster_count": cluster_count,
             "sentiment_score": (ent or {}).get("sentiment_score"),
             "related": [
-                {"name": r.get("related"), "weight": r.get("weight")}
-                for r in (rels or [])
-                if r.get("related")
+                {"name": r.get("related"), "weight": r.get("weight")} for r in (rels or []) if r.get("related")
             ],
         }
         result = {"status": "success", "data": data}
@@ -1860,11 +1854,14 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = DEFAULT_LANG)
         )
     if not content:
         # No synthesis stored yet: narrate the cluster's latest headlines instead.
-        a_rows = await db.async_execute(
-            "SELECT title, description FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 5",
-            (cluster_id,),
-            read_only=True,
-        ) or []
+        a_rows = (
+            await db.async_execute(
+                "SELECT title, description FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 5",
+                (cluster_id,),
+                read_only=True,
+            )
+            or []
+        )
         headlines = [str(r.get("title") or "").strip() for r in a_rows]
         headlines = [h for h in headlines if h]
         if not headlines:
