@@ -61,12 +61,12 @@ ON CONFLICT (provider, usage_day)
 DO UPDATE SET request_count = {_TABLE}.request_count + EXCLUDED.request_count,
               updated_at = NOW()
 RETURNING request_count
-"""
+"""  # nosec B608 - _TABLE is a module constant; values are bound params
 
 _SELECT_SQL = f"""
 SELECT request_count FROM {_TABLE}
 WHERE provider = %s AND usage_day = (NOW() AT TIME ZONE 'UTC')::date
-"""
+"""  # nosec B608 - _TABLE is a module constant; values are bound params
 
 
 def _enabled() -> bool:

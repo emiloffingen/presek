@@ -839,7 +839,7 @@ def get_active_sources():
         FROM feed_sources fs
         JOIN sources s ON fs.name = s.name
         WHERE fs.is_active = TRUE AND s.is_active = TRUE{country_clause}
-        """)
+        """)  # nosec B608 - country_clause is a fixed literal
     return [dict(r) for r in rows]
 
 

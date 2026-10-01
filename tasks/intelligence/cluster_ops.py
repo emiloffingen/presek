@@ -218,7 +218,7 @@ def repair_split_clusters_task(hours=48, limit=800, dry_run=False):
         try:
             for table in ("cluster_summaries", "cluster_metadata", "cluster_entities"):
                 db.execute(
-                    f"DELETE FROM {table} WHERE NOT EXISTS "
+                    f"DELETE FROM {table} WHERE NOT EXISTS "  # nosec B608 - table from fixed tuple
                     "(SELECT 1 FROM articles a WHERE a.cluster_id = " + table + ".cluster_id)",
                     fetch=False,
                 )
