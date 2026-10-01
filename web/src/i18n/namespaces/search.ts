@@ -26,7 +26,6 @@ export const search = {
     'search.category_kultura': 'Култура',
     'search.category_tehnologija': 'Технологија',
     'search.title_fallback': 'Наслов',
-    'search.match_urgent': 'ИТНО',
     'search.match_story': 'вест',
     'search.error': 'Грешка',
     'search.close_search': 'Затвори пребарување',

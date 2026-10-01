@@ -2,7 +2,6 @@ export const news = {
   mk: {
     'article.relationship_type': 'Тип на однос: {type}',
     'news.ago': 'ПРЕД',
-    'news.breaking': 'Ударна',
     'news.day': 'ДЕН',
     'news.days': 'ДЕНА',
     'news.go_to_article': 'ОДИ ДО АРТИКЛОТ',
@@ -18,7 +17,5 @@ export const news = {
     'news.source': 'извор',
     'news.sources': 'извори',
     'news.synthesis': 'Системски преглед на Пресек',
-    'news.tracked': 'Следена',
-    'news.urgent': 'Итен развој',
   },
 } as const;

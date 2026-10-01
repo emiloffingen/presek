@@ -77,8 +77,6 @@ export const home = {
     'home.analysis_portal_fallback': 'Портал',
     'home.nav_quick_preview': 'Брз преглед',
     'home.nav_personalized': 'Персонализирано',
-    'home.lead_status_live_label': 'СЕ РАЗВИВА ВО ЖИВО',
-    'home.lead_status_live_note': 'Приказната има најсилен тековен сигнал во уредничкиот редослед.',
     'home.lead_status_early_label': 'РАН СИГНАЛ',
     'home.lead_status_early_note': 'Моментално доаѓа од една редакција; следиме дали ќе се прошири.',
     'home.lead_status_consensus_label': 'ШИРОК КОНСЕНЗУС',

@@ -92,7 +92,6 @@ export const common = {
     'onboarding.quick_start_copy': 'Изберете 1 до 2 сигнали за првиот персонализиран преглед.',
     'onboarding.open_settings': 'Отвори подесувања',
     'onboarding.hide_guide': 'Скриј водич',
-    'header.breaking': 'ВАЖНО',
     'header.edition': 'Издание',
     'header.latest': 'НАЈНОВИ ВЕСТИ',
     'header.live': 'ВО ЖИВО',

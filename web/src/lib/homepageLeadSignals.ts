@@ -1,7 +1,7 @@
 import type { NewsCluster } from '../types';
 import { home } from '../i18n/namespaces/home.ts';
 
-export type LeadStatusTone = 'live' | 'early' | 'consensus' | 'confirmed';
+export type LeadStatusTone = 'early' | 'consensus' | 'confirmed';
 
 export interface LeadStatus {
   label: string;
