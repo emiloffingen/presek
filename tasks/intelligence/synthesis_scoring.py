@@ -14,17 +14,23 @@ def _expected_article_paragraphs() -> int:
     return 3 if LOCAL_SYNTHESIS_SIMPLIFIED_SCHEMA else 5
 
 
-def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang: str = "sr") -> float:
+def _score_synthesis_quality(
+    headline: str, article: str, key_facts: list, lang: str = "sr", *, expect_full_article: bool = True
+) -> float:
     """
     Evaluates synthesis quality, returning a score between 0.0 and 1.0.
     Docks points for repetition, poor citation/fact density, and broken paragraph structure.
+
+    ``expect_full_article=False`` is used by the lightweight scheduled path, which
+    emits a single-block editorial summary rather than the multi-paragraph article
+    schema; scoring it against the article schema produced misleadingly low scores.
     """
     score = 1.0
     if not headline or not article:
         return 0.0
 
     expected_paragraphs = _expected_article_paragraphs()
-    min_citations_or_facts = 3 if expected_paragraphs == 3 else 4
+    min_citations_or_facts = 3 if (not expect_full_article or expected_paragraphs == 3) else 4
 
     # 1. Headline repetition in body
     h_clean = headline.lower().strip()
@@ -39,9 +45,10 @@ def _score_synthesis_quality(headline: str, article: str, key_facts: list, lang:
         score -= 0.3
 
     # 3. Paragraph structure check (3 for compact Gemma schema, 5 for full schema)
-    paragraphs = [p.strip() for p in re.split(r"\n{2,}", article) if p.strip()]
-    if len(paragraphs) != expected_paragraphs:
-        score -= 0.3
+    if expect_full_article:
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", article) if p.strip()]
+        if len(paragraphs) != expected_paragraphs:
+            score -= 0.3
 
     weak_count = weak_editorial_abstraction_count(article)
     if weak_count:
@@ -88,21 +95,25 @@ def _split_summary_items(summary) -> list[str]:
     return items
 
 
-def _score_editorial_summary(summary, article: str = "", lang: str = "sr") -> float:
+def _score_editorial_summary(summary, article: str = "", lang: str = "sr", *, single_block: bool = False) -> float:
     """
     Scores whether synthesis bullets read like editorial judgement rather than
     generic extraction. The target is 3-4 differentiated bullets: development,
     significance, source agreement/difference, and uncertainty/next signal.
+
+    ``single_block=True`` scores a prose paragraph (the lightweight path) where
+    bullet-count expectations do not apply.
     """
     items = _split_summary_items(summary)
     if not items:
         return 0.0
 
     score = 1.0
-    if len(items) < 3:
-        score -= 0.35
-    if len(items) > 4:
-        score -= 0.15
+    if not single_block:
+        if len(items) < 3:
+            score -= 0.35
+        if len(items) > 4:
+            score -= 0.15
 
     all_text = " ".join(items)
     lowered = all_text.casefold()
@@ -112,14 +123,15 @@ def _score_editorial_summary(summary, article: str = "", lang: str = "sr") -> fl
         item_terms.append(words)
 
     # Repetition check: bullets should not be paraphrases of the same headline.
-    for idx, current in enumerate(item_terms):
-        for previous in item_terms[:idx]:
-            if not current or not previous:
-                continue
-            overlap = len(current & previous) / max(1, min(len(current), len(previous)))
-            if overlap > 0.72:
-                score -= 0.18
-                break
+    if not single_block:
+        for idx, current in enumerate(item_terms):
+            for previous in item_terms[:idx]:
+                if not current or not previous:
+                    continue
+                overlap = len(current & previous) / max(1, min(len(current), len(previous)))
+                if overlap > 0.72:
+                    score -= 0.18
+                    break
 
     vague_hits = sum(1 for pattern in _EDITORIAL_VAGUE_PATTERNS if re.search(pattern, lowered, flags=re.IGNORECASE))
     score -= min(0.3, vague_hits * 0.1)
@@ -183,6 +195,10 @@ def _score_editorial_summary(summary, article: str = "", lang: str = "sr") -> fl
 
 
 def _compute_lightweight_quality_score(synthetic_headline, summary, generated_article, key_facts, lang="sr"):
-    article_score = _score_synthesis_quality(synthetic_headline, generated_article, key_facts, lang)
-    summary_score = _score_editorial_summary(summary, generated_article, lang)
+    # The lightweight scheduled path emits a single-block editorial summary, so
+    # score it against the light schema (no paragraph/bullet-count penalties).
+    article_score = _score_synthesis_quality(
+        synthetic_headline, generated_article, key_facts, lang, expect_full_article=False
+    )
+    summary_score = _score_editorial_summary(summary, generated_article, lang, single_block=True)
     return round((article_score * 0.65) + (summary_score * 0.35), 3)
