@@ -336,7 +336,7 @@ export function buildHomepageViewModel(options: {
         },
         {
             label: t('home.analysis_overview_pluralism'),
-            value: `${pluralismPct}%`,
+            value: Number.isFinite(pluralismPct as number) ? `${pluralismPct}%` : '—',
             note: t('home.analysis_overview_pluralism_note'),
         },
         {

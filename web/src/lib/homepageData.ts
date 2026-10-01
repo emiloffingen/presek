@@ -369,7 +369,8 @@ export function buildLeadViewModel(options: {
         lang,
     );
     const leadTitle = highlightScores(isHomepage
-        ? String(homepageLeadDisplay?.title || '')
+        ? String(homepageLeadDisplay?.title
+            || (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''))
         : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
     const effectiveLeadSignal = isHomepage
         ? String(homepageLeadDisplay?.signal || leadSignal)

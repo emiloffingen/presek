@@ -74,10 +74,10 @@ const {
     <div class="header-main-info flex-grow min-w-0">
       <div class="edition-kicker flex items-center gap-[var(--grid-gap)] mb-4">
         <span class="edition-badge cluster-meta-pill bg-foreground text-background px-3 py-1">
-          {t(getEditionStr(cluster.articles?.[0].created_at) as any)}
+          {t(getEditionStr(cluster.articles?.[0]?.created_at) as any)}
         </span>
-        <time class="header-date cluster-meta-label text-muted-foreground border-l border-border pl-4" datetime={cluster.articles?.[0].created_at || ''}>
-          {new Date(cluster.articles?.[0].created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+        <time class="header-date cluster-meta-label text-muted-foreground border-l border-border pl-4" datetime={cluster.articles?.[0]?.created_at || ''}>
+          {new Date(cluster.articles?.[0]?.created_at || '').toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',

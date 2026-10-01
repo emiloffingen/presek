@@ -26,7 +26,17 @@ function cleanText(text: string) {
     return clean;
 }
 
-const articleRef = a.id || (a.link ? a.link.hashCode() : rowId);
+// Stable, allocation-free string hash for DOM ids (String.prototype.hashCode
+// does not exist and threw at SSR when an article had a link but no id).
+function stableHash(value: string) {
+    let h = 0;
+    for (let i = 0; i < value.length; i += 1) {
+        h = (h * 31 + value.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h).toString(36);
+}
+
+const articleRef = a.id || (a.link ? `l${stableHash(String(a.link))}` : rowId);
 const displayTitle = cleanText(a.title);
 const displaySnippet = cleanText(a.description || a.summary);
 const objectiveTitle = isMk ? 'Висок степен на фактичко известување' : 'Visok stepen faktičkog izveštavanja';
