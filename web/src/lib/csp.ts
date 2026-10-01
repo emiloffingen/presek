@@ -42,14 +42,8 @@ export function computeInlineHashes(html: string): CspHashes {
     scripts.push(hash(body));
   }
 
-  for (const match of html.matchAll(/<style\b([^>]*?)>([\s\S]*?)<\/style>/gi)) {
-    const attrs = match[1] || '';
-    const body = match[2] || '';
-    if (/\snonce\s*=/.test(attrs)) continue;
-    if (!body.trim()) continue;
-    styles.push(hash(body));
-  }
-
+  // style-src uses 'unsafe-inline' with no nonce/hash (see buildCspPolicy), so
+  // style hashes are never consumed — skip the work of computing them.
   return { scripts, styles };
 }
 

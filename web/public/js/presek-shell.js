@@ -276,7 +276,8 @@
       if (!id || !body) return;
       body.textContent = wrap.dataset.loading || '';
       body.dataset.loaded = 'error';
-      fetch('/api/article/' + encodeURIComponent(id) + '?lang=mk', {
+      const docLang = document.documentElement.getAttribute('lang') === 'sr' ? 'sr' : 'mk';
+      fetch('/api/article/' + encodeURIComponent(id) + '?lang=' + docLang, {
         headers: { Accept: 'application/json' },
       })
         .then(function (r) {
