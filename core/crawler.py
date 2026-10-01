@@ -7,10 +7,10 @@ from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
-import httpx
 import trafilatura
 
 from core.config import BOT_USER_AGENT
+from core.http_pool import pooled_async_client
 from core.text_extraction import clean_extracted_article_text
 from utils import _peer_ip, _peer_is_public, _resolve_public_ips
 
@@ -40,12 +40,8 @@ async def _robots_allows(url: str) -> bool:
         try:
             robots_url = f"{origin}/robots.txt"
             _resolve_public_ips(robots_url)
-            async with httpx.AsyncClient(
-                headers={"User-Agent": BOT_USER_AGENT},
-                follow_redirects=True,
-                timeout=10.0,
-            ) as client:
-                async with client.stream("GET", robots_url) as resp:
+            async with pooled_async_client("robots", timeout=10.0, follow_redirects=True) as client:
+                async with client.stream("GET", robots_url, headers={"User-Agent": BOT_USER_AGENT}) as resp:
                     if not _peer_is_public(resp):
                         rp = None
                     elif resp.status_code == 200:
@@ -238,8 +234,8 @@ class CrawlerService:
         try:
             headers = self._get_headers()
             _resolve_public_ips(url)
-            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
-                async with client.stream("GET", url) as resp:
+            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
+                async with client.stream("GET", url, headers=headers) as resp:
                     if not _peer_is_public(resp):
                         log.warning(f"SSRF blocked: peer not public for {url}")
                         return {
@@ -338,10 +334,8 @@ class CrawlerService:
         feeds: list[str] = []
         try:
             _resolve_public_ips(homepage_url)
-            async with httpx.AsyncClient(
-                headers=self._get_headers(), follow_redirects=True, timeout=15.0
-            ) as client:
-                resp = await client.get(homepage_url)
+            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
+                resp = await client.get(homepage_url, headers=self._get_headers())
                 resp.raise_for_status()
                 html = resp.text
 

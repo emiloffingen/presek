@@ -13,7 +13,7 @@ import os
 import threading
 import time
 
-import httpx
+from core.http_pool import pooled_async_client, pooled_client
 
 log = logging.getLogger("presek")
 
@@ -82,7 +82,7 @@ def _embed_sync(texts: list, task: str) -> list:
     if not texts or not _api_key():
         return [None] * len(texts)
     try:
-        with httpx.Client(timeout=_TIMEOUT) as client:
+        with pooled_client(_TIMEOUT) as client:
             resp = client.post(
                 JINA_URL,
                 json=_payload(texts, task),
@@ -130,7 +130,7 @@ async def get_query_embedding_async(q, *a, **kw):
     if hit is not None:
         return hit
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        async with pooled_async_client("jina", timeout=_TIMEOUT) as client:
             resp = await client.post(
                 JINA_URL,
                 json=_payload([text], "retrieval.query"),
