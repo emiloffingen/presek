@@ -94,7 +94,12 @@ def _load_env() -> dict:
 def tool_health() -> dict:
     import urllib.request
 
-    api = _load_env().get("PUBLIC_API_URL") or "http://127.0.0.1:5001/api"
+    env = _load_env()
+    # PUBLIC_API_URL is a browser-relative path ("/api"); prefer the absolute internal URL.
+    api = next(
+        (u for u in (env.get("INTERNAL_API_URL"), env.get("PUBLIC_API_URL")) if u and u.startswith("http")),
+        "http://127.0.0.1:5001/api",
+    )
     if api.endswith("/"):
         api = api[:-1]
     url = f"{api}/health"
@@ -117,7 +122,12 @@ def tool_ops_snapshot() -> dict:
         build_ops_snapshot = None  # type: ignore
     if build_ops_snapshot is not None:
         try:
-            return build_ops_snapshot()
+            import asyncio
+
+            result = build_ops_snapshot()
+            if asyncio.iscoroutine(result):
+                result = asyncio.run(result)
+            return result
         except Exception as exc:
             log(f"ops_snapshot failed, falling back: {exc}")
     # Fallback: compose from the health endpoint only.
