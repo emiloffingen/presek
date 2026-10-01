@@ -277,7 +277,7 @@ function normalizeBriefItem(item: string, previousItems: string[]) {
         label.includes('otvoreno') &&
         /detalji oko ovog razvoja ostaju nepotvr/i.test(body)
     ) {
-        return 'Otvoreno: nije izdvojena konkretna sporna činjenica; treba pratiti sledeće dopune izvora, ne tretirati ovu stavku kao potvrđen sukob.';
+        return 'Отворено: не е издвоен конкретен спорен факт; треба да се следат следните дополнувања на изворите, а оваа ставка да не се третира како потврден судир.';
     }
     return text;
 }
