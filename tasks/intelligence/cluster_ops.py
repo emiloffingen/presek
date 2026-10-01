@@ -84,7 +84,7 @@ def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
     collapsed A~B~C~D chains where no story actually connected the ends — that
     chaining was the dominant source of mixed-story bags.
     """
-    from core.clustering import _cluster_title_overlap, _extract_title_entities, _entity_token_overlap
+    from core.clustering import _cluster_title_overlap, _extract_title_entities
 
     rows = [dict(r) for r in articles or []]
     rows = [r for r in rows if r.get("cluster_id") and str(r.get("title") or "").strip()]

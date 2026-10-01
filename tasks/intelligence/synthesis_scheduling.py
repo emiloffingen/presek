@@ -14,7 +14,6 @@ from tasks.intelligence._constants import (
     db,
 )
 from tasks.intelligence.synthesis_bundle import _ensure_dict
-from tasks.intelligence.synthesis_merge import _compute_centroid_from_values
 from tasks.utils import log, schedule_task_once
 
 

@@ -377,7 +377,6 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
     if not AI_ENABLED:
         return {"status": "skipped", "reason": "ai_disabled"}
 
-    from nlp.extractive import build_extractive_synthesis
 
     try:
         rows = db_manager.execute(

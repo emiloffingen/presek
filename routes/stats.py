@@ -831,7 +831,7 @@ async def get_stats_full(request: Request, lang: str = DEFAULT_LANG, authorized:
 
 @router.get("/sources")
 async def get_sources_route():
-    cache_key = f"api:sources:v2:all"
+    cache_key = "api:sources:v2:all"
     cached = cached_response(cache_key, ttl=120)
     if cached:
         return cached

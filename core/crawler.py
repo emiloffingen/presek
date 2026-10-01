@@ -12,7 +12,7 @@ import trafilatura
 from core.config import BOT_USER_AGENT
 from core.http_pool import pooled_async_client
 from core.text_extraction import clean_extracted_article_text
-from utils import _peer_ip, _peer_is_public, _resolve_public_ips
+from utils import _peer_is_public, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
 

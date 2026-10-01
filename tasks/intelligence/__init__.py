@@ -29,8 +29,8 @@ generate_embeddings_task = _task("tasks.intelligence.generate_embeddings_task")
 # repair is what merges same-story clusters that ingestion split apart, and
 # without it those clusters stay single-source and never get a synthesis.
 from tasks.intelligence.cluster_ops import (  # noqa: E402
-    recluster_recent_articles_task,
-    repair_split_clusters_task,
+    recluster_recent_articles_task as recluster_recent_articles_task,
+    repair_split_clusters_task as repair_split_clusters_task,
 )
 
 refine_knowledge_graph_sentiment_task = _task("tasks.intelligence.refine_knowledge_graph_sentiment_task")
