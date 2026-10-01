@@ -508,7 +508,7 @@ pygments==2.20.0
     # via
     #   presek (pyproject.toml)
     #   rich
-pyjwt==2.13.0
+pyjwt==2.15.1
     # via presek (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
@@ -736,7 +736,7 @@ tzlocal==5.3.1
     # via
     #   celery
     #   dateparser
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   botocore
     #   courlan
