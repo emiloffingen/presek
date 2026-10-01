@@ -6,6 +6,8 @@ import importlib
 import pytest
 
 import core.crawler as crawler
+import core.http_pool as http_pool
+import utils.network as network
 
 
 def _article():
@@ -72,6 +74,8 @@ _ROBOTS = {}
 
 
 class _FakeClient:
+    is_closed = False
+
     def __init__(self, *a, **k):
         pass
 
@@ -81,18 +85,20 @@ class _FakeClient:
     async def __aexit__(self, *a):
         return False
 
-    def stream(self, method, url):
+    def stream(self, method, url, **kwargs):
         return _FakeStream(_ROBOTS[url])
 
 
 @pytest.fixture
 def fake_http(monkeypatch):
     crawler._ROBOTS_CACHE.clear()
-    monkeypatch.setattr(crawler.httpx, "AsyncClient", _FakeClient)
+    http_pool._async_clients.clear()
+    monkeypatch.setattr(http_pool.httpx, "AsyncClient", _FakeClient)
     monkeypatch.setattr(crawler, "_resolve_public_ips", lambda url: {"1.2.3.4"})
-    monkeypatch.setattr(crawler, "_peer_ip", lambda resp: "1.2.3.4")
+    monkeypatch.setattr(network, "_peer_ip", lambda resp: "1.2.3.4")
     yield
     crawler._ROBOTS_CACHE.clear()
+    http_pool._async_clients.clear()
 
 
 def test_robots_disallow(fake_http):

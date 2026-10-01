@@ -76,6 +76,10 @@ def get_async_client(
         loop = None
     key = (name, float(timeout), bool(follow_redirects), id(loop) if loop else 0)
     with _async_lock:
+        # Finished asyncio.run() loops never look themselves up again, so evict them here.
+        for stale_key, (stale_loop, _client) in list(_async_clients.items()):
+            if stale_loop.is_closed():
+                del _async_clients[stale_key]
         entry = _async_clients.get(key)
         if entry is not None:
             entry_loop, client = entry
