@@ -39,10 +39,10 @@ class LocalAnalyst:
         return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", str(text or "").casefold())).strip()
 
     def extract_deep_metadata(self, *a, **kw) -> dict:
-        return {"entities": [], "topics": [], "sentiment": None}
+        return {"entities": [], "topics": []}
 
     def assess_pluralism(self, *a, **kw) -> dict:
-        return {"score": None, "perspectives": []}
+        return {"perspectives": []}
 
 
 analyst = LocalAnalyst()

@@ -72,41 +72,31 @@ def _schedule_deep_analyst_work(
                 pulse_score = deep_metadata.get("pulse", shared_metrics.get("pulse_score", 50))
                 pluralism_score = pluralism_data.get("score", shared_metrics.get("pluralism_score", 50))
                 analyst_entities = deep_metadata.get("entities") or []
-                centroid = _compute_centroid_from_values(
-                    [a.get("embedding") for a in article_rows if a.get("embedding")]
-                )
-                centroid_str = f"[{','.join(map(str, centroid))}]" if centroid and len(centroid) == 384 else None
 
-                db.execute(
-                    """
+                # MK-only schema has no cluster_summaries.centroid or
+                # cluster_metadata.impact_* columns, so persist only what exists.
+                try:
+                    db.execute(
+                        """
                     UPDATE cluster_summaries
                     SET pulse_score = %s,
                         pluralism_score = %s,
                         analyst_entities = %s,
-                        narrative_diversity = %s,
-                        centroid = COALESCE(%s, centroid)
+                        narrative_diversity = %s
                     WHERE cluster_id = %s AND lang = %s
                     """,
-                    (
-                        float(pulse_score),
-                        float(pluralism_score),
-                        json.dumps(analyst_entities),
-                        json.dumps(pluralism_data),
-                        centroid_str,
-                        cluster_id,
-                        lang,
-                    ),
-                    fetch=False,
-                )
-                db.execute(
-                    """
-                    UPDATE cluster_metadata
-                    SET impact_score = %s, impact_explanation = %s
-                    WHERE cluster_id = %s
-                    """,
-                    (impact_score, impact_reasoning, cluster_id),
-                    fetch=False,
-                )
+                        (
+                            float(pulse_score or 0),
+                            float(pluralism_score or 0),
+                            json.dumps(analyst_entities),
+                            json.dumps(pluralism_data),
+                            cluster_id,
+                            lang,
+                        ),
+                        fetch=False,
+                    )
+                except Exception as enrich_db_err:
+                    log.debug(f"[analyst] enrichment writes skipped for {cluster_id}: {enrich_db_err}")
         except Exception as err:
             log.error(f"[analyst] Background enrichment failed for {cluster_id}: {err}")
 

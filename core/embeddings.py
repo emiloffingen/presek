@@ -192,5 +192,60 @@ def average_embeddings(values) -> list | None:
     return [value / count for value in totals]
 
 
+def get_cluster_embedding(cluster_id: str) -> list | None:
+    """Centroid embedding for all articles in a cluster (None when unavailable)."""
+    from core.database import db_manager as db
+
+    try:
+        rows = db.execute(
+            "SELECT embedding FROM articles WHERE cluster_id = %s AND embedding IS NOT NULL",
+            (cluster_id,),
+        )
+        if not rows:
+            return None
+        return average_embeddings([r.get("embedding") for r in rows])
+    except Exception as e:
+        log.warning(f"[embeddings] Failed to calculate cluster embedding for {cluster_id}: {e}")
+        return None
+
+
+def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
+    """Generate and store embeddings for recent articles that lack one."""
+    from core.database import db_manager as db
+
+    try:
+        rows = db.execute(
+            """SELECT id, title, description FROM articles
+               WHERE embedding IS NULL
+                 AND created_at >= NOW() - (%s * INTERVAL '1 hour')
+               ORDER BY created_at DESC
+               LIMIT %s""",
+            (hours, limit),
+        )
+    except Exception as e:
+        log.error(f"[embeddings] Failed to fetch articles for embedding: {e}")
+        return 0
+
+    if not rows:
+        return 0
+
+    texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
+    vectors = generate_embeddings_batch(texts)
+    valid_pairs = [
+        ("[" + ",".join(map(str, vec)) + "]", row["id"])
+        for row, vec in zip(rows, vectors)
+        if vec is not None
+    ]
+    embedded = 0
+    if valid_pairs:
+        try:
+            db.executemany("UPDATE articles SET embedding = %s::vector WHERE id = %s", valid_pairs)
+            embedded = len(valid_pairs)
+        except Exception as e:
+            log.warning(f"[embeddings] Batch embedding store failed: {e}")
+    log.info(f"[embeddings] Embedded {embedded}/{len(rows)} recent articles")
+    return embedded
+
+
 def shutdown_embedding_executor(*a, **kw):
     return None
