@@ -854,9 +854,10 @@ const articleSchema = cluster ? {
 			} catch (e) {}
 		};
 
+		let readingShortcutsBound = false;
 		const initReadingShortcuts = () => {
-			if (document.body.dataset.readingShortcutsBound === 'true') return;
-			document.body.dataset.readingShortcutsBound = 'true';
+			if (readingShortcutsBound) return;
+			readingShortcutsBound = true;
 			document.addEventListener('keydown', (event) => {
 				const target = event.target;
 				if (!(target instanceof HTMLElement)) return;
@@ -874,19 +875,24 @@ const articleSchema = cluster ? {
 			});
 		};
 
+		let progressScrollHandler = null;
 		const initReadingProgress = () => {
 			syncReadingModeEarly();
 			initReadingShortcuts();
 			const progress = document.getElementById('reading-progress');
 			if (!progress) return;
-			if (progress.dataset.bound === 'true') return;
-			progress.dataset.bound = 'true';
 
+			// A fresh #reading-progress is rendered per navigation; drop the prior
+			// scroll listener so handlers don't accumulate across client navigations.
+			if (progressScrollHandler) {
+				window.removeEventListener('scroll', progressScrollHandler);
+			}
 			const updateProgress = () => {
 				const max = document.documentElement.scrollHeight - window.innerHeight;
 				const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
 				progress.style.width = `${pct}%`;
 			};
+			progressScrollHandler = updateProgress;
 			window.addEventListener('scroll', updateProgress, { passive: true });
 			updateProgress();
 		};

@@ -199,21 +199,25 @@
   bindHeaderScroll();
   document.addEventListener('astro:page-load', bindHeaderScroll);
 
+  let prefetchObserver = null;
   document.addEventListener('astro:page-load', () => {
     if (!('IntersectionObserver' in window)) return;
+    // Disconnect the previous observer so detached links from the prior page
+    // are not retained across client-side navigations.
+    if (prefetchObserver) prefetchObserver.disconnect();
     const prefetched = new Set();
-    const observer = new IntersectionObserver((entries) => {
+    prefetchObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         const href = entry.target.getAttribute('href');
         if (!href || prefetched.has(href)) return;
         prefetched.add(href);
-        fetch(href, { priority: 'low' }).catch(() => {});
-        observer.unobserve(entry.target);
+        fetch(href).catch(() => {});
+        prefetchObserver.unobserve(entry.target);
       });
     }, { rootMargin: '80px 0px' });
     document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link, index) => {
-      if (index < 4) observer.observe(link);
+      if (index < 4) prefetchObserver.observe(link);
     });
   });
 
