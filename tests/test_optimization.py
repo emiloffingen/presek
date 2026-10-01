@@ -42,6 +42,7 @@ class TestAutoSummarizeOptimization:
     @patch("tasks.utils.get_celery_queue_depth", return_value=0)
     @patch("core.database.db_manager")
     @patch("core.config.HOMEPAGE_SYNTHESIS_ONLY", False)
+    @patch("core.ai_engine.AI_ENABLED", True)
     def test_auto_summarize_skips_fresh_summaries_and_backfill(
         self, mock_db, _mock_depth, mock_apply_async, _mock_backpressure, _mock_synthesis_deferred
     ):

@@ -294,10 +294,10 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
     assert common._is_rate_limited_path("/api/profile/sync/personalized-news") is True
-    assert common._is_rate_limited_path("/api/intelligence/network-graph") is True
-    assert common._is_rate_limited_path("/api/intelligence/live-map") is True
-    assert common._is_rate_limited_path("/api/intelligence/pulse-overview") is True
-    assert common._is_rate_limited_path("/api/intelligence/compare-sources") is True
+    assert common._is_rate_limited_path("/api/news") is True
+    assert common._is_rate_limited_path("/api/v1/news") is True
+    assert common._is_rate_limited_path("/api/proxy") is True
+    assert common._is_rate_limited_path("/api/health") is False
 
 
 
@@ -875,9 +875,10 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
 
     geography = data["sections"][0]["items"]
     news_items = data["sections"][1]["items"]
-    assert next(item for item in geography if item["label"] == "Evropa")["count"] == 3
-    assert next(item for item in news_items if item["label"] == "Sport")["count"] == 3
-    assert next(item for item in news_items if item["label"] == "Politika")["count"] == 4
+    # Match on href: display labels are localized (MK default), hrefs carry the stable key.
+    assert next(item for item in geography if item["href"].endswith("category=Evropa"))["count"] == 3
+    assert next(item for item in news_items if item["href"].endswith("topic=Sport"))["count"] == 3
+    assert next(item for item in news_items if item["href"].endswith("topic=Politika"))["count"] == 4
 
 
 def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):

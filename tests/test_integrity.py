@@ -73,7 +73,7 @@ class TestAstroFrontendIntegrity:
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
-        assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
+        assert "getTimeStr(leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
         cluster_page = _read("web/src/pages/cluster/[slug].astro")

@@ -73,7 +73,7 @@ class TestCsrfProtection:
     def test_post_without_token_is_rejected(self, client):
         response = client.post("/api/profile/sync/init")
         assert response.status_code == 403
-        assert response.json()["detail"] == "Nevaliden CSRF token"
+        assert response.json()["detail"] == "Невалиден CSRF токен"
 
     def test_post_rejects_header_cookie_mismatch(self, client):
         token = generate_csrf_token()
@@ -83,7 +83,7 @@ class TestCsrfProtection:
             headers={"X-CSRF-Token": token},
         )
         assert response.status_code == 403
-        assert response.json()["detail"] == "Nevaliden CSRF token"
+        assert response.json()["detail"] == "Невалиден CSRF токен"
 
     def test_csrf_token_endpoint_returns_valid_token(self, client):
         response = client.get("/api/csrf-token")

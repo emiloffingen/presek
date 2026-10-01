@@ -1,6 +1,7 @@
 import asyncio
 
 import core.image_service as image_service
+import utils.network as network
 
 
 class _FakeResponse:
@@ -55,8 +56,9 @@ class _FakeImage:
 
 def test_process_and_save_uses_async_stream(monkeypatch, tmp_path):
     monkeypatch.setattr(image_service, "_UPLOAD_ROOT", str(tmp_path))
-    monkeypatch.setattr(image_service, "_resolve_public_ips", lambda url: {"203.0.113.10"})
-    monkeypatch.setattr(image_service, "_peer_ip", lambda resp: "203.0.113.10")
+    monkeypatch.setattr(image_service, "_resolve_public_ips", lambda url: {"93.184.216.34"})
+    monkeypatch.setattr(image_service, "_peer_ip", lambda resp: "93.184.216.34")
+    monkeypatch.setattr(network, "_peer_ip", lambda resp: "93.184.216.34")
     monkeypatch.setattr(image_service.Image, "open", lambda buf: _FakeImage())
     monkeypatch.setattr(
         image_service.httpx,

@@ -33,7 +33,7 @@ def detect_global_story_task(article_id):
         return
 
     try:
-        import numpy as np
+        import math
 
         from core.embeddings import generate_query_embedding
         from utils import redis_client
@@ -51,10 +51,14 @@ def detect_global_story_task(article_id):
 
         global_heads = json.loads(global_data)  # List of {"title": str, "vec": list}
 
+        mk_norm = math.sqrt(sum(x * x for x in mk_vec))
         best_similarity = 0
         for head in global_heads:
-            g_vec = np.array(head["vec"])
-            sim = np.dot(mk_vec, g_vec) / (np.linalg.norm(mk_vec) * np.linalg.norm(g_vec))
+            g_vec = head["vec"]
+            g_norm = math.sqrt(sum(x * x for x in g_vec))
+            if not mk_norm or not g_norm or len(g_vec) != len(mk_vec):
+                continue
+            sim = sum(a * b for a, b in zip(mk_vec, g_vec)) / (mk_norm * g_norm)
             if sim > best_similarity:
                 best_similarity = sim
 

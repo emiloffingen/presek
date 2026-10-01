@@ -1780,22 +1780,11 @@ async def get_historical_events(cluster_id: str):
         if not vec_rows:
             return {"status": "success", "events": []}
 
-        import sys
+        from core.embeddings import average_embeddings
 
-        if "numpy" in sys.modules:
-            np = sys.modules["numpy"]
-        else:
-            import numpy as np
-
-        def parse_vec(v):
-            if isinstance(v, str):
-                import json
-
-                v = json.loads(v)
-            return np.array(v, dtype=np.float32)
-
-        vecs = [parse_vec(r["embedding"]) for r in vec_rows]
-        avg_vec = np.mean(vecs, axis=0).tolist()
+        avg_vec = average_embeddings([r["embedding"] for r in vec_rows])
+        if not avg_vec:
+            return {"status": "success", "events": []}
         vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
 
         # 2. Query archive using vector similarity

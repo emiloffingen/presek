@@ -1,5 +1,7 @@
 import sys
 import types
+
+import pytest
 from unittest.mock import Mock
 
 from core.ai_engine import (
@@ -207,6 +209,7 @@ def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
     assert result is None
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_provider_override_local_cascades_to_remote(monkeypatch):
     monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
@@ -245,6 +248,7 @@ def test_provider_override_local_cascades_to_remote(monkeypatch):
     assert remote_provider.call.call_count == 1
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_build_provider_fallback_order_excludes_providers(monkeypatch):
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     monkeypatch.setattr(
@@ -272,6 +276,7 @@ def test_build_provider_fallback_order_excludes_providers(monkeypatch):
     assert order == ["local"]
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monkeypatch):
     monkeypatch.setattr(
         "core.ai_engine.PROVIDERS",
@@ -293,6 +298,7 @@ def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monke
     assert "local" not in order
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_call_ai_skips_rate_limited_provider(monkeypatch):
     from core import ai_engine
 
@@ -454,6 +460,7 @@ def test_ai_quota_zero_limit_disables_provider(monkeypatch):
     assert ai_quota.is_exhausted("fake") is True
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_call_ai_skips_quota_exhausted_provider(monkeypatch):
     from core import ai_engine
 
@@ -480,3 +487,11 @@ def test_call_ai_skips_quota_exhausted_provider(monkeypatch):
     healthy.call.assert_called_once()
 
 
+
+
+def test_ai_disabled_by_default_short_circuits(monkeypatch):
+    import core.ai_engine
+
+    monkeypatch.setattr(core.ai_engine, "AI_ENABLED", False)
+    assert core.ai_engine.build_provider_fallback_order("synthesis") == []
+    assert core.ai_engine._call_ai("prompt", "system", task_type="summary") == (None, None)
