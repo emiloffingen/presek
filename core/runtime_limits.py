@@ -96,6 +96,11 @@ STUCK_FAST_SYNTHESIS_CRITICAL_COUNT = int(os.environ.get("STUCK_FAST_SYNTHESIS_C
 FALLBACK_SYNTHESIS_REFRESH_LIMIT = int(os.environ.get("FALLBACK_SYNTHESIS_REFRESH_LIMIT", "30"))
 LOW_SCORE_SYNTHESIS_MIN = float(os.environ.get("LOW_SCORE_SYNTHESIS_MIN", "0.75"))
 LOW_SCORE_SYNTHESIS_REFRESH_LIMIT = int(os.environ.get("LOW_SCORE_SYNTHESIS_REFRESH_LIMIT", "20"))
+# Bounded self-heal: regenerate a few low-scoring multi-source summaries per hour
+# with the full (gated) synthesis cascade. Kept deliberately small to protect the
+# free-tier AI quotas on the MK-only deployment.
+SELFHEAL_SYNTHESIS_HOURLY_CAP = int(os.environ.get("SELFHEAL_SYNTHESIS_HOURLY_CAP", "6"))
+SELFHEAL_SYNTHESIS_MIN = float(os.environ.get("SELFHEAL_SYNTHESIS_MIN", "0.65"))
 SYNTHESIS_REFRESH_HOURLY_CAP = int(os.environ.get("SYNTHESIS_REFRESH_HOURLY_CAP", "120"))
 SYNTHESIS_REFRESH_HOURLY_CAP_BURST = int(
     os.environ.get("SYNTHESIS_REFRESH_HOURLY_CAP_BURST", str(SYNTHESIS_REFRESH_HOURLY_CAP * 2))

@@ -263,6 +263,13 @@ celery_app.conf.update(
             "schedule": 3600.0,
             "options": {"expires": 3300},
         },
+        "self-heal-low-score-syntheses": {
+            # Bounded regeneration of recent low-scoring multi-source mk summaries
+            # through the full gated cascade. Deliberately small (hourly cap).
+            "task": "tasks.maintenance.self_heal_low_score_syntheses_task",
+            "schedule": 3600.0,
+            "options": {"expires": 3300},
+        },
         "prune-ingestion-queue": {
             "task": "tasks.maintenance.prune_ingestion_queue_task",
             "schedule": 900.0,

@@ -900,6 +900,99 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
     return {"enqueued": enqueued}
 
 
+def _selfheal_budget_remaining() -> int:
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_HOURLY_CAP
+
+    cap = SELFHEAL_SYNTHESIS_HOURLY_CAP
+    if cap <= 0:
+        return 0
+    try:
+        from utils import redis_client
+
+        used = int(redis_client.get("presek:synthesis_selfheal_hourly") or 0)
+        return max(0, cap - used)
+    except Exception:
+        return cap
+
+
+def _consume_selfheal_budget(count: int = 1) -> bool:
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_HOURLY_CAP
+
+    cap = SELFHEAL_SYNTHESIS_HOURLY_CAP
+    if cap <= 0:
+        return False
+    try:
+        from utils import redis_client
+
+        key = "presek:synthesis_selfheal_hourly"
+        current = int(redis_client.incrby(key, max(0, int(count))))
+        if current == max(0, int(count)):
+            redis_client.expire(key, 3600)
+        return current <= cap
+    except Exception:
+        return True
+
+
+@maintenance_task
+def self_heal_low_score_syntheses_task(min_score=None, limit=None):
+    """Regenerate recent low-scoring multi-source mk syntheses via the full cascade.
+
+    Bounded self-heal: only a handful per hour, only clusters with >=2 articles,
+    skipped while the synthesis queue is backed up. Uses the gated cascade
+    (grounding / hallucination / copy-purity) so regenerated rows carry a real
+    quality score and provenance.
+    """
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_MIN
+    from tasks.intelligence.synthesis_pipeline import run_cluster_synthesis
+
+    if _synthesis_dispatch_deferred():
+        return {"skipped": True, "reason": "synthesis_backlog"}
+
+    budget = _selfheal_budget_remaining()
+    if budget <= 0:
+        return {"skipped": True, "reason": "hourly_cap"}
+
+    score_floor = float(min_score if min_score is not None else SELFHEAL_SYNTHESIS_MIN)
+    batch_limit = min(int(limit or budget), budget)
+
+    rows = (
+        db.execute(
+            """
+        SELECT cs.cluster_id, cs.summary, cs.quality_score
+        FROM cluster_summaries cs
+        JOIN articles a ON a.cluster_id = cs.cluster_id
+        WHERE cs.lang = 'mk'
+          AND cs.quality_score IS NOT NULL
+          AND cs.quality_score < %s
+          AND cs.created_at >= NOW() - INTERVAL '3 days'
+          AND COALESCE(cs.generation_provider, '') NOT IN ('enhanced_fallback', 'extractive')
+        GROUP BY cs.cluster_id, cs.summary, cs.quality_score
+        HAVING COUNT(*) >= 2
+        ORDER BY cs.quality_score ASC, MAX(a.created_at) DESC
+        LIMIT %s
+        """,
+            (score_floor, max(batch_limit * 3, batch_limit)),
+            read_only=True,
+        )
+        or []
+    )
+
+    regenerated = 0
+    for row in rows:
+        if regenerated >= batch_limit or not _consume_selfheal_budget():
+            break
+        try:
+            run_cluster_synthesis(str(row["cluster_id"]), row.get("summary") or "")
+            regenerated += 1
+        except Exception as e:
+            log.warning("[maintenance] synthesis self-heal failed for %s: %s", row["cluster_id"], e)
+
+    if regenerated:
+        invalidate_public_data_caches()
+    log.info("[maintenance] synthesis self-heal regenerated %s clusters", regenerated)
+    return {"regenerated": regenerated, "candidates": len(rows)}
+
+
 @maintenance_task
 def validate_cluster_images_task():
     """
