@@ -71,6 +71,7 @@ export default function SearchIsland({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
+  const [trendingLoaded, setTrendingLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -218,7 +219,8 @@ export default function SearchIsland({
     // Restore search session state from sessionStorage
     const sessionState = loadSearchSession();
     if (sessionState) {
-      if (sessionState.query) setQuery(sessionState.query);
+      // A deep-linked ?q= must win over a stale session snapshot.
+      if (sessionState.query && !initialQuery) setQuery(sessionState.query);
       if (sessionState.timespan) setTimespan(sessionState.timespan);
       if (sessionState.categoryFilter) setCategoryFilter(sessionState.categoryFilter);
       if (sessionState.isOpen) setIsOpen(true);
@@ -274,6 +276,13 @@ export default function SearchIsland({
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
 
+    // Stop any in-flight recognition before starting a new one.
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
+
     const recognition = new SpeechRecognitionCtor();
     recognitionRef.current = recognition;
     recognition.continuous = false;
@@ -282,11 +291,11 @@ export default function SearchIsland({
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => {
       setIsListening(false);
-      recognitionRef.current = null;
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
     };
     recognition.onerror = () => {
       setIsListening(false);
-      recognitionRef.current = null;
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
     };
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript;
@@ -306,7 +315,16 @@ export default function SearchIsland({
         console.error(e);
       }
     }
+    recognitionRef.current = null;
     setIsListening(false);
+  }, []);
+
+  // Abort speech recognition on unmount so it can't keep the mic / callbacks alive.
+  useEffect(() => () => {
+    try {
+      recognitionRef.current?.abort?.();
+    } catch (e) {}
+    recognitionRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -316,6 +334,7 @@ export default function SearchIsland({
       setActiveIndex(-1);
       setSuggestions([]);
       setError(null);
+      setIsLoading(false);
       return;
     }
     lastFocusedRef.current = document.activeElement as HTMLElement;
@@ -335,11 +354,14 @@ export default function SearchIsland({
     const handleTabKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
       if (!dialogRef.current) return;
-      const focusableElements = dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
+      // Exclude hidden/disabled nodes so the trap's first/last are real targets.
+      const focusableElements = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1 && el.getClientRects().length > 0);
       if (focusableElements.length === 0) return;
 
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
@@ -370,6 +392,8 @@ export default function SearchIsland({
         }
       } catch {
         if (!cancelled) setTrendingItems([]);
+      } finally {
+        if (!cancelled) setTrendingLoaded(true);
       }
     };
     loadTrending();
@@ -448,8 +472,13 @@ export default function SearchIsland({
           const entity = isEntityResult(data.entity) ? data.entity : null;
           const duration = Math.round(performance.now() - startTime);
           setSearchTime(duration);
-          // Save in cache
-          queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity };
+          // Save in cache (bounded so long sessions can't grow unbounded).
+          const cache = queryCacheRef.current;
+          cache[cacheKey] = { suggestions: nextSuggestions, entity };
+          const cacheKeys = Object.keys(cache);
+          if (cacheKeys.length > 100) {
+            delete cache[cacheKeys[0]];
+          }
           setSuggestions(nextSuggestions);
           setEntityResult(entity);
           setActiveIndex(-1);
@@ -559,6 +588,16 @@ export default function SearchIsland({
         e.preventDefault();
         setActiveIndex((prev) => (prev <= 0 ? -1 : prev - 1));
       } else if (e.key === 'Enter') {
+        // Don't hijack Enter when a real control (filter chip, close, mic, …) is
+        // focused — let it activate natively instead of running the search action.
+        const eventTarget = e.target as HTMLElement | null;
+        if (
+          eventTarget
+          && eventTarget !== inputRef.current
+          && eventTarget.closest('button, a, [role="tab"], [role="option"], input, select, textarea')
+        ) {
+          return;
+        }
         e.preventDefault();
         if (activeIndex === -1) {
           navigateToQuery(query);
@@ -673,22 +712,28 @@ export default function SearchIsland({
           />
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
               data-testid="search-filter-toggle"
+              aria-expanded={showFilters}
+              aria-controls="search-filters-panel"
               className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-muted-foreground' : 'text-muted-foreground'}`}
               title={t('search.filters_title')}
             >
               <SlidersHorizontal size={18} />
             </button>
             <button
-              onClick={startVoiceSearch}
+              type="button"
+              onClick={isListening ? stopVoiceSearch : startVoiceSearch}
               aria-label={isListening ? 'Stop voice search' : 'Start voice search'}
               className={`search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-muted-foreground animate-pulse' : 'text-muted-foreground'}`}
             >
               <Mic size={18} />
             </button>
             <button
+              type="button"
               onClick={closeSearch}
+              aria-label={t('search.close_search')}
               className="search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary text-muted-foreground transition-colors"
             >
               <X size={18} />
@@ -720,6 +765,7 @@ export default function SearchIsland({
             searchActions={SEARCH_ACTIONS}
             recentSearches={recentSearches}
             trendingItems={trendingItems}
+            trendingLoaded={trendingLoaded}
             activeIndex={activeIndex}
             registerNavRef={registerNavRef}
             onSearchAll={() => navigateToQuery(query)}

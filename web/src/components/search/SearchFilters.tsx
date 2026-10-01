@@ -44,7 +44,7 @@ export function SearchFilters({
   if (!showFilters) return null;
 
   return (
-    <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/15 flex flex-col md:flex-row gap-4 md:items-center animate-in slide-in-from-top-4 duration-300">
+    <div id="search-filters-panel" className="px-4 py-3 sm:px-6 sm:py-4 border-b border-border/40 bg-secondary/15 flex flex-col md:flex-row gap-4 md:items-center animate-in slide-in-from-top-4 duration-300">
       {/* Category Filter */}
       <div className="flex-1">
         <span className="ui-kicker text-muted-foreground block mb-2">{t('search.topic_label')}</span>

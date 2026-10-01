@@ -21,6 +21,7 @@ type SearchResultsProps = {
   searchActions: SearchAction[];
   recentSearches: RecentSearch[];
   trendingItems: TrendingItem[];
+  trendingLoaded?: boolean;
   activeIndex: number;
   registerNavRef: (index: number, el: HTMLElement | null) => void;
   onSearchAll: () => void;
@@ -45,6 +46,7 @@ export const SearchResults = React.memo(function SearchResults({
   searchActions,
   recentSearches,
   trendingItems,
+  trendingLoaded,
   activeIndex,
   registerNavRef,
   onSearchAll,
@@ -90,14 +92,23 @@ export const SearchResults = React.memo(function SearchResults({
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {recentSearches.map((s, i) => (
+                {recentSearches.map((s) => (
                   <div
-                    key={i}
+                    key={s.query}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSetQuery(s.query)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSetQuery(s.query);
+                      }
+                    }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-none text-[11px] sm:text-xs font-bold transition-all cursor-pointer group/pill"
                   >
                     <span>{s.query}</span>
                     <button
+                      type="button"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onRemoveRecentSearch(s.query);
@@ -133,7 +144,7 @@ export const SearchResults = React.memo(function SearchResults({
                     </span>
                   </button>
                 ))
-              ) : (
+              ) : trendingLoaded ? null : (
                 [1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-none" />
                 ))
@@ -149,6 +160,8 @@ export const SearchResults = React.memo(function SearchResults({
               {searchActions.map((action, i) => (
                 <button
                   key={action.id}
+                  ref={(el) => registerNavRef(i, el)}
+                  data-active-nav={i}
                   onClick={() => {
                     closeSearch();
                     navigate(action.href);
