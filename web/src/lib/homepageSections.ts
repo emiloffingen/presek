@@ -18,6 +18,7 @@ type HomepageSectionsInput = {
     wireArticles: WireArticle[];
     excludedClusterIds: string[];
     isHomepage: boolean;
+    analysisClusters?: NewsCluster[];
 };
 
 function clusterSourceCount(cluster: NewsCluster) {
@@ -90,6 +91,10 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     let wireClusters = input.wireClusters;
     let excludedClusterIds = input.excludedClusterIds;
 
+    const analysisPool = Array.isArray(input.analysisClusters) && input.analysisClusters.length > 0
+        ? input.analysisClusters
+        : input.clusters;
+
     if (!input.isHomepage) {
         supportingClusters = input.clusters.slice(1, 4);
     }
@@ -125,26 +130,26 @@ export function buildHomepageSections(input: HomepageSectionsInput) {
     const developmentsFeatured = continuingClusters.slice(0, developmentsFeaturedLimit);
     developmentsFeatured.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const consensusClusters = input.clusters
-        .filter((cluster) => (cluster.articles?.length || 0) >= 5 && !usedIds.has(cluster.cluster_id))
+    const developmentsCompact = continuingClusters
+        .slice(developmentsFeaturedLimit, developmentsFeaturedLimit + developmentsCompactLimit)
+        .filter((cluster) => !usedIds.has(cluster.cluster_id));
+    developmentsCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
+
+    const consensusClusters = analysisPool
+        .filter((cluster) => (cluster.articles?.length || 0) >= 4 && !usedIds.has(cluster.cluster_id))
         .slice(0, 3);
     consensusClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const perspectivesClusters = input.clusters
+    const perspectivesClusters = analysisPool
         .filter((cluster) => (cluster.pluralism_score || 0) >= 55 && !usedIds.has(cluster.cluster_id))
         .sort((left, right) => (right.pluralism_score || 0) - (left.pluralism_score || 0))
         .slice(0, 3);
     perspectivesClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
-    const radarClusters = input.clusters
+    const radarClusters = analysisPool
         .filter((cluster) => cluster.has_fact_check && !usedIds.has(cluster.cluster_id))
         .slice(0, 3);
     radarClusters.forEach((cluster) => usedIds.add(cluster.cluster_id));
-
-    const developmentsCompact = continuingClusters
-        .slice(developmentsFeaturedLimit, developmentsFeaturedLimit + developmentsCompactLimit)
-        .filter((cluster) => !usedIds.has(cluster.cluster_id));
-    developmentsCompact.forEach((cluster) => usedIds.add(cluster.cluster_id));
 
     // Pick Trending clusters AFTER main sections are filled to ensure they get content in small locales
     const displayedTrendingClusters = Array.from(

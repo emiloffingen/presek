@@ -358,6 +358,7 @@ class HomeResponse(BaseModel):
     stats: Dict[str, Any] = Field(default_factory=dict)
     focus_entities: List[Any] = Field(default_factory=list)
     excluded_cluster_ids: List[str] = Field(default_factory=list)
+    analysis_pool: List[Any] = Field(default_factory=list)
     pipeline: Optional[Dict[str, Any]] = None
     briefing: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
@@ -887,10 +888,19 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
             get_stats_summary(lang=lang),
             fetch_synthesis_hero_candidates(lang=lang),
             get_latest_briefing(lang=lang),
+            fetch_news_data(sort="score", page_size=60, lang=lang, timespan="7d"),
             return_exceptions=True,
         )
 
-        news_result, trending, top_entities, stats, synthesis_hero_pool, briefing_result = results
+        (
+            news_result,
+            trending,
+            top_entities,
+            stats,
+            synthesis_hero_pool,
+            briefing_result,
+            analysis_result,
+        ) = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -912,6 +922,12 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
         if isinstance(briefing_result, Exception):
             log.error(f"Failed to fetch briefing for home: {briefing_result}")
             briefing_result = None
+
+        analysis_pool = (
+            analysis_result.get("clusters")
+            if isinstance(analysis_result, dict)
+            else []
+        ) or []
 
         briefing = (
             briefing_result
@@ -1101,6 +1117,7 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
             "trending": trending if isinstance(trending, list) else [],
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
+            "analysis_pool": _compact_home_clusters(_decorate_clusters_display(analysis_pool), max_articles=4),
         }
         set_cache(cache_key, response, ttl=300)
         return response

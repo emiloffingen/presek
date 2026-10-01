@@ -104,6 +104,7 @@ export function buildHomepageViewModel(options: {
         synthesisPicks,
         homepageLeadDisplay,
         pipeline,
+        analysisClusters,
     } = homepageState;
 
     let supportingClusters = homepageState.supportingClusters;
@@ -147,6 +148,7 @@ export function buildHomepageViewModel(options: {
         wireArticles: homepageState.wireArticles,
         excludedClusterIds,
         isHomepage,
+        analysisClusters,
     });
 
     ({

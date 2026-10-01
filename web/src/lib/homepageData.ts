@@ -57,6 +57,7 @@ export type HomepageDataState = {
     wireClusters: NewsCluster[];
     wireArticles: WireArticle[];
     excludedClusterIds: string[];
+    analysisClusters: NewsCluster[];
     synthesisPicks: NewsCluster[];
     homepageLeadDisplay: HomepageLeadDisplay;
     pipeline: HomepagePipeline;
@@ -142,6 +143,7 @@ export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'er
         wireClusters,
         wireArticles,
         excludedClusterIds: Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [],
+        analysisClusters: Array.isArray(home?.analysis_pool) ? (home.analysis_pool as NewsCluster[]) : [],
         synthesisPicks,
         homepageLeadDisplay: home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null,
         pipeline: home?.pipeline && typeof home.pipeline === 'object' ? home.pipeline : null,
@@ -164,6 +166,7 @@ export function emptyHomepageDataState(): HomepageDataState {
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
+        analysisClusters: [],
         synthesisPicks: [],
         homepageLeadDisplay: null,
         pipeline: null,
