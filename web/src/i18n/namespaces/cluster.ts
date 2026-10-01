@@ -17,6 +17,7 @@ export const cluster = {
     'cluster.deep_synthesis': 'ДЛАБИНСКА ПРЕГЛЕД',
     'cluster.daily_context': 'Дневен контекст',
     'cluster.details': 'Детали',
+    'cluster.reading_progress_label': 'Напредок на читање',
     'cluster.editorial_review': 'Уреднички преглед',
     'cluster.nav_review': 'Преглед',
     'cluster.share_on': 'Сподели на {network}',

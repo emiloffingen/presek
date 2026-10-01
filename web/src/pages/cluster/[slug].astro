@@ -412,6 +412,13 @@ const showKeyFactsBand = shouldShowKeyFactsBand({
 	showExecutiveSummary,
 });
 const showHeroVisual = shouldShowHeroVisual(clusterLayoutInput);
+
+// API-provided dominant_color is injected into inline CSS; only allow real color
+// values so it cannot smuggle arbitrary CSS declarations.
+const safeAccentColor = (() => {
+	const candidate = typeof cluster?.dominant_color === 'string' ? cluster.dominant_color.trim() : '';
+	return /^(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\()/.test(candidate) ? candidate : '';
+})();
 const showPerspectivesBlock = shouldShowPerspectives(clusterLayoutInput);
 const showCredibilitySection = shouldShowCredibilitySection(clusterLayoutInput);
 const consensusNote = shouldShowConsensusNote(clusterLayoutInput)
@@ -593,7 +600,7 @@ const articleSchema = cluster ? {
 
 	<div class="site-layout py-0 cluster-page-scope">
 		<div class="scroll-progress-container">
-			<div class="scroll-progress-bar" id="reading-progress"></div>
+			<div class="scroll-progress-bar" id="reading-progress" role="progressbar" aria-label={t('cluster.reading_progress_label')} aria-valuemin={0} aria-valuemax={100}></div>
 		</div>
 
 		<div class="editorial-container max-w-[1440px] mx-auto px-2 sm:px-4 md:px-10">
@@ -608,7 +615,7 @@ const articleSchema = cluster ? {
                 <a href="/" class="text-presek-mark hover:underline">{t('cluster.error.back_home')}</a>
 			</div>
 		) : cluster && (
-			<article class="cluster-article-container" style={cluster.dominant_color ? `--cluster-accent: ${cluster.dominant_color};` : ''}>
+			<article class="cluster-article-container" style={safeAccentColor ? `--cluster-accent: ${safeAccentColor};` : ''}>
 				<ClusterEditorialHeader
 					lang={lang as 'sr' | 'mk'}
 					cluster={cluster}
@@ -638,10 +645,10 @@ const articleSchema = cluster ? {
 					<div class="hero-full mb-10 md:mb-14" id="cluster-visual">
 						<HeroVisual
 							leadVisual={leadVisual}
-							dominantColor={cluster.dominant_color || undefined}
+							dominantColor={safeAccentColor || undefined}
 							displayHeadline={displayHeadline}
 							id={id || ''}
-							category={cleanTopicLabel(cluster.articles?.[0].category)}
+							category={cleanTopicLabel(cluster.articles?.[0]?.category)}
 							sourcePreview={sourcePreview}
 							articlesCount={cluster.articles?.length || 0}
 						/>
@@ -783,7 +790,7 @@ const articleSchema = cluster ? {
 									<ClusterSidebarTabs
 										client:visible
 										lang={lang}
-										articles={cluster.articles.map((a: Article) => ({ source: a.source }))}
+										articles={(cluster.articles || []).map((a: Article) => ({ source: a.source }))}
 										allSourcesNames={allSourcesNames}
 										sentimentData={sentimentData}
 										showCompare={showCompareTab}
