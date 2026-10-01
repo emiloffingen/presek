@@ -847,7 +847,10 @@ async def get_sources_route():
     cats = await db.async_execute(
         f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"  # nosec B608 - static freshness constant, no params
     )
-    result = build_source_reputation_rows(rows, pulse, speed, history, cats)
+    daily = await db.async_execute(
+        f"SELECT source, DATE_TRUNC('day', {_FRESHNESS_EXPR})::date AS day, COUNT(*) as n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY source, day"  # nosec B608 - static freshness constant, no params
+    )
+    result = build_source_reputation_rows(rows, pulse, speed, history, cats, daily)
     set_cache(cache_key, result, ttl=120)
     return {"status": "success", "data": result}
 
