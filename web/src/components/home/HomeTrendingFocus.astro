@@ -1,0 +1,79 @@
+---
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+  trending?: any[];
+  lang?: string;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
+const trending = Array.isArray(Astro.props.trending) ? Astro.props.trending : [];
+const t = useTranslations(lang);
+
+const top = trending.find((item) => item?.word && Number(item.count || 0) >= 5) || null;
+const searchHref = `${localePath('/', lang, hostHeader)}?q=${encodeURIComponent(String(top?.word || ''))}`;
+---
+
+{top && (
+  <div class="trending-focus" role="group" aria-label={t('home.focus_today')}>
+    <span class="trending-focus-kicker">{t('home.focus_today')}</span>
+    <a href={searchHref} class="trending-focus-name">
+      {top.word}
+      {top.trend && <span class="trending-focus-arrow">{top.trend}</span>}
+    </a>
+    <span class="trending-focus-meta">
+      {Number(top.count || 0)} {t('home.trending_focus_mentions')}
+    </span>
+  </div>
+)}
+
+<style>
+  .trending-focus {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.7rem;
+    padding: 0.45rem 0 0.7rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    font-family: var(--font-ui);
+  }
+
+  .trending-focus-kicker {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted-foreground);
+  }
+
+  .trending-focus-name {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--presek-mark);
+    text-decoration: none;
+  }
+
+  .trending-focus-name:hover {
+    text-decoration: underline;
+  }
+
+  .trending-focus-arrow {
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    margin-left: 0.2rem;
+    color: var(--nyt-red, var(--presek-mark));
+  }
+
+  .trending-focus-meta {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
+</style>

@@ -28,6 +28,7 @@ import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
 import HomeStatsStrip from './HomeStatsStrip.astro';
+import HomeTrendingFocus from './HomeTrendingFocus.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -206,6 +207,9 @@ if (analizaNavItems.length > 0) {
                         <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} stats={stats} />
                         {!q && !category && !topic && !entity && !subcategory && clusters.length > 0 && (
                             <HomeStatsStrip clusters={clusters} lang={lang} />
+                        )}
+                        {!q && !category && !topic && !entity && !subcategory && trending.length > 0 && (
+                            <HomeTrendingFocus trending={trending} lang={lang} />
                         )}
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>

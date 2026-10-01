@@ -163,6 +163,8 @@ export const home = {
     'home.stats_open_sources': 'Отвори извори',
     'home.stats_posts_24h': 'објави (24ч)',
     'home.today_stats_title': 'Денес во бројки',
+    'home.focus_today': 'Во фокус денес',
+    'home.trending_focus_mentions': 'спомнувања',
     'home.today_stats_stories': 'приказни',
     'home.today_stats_sources': 'извори',
     'home.today_stats_reports': 'извештаи',
