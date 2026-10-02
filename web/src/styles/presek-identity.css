@@ -505,7 +505,7 @@
   }
 
   .home-mobile-order-edition .home-mode-dock {
-    margin-top: 0;
+    display: none;
   }
 
   .daily-edition-mark {
