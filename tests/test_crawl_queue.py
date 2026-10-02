@@ -2,7 +2,14 @@ import json
 from unittest.mock import patch
 
 from tasks.maintenance import catch_up_deferred_crawls_task, prune_crawl_queue_task
-from tasks.utils import crawl_dispatch_cap, crawl_dispatches_deferred, prune_crawl_queue
+from tasks.utils import (
+    crawl_dispatch_cap,
+    crawl_dispatches_deferred,
+    filter_dead_crawls,
+    is_permanent_crawl_error,
+    mark_crawl_dead,
+    prune_crawl_queue,
+)
 
 
 def _crawl_message(article_id: int, url: str = "https://example.com/a") -> str:
@@ -93,6 +100,52 @@ class TestCatchUpDeferredCrawls:
 
         assert result["enqueued"] == 1
         mock_crawl.delay.assert_called_once_with(10, "https://example.com/10")
+
+
+class TestDeadCrawls:
+    def test_detects_permanent_http_errors(self):
+        assert is_permanent_crawl_error("Client error '404 Not Found' for url 'https://x.mk/a'")
+        assert is_permanent_crawl_error("Client error '410 Gone' for url 'https://x.mk/a'")
+        assert not is_permanent_crawl_error("Client error '429 Too Many Requests' for url 'https://x.mk/a'")
+        assert not is_permanent_crawl_error("Server error '503 Service Unavailable' for url 'https://x.mk/a'")
+        assert not is_permanent_crawl_error("")
+
+    def test_mark_sets_ttl_longer_than_catch_up_window(self):
+        with patch("tasks.utils.redis_client") as mock_redis:
+            mark_crawl_dead(7)
+        key, value = mock_redis.set.call_args.args
+        assert key == "crawl:dead:7"
+        assert mock_redis.set.call_args.kwargs["ex"] > 72 * 3600
+
+    def test_filter_drops_marked_rows(self):
+        rows = [{"id": 1}, {"id": 2}, {"id": 3}]
+        with patch("tasks.utils.redis_client") as mock_redis:
+            mock_redis.mget.return_value = [None, b"1", None]
+            assert filter_dead_crawls(rows) == [{"id": 1}, {"id": 3}]
+
+    def test_filter_fails_open_when_redis_down(self):
+        rows = [{"id": 1}, {"id": 2}]
+        with patch("tasks.utils.redis_client") as mock_redis:
+            mock_redis.mget.side_effect = ConnectionError("down")
+            assert filter_dead_crawls(rows) == rows
+
+    def test_catch_up_skips_dead_articles(self):
+        with (
+            patch("tasks.utils.crawl_dispatches_deferred", return_value=False),
+            patch("tasks.utils.get_celery_queue_depth", return_value=40),
+            patch("tasks.utils.redis_client") as mock_redis,
+            patch("tasks.maintenance.db") as mock_db,
+            patch("tasks.ingestion_task.crawl_article_task") as mock_crawl,
+        ):
+            mock_redis.mget.return_value = [b"1", None]
+            mock_db.execute.return_value = [
+                {"id": 10, "link": "https://example.com/10"},
+                {"id": 11, "link": "https://example.com/11"},
+            ]
+            result = catch_up_deferred_crawls_task(limit=5)
+
+        assert result["enqueued"] == 1
+        mock_crawl.delay.assert_called_once_with(11, "https://example.com/11")
 
 
 class TestPruneCrawlQueueTask:

@@ -239,10 +239,10 @@ def test_dynamic_fallback_order_omits_local_when_synthesis_disabled(monkeypatch)
     monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
     SmartModelRouter._provider_performance = {
-        "nvidia": {"success_rate": 0.9, "avg_latency": 5.0},
-        "nvidia": {"success_rate": 0.95, "avg_latency": 10.0},
-        "nvidia": {"success_rate": 0.8, "avg_latency": 8.0},
-        "local": {"success_rate": 0.7, "avg_latency": 120.0},
+        "groq": {"success": 90, "total": 100, "latency": [5.0]},
+        "gemini": {"success": 95, "total": 100, "latency": [10.0]},
+        "nvidia": {"success": 80, "total": 100, "latency": [8.0]},
+        "local": {"success": 70, "total": 100, "latency": [120.0]},
     }
     order = SmartModelRouter.get_dynamic_fallback_order("synthesis")
     assert "local" not in order
