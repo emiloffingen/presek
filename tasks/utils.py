@@ -783,3 +783,35 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
     from core.health import record_task_event as _record
 
     return _record(task_name, status, detail)
+
+
+# Articles whose source URL answers 404/410 will never crawl successfully; remember
+# that for longer than the 72h catch-up window so they are not re-queued every cycle.
+CRAWL_DEAD_TTL_SECONDS = 4 * 24 * 3600
+_CRAWL_DEAD_KEY = "crawl:dead:{}"
+_PERMANENT_HTTP_MARKERS = ("'404 ", "'410 ")
+
+
+def is_permanent_crawl_error(error: str) -> bool:
+    text = str(error or "")
+    return "Client error" in text and any(marker in text for marker in _PERMANENT_HTTP_MARKERS)
+
+
+def mark_crawl_dead(article_id) -> None:
+    try:
+        redis_client.set(_CRAWL_DEAD_KEY.format(int(article_id)), "1", ex=CRAWL_DEAD_TTL_SECONDS)
+    except Exception as e:
+        log.debug(f"Failed to mark crawl dead for {article_id}: {e}")
+
+
+def filter_dead_crawls(rows):
+    """Drop rows (dicts with an ``id``) previously marked as permanently uncrawlable. Fails open."""
+    rows = list(rows or [])
+    if not rows:
+        return rows
+    try:
+        flags = redis_client.mget([_CRAWL_DEAD_KEY.format(int(r["id"])) for r in rows])
+    except Exception as e:
+        log.debug(f"Dead-crawl lookup failed: {e}")
+        return rows
+    return [r for r, flag in zip(rows, flags) if not flag]

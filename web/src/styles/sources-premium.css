@@ -110,3 +110,132 @@
         text-align: left;
     }
 }
+
+/* --- Layout & density pass ------------------------------------------------ */
+
+/* Ranking table: bounded scroll, sticky header + first column, tighter rows */
+.sources-page-scope .sources-rank-scroll {
+    max-height: min(72vh, 46rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border-bottom: 1px solid var(--border);
+}
+
+.sources-page-scope .sources-rank-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--background);
+    box-shadow: 0 1px 0 var(--foreground);
+}
+
+.sources-page-scope .sources-rank-table th:first-child,
+.sources-page-scope .sources-rank-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--background);
+    padding-right: 0.75rem;
+    white-space: nowrap;
+}
+
+.sources-page-scope .sources-rank-table thead th:first-child {
+    z-index: 3;
+}
+
+.sources-page-scope .sources-rank-table tbody td {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+}
+
+.sources-page-scope .sources-rank-table tbody tr:hover td {
+    background: color-mix(in srgb, var(--background) 94%, var(--presek-mark) 6%);
+}
+
+/* Per-source rows: compact single column (the rail leaves ~840px, too narrow for two) */
+.sources-page-scope .sources-compact-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 2.5rem;
+}
+
+.sources-page-scope .sources-compact-list .editorial-source-item {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1.25rem;
+    padding: 0.55rem 0.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    min-width: 0;
+}
+
+.sources-page-scope .sources-compact-list .item-main {
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.sources-page-scope .sources-compact-list .item-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.15rem;
+}
+
+/* Source names reuse .section-heading, which brings rules and large margins */
+.sources-page-scope .sources-compact-list .item-head .section-heading {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    font-size: 1.05rem;
+    line-height: 1.2;
+}
+
+.sources-page-scope .sources-compact-list .item-tendency {
+    margin: 0 0 0.3rem !important;
+    font-size: 0.8rem;
+}
+
+.sources-page-scope .sources-compact-list .item-meta {
+    flex-wrap: wrap;
+}
+
+.sources-page-scope .sources-compact-list .item-stats {
+    flex: 0 0 auto;
+    min-width: 0;
+    margin-left: auto;
+}
+
+.sources-page-scope .sources-compact-list .heatmap-container {
+    height: 1.75rem;
+}
+
+/* Masthead: tighter vertical rhythm so the ranking starts higher */
+.sources-page-scope .editorial-masthead {
+    margin-bottom: 1.5rem;
+}
+
+.sources-page-scope .editorial-masthead .masthead-main {
+    margin-bottom: 1.25rem;
+}
+
+.sources-page-scope .editorial-masthead .masthead-top {
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 767px) {
+    .sources-page-scope .sources-rank-scroll {
+        max-height: 60vh;
+        margin-inline: -0.25rem;
+    }
+
+    .sources-page-scope .sources-compact-list .item-stats {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+
+    .sources-page-scope .sources-compact-list .heatmap-container {
+        margin-left: auto;
+    }
+}

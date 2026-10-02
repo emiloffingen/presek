@@ -27,7 +27,9 @@ from core.version import APP_VERSION_LABEL
 from tasks.utils import (
     invalidate_public_data_caches,
     invalidate_public_data_caches_debounced,
+    is_permanent_crawl_error,
     log,
+    mark_crawl_dead,
     safe_async_run,
 )
 
@@ -47,6 +49,8 @@ def crawl_article_task(article_id, url):
         res = safe_async_run(crawler.extract_all(url))
         if res.get("error"):
             log.warning(f"Crawl failed for article {article_id}: {res['error']}")
+            if is_permanent_crawl_error(res["error"]):
+                mark_crawl_dead(article_id)
             return
 
         # Build UPDATE query using whitelist to prevent SQL injection

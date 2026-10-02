@@ -593,7 +593,7 @@ def catch_up_deferred_crawls_task(limit=None):
     """Enqueue crawls for recent articles missing full_content when crawl queue has headroom."""
     from core.runtime_limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
     from tasks.ingestion_task import crawl_article_task
-    from tasks.utils import crawl_dispatches_deferred, get_celery_queue_depth
+    from tasks.utils import crawl_dispatches_deferred, filter_dead_crawls, get_celery_queue_depth
 
     if crawl_dispatches_deferred():
         log.info("[maintenance] Skipping deferred crawl catch-up while ingestion-crawl backlog is high.")
@@ -622,7 +622,7 @@ def catch_up_deferred_crawls_task(limit=None):
     )
 
     enqueued = 0
-    for row in rows:
+    for row in filter_dead_crawls(rows):
         crawl_article_task.delay(int(row["id"]), row["link"])
         enqueued += 1
 
