@@ -1,0 +1,103 @@
+name: Offload fulltext backfill
+
+# Runs the brokerless full-content backfill in CI so the phone/Shield workload is
+# offloaded. Only the database is reached (Supabase); no Celery/Redis required.
+#
+# Repo secrets (Settings -> Secrets and variables -> Actions):
+#   DATABASE_URL               required - the primary Postgres DSN.
+#   HEALTHCHECK_BACKFILL_URL   optional - healthchecks.io ping URL (dead-man's switch).
+#   TELEGRAM_BOT_TOKEN         optional - failure alerts.
+#   TELEGRAM_CHAT_ID           optional - failure alerts.
+#
+# The schedule only fires from the default branch (main); manual runs work from
+# any branch that has this file.
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Lookback window in days"
+        default: "30"
+      limit:
+        description: "Max articles to process"
+        default: "200"
+      dry_run:
+        description: "List candidates only"
+        type: choice
+        options:
+          - "false"
+          - "true"
+        default: "false"
+
+concurrency:
+  group: offload-backfill
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_BACKFILL_URL }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Preflight
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set"
+            exit 1
+          fi
+
+      - name: healthchecks start
+        if: ${{ env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL/start" || true
+
+      - name: Run backfill
+        env:
+          ENV: production
+          SECRET_KEY: ci-offload-${{ github.run_id }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MK_ONLY: "true"
+          FULLTEXT_ENABLED: "true"
+          DAYS: ${{ github.event.inputs.days || '30' }}
+          LIMIT: ${{ github.event.inputs.limit || '200' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          ARGS="--days $DAYS --limit $LIMIT"
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          uv run python scripts/backfill_fulltext_direct.py $ARGS
+
+      - name: healthchecks success
+        if: ${{ success() && env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL" || true
+
+      - name: healthchecks failure
+        if: ${{ failure() && env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL/fail" || true
+
+      - name: notify Telegram on failure
+        if: ${{ failure() && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        run: |
+          curl -fsS -m 10 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=presek offload-backfill FAILED run=${GITHUB_RUN_ID} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
