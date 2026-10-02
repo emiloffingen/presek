@@ -41,6 +41,11 @@ dependencies = [
     "tqdm>=4.66.0,<4.68.0",
     "babel>=2.16.0,<2.17.0",
     "humanize>=4.0.0,<5.0.0",
+    # Imported directly (crawler, Celery config); previously only present transitively.
+    "justext>=3.0.2",
+    "lxml>=6.1.1",
+    "kombu>=5.6.2",
+    "billiard>=4.2.4",
 ]
 
 [project.optional-dependencies]
