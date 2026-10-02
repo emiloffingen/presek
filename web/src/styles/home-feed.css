@@ -852,6 +852,10 @@
   .home-feed-ad-break {
     padding: 0.35rem 0 0.55rem;
   }
+
+  .home-feed-synthesis-badge {
+    display: none;
+  }
 }
 
 :global(.briefing-inline-ad),
