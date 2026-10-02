@@ -1,5 +1,5 @@
 import { homePath, localePathForLang } from '../lib/localePaths';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle, X, ExternalLink } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { sources as sourcesNamespace } from '../i18n/namespaces/sources';
@@ -199,6 +199,8 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
   const t = useClientTranslations(lang, sourcesNamespace);
+  const tRef = useRef(t);
+  tRef.current = t;
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
@@ -264,19 +266,19 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
       try {
         const res = await fetch(`${apiBaseUrl()}/sources?t=${Date.now()}`);
         if (!res.ok) {
-          setError(t('sources.connection_error'));
+          setError(tRef.current('sources.connection_error'));
           return;
         }
         const allRes = await res.json();
         setSources(allRes);
       } catch {
-        setError(t('sources.connection_error'));
+        setError(tRef.current('sources.connection_error'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [lang, t]);
+  }, [lang]);
 
   const filtered = useMemo(() => {
     let results = sources;
@@ -722,12 +724,12 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
               <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
             </div>
           ) : (
-            <div className="space-y-14 md:space-y-24">
+            <div className="space-y-10 md:space-y-14">
               <section className="sources-rankings">
                 <h2 className="section-heading mb-2 pb-2 md:pb-3 border-b-4 border-foreground">{t('sources.rankings_title')}</h2>
                 <p className="text-sm text-muted-foreground mb-4 md:mb-6">{t('sources.rankings_desc')}</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
+                <div className="sources-rank-scroll overflow-x-auto">
+                  <table className="sources-rank-table w-full text-sm border-collapse">
                     <thead>
                       <tr className="border-b border-foreground text-left ui-kicker">
                         {([
@@ -777,18 +779,18 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
                 </details>
               </section>
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                <h2 className="section-heading mb-3 md:mb-5 pb-2 md:pb-3 border-b-4 border-foreground">
                   {lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}
                 </h2>
-                <div className="flex flex-col">
+                <div className="sources-compact-list">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                <h2 className="section-heading mb-3 md:mb-5 pb-2 md:pb-3 border-b-4 border-foreground">
                   {t('sources.intl_signals')}
                 </h2>
-                <div className="flex flex-col">
+                <div className="sources-compact-list">
                   {intSources.map(renderSourceRow)}
                 </div>
               </section>

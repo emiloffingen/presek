@@ -110,7 +110,7 @@ function formatBriefingItem(item: string) {
   <NYTHeader />
 
   <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] archive-page-scope">
-    <header class="editorial-masthead mb-10 border-t border-foreground pt-4">
+    <header class="editorial-masthead mb-6 md:mb-8 border-t border-foreground pt-4">
         <div class="masthead-top mb-6 flex justify-between items-center">
             <span class="masthead-kicker ui-kicker ui-kicker--accent">{t('archive.memory')}</span>
             <div class="masthead-meta-compact hidden md:flex items-center gap-[var(--grid-gap)] ui-label-min text-muted-foreground opacity-60">
@@ -268,8 +268,6 @@ function formatBriefingItem(item: string) {
                 </div>
             ) : null}
 
-            <PresekInlinedAd class="page-inline-ad archive-inline-ad mb-10" />
-
             <div class="archive-feed-list">
                 {error ? (
                     <div class="py-24 text-center border-2 border-dashed border-border rounded-none">
@@ -285,6 +283,8 @@ function formatBriefingItem(item: string) {
                     </div>
                 )}
             </div>
+
+            <PresekInlinedAd class="page-inline-ad archive-inline-ad mt-10" />
         </section>
 
         <aside class="broadsheet-rail pl-4">

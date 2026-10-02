@@ -18,8 +18,8 @@ const t = useTranslations(lang);
 
 	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] sources-page-scope">
 		<Breadcrumbs items={[{ label: t('sources.breadcrumb') }]} />
-		<PresekInlinedAd class="page-inline-ad mb-10" />
 		<IzvoriPageIsland client:load lang={lang} />
+		<PresekInlinedAd class="page-inline-ad mt-10" />
 	</main>
 	<Footer />
 </Layout>

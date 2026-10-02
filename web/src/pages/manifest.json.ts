@@ -35,7 +35,6 @@ export const GET: APIRoute = async ({ request }) => {
     "launch_handler": { "client_mode": "navigate-existing" },
     "background_color": "#fdfdfa",
     "theme_color": "#0a192f",
-    "orientation": "portrait",
     "prefer_related_applications": false,
     "icons": [
       {

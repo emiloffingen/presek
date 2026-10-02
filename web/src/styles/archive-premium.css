@@ -363,3 +363,45 @@
     color: var(--presek-mark);
 }
 
+
+/* --- Layout & density pass ------------------------------------------------ */
+
+/* Lead story: cap the image so the feed starts within the first screens */
+.archive-page-scope .archive-clusters .nyt-article.variant-featured .image-wrap {
+    aspect-ratio: 16 / 9;
+    max-height: 22rem;
+}
+
+/* Tighter masthead rhythm */
+.archive-page-scope .editorial-masthead .masthead-top {
+    margin-bottom: 0.75rem;
+}
+
+.archive-page-scope .editorial-masthead .masthead-main {
+    margin-bottom: 1.25rem;
+    gap: 1.25rem;
+}
+
+.archive-page-scope .archive-briefing-details,
+.archive-page-scope .archive-pulse-deck-toggle {
+    margin-bottom: 1rem;
+}
+
+.archive-page-scope .archive-clusters {
+    gap: 0.25rem;
+}
+
+.archive-page-scope .archive-cluster-row {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+@media (max-width: 767px) {
+    .archive-page-scope .archive-deck-stat span.text-2xl {
+        font-size: 1.25rem;
+    }
+
+    .archive-page-scope .archive-clusters .nyt-article.variant-featured .image-wrap {
+        max-height: 14rem;
+    }
+}
