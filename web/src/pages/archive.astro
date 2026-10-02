@@ -91,6 +91,11 @@ const buildArchiveHref = (overrides: { date?: string; q?: string; source?: strin
   return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
 };
 
+const hasFilters = Boolean(q || source || topic);
+const nearest: { prev?: string | null; next?: string | null } = archive.nearest || {};
+const formatNearest = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+
 const todayStr = new Date().toISOString().split('T')[0];
 const prevDateStr = new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0];
 const nextDateStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
@@ -268,6 +273,47 @@ function formatBriefingItem(item: string) {
                 </div>
             ) : null}
 
+            {!error && (archive.top_topics?.length > 1 || archive.top_sources?.length > 1 || topic || source) && (
+                <nav class="archive-facets" aria-label={t('archive.context_filters')}>
+                    {archive.top_topics?.length > 0 && (
+                        <div class="archive-chip-row">
+                            <span class="archive-chip-label">{t('archive.filter_topics')}</span>
+                            <ul class="archive-chip-list">
+                                {archive.top_topics.slice(0, 10).map((item: any) => (
+                                    <li>
+                                        <a
+                                            href={buildFilterHref('topic', item.topic === topic ? '' : item.topic)}
+                                            class={`archive-chip${item.topic === topic ? ' is-active' : ''}`}
+                                            aria-current={item.topic === topic ? 'true' : undefined}
+                                        >
+                                            <span>{item.topic}</span><span class="archive-chip-count">{item.n}</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {archive.top_sources?.length > 0 && (
+                        <div class="archive-chip-row">
+                            <span class="archive-chip-label">{t('archive.filter_sources')}</span>
+                            <ul class="archive-chip-list">
+                                {archive.top_sources.slice(0, 8).map((item: any) => (
+                                    <li>
+                                        <a
+                                            href={buildFilterHref('source', item.source === source ? '' : item.source)}
+                                            class={`archive-chip${item.source === source ? ' is-active' : ''}`}
+                                            aria-current={item.source === source ? 'true' : undefined}
+                                        >
+                                            <span>{item.source}</span><span class="archive-chip-count">{item.n}</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </nav>
+            )}
+
             <div class="archive-feed-list">
                 {error ? (
                     <div class="py-24 text-center border-2 border-dashed border-border rounded-none">
@@ -276,10 +322,24 @@ function formatBriefingItem(item: string) {
                 ) : archive.clusters.length > 0 ? (
                     <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 15} date={date} q={q} source={source} topic={topic} lang={lang} />
                 ) : (
-                    <div class="py-32 text-center border-2 border-dashed border-border rounded-none">
+                    <div class="archive-empty py-16 md:py-24 text-center border-2 border-dashed border-border rounded-none">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
                         <p class="font-nyt-body text-muted-foreground">{t('archive.try_other_filters')}</p>
-                        <a href={localePath('/archive', lang, hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
+                        {(nearest.prev || nearest.next) ? (
+                            <div class="archive-empty-nearest">
+                                <span class="ui-label-min text-muted-foreground">{t('archive.nearest_heading')}</span>
+                                <div class="archive-empty-nearest-links">
+                                    {nearest.prev && <a href={buildArchiveHref({ date: nearest.prev })} class="archive-nav-btn">← {formatNearest(nearest.prev)}</a>}
+                                    {nearest.next && <a href={buildArchiveHref({ date: nearest.next })} class="archive-nav-btn">{formatNearest(nearest.next)} →</a>}
+                                </div>
+                            </div>
+                        ) : hasFilters ? (
+                            <p class="mt-6 ui-label-min text-muted-foreground">{t('archive.nearest_none')}</p>
+                        ) : null}
+                        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+                            {hasFilters && <a href={`${localePath('/archive', lang, hostHeader)}?date=${date}`} class="inline-block px-8 py-3 border border-foreground ui-label-min hover:bg-foreground hover:text-background transition-all">{t('archive.clear')}</a>}
+                            <a href={localePath('/archive', lang, hostHeader)} class="inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
+                        </div>
                     </div>
                 )}
             </div>

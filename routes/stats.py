@@ -76,6 +76,39 @@ def get_date_range(date_str: str):
     return start, end
 
 
+async def _nearest_archive_days(d_start, d_end, country, q, source, topic):
+    """Closest earlier/later day (within a year) that has articles matching the filters."""
+    clause = " AND country = %s"
+    fparams = [country]
+    if q:
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        clause += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
+        fparams.extend([f"%{escaped}%", f"%{escaped}%"])
+    if source:
+        clause += " AND source = %s"
+        fparams.append(source)
+    if topic:
+        clause += " AND topic = %s"
+        fparams.append(topic)
+    window = timedelta(days=365)
+    prev_sql = f"SELECT MAX(created_at) AS d FROM articles WHERE created_at < %s AND created_at >= %s{clause}"  # nosec B608 - static clause with bound params
+    next_sql = f"SELECT MIN(created_at) AS d FROM articles WHERE created_at >= %s AND created_at < %s{clause}"  # nosec B608
+    try:
+        prev_row, next_row = await asyncio.gather(
+            db.async_execute_one(prev_sql, (d_start, d_start - window, *fparams)),
+            db.async_execute_one(next_sql, (d_end, d_end + window, *fparams)),
+        )
+    except Exception as e:
+        log.warning(f"[archive] nearest-day lookup failed: {e}")
+        return {"prev": None, "next": None}
+
+    def _day(row):
+        value = (row or {}).get("d")
+        return value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else None
+
+    return {"prev": _day(prev_row), "next": _day(next_row)}
+
+
 def _pick_quote_of_the_day(row) -> dict | None:
     if not row:
         return None
@@ -160,7 +193,7 @@ async def get_archive_heatmap(lang: str = DEFAULT_LANG):
 
 @router.get("/archive")
 async def get_archive(
-    date: str = Query(...),
+    date: str = Query(""),
     q: str = "",
     source: str = "",
     topic: str = "",
@@ -169,7 +202,8 @@ async def get_archive(
     page_size: int = 50,
 ):
     try:
-        # Validate inputs
+        # Validate inputs (a missing date means "today")
+        date = date or datetime.now().strftime("%Y-%m-%d")
         validate_date(date)
         q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
         source = validate_string_param(source, "source", max_length=200, allow_empty=True)
@@ -181,7 +215,7 @@ async def get_archive(
             raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
 
         # 1. Caching - Only for historical dates (older than today)
-        cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
+        cache_key = f"api:archive:v5:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
         today_str = datetime.now().strftime("%Y-%m-%d")
         is_today = date == today_str
 
@@ -240,37 +274,32 @@ async def get_archive(
             metrics_sql += " AND topic = %s"
             metrics_params.append(topic)
 
-        # Groupings
-        group_source_sql = (
-            "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
-        )
-        group_source_params = [d_start, d_end, country]
-        if source:
-            group_source_sql += " AND source = %s"
-            group_source_params.append(source)
-        if topic:
-            group_source_sql += " AND topic = %s"
-            group_source_params.append(topic)
-        group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
+        # Facet counts: each facet ignores its own filter so the chips stay switchable
+        # (selecting a topic must not collapse the topic list to that one topic).
+        def _facet_sql(column: str, skip: str):
+            sql = f"SELECT {column}, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"  # nosec B608 - column is a literal from this function
+            fparams = [d_start, d_end, country]
+            if q:
+                sql += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
+                fparams.extend([f"%{escaped_q}%", f"%{escaped_q}%"])
+            if source and skip != "source":
+                sql += " AND source = %s"
+                fparams.append(source)
+            if topic and skip != "topic":
+                sql += " AND topic = %s"
+                fparams.append(topic)
+            sql += f" GROUP BY {column} ORDER BY n DESC LIMIT 12"  # nosec B608
+            return sql, tuple(fparams)
 
-        group_topic_sql = (
-            "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
-        )
-        group_topic_params = [d_start, d_end, country]
-        if source:
-            group_topic_sql += " AND source = %s"
-            group_topic_params.append(source)
-        if topic:
-            group_topic_sql += " AND topic = %s"
-            group_topic_params.append(topic)
-        group_topic_sql += " GROUP BY topic ORDER BY n DESC LIMIT 8"
+        group_source_sql, group_source_params = _facet_sql("source", "source")
+        group_topic_sql, group_topic_params = _facet_sql("topic", "topic")
 
         # Execute in parallel
         rows, metrics, top_sources, top_topics = await asyncio.gather(
             db.async_execute(base_sql, tuple(params)),
             db.async_execute_one(metrics_sql, tuple(metrics_params)),
-            db.async_execute(group_source_sql, tuple(group_source_params)),
-            db.async_execute(group_topic_sql, tuple(group_topic_params)),
+            db.async_execute(group_source_sql, group_source_params),
+            db.async_execute(group_topic_sql, group_topic_params),
         )
 
         clusters = defaultdict(list)
@@ -333,8 +362,11 @@ async def get_archive(
             for c in paged
         ]
 
+        nearest = await _nearest_archive_days(d_start, d_end, country, q, source, topic) if not ranked else None
+
         res = {
             "clusters": payload,
+            "nearest": nearest,
             "total": metrics["total"],
             "sources": metrics["source_count"],
             "date": date,
