@@ -394,8 +394,10 @@ async def get_navigation(lang: Optional[str] = DEFAULT_LANG):
     cluster_ids = [c["cluster_id"] for c in recent_clusters if c.get("cluster_id") and c.get("title")]
     articles_by_cluster: dict[str, list] = defaultdict(list)
     if cluster_ids:
+        from routes.news import _ARTICLE_LIST_COLUMNS
+
         article_rows = await db.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s)",
+            f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s)",  # nosec B608 - static column constant with bound params
             (cluster_ids,),
         )
         for row in article_rows:

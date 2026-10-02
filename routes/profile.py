@@ -389,8 +389,10 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
     if not cids:
         return []
 
+    from routes.news import _ARTICLE_LIST_COLUMNS
+
     all_articles = await db.async_execute(
-        f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",  # nosec B608 - static column constant with bound params
+        f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",  # nosec B608 - static column constant with bound params
         (cids,),
     )
     meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))

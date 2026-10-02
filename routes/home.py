@@ -766,8 +766,10 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     if not cids:
         return []
 
+    from routes.news import _ARTICLE_LIST_COLUMNS
+
     art_rows = await db.async_execute(
-        "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+        f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
         (cids,),
         read_only=True,
     )

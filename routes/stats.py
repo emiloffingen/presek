@@ -194,14 +194,17 @@ async def get_archive(
         country = "MK" if lang == "mk" else "RS"
 
         # 2. Main content query
+        from routes.news import _ARTICLE_LIST_COLUMNS
+
         if q:
             # Escape LIKE special characters in search query
             escaped_q = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            base_sql = """
-                SELECT * FROM articles
+            # embedding is needed only here, to re-rank search hits by similarity.
+            base_sql = f"""
+                SELECT {_ARTICLE_LIST_COLUMNS}, embedding FROM articles
                 WHERE created_at >= %s AND created_at < %s AND country = %s
                   AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\' OR description ILIKE %s ESCAPE '\\')
-            """
+            """  # nosec B608 - static column constant with bound params
             params = [
                 d_start,
                 d_end,
@@ -211,7 +214,7 @@ async def get_archive(
                 f"%{escaped_q}%",
             ]
         else:
-            base_sql = "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+            base_sql = f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"  # nosec B608 - static column constant with bound params
             params = [d_start, d_end, country]
 
         if source:
