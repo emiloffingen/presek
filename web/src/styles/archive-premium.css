@@ -405,3 +405,32 @@
         max-height: 14rem;
     }
 }
+
+/* Facet chips + empty-state suggestions */
+.archive-page-scope .archive-facets { display: grid; gap: .5rem; margin-bottom: 1.25rem; }
+.archive-page-scope .archive-chip-row { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.archive-page-scope .archive-chip-label {
+  flex: 0 0 auto; width: 3.75rem;
+  font-size: .625rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; opacity: .55;
+}
+.archive-page-scope .archive-chip-list {
+  display: flex; gap: .4rem; margin: 0; padding: 0 0 .25rem; list-style: none;
+  overflow-x: auto; scrollbar-width: thin; min-width: 0;
+}
+.archive-page-scope .archive-chip-list li { flex: 0 0 auto; }
+.archive-page-scope .archive-chip {
+  display: inline-flex; align-items: baseline; gap: .4rem; white-space: nowrap;
+  padding: .25rem .65rem; border: 1px solid var(--border); border-radius: 999px;
+  font-size: .8rem; font-weight: 700; text-decoration: none; color: inherit;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.archive-page-scope .archive-chip:hover { border-color: var(--foreground); }
+.archive-page-scope .archive-chip.is-active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+.archive-page-scope .archive-chip-count { font-size: .68rem; font-variant-numeric: tabular-nums; opacity: .55; }
+.archive-page-scope .archive-empty-nearest { margin-top: 1.5rem; display: grid; gap: .6rem; justify-items: center; }
+.archive-page-scope .archive-empty-nearest-links { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+
+@media (max-width: 639.98px) {
+  .archive-page-scope .archive-chip-label { width: 3.6rem; letter-spacing: .06em; font-size: .58rem; }
+  .archive-page-scope .archive-facets { margin-bottom: 1rem; }
+}
