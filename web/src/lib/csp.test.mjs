@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildCspPolicy, buildFrameAncestorsPolicy, generateCspNonce } from './csp.ts';
+import { buildCspPolicy, buildFrameAncestorsPolicy, computeInlineHashes, generateCspNonce } from './csp.ts';
 
 test('generateCspNonce returns hex string without dashes', () => {
   const nonce = generateCspNonce();
@@ -33,4 +33,18 @@ test('buildCspPolicy keeps script-src locked to nonce and hashes only', () => {
   assert.ok(scriptSrc.includes("'nonce-abc123'"));
   assert.ok(scriptSrc.includes("'sha256-xyz'"));
   assert.ok(!scriptSrc.includes("'unsafe-inline'"));
+});
+
+test('buildCspPolicy omits the nonce for cacheable (hash-only) pages', () => {
+  const policy = buildCspPolicy(null, { scripts: ["'sha256-xyz'"], styles: [] });
+  const scriptSrc = policy.match(/script-src ([^;]+);/)?.[1] || '';
+  assert.ok(!scriptSrc.includes('nonce-'));
+  assert.ok(scriptSrc.includes("'sha256-xyz'"));
+  assert.ok(!scriptSrc.includes("'unsafe-inline'"));
+});
+
+test('computeInlineHashes includes nonced inline scripts only when asked', () => {
+  const html = '<script nonce="n1">a()</script><script>b()</script><script src="/x.js" nonce="n1"></script>';
+  assert.equal(computeInlineHashes(html).scripts.length, 1);
+  assert.equal(computeInlineHashes(html, { includeNonced: true }).scripts.length, 2);
 });

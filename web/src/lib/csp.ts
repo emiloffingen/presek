@@ -24,7 +24,7 @@ export interface CspHashes {
  * and therefore prevents every React island (search overlay, theme toggle,
  * text-scale, etc.) from hydrating.
  */
-export function computeInlineHashes(html: string): CspHashes {
+export function computeInlineHashes(html: string, { includeNonced = false } = {}): CspHashes {
   const scripts: string[] = [];
   const styles: string[] = [];
   const hash = (content: string): string => {
@@ -35,7 +35,7 @@ export function computeInlineHashes(html: string): CspHashes {
   for (const match of html.matchAll(/<script\b([^>]*?)>([\s\S]*?)<\/script>/gi)) {
     const attrs = match[1] || '';
     const body = match[2] || '';
-    if (/\snonce\s*=/.test(attrs)) continue;
+    if (!includeNonced && /\snonce\s*=/.test(attrs)) continue;
     if (/\ssrc\s*=/.test(attrs)) continue;
     if (!body.trim()) continue;
     if (/type\s*=\s*["']application\/ld\+json["']/.test(attrs)) continue;
@@ -47,11 +47,12 @@ export function computeInlineHashes(html: string): CspHashes {
   return { scripts, styles };
 }
 
-export function buildCspPolicy(nonce: string, hashes: CspHashes = { scripts: [], styles: [] }): string {
+export function buildCspPolicy(nonce: string | null, hashes: CspHashes = { scripts: [], styles: [] }): string {
   const scriptHashes = hashes.scripts.length ? ' ' + hashes.scripts.join(' ') : '';
+  const nonceSource = nonce ? ` 'nonce-${nonce}'` : '';
   return (
     "default-src 'self'; " +
-    `script-src 'self' 'nonce-${nonce}'${scriptHashes} https://www.googletagmanager.com; ` +
+    `script-src 'self'${nonceSource}${scriptHashes} https://www.googletagmanager.com; ` +
     // style-src deliberately uses 'unsafe-inline' with NO nonce/hash: a nonce or
     // hash in a source list makes browsers ignore 'unsafe-inline'. Astro's island
     // runtime and React set inline `style` attributes, and style attributes can

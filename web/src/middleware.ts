@@ -62,8 +62,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('text/html')) {
       const body = await response.text();
-      const hashes = computeInlineHashes(body);
-      response.headers.set('Content-Security-Policy', buildCspPolicy(cspNonce, hashes));
       // Public, anonymous HTML is safe to cache at the edge. max-age=0 keeps
       // browsers from caching (so users never see stale-after-deploy HTML),
       // s-maxage lets Cloudflare serve it without touching this host, and
@@ -72,10 +70,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // are never cached.
       const cacheableHtml =
         context.request.method === 'GET'
+        && response.status === 200
         && !pathname.startsWith('/admin')
         && !pathname.startsWith('/api/')
         && !pathname.startsWith('/dev')
-        && !response.headers.has('set-cookie');
+        && !response.headers.has('set-cookie')
+        // Layout.astro renders the opt-in warm theme from this cookie; a cached
+        // copy would leak one visitor's theme to everyone.
+        && !context.cookies.has('presek_style')
+        && !url.searchParams.has('style');
+      // A cached page would hand the same nonce to every visitor, so cacheable
+      // HTML is authorised by hashes alone (nonced inline scripts included).
+      const hashes = computeInlineHashes(body, { includeNonced: cacheableHtml });
+      response.headers.set('Content-Security-Policy', buildCspPolicy(cacheableHtml ? null : cspNonce, hashes));
       if (cacheableHtml) {
         // Deliberately NO s-maxage: in Cloudflare, s-maxage implies
         // proxy-revalidate and DISABLES stale-while-revalidate / stale-if-error.
