@@ -89,6 +89,14 @@ function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' 
   }
 }
 
+// Pipeline health (last_fetched) says nothing about whether the outlet is actually
+// being ingested: surface paused sources and sources with no articles in 24h.
+function getSourceStatus(source: { is_active?: boolean; recent_volume?: number }): 'paused' | 'quiet' | null {
+  if (source.is_active === false) return 'paused';
+  if (!source.recent_volume) return 'quiet';
+  return null;
+}
+
 // Media Bias Coordinate Mapper Function
 const getCoordinates = (source: SourceRow, lang: string) => {
   let x = 0;
@@ -269,8 +277,10 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
           setError(tRef.current('sources.connection_error'));
           return;
         }
-        const allRes = await res.json();
-        setSources(allRes);
+        const payload = await res.json();
+        // Tolerate both the bare list and a {status, data} envelope.
+        const rows = Array.isArray(payload) ? payload : payload?.data;
+        setSources(Array.isArray(rows) ? rows : []);
       } catch {
         setError(tRef.current('sources.connection_error'));
       } finally {
@@ -356,8 +366,21 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
     }
   };
 
+  const renderStatusBadge = (source: SourceRow) => {
+    const status = getSourceStatus(source);
+    if (!status) return null;
+    return (
+      <span
+        className={`source-status-badge is-${status}`}
+        title={t(status === 'paused' ? 'sources.status_paused_tip' : 'sources.status_quiet_tip')}
+      >
+        {t(status === 'paused' ? 'sources.status_paused' : 'sources.status_quiet')}
+      </span>
+    );
+  };
+
   const renderSourceRow = (source: SourceRow) => {
-    const health = getHealthStatus(source.last_fetched);
+    const health = source.is_active === false ? 'critical' : getHealthStatus(source.last_fetched);
     const isSelected = selectedSource?.source === source.source || drawerSource?.source === source.source;
     const rowId = `source-${encodeURIComponent(source.source)}`;
     const daily = Array.isArray(source.daily_volume) && source.daily_volume.length ? source.daily_volume : null;
@@ -379,6 +402,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
             <h3 className="section-heading group-hover:text-presek-mark transition-colors">{source.source}</h3>
+            {renderStatusBadge(source)}
             {(HIGH_TRUST_TIERS.has(source.trust_tier) || source.trust_tier_code === 'high') && (
               <ShieldCheck size={14} className="text-presek-mark" />
             )}
@@ -761,7 +785,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
                           className="border-b border-border/40 hover:bg-secondary/10 cursor-pointer"
                           onClick={() => void openDrawer(s)}
                         >
-                          <td className="py-2 pr-3 font-serif font-bold">{s.source}</td>
+                          <td className="py-2 pr-3 font-serif font-bold">{s.source}{renderStatusBadge(s)}</td>
                           <td className="py-2 pr-3 tabular-nums">{s.recent_volume}</td>
                           <td className="py-2 pr-3 tabular-nums">+{s.speed_first_count}</td>
                           <td className="py-2 pr-3 tabular-nums">{formatPercent(s.corroboration_rate)}</td>

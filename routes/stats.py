@@ -891,7 +891,8 @@ async def get_sources_route():
     )
     result = build_source_reputation_rows(rows, pulse, speed, history, cats, daily)
     set_cache(cache_key, result, ttl=120)
-    return {"status": "success", "data": result}
+    # Same shape as the cached path above (a bare list) -- the page consumes a list.
+    return result
 
 
 @router.post("/sources/{name}/control")

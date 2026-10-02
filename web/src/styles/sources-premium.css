@@ -239,3 +239,15 @@
         margin-left: auto;
     }
 }
+
+/* Source status badges (paused / quiet) */
+.source-status-badge {
+  display: inline-block; margin-left: .5rem; padding: .1rem .45rem; vertical-align: middle;
+  border: 1px solid currentColor; border-radius: 999px;
+  font-family: var(--font-sans, inherit); font-size: .58rem; font-weight: 900;
+  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; line-height: 1.4;
+}
+.source-status-badge.is-paused { color: #b45309; }
+.source-status-badge.is-quiet { color: var(--muted-foreground, #6b7280); opacity: .8; }
+.sources-compact-list .item-head .source-status-badge { margin-left: 0; }
+
