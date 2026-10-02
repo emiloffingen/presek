@@ -1,0 +1,139 @@
+/* home-ux.css — homepage UX refresh. Loaded last from HomePage.astro.
+ *
+ * Fixes layout regressions where earlier layers fought each other (empty rail
+ * column squeezing the main column, hero collapsing to a word-per-line column)
+ * and tightens the mobile first screen so the story feed starts sooner.
+ * Keep rules additive and scoped to .home-page-scope.
+ */
+
+/* ── Desktop: the homepage has no rail, so don't reserve one ─────────────── */
+.home-page-scope .broadsheet-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+.home-page-scope .broadsheet-grid > .broadsheet-main {
+    max-width: 100%;
+}
+
+/* ── Hero: only go two-column when the lead column is actually wide ──────── */
+@media (min-width: 1024px) and (max-width: 1599px) {
+    .home-page-scope .lead-wrapper:has(.home-source-compare-slot) .lead-hero {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .home-page-scope .lead-wrapper:has(.home-source-compare-slot) .lead-copy {
+        min-height: 0;
+        padding-right: 0;
+    }
+    .home-page-scope .lead-wrapper:has(.home-source-compare-slot) .lead-media-frame {
+        min-height: 0;
+        aspect-ratio: 2 / 1;
+        max-height: 340px;
+        height: auto;
+    }
+}
+
+/* The H1 sits right next to the media on desktop; repeating it inside the
+   loading shell / fallback art is noise. */
+@media (min-width: 960px) {
+    .home-page-scope .lead-media-desktop .lead-media-loading-title,
+    .home-page-scope .lead-media-desktop .lead-media-fallback-title {
+        display: none;
+    }
+}
+
+/* ── Source comparison panel: readable score, no overflow ────────────────── */
+.home-page-scope .source-compare__row,
+.home-page-scope .source-compare__framing {
+    min-width: 0;
+}
+
+/* ── Hero actions: one primary action, secondary reads as a link ─────────── */
+.home-page-scope .lead-entry-actions {
+    align-items: center;
+    gap: 0.5rem 1rem;
+}
+.home-page-scope .lead-entry-secondary {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    padding-inline: 0.25rem;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-thickness: 1px;
+}
+
+/* ── Feed cards: calmer, less boxed-in ───────────────────────────────────── */
+.home-page-scope .article-footer-meta {
+    color: var(--muted-foreground);
+}
+
+/* ── Mobile: shorten the stack above the feed ────────────────────────────── */
+@media (max-width: 768px) {
+    /* Stats are repeated in the lead's comparison panel and the edition bar. */
+    .home-page-scope .home-mobile-order-edition .home-stats-strip,
+    .home-page-scope .home-mobile-order-edition [class*="stats-strip"] {
+        display: none;
+    }
+
+    .home-page-scope .lead-entry-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .home-page-scope .lead-entry-primary {
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
+        min-height: 2.75rem;
+    }
+    .home-page-scope .lead-entry-secondary {
+        min-height: 2.75rem;
+        width: auto;
+    }
+
+    /* Calmer card rhythm: hairlines instead of stacked bordered boxes. */
+    .home-page-scope .news-feed-grid > * + * {
+        margin-top: 0;
+    }
+}
+
+/* ── Touch targets & motion (site-wide basics) ───────────────────────────── */
+@media (max-width: 768px) {
+    .mobile-bottom-nav a {
+        min-height: 3rem;
+        min-width: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-page-scope *,
+    .home-page-scope *::before,
+    .home-page-scope *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Supporting band: uniform tiles, whole rows ─────────────────────────── */
+@media (min-width: 768px) {
+    .home-page-scope .supporting-band .bento-box-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+    }
+    .home-page-scope .supporting-band .bento-box-grid > .bento-item {
+        grid-column: span 1;
+        grid-row: span 1;
+    }
+    /* Two columns can't show an odd trailing tile without a gap. */
+    .home-page-scope .supporting-band .bento-box-grid > .bento-item:nth-child(3):last-child {
+        display: none;
+    }
+}
+@media (min-width: 1100px) {
+    .home-page-scope .supporting-band .bento-box-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .home-page-scope .supporting-band .bento-box-grid > .bento-item:nth-child(3):last-child {
+        display: block;
+    }
+}

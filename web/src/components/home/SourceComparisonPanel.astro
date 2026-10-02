@@ -47,7 +47,7 @@ const hasVerdict = Boolean(verdictLabel) && score !== null;
             <div
                 class={`source-compare__verdict source-compare__verdict--${trust.tier}`}
             >
-                <span class="source-compare__score">{score}</span>
+                <span class="source-compare__score" aria-label={`${score} / 100`}>{score}</span>
                 <span class="source-compare__label">
                     <span class="source-compare__label-text">{verdictLabel}</span>
                     <span class="source-compare__detail">
@@ -121,6 +121,10 @@ const hasVerdict = Boolean(verdictLabel) && score !== null;
         margin-bottom: 0.7rem;
     }
     .source-compare__score {
+        flex: none;
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-break: normal;
         font-size: 1.35rem;
         font-weight: 800;
         line-height: 1;

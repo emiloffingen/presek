@@ -381,6 +381,38 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       justify-content: flex-start;
     }
 
+    /* Unsold house ad: a slim strip, not a full screen of promo copy. */
+    .native-ad--top_banner.native-ad--empty {
+      min-height: 0 !important;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+    }
+    .native-ad--top_banner .native-ad__desc,
+    .native-ad--top_banner .native-ad__format,
+    .native-ad--top_banner .native-ad__price-was,
+    .native-ad--top_banner .native-ad__price-unit,
+    .native-ad--top_banner .native-ad__promo {
+      display: none;
+    }
+    .native-ad--top_banner .native-ad__title {
+      font-size: 0.95rem;
+      line-height: 1.25;
+      margin: 0.1rem 0 0;
+    }
+    .native-ad--top_banner .native-ad__foot {
+      flex-direction: row;
+      gap: 0.6rem;
+      flex: 0 0 auto;
+    }
+    .native-ad--top_banner .native-ad__cta {
+      width: auto;
+      min-height: 2.5rem;
+      padding-inline: 0.85rem;
+      white-space: nowrap;
+    }
+
     .native-ad__cta {
       width: 100%;
       justify-content: center;
