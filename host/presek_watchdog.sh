@@ -24,6 +24,7 @@ HOMEPAGE_SYNTH_SCRIPT="$APP_DIR/scripts/synthesize_homepage.py"
 HOMEPAGE_SYNTH_PY="$APP_DIR/.venv/bin/python"
 HOMEPAGE_SYNTH_LOG="$LOG_DIR/homepage_synth.log"
 HOMEPAGE_SYNTH_PID="$LOG_DIR/.homepage_synth.pid"
+HOMEPAGE_SYNTH_STAMP="$LOG_DIR/.homepage_synth_last"
 HOMEPAGE_SYNTH_INTERVAL="${HOMEPAGE_SYNTH_INTERVAL:-7200}"
 # The Shield is the PRIMARY origin; the phone's cloudflared is STANDBY (runs
 # only while the Shield is unhealthy). Set SHIELD_PRIMARY=0 to revert to the
@@ -61,7 +62,7 @@ rotate_logs() {
 # is held only for as long as the watchdog itself runs.
 LOCKFILE="$LOG_DIR/presek_watchdog.lock"
 exec 8>"$LOCKFILE"
-if ! flock -n 8; then
+if ! flock -w 5 8; then
   exit 0
 fi
 echo $$ > "$PIDFILE"
@@ -333,7 +334,7 @@ check_site_health() {
 
 last_poll=0
 last_shieldkeep=0
-last_homepage_synth=0
+last_homepage_synth="$(cat "$HOMEPAGE_SYNTH_STAMP" 2>/dev/null || echo 0)"
 ASTRO_FP_FILE="$LOG_DIR/.phone_dist_fp"
 HEAD_FP_FILE="$LOG_DIR/.phone_head_fp"
 while true; do
@@ -426,6 +427,7 @@ while true; do
   # skipped while a previous run is still alive.
   if [ -f "$HOMEPAGE_SYNTH_SCRIPT" ] && [ -x "$HOMEPAGE_SYNTH_PY" ] && [ $((now - last_homepage_synth)) -ge "$HOMEPAGE_SYNTH_INTERVAL" ]; then
     last_homepage_synth="$now"
+    echo "$now" > "$HOMEPAGE_SYNTH_STAMP"
     if ! { [ -f "$HOMEPAGE_SYNTH_PID" ] && kill -0 "$(cat "$HOMEPAGE_SYNTH_PID" 2>/dev/null)" 2>/dev/null; }; then
       log "homepage synthesis: starting scheduled refresh"
       setsid bash -c "exec 8>&-; exec '$HOMEPAGE_SYNTH_PY' '$HOMEPAGE_SYNTH_SCRIPT'" </dev/null >>"$HOMEPAGE_SYNTH_LOG" 2>&1 &
@@ -433,5 +435,7 @@ while true; do
     fi
   fi
 
-  sleep "$INTERVAL"
+  # Close the flock fd on the sleep child too, otherwise it holds the lock for
+  # up to INTERVAL seconds after this watchdog exits and blocks a clean restart.
+  sleep "$INTERVAL" 8>&-
 done
