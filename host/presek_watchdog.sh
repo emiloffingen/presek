@@ -1,0 +1,417 @@
+#!/bin/bash
+# presek_watchdog.sh - keep Presek production services alive on Termux.
+# Idempotent supervisor for Redis, FastAPI, Astro, Celery worker/beat and the
+# Cloudflare tunnel. Safe to run repeatedly; only one instance runs at a time.
+
+set -u
+
+APP_DIR="/root/presek"
+SESSION="presek"
+ENV_FILE="$APP_DIR/.env"
+LOG_DIR="$APP_DIR/logs"
+WATCHDOG_LOG="$LOG_DIR/watchdog.log"
+PIDFILE="$LOG_DIR/presek_watchdog.pid"
+# Password is not stored here: set PRESEK_REDIS_PASS, else it is read from the
+# app .env (REDIS_URL). Never hardcode it in a tracked file.
+REDIS_PASS="${PRESEK_REDIS_PASS:-$(sed -n 's#^REDIS_URL=redis://:\([^@]*\)@.*#\1#p' "$ENV_FILE" 2>/dev/null | head -1)}"
+INTERVAL="${WATCHDOG_INTERVAL:-30}"
+DEPLOY_SCRIPT="/root/scripts/presek_deploy.sh"
+SHIELD_KEEPER_SCRIPT="/root/scripts/shield_keepawake_phone.sh"
+SHIELD_KEEP_INTERVAL="${SHIELD_KEEP_INTERVAL:-300}"
+# The Shield is the PRIMARY origin; the phone's cloudflared is STANDBY (runs
+# only while the Shield is unhealthy). Set SHIELD_PRIMARY=0 to revert to the
+# old always-on behavior.
+SHIELD_PRIMARY="${SHIELD_PRIMARY:-1}"
+POLL_INTERVAL="${POLL_INTERVAL:-120}"
+MAX_LOG_BYTES="${MAX_LOG_BYTES:-26214400}"
+# Match only the MAIN cloudflared tunnel. A bare 'cloudflared tunnel' also
+# matches the separate SSH tunnel (ssh-config.yml), so liveness/restart would
+# be fooled into thinking the main connector is up while it is dead.
+TUNNEL_MATCH="/root/.cloudflared/config.yml run"
+
+mkdir -p "$LOG_DIR"
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$WATCHDOG_LOG"; }
+
+# Truncate logs that grow past MAX_LOG_BYTES, keeping one previous copy. Safe
+# for O_APPEND writers and Celery's append-mode FileHandler.
+rotate_logs() {
+  local f size
+  for f in "$LOG_DIR"/*.log; do
+    [ -f "$f" ] || continue
+    size="$(wc -c < "$f" 2>/dev/null || echo 0)"
+    if [ "$size" -ge "$MAX_LOG_BYTES" ]; then
+      cp -f "$f" "$f.1" 2>/dev/null && : > "$f"
+      log "rotated log: $(basename "$f") (${size} bytes)"
+    fi
+  done
+}
+
+# --- single instance guard (flock) -----------------------------------------
+# Proot remaps PIDs between sessions, so a pidfile + kill -0 check lets duplicate
+# watchdogs slip through. flock is tied to the lock file, not a pid, and is
+# reliable across proot sessions. Every long-lived child closes fd 8 so the lock
+# is held only for as long as the watchdog itself runs.
+LOCKFILE="$LOG_DIR/presek_watchdog.lock"
+exec 8>"$LOCKFILE"
+if ! flock -n 8; then
+  exit 0
+fi
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE"' EXIT
+
+# --- helpers ----------------------------------------------------------------
+http_ok() {
+  local url="$1" expected="${2:-200}" code
+  code="$(curl -s -o /dev/null -m 8 -w '%{http_code}' "$url" 2>/dev/null || true)"
+  [ "$code" = "$expected" ]
+}
+
+ensure_redis() {
+  if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
+    log "redis down -> starting"
+    ( exec 8>&-; redis-server --daemonize yes --dir /root \
+      --requirepass "$REDIS_PASS" --logfile "$LOG_DIR/redis.log" )
+    sleep 1
+  fi
+}
+
+ensure_session() { :; }   # tmux is not used; spawning is via setsid
+window_exists() { return 1; }
+drop_window() { :; }
+
+spawn_window() {
+  local name="$1" cmd="$2"
+  # Only one instance per marker: derive a pgrep marker from the command.
+  case "$name" in
+    fastapi) pgrep -f 'uvicorn core.api_fast' >/dev/null && return 0 ;;
+    astro)   pgrep -f 'dist/server/entry.mjs' >/dev/null && return 0 ;;
+    worker)  pgrep -f 'celery -A core.celery_app worker' >/dev/null && return 0 ;;
+    beat)    pgrep -f 'celery -A core.celery_app beat' >/dev/null && return 0 ;;
+    tunnel)  pgrep -f "$TUNNEL_MATCH" >/dev/null && return 0 ;;
+  esac
+  # Close fd 8 so the flock is released when this watchdog exits.
+  setsid bash -c "exec 8>&-; set -a; . '$ENV_FILE'; set +a; $cmd" \
+    </dev/null >>"$LOG_DIR/$name.out" 2>&1 &
+  log "spawned '$name' (setsid)"
+}
+
+
+# A cloudflared process can be alive yet have ZERO live connections (QUIC stall).
+# When that happens Cloudflare silently serves another connector's stale build.
+# Verify the connector actually has ready connections, not just that it exists.
+#
+# /ready can also lie during a *data-plane* stall (connections registered but all
+# streams canceled by the edge, clients get 000). We therefore also force a
+# periodic refresh: a tunnel older than TUNNEL_MAX_AGE is recycled, which clears
+# silent stalls that /ready never surfaces.
+TUNNEL_START_FILE="$LOG_DIR/.tunnel_started"
+TUNNEL_MAX_AGE="${TUNNEL_MAX_AGE:-21600}"   # recycle the connector every 6h
+
+tunnel_healthy() {
+  pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1 || return 1
+  local started now
+  started="$(cat "$TUNNEL_START_FILE" 2>/dev/null || echo 0)"
+  now="$(date +%s)"
+  if [ "$started" = "0" ] || [ $((now - started)) -ge "$TUNNEL_MAX_AGE" ]; then
+    return 1
+  fi
+  local ready
+  ready="$(curl -s -m 5 http://127.0.0.1:20241/ready 2>/dev/null)"
+  case "$ready" in
+    *'"readyConnections":0'*) return 1 ;;
+    *'"readyConnections"'*) return 0 ;;
+    *) return 0 ;;  # endpoint missing: fall back to process check
+  esac
+}
+
+kill_tunnel() {
+  # cloudflared can linger in graceful shutdown for a long time after SIGTERM.
+  # If it is still alive, spawn_window's pgrep guard would silently skip a
+  # respawn (or standby would not actually disconnect), so wait, then SIGKILL.
+  pkill -f "$TUNNEL_MATCH" 2>/dev/null
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1 || break
+    sleep 1
+  done
+  if pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1; then
+    log "cloudflared ignored SIGTERM; sending SIGKILL"
+    pkill -9 -f "$TUNNEL_MATCH" 2>/dev/null
+    sleep 1
+  fi
+}
+
+restart_tunnel() {
+  # /ready-only health checks miss data-plane stalls, and spawn_window refuses to
+  # start a second instance; kill first so the respawn actually happens.
+  kill_tunnel
+  spawn_window tunnel "$cmd_tunnel"
+  date +%s > "$TUNNEL_START_FILE"
+}
+
+# --- service commands -------------------------------------------------------
+# Multiple uvicorn workers give headroom on Cloudflare cache-miss bursts (the
+# app has no heavy in-process state; hot reads are Redis-cached). Override with
+# UVICORN_WORKERS in the environment before launching the watchdog.
+UVICORN_WORKERS="${UVICORN_WORKERS:-2}"
+cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5001 --workers $UVICORN_WORKERS >> $LOG_DIR/fastapi.log 2>&1"
+cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
+cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-2} --logfile=$LOG_DIR/worker.log"
+cmd_beat="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$LOG_DIR/beat.log"
+cmd_tunnel="exec cloudflared tunnel --config /root/.cloudflared/config.yml run >> $LOG_DIR/cloudflared.log 2>&1"
+
+log "watchdog started (pid $$, interval ${INTERVAL}s)"
+
+
+# --- shield sync guard -------------------------------------------------------
+# The Cloudflare tunnel has two connectors (phone + shield). The phone is the
+# only builder, so whenever the shield (re)appears on the network it must be
+# handed the current dist or it will serve a stale build (split-brain). We run
+# the go-live once per presence: a marker records the last successful sync.
+SHIELD_MARKER="$LOG_DIR/.shield_synced"
+SHIELD_SYNC_LOCK="$LOG_DIR/.shield_sync.lock"
+SHIELD_PROBE="u0_a106@192.168.0.60"
+SHIELD_PORT="${SHIELD_PORT:-8022}"
+SSH_KEY="/root/.ssh/termux_test"
+
+sync_shield_if_present() {
+  # IMPORTANT: never block the supervision loop. All the work (SSH probe, ship,
+  # restart) happens in a detached subshell. A lock file prevents pile-ups.
+  [ -f "$SHIELD_SYNC_LOCK" ] && return 0
+  touch "$SHIELD_SYNC_LOCK"
+  setsid bash -c '
+    exec 8>&-  # do not hold the watchdog lock while syncing the shield
+    LOG="$1"; MARKER="$2"; APP="$3"; PROBE="$4"; PORT="$5"; KEY="$6"; LOCK="$7"
+    SYNCING="${MARKER%/*}/.shield_syncing"
+    trap "rm -f \"$LOCK\"; rm -f \"$SYNCING\"" EXIT
+    if ! timeout 5 ssh -i "$KEY" -p "$PORT" \
+          -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          -o ConnectTimeout=4 -o BatchMode=yes "$PROBE" true 2>/dev/null; then
+      rm -f "$MARKER"   # absent: re-sync next time it appears
+      exit 0
+    fi
+    # The Shield is now the PRIMARY origin, so re-ship whenever the phone build
+    # (commit + dist mtime) changed; otherwise it would serve stale code.
+    FP="$(git -C "$APP" rev-parse HEAD 2>/dev/null)-$(stat -c %Y "$APP/web/dist/server/entry.mjs" 2>/dev/null)"
+    [ -f "$MARKER" ] && [ "$(cat "$MARKER" 2>/dev/null)" = "$FP" ] && exit 0
+    touch "$SYNCING"
+    echo "[$(date "+%F %T")] shield sync: build $FP -> go-live" >> "$LOG"
+    if SHIELD_HOST="$PROBE:$PORT" "$APP/deploy/presek-go-live.sh" --no-build >> "$LOG" 2>&1; then
+      echo "$FP" > "$MARKER"
+      echo "[$(date "+%F %T")] shield sync complete" >> "$LOG"
+    else
+      echo "[$(date "+%F %T")] shield sync failed (will retry)" >> "$LOG"
+    fi
+    rm -f "$SYNCING"
+  ' _ "$LOG_DIR/shield_sync.log" "$SHIELD_MARKER" "$APP_DIR" "$SHIELD_PROBE" "$SHIELD_PORT" "$SSH_KEY" "$SHIELD_SYNC_LOCK" </dev/null >/dev/null 2>&1 &
+}
+
+# --- origin role: Shield primary, phone connector standby -------------------
+# Healthy = the Shield's origin (astro + api) answers locally AND its tunnel
+# connector has ready connections. Probed over SSH; bounded by timeout.
+SHIELD_SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=4 -o BatchMode=yes"
+shield_origin_ok() {
+  timeout 14 ssh -i "$SSH_KEY" -p "$SHIELD_PORT" $SHIELD_SSH_OPTS "$SHIELD_PROBE" '
+    curl -s -o /dev/null -m 4 http://127.0.0.1:3000/ &&
+    curl -s -o /dev/null -m 4 http://127.0.0.1:5001/api/health &&
+    curl -s -m 4 http://127.0.0.1:20241/ready 2>/dev/null | grep -q "\"readyConnections\":[1-9]"
+  ' >/dev/null 2>&1
+}
+shield_ok_streak=0
+shield_fail_streak=0
+
+# --- supervisor loop --------------------------------------------------------
+# Adopt the currently-running tunnel into the age tracker (avoid a restart on
+# the first loop after this watchdog is (re)started).
+if [ ! -f "$TUNNEL_START_FILE" ] && pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1; then
+  date +%s > "$TUNNEL_START_FILE"
+fi
+
+# --- daily backup -----------------------------------------------------------
+# The Shield host is unreliable (WiFi power-save drops it off the LAN), so the
+# phone performs the authoritative PostgreSQL backup. Runs once per successful
+# day, retried at most hourly, detached so a ~1 min pg_dump never blocks service
+# supervision. Offsite (R2) sync runs only after a successful local dump.
+BACKUP_DONE_STAMP="$LOG_DIR/.backup_done_day"
+BACKUP_ATTEMPT_STAMP="$LOG_DIR/.backup_last_attempt"
+
+maybe_backup() {
+  [ -x "$APP_DIR/deploy/backup_postgres.sh" ] || return 0
+  local today now last
+  today="$(date +%F)"; now="$(date +%s)"
+  [ -f "$BACKUP_DONE_STAMP" ] && [ "$(cat "$BACKUP_DONE_STAMP" 2>/dev/null)" = "$today" ] && return 0
+  last="$(cat "$BACKUP_ATTEMPT_STAMP" 2>/dev/null || echo 0)"
+  [ $((now - last)) -lt 3600 ] && return 0
+  echo "$now" > "$BACKUP_ATTEMPT_STAMP"
+  setsid bash -c "
+    exec 8>&-  # do not hold the watchdog lock during a ~1 min dump
+    APP_ROOT='$APP_DIR' bash '$APP_DIR/deploy/backup_postgres.sh' >> '$LOG_DIR/backup.log' 2>&1 &&
+    APP_ROOT='$APP_DIR' bash '$APP_DIR/deploy/sync_backups_offsite.sh' >> '$LOG_DIR/backup_sync.log' 2>&1 &&
+    date +%F > '$BACKUP_DONE_STAMP'
+  " </dev/null >/dev/null 2>&1 &
+}
+
+# --- public site alerting ---------------------------------------------------
+# Push an ntfy alert when the public site goes down and when it recovers.
+# Two consecutive failed checks are required before alerting (avoids a single
+# transient blip), and only transitions alert (no repeat spam). This runs in
+# the supervised watchdog, unlike the old detached shield_watch_phone.sh which
+# silently died on 2026-09-26.
+NTFY_URL="${NTFY_URL:-https://ntfy.sh/presek-alerts-09c4417ba2ed}"
+SITE_CHECK_FILE="$LOG_DIR/.site_last_check"
+SITE_MISS_FILE="$LOG_DIR/.site_miss"
+SITE_ALERTED_FILE="$LOG_DIR/.site_alerted"
+SITE_STALE_MISS_FILE="$LOG_DIR/.site_stale_miss"
+SITE_STALE_ALERTED_FILE="$LOG_DIR/.site_stale_alerted"
+SITE_CHECK_INTERVAL="${SITE_CHECK_INTERVAL:-60}"
+
+notify() { curl -s -m 10 -H "Title: $1" -H "Tags: $2" -d "$3" "$NTFY_URL" >/dev/null 2>&1; }
+
+check_site_health() {
+  local now last code miss alerted lbody
+  now="$(date +%s)"; last="$(cat "$SITE_CHECK_FILE" 2>/dev/null || echo 0)"
+  [ $((now - last)) -lt "$SITE_CHECK_INTERVAL" ] && return 0
+  echo "$now" > "$SITE_CHECK_FILE"
+
+  code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' https://presek.mk/api/health 2>/dev/null)"
+
+  if [ "$code" != "200" ]; then
+    miss="$(cat "$SITE_MISS_FILE" 2>/dev/null || echo 0)"; miss=$((miss + 1))
+    echo "$miss" > "$SITE_MISS_FILE"
+    alerted="$(cat "$SITE_ALERTED_FILE" 2>/dev/null || echo 0)"
+    if [ "$miss" -ge 2 ] && [ "$alerted" != "1" ]; then
+      log "PUBLIC DOWN ($code) -> alert"
+      notify "presek.mk DOWN" "rotating_light" "presek.mk/api/health returned $code (2 checks). $code=000 often means the tunnel is down."
+      echo 1 > "$SITE_ALERTED_FILE"
+    fi
+    return 0
+  fi
+
+  # Site answered: clear the outage state.
+  alerted="$(cat "$SITE_ALERTED_FILE" 2>/dev/null || echo 0)"
+  if [ "$alerted" = "1" ]; then
+    log "PUBLIC UP (200) -> alert recovered"
+    notify "presek.mk recovered" "white_check_mark" "presek.mk is serving again (HTTP 200)."
+    echo 0 > "$SITE_ALERTED_FILE"
+  fi
+  echo 0 > "$SITE_MISS_FILE"
+
+  # Ingestion-health signal: the public /api/health is a trimmed summary with
+  # no freshness field, so query the LOCAL API. Prolonged staleness means the
+  # phone's ingestion/Celery is stalled (the Shield is serve-only).
+  lbody="$(curl -s -m 8 http://127.0.0.1:5001/api/health 2>/dev/null)"
+  case "$lbody" in
+    *'"freshness":{"status":"fresh"'*)
+      alerted="$(cat "$SITE_STALE_ALERTED_FILE" 2>/dev/null || echo 0)"
+      if [ "$alerted" = "1" ]; then
+        log "FRESHNESS recovered -> alert"
+        notify "presek freshness recovered" "white_check_mark" "Content freshness is healthy again."
+        echo 0 > "$SITE_STALE_ALERTED_FILE"
+      fi
+      echo 0 > "$SITE_STALE_MISS_FILE"
+      ;;
+    *)
+      miss="$(cat "$SITE_STALE_MISS_FILE" 2>/dev/null || echo 0)"; miss=$((miss + 1))
+      echo "$miss" > "$SITE_STALE_MISS_FILE"
+      alerted="$(cat "$SITE_STALE_ALERTED_FILE" 2>/dev/null || echo 0)"
+      if [ "$miss" -ge 5 ] && [ "$alerted" != "1" ]; then
+        log "FRESHNESS stale ($miss) -> alert"
+        notify "presek ingestion stale" "hourglass" "Content freshness has been stale for ~5 checks; ingestion (phone) may be stalled."
+        echo 1 > "$SITE_STALE_ALERTED_FILE"
+      fi
+      ;;
+  esac
+}
+
+last_poll=0
+last_shieldkeep=0
+ASTRO_FP_FILE="$LOG_DIR/.phone_dist_fp"
+HEAD_FP_FILE="$LOG_DIR/.phone_head_fp"
+while true; do
+  # Git auto-deploy poll. Non-blocking: the deploy script self-locks, so a slow
+  # build never stalls service supervision.
+  now="$(date +%s)"
+  if [ -x "$DEPLOY_SCRIPT" ] && [ $((now - last_poll)) -ge "$POLL_INTERVAL" ]; then
+    last_poll="$now"
+    setsid bash -c "exec 8>&-; exec '$DEPLOY_SCRIPT'" </dev/null >>"$LOG_DIR/deploy.out" 2>&1 &
+  fi
+
+  ensure_redis
+  ensure_session
+  rotate_logs
+  maybe_backup
+  check_site_health
+
+  if window_exists _init && [ "$(tmux list-windows -t "$SESSION" 2>/dev/null | wc -l)" -gt 1 ]; then
+    drop_window _init
+  fi
+
+  http_ok "http://127.0.0.1:5001/api/health" || spawn_window fastapi "$cmd_fastapi"
+  http_ok "http://127.0.0.1:3000/" || spawn_window astro "$cmd_astro"
+  pgrep -f 'celery -A core.celery_app worker' >/dev/null 2>&1 || spawn_window worker "$cmd_worker"
+  pgrep -f 'celery -A core.celery_app beat'   >/dev/null 2>&1 || spawn_window beat "$cmd_beat"
+
+  # Keep the standby stack on the current build. Astro serves the build it
+  # started with, so replacing dist without a restart would 404 the new asset
+  # hashes on failover; a new HEAD likewise needs a fresh uvicorn.
+  dist_fp="$(stat -c %Y "$APP_DIR/web/dist/server/entry.mjs" 2>/dev/null)"
+  if [ -n "$dist_fp" ]; then
+    if [ ! -f "$ASTRO_FP_FILE" ]; then echo "$dist_fp" > "$ASTRO_FP_FILE"
+    elif [ "$(cat "$ASTRO_FP_FILE" 2>/dev/null)" != "$dist_fp" ]; then
+      echo "$dist_fp" > "$ASTRO_FP_FILE"
+      pgrep -f 'dist/server/entry.mjs' >/dev/null 2>&1 && { log "phone dist changed -> restarting standby astro"; pkill -f 'dist/server/entry[.]mjs' 2>/dev/null; }
+    fi
+  fi
+  head_fp="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null)"
+  if [ -n "$head_fp" ]; then
+    if [ ! -f "$HEAD_FP_FILE" ]; then echo "$head_fp" > "$HEAD_FP_FILE"
+    elif [ "$(cat "$HEAD_FP_FILE" 2>/dev/null)" != "$head_fp" ]; then
+      echo "$head_fp" > "$HEAD_FP_FILE"
+      pgrep -f 'uvicorn core.api_fast' >/dev/null 2>&1 && { log "phone HEAD changed -> restarting standby api"; pkill -f 'uvicorn core.api_fa[s]t' 2>/dev/null; }
+    fi
+  fi
+
+  if [ "$SHIELD_PRIMARY" = "1" ]; then
+    # Shield primary, phone connector standby. Take over on 2 consecutive
+    # shield failures; stand down after 2 consecutive healthy checks.
+    if [ -f "$LOG_DIR/.shield_syncing" ]; then
+      # go-live restarts the Shield; hold the phone connector up during the gap.
+      shield_ok_streak=0; shield_fail_streak=0
+      tunnel_healthy || { log "shield syncing -> phone tunnel held UP"; restart_tunnel; }
+    elif shield_origin_ok; then
+      shield_ok_streak=$((shield_ok_streak + 1)); shield_fail_streak=0
+      if [ "$shield_ok_streak" -ge 2 ] && pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1; then
+        log "shield healthy -> phone tunnel standby (stopping connector)"
+        kill_tunnel
+        rm -f "$TUNNEL_START_FILE"
+      fi
+    else
+      shield_fail_streak=$((shield_fail_streak + 1)); shield_ok_streak=0
+      if [ "$shield_fail_streak" -ge 2 ] && ! tunnel_healthy; then
+        log "shield unhealthy -> phone tunnel fallback UP"
+        restart_tunnel
+      fi
+    fi
+  else
+    if ! tunnel_healthy; then
+      log "tunnel unhealthy/stale -> recycling cloudflared"
+      restart_tunnel
+    fi
+  fi
+
+  # Throttle shield sync to once per minute.
+  if [ $((now % 60)) -lt "$INTERVAL" ]; then
+    sync_shield_if_present
+  fi
+
+  # Enforce the Shield's never-sleep power policy from the phone (adb shell
+  # uid), since the Shield's own keepawake service lacks the privileges to
+  # apply settings/dumpsys/input. Non-blocking, self-locking.
+  if [ -x "$SHIELD_KEEPER_SCRIPT" ] && [ $((now - last_shieldkeep)) -ge "$SHIELD_KEEP_INTERVAL" ]; then
+    last_shieldkeep="$now"
+    setsid bash -c "exec 8>&-; exec '$SHIELD_KEEPER_SCRIPT'" </dev/null >/dev/null 2>&1 &
+  fi
+
+  sleep "$INTERVAL"
+done
