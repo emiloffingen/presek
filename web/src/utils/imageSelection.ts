@@ -108,7 +108,10 @@ export function buildProxyFallbackUrl(
   const context = fallbackContext(cluster);
   const params = new URLSearchParams();
   if (context.cid) params.set('cid', context.cid);
-  if (context.title) params.set('t', context.title);
+  // The t= param is only used to label the server-side fallback placeholder.
+  // Percent-encoded Cyrillic headlines are bulky and repeated in src+srcset, so
+  // cap the length; a shorter label is enough for the placeholder.
+  if (context.title) params.set('t', context.title.slice(0, 90));
   if (context.category) params.set('cat', context.category);
   params.set('lang', lang);
   params.set('w', String(VARIANT_WIDTH[variant]));
@@ -187,7 +190,7 @@ export function chooseClusterImage(
       lang,
     });
     if (context.cid) params.set('cid', context.cid);
-    if (context.title && variant !== 'hero') params.set('t', context.title);
+    if (context.title && variant !== 'hero') params.set('t', context.title.slice(0, 90));
     if (context.category) params.set('cat', context.category);
     proxiedUrl = proxyUrl(`/proxy?${params.toString()}`);
   }

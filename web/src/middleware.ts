@@ -64,6 +64,26 @@ export const onRequest = defineMiddleware(async (context, next) => {
       const body = await response.text();
       const hashes = computeInlineHashes(body);
       response.headers.set('Content-Security-Policy', buildCspPolicy(cspNonce, hashes));
+      // Public, anonymous HTML is safe to cache at the edge. max-age=0 keeps
+      // browsers from caching (so users never see stale-after-deploy HTML),
+      // s-maxage lets Cloudflare serve it without touching this host, and
+      // stale-while-revalidate/stale-if-error let the edge ride out brief
+      // origin outages instead of returning 530/502. Admin and API responses
+      // are never cached.
+      const cacheableHtml =
+        context.request.method === 'GET'
+        && !pathname.startsWith('/admin')
+        && !pathname.startsWith('/api/')
+        && !pathname.startsWith('/dev')
+        && !response.headers.has('set-cookie');
+      if (cacheableHtml) {
+        // Deliberately NO s-maxage: in Cloudflare, s-maxage implies
+        // proxy-revalidate and DISABLES stale-while-revalidate / stale-if-error.
+        // Edge TTL is controlled by the "static edge cache" Cache Rules; these
+        // directives let the edge serve stale during background revalidation and
+        // on origin 5xx (e.g. a cloudflared tunnel outage) instead of 530/502.
+        response.headers.set('Cache-Control', 'public, max-age=0, stale-while-revalidate=300, stale-if-error=86400');
+      }
       // Preserve any other headers; clone the body into a new Response so the
       // consumed stream remains readable downstream.
       const { status, statusText } = response;
