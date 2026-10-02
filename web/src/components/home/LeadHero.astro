@@ -84,6 +84,13 @@ if (lang === 'sr' && leadSummaryIsCyrillic) {
     finalLeadSummary = transliterate(leadSummary);
 }
 
+// The synthesis lede often just restates the headline; showing both wastes the
+// most valuable screen real estate, so only render the lede when it adds text.
+const normalizeLede = (v: string) => String(v || '').replace(/<[^>]*>/g, '').replace(/[\s.…"“”„«»'’:;,!?-]+/g, ' ').trim().toLowerCase();
+const showLeadSummary = Boolean(finalLeadSummary)
+    && normalizeLede(finalLeadSummary) !== normalizeLede(finalLeadTitle)
+    && !normalizeLede(finalLeadSummary).startsWith(normalizeLede(finalLeadTitle));
+
 const cardContext = getDesignCardContext(leadCluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
 const cardSub = cardContext.subKey ? t(cardContext.subKey as any) : '';
@@ -236,7 +243,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group" data-testid="cluster-link">
             <h1 class:list={["headline headline-lead transition-transform duration-500 group-hover:translate-x-1", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h1>
         </a>
-        {finalLeadSummary && (
+        {showLeadSummary && (
             <div class="lead-summary-block">
                 {compact && (
                     <p class="lead-why-kicker">{t('lead.why_it_matters')}</p>

@@ -17,17 +17,17 @@ const lang = propLang || urlLang;
 const t = useTranslations(lang);
 
 // Combine and sort by score for a true Bento experience
-const allSupporting = [...supportingFeatured, ...supportingCompact];
+const supportingPool = [...supportingFeatured, ...supportingCompact];
+// Keep whole rows only (3 across on desktop) so the grid never ends on a gap.
+const allSupporting = supportingPool.length >= 6
+    ? supportingPool.slice(0, 6)
+    : supportingPool.length >= 3
+        ? supportingPool.slice(0, 3)
+        : supportingPool;
 
 function getBentoSpan(cluster: NewsCluster, index: number): '1x1' | '2x1' | '2x2' {
-    const score = cluster.homepage_score || 0;
-    
-    // First item if high score gets hero treatment (use 2x1 to align heights perfectly)
-    if (index === 0 && score > 0.7) return '2x1';
-    
-    // High scores get wide tiles
-    if (score > 0.8) return '2x1';
-    
+    // Uniform tiles: wide spans left empty grid cells and stretched cards into
+    // oversized single-column rows on desktop.
     return '1x1';
 }
 ---

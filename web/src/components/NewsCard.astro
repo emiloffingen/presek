@@ -49,6 +49,8 @@ if (false && isMostlyCyrillic(displayTitle)) {
     displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
 }
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
+// Alt text must be plain text; displayTitle carries score-highlight markup.
+const displayTitlePlain = displayTitle.replace(/<[^>]*>/g, '');
 
 const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
 const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
@@ -156,7 +158,7 @@ function getTimeStr(dateStr: string) {
         <div class="article-meta-v2">
             <div class="kicker-group">
                 <span class="kicker">{main.source}</span>
-                {totalSources >= 2 && (
+                {totalSources >= 2 && !primaryCardBadge && (
                     <span class="corroboration-chip" title={t('news.sources')}>{totalSources} {t('news.sources')}</span>
                 )}
             </div>
@@ -196,14 +198,14 @@ function getTimeStr(dateStr: string) {
         )}
 
         <div class="article-footer-meta mt-auto">
-            {uniqueSources > 1 && (
+            {uniqueSources > 1 && totalSources < 2 && !primaryCardBadge && (
                 <>
                     <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
                     <span class="meta-dot">·</span>
                 </>
             )}
             <time class="time-stamp" datetime={main.ingested_at || main.created_at}>{getTimeStr(main.ingested_at || main.created_at)}</time>
-            {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
+            {variant === 'wire' && primaryCardBadge && (
                 <>
                     <span class="meta-dot">·</span>
                     <span class={`card-primary-badge card-primary-badge--${primaryBadgeTier} card-primary-badge--compact`}>
@@ -251,7 +253,7 @@ function getTimeStr(dateStr: string) {
                         src={mediaSrc}
                         srcset={cardSrcset}
                         sizes="(max-width: 640px) 7.25rem, (max-width: 1280px) 50vw, 33vw"
-                        alt={displayTitle}
+                        alt={displayTitlePlain}
                         width="700"
                         height="500"
                         class="article-image"
