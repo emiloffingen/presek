@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, simplify/mk-only-minimal-ai]
+    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
   pull_request:
-    branches: [main, simplify/mk-only-minimal-ai]
+    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
 
 jobs:
   backend-tests:
