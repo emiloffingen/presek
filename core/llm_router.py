@@ -21,11 +21,26 @@ def _local_model_available() -> bool:
     return os.path.exists("models/gemma-4-E2B-it-Q4_K_M.gguf")
 
 
+# Strongest-first order, mirroring PROVIDER_FALLBACK_ORDER. High/medium
+# complexity syntheses route here, so don't silently pick the lowest-tier key.
+_REMOTE_PROVIDER_PREFERENCE = (
+    ("gemini3", "GEMINI3_API_KEY"),
+    ("gemini2", "GEMINI2_API_KEY"),
+    ("gemini", "GEMINI_API_KEY"),
+    ("groq", "GROQ_API_KEY"),
+    ("nvidia", "NVIDIA_API_KEY"),
+    ("openrouter", "OPENROUTER_API_KEY"),
+)
+
+
 def _default_remote_provider() -> str:
-    if os.environ.get("GEMINI_API_KEY"):
-        return "gemini"
-    if os.environ.get("GROQ_API_KEY"):
-        return "groq"
+    """Best configured remote provider for deep synthesis (see preference order)."""
+    override = os.environ.get("PRESEK_DEFAULT_REMOTE_PROVIDER")
+    if override:
+        return override.strip()
+    for provider, env_key in _REMOTE_PROVIDER_PREFERENCE:
+        if os.environ.get(env_key):
+            return provider
     return "nvidia"
 
 

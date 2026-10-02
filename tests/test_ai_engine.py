@@ -368,8 +368,11 @@ def test_groq_provider_initialization(monkeypatch):
     assert isinstance(PROVIDERS["groq"], GroqProvider)
     assert PROVIDERS["groq"].api_url == "https://api.groq.com/openai/v1/chat/completions"
 
-    # Verify _default_remote_provider picks groq if gemini isn't set but groq is
+    # Verify _default_remote_provider picks groq when no Gemini key is set but groq is
+    monkeypatch.delenv("GEMINI3_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI2_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("PRESEK_DEFAULT_REMOTE_PROVIDER", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk-testkey")
     assert _default_remote_provider() == "groq"
 
