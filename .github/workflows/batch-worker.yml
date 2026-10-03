@@ -98,6 +98,7 @@ jobs:
           ENV: production
           LOG_LEVEL: INFO
           SECRET_KEY: ci-worker-${{ github.run_id }}
+          CSRF_TOKEN_SECRET: ci-worker-${{ github.run_id }}   # routes.security refuses to import without it when ENV=production
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           REDIS_URL: redis://localhost:6379/0
           PUBLIC_SITE_URL: https://presek.mk
