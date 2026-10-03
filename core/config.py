@@ -99,7 +99,9 @@ def _init_config():
     # Validate specific configurations
     db_url = os.environ.get("DATABASE_URL", "")
     if db_url and not db_url.startswith(("postgresql://", "postgres://")):
-        log.error(f"Invalid DATABASE_URL scheme: {db_url[:50]}...")
+        # Log only the scheme: a prefix of the DSN can contain the password, and
+        # GitHub Actions only masks a secret when its full value appears.
+        log.error(f"Invalid DATABASE_URL scheme: {db_url.split(':', 1)[0]!r}")
         raise ValueError("DATABASE_URL must use postgresql:// or postgres:// scheme")
 
 

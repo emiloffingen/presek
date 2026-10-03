@@ -22,7 +22,7 @@ try:
     redis_client.ping()
     log.info(f"Redis connected: {redis_url.split('@')[-1].split('/')[0]}")
 except redis.ConnectionError as e:
-    log.error(f"Redis connection failed to {redis_url}: {e}")
+    log.error(f"Redis connection failed to {redis_url.split('@')[-1].split('/')[0]}: {e}")
     if _IS_PRODUCTION:
         raise RuntimeError(f"Redis connection failed in production: {e}") from e
     redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True, protocol=2)
