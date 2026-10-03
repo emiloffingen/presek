@@ -207,6 +207,7 @@ SQL_ARTICLE_SEARCH = SQL_ARTICLE_SEARCH.replace("@SEM_DIST@", f"{local_distance(
     "@SEM_SIM@", f"{local_similarity(0.35):.3f}"
 )
 
+
 def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str = "") -> str:
     """Build dynamic hybrid search SQL with whitelisted fragment injection.
 
