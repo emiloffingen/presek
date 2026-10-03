@@ -42,6 +42,11 @@ jobs:
   backfill:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
     env:
       HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_BACKFILL_URL }}
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -75,6 +80,7 @@ jobs:
           ENV: production
           SECRET_KEY: ci-offload-${{ github.run_id }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: redis://localhost:6379/0
           MK_ONLY: "true"
           FULLTEXT_ENABLED: "true"
           DAYS: ${{ github.event.inputs.days || '30' }}
