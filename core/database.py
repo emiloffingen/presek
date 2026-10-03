@@ -225,7 +225,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str
 
     order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
 
-    return f"""
+    sql = f"""
         WITH fts_results AS (
             SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
             FROM articles
@@ -263,6 +263,8 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str
         ORDER BY {order_clause}
         LIMIT %s
     """  # nosec B608 - time_filter and order_clause come from validated whitelists (VALID_TIMESPANS, VALID_SORT_BY)
+    # Map the Jina-tuned 0.35 similarity floor onto the local embedding scale.
+    return sql.replace("@SEM_SIM@", f"{local_similarity(0.35):.3f}")
 
 
 try:
