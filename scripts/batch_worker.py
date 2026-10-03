@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import os
+import signal
 import sys
 import time
 import traceback
@@ -30,6 +32,15 @@ if ROOT not in sys.path:
 
 log = logging.getLogger("batch_worker")
 
+
+class _StepTimeout(Exception):
+    """Raised when a single step consumes the remaining cycle budget."""
+
+
+def _alarm_handler(_signum, _frame):
+    raise _StepTimeout()
+
+
 # (step name, task name, kwargs) in pipeline order: ingest -> crawl -> embed ->
 # cluster -> overview -> synthesize -> quality. Queue-pruning beat tasks are
 # omitted: in eager mode nothing is ever queued.
@@ -37,8 +48,8 @@ EVERY_RUN = [
     ("ingest", "tasks.ingestion_task.run_ingestion", {}),
     ("deferred-crawls", "tasks.maintenance.catch_up_deferred_crawls_task", {}),
     ("embed", "tasks.maintenance.embed_recent_articles_task", {}),
-    ("recluster", "tasks.extractive.recluster_recent_articles_task", {}),
-    ("repair-clusters", "tasks.extractive.repair_split_clusters_task", {}),
+    ("recluster", "tasks.extractive.recluster_recent_articles_task", {"hours": 6, "limit": 120}),
+    ("repair-clusters", "tasks.extractive.repair_split_clusters_task", {"hours": 48, "limit": 120}),
     ("extractive", "tasks.summarization.build_extractive_clusters_task", {}),
     ("homepage-supply", "tasks.maintenance.boost_homepage_cluster_supply_task", {}),
     ("homepage-synth", "tasks.maintenance.prioritize_homepage_syntheses_task", {}),
@@ -57,15 +68,23 @@ EVERY_RUN = [
 
 # Steps that only run when the cycle starts in a given UTC hour.
 HOURLY = {
-    0: [("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"})],
+    0: [
+        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
+        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    ],
     3: [("prune-db", "tasks.maintenance.run_prune_db", {})],
-    6: [("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"})],
-    12: [("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-         ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"})],
-    18: [("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-         ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"})],
+    6: [
+        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
+        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    ],
+    12: [
+        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
+        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    ],
+    18: [
+        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
+        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    ],
 }
 
 
@@ -75,14 +94,19 @@ def plan(hour: int) -> list[tuple[str, str, dict]]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--budget", type=float, default=float(os.environ.get("BATCH_BUDGET_MINUTES", "20")),
-                    help="wall-clock minutes before remaining steps are skipped")
+    ap.add_argument(
+        "--budget",
+        type=float,
+        default=float(os.environ.get("BATCH_BUDGET_MINUTES", "20")),
+        help="wall-clock minutes before remaining steps are skipped",
+    )
     ap.add_argument("--only", nargs="+", metavar="STEP", help="run only these step names")
     ap.add_argument("--list", action="store_true", help="list steps and verify task names, then exit")
     args = ap.parse_args()
 
-    logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
-                        format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
 
     from core.celery_app import celery_app
 
@@ -103,16 +127,28 @@ def main() -> int:
     deadline = time.monotonic() + args.budget * 60
     failed, skipped = [], []
     for name, task, kwargs in steps:
-        if time.monotonic() >= deadline:
+        remaining = deadline - time.monotonic()
+        if remaining <= 1:
             skipped.append(name)
             continue
+        # A step gets the remaining budget as a hard wall. Without this a single
+        # quadratic task (e.g. repair_split_clusters) can blow past the budget and
+        # hang until the job timeout; the budget was only checked between steps.
         t0 = time.monotonic()
+        previous = signal.signal(signal.SIGALRM, _alarm_handler)
+        signal.alarm(max(1, int(math.ceil(remaining))))
         try:
             celery_app.tasks[task].apply(kwargs=kwargs, throw=True)
             log.info("step %s ok (%.1fs)", name, time.monotonic() - t0)
+        except _StepTimeout:
+            failed.append(f"{name}:timeout")
+            log.warning("step %s TIMEOUT after %.1fs (cycle budget exhausted)", name, time.monotonic() - t0)
         except Exception:
             failed.append(name)
             log.error("step %s failed (%.1fs)\n%s", name, time.monotonic() - t0, traceback.format_exc())
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, previous)
 
     log.info("cycle done: %d steps, failed=%s skipped(budget)=%s", len(steps), failed or "-", skipped or "-")
     # Only fail the job when nothing succeeded; single-step failures are normal noise.
