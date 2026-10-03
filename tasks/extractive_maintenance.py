@@ -9,6 +9,7 @@ remain available with PRESEK_AI_ENABLED=0.
 from __future__ import annotations
 
 import re
+from collections import Counter
 
 from core.celery_app import celery_app
 from core.database import db_manager as db
@@ -93,29 +94,34 @@ def extract_entities_task(hours: int = 48, limit: int = 200):
             """,
             (hours, limit),
         )
-        inserted = 0
+        # Aggregate first, then write in two batched statements: one round trip
+        # per row is too slow over a high-latency link (CI runner -> Supabase).
+        # Sorted so concurrent writers take row locks in a stable order.
+        links, mentions = set(), Counter()
         for art in articles or []:
             cid = art.get("cluster_id")
             text = f"{art.get('title') or ''}. {art.get('description') or ''}"
             for name in extract_entities_from_text(text):
-                db.execute(
-                    "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) "
-                    "VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                    (cid, name, _classify_entity(name)),
-                    fetch=False,
-                )
-                db.execute(
-                    """
-                    INSERT INTO knowledge_entities (name, type, total_mentions, first_seen, last_seen)
-                    VALUES (%s, %s, 1, NOW(), NOW())
-                    ON CONFLICT (name) DO UPDATE SET
-                        total_mentions = knowledge_entities.total_mentions + 1,
-                        last_seen = NOW()
-                    """,
-                    (name, _classify_entity(name)),
-                    fetch=False,
-                )
-                inserted += 1
+                links.add((cid, name, _classify_entity(name)))
+                mentions[name] += 1
+        if links:
+            db.executemany(
+                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) "
+                "VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+                sorted(links),
+            )
+        if mentions:
+            db.executemany(
+                """
+                INSERT INTO knowledge_entities (name, type, total_mentions, first_seen, last_seen)
+                VALUES (%s, %s, %s, NOW(), NOW())
+                ON CONFLICT (name) DO UPDATE SET
+                    total_mentions = knowledge_entities.total_mentions + EXCLUDED.total_mentions,
+                    last_seen = NOW()
+                """,
+                [(n, _classify_entity(n), c) for n, c in sorted(mentions.items())],
+            )
+        inserted = sum(mentions.values())
         log.info("[extractive] extract_entities: %s entity links", inserted)
         return {"status": "success", "links": inserted}
     except Exception as e:
