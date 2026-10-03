@@ -111,3 +111,13 @@ jobs:
         run: uv run ruff check core/ routes/ tasks/ nlp/ utils/
       - name: Ruff format check
         run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: detect-secrets (fail on candidates not in .secrets.baseline)
+        run: |
+          uvx detect-secrets==1.5.0 scan --baseline .secrets.baseline
+          python3 scripts/ci/check_new_secrets.py
