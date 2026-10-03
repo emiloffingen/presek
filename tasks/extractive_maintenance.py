@@ -148,9 +148,7 @@ def refine_knowledge_graph_sentiment_task(limit: int = 400):
             (limit,),
         )
         # One batched UPDATE instead of a round trip per entity (slow from CI).
-        scores = sorted(
-            (row.get("name"), analyze_sentiment_locally(row.get("blob") or "")) for row in rows or []
-        )
+        scores = sorted((row.get("name"), analyze_sentiment_locally(row.get("blob") or "")) for row in rows or [])
         if scores:
             db.executemany(
                 "UPDATE knowledge_entities SET sentiment_score = %s WHERE name = %s",
