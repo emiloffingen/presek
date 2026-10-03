@@ -147,15 +147,16 @@ def refine_knowledge_graph_sentiment_task(limit: int = 400):
             """,
             (limit,),
         )
-        updated = 0
-        for row in rows or []:
-            score = analyze_sentiment_locally(row.get("blob") or "")
-            db.execute(
+        # One batched UPDATE instead of a round trip per entity (slow from CI).
+        scores = sorted(
+            (row.get("name"), analyze_sentiment_locally(row.get("blob") or "")) for row in rows or []
+        )
+        if scores:
+            db.executemany(
                 "UPDATE knowledge_entities SET sentiment_score = %s WHERE name = %s",
-                (score, row.get("name")),
-                fetch=False,
+                [(score, name) for name, score in scores],
             )
-            updated += 1
+        updated = len(scores)
         log.info("[extractive] refined sentiment for %s entities", updated)
         return {"status": "success", "updated": updated}
     except Exception as e:
