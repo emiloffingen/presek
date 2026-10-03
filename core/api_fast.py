@@ -555,6 +555,8 @@ async def health_check(request: Request):
             "redis": redis_public,
             "synthesis_quality": synthesis_quality,
             "celery_queue": celery_queue,
+            "freshness": _freshness_payload(health.load_last_refresh_time()),
+            "ai": await _ai_quota_payload(),
         }
         _HEALTH_SNAPSHOT["data"] = snap
         _HEALTH_SNAPSHOT["t"] = now
@@ -578,10 +580,10 @@ async def health_check(request: Request):
             "degraded": cq.get("degraded", False),
             "queues": cq.get("queues", {}),
         }
-        payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
+        payload["freshness"] = snap["freshness"]
         payload["celery_queue"] = celery_public
         payload["synthesis_quality"] = snap["synthesis_quality"]
-        payload["ai"] = await _ai_quota_payload()
+        payload["ai"] = snap["ai"]
 
     return payload
 
