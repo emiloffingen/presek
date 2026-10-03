@@ -231,16 +231,27 @@ sync_shield_if_present() {
 }
 
 # --- origin role: Shield primary, phone connector standby -------------------
-# Healthy = the Shield's origin (astro + api) answers over the tailnet AND its
-# tunnel connector has ready connections. Probed ENTIRELY over HTTP, no SSH:
-# the Shield's sshd has wedged repeatedly and a wedged sshd made this probe
-# wrongly fail the Shield over to the phone. Requires the Shield to bind astro
-# :3000, api :5001 and cloudflared metrics :20241 on 0.0.0.0.
-SHIELD_TAILNET="${SHIELD_TAILNET:-100.77.135.12}"
+# Healthy = the Shield's origin (astro + api) answers AND its tunnel connector
+# has ready connections. Probed over HTTP through adb port-forwards, no SSH (the
+# Shield's sshd has wedged repeatedly), so the Shield keeps astro :3000, api
+# :5001 and cloudflared metrics :20241 on 127.0.0.1 instead of exposing them on
+# every interface. Local ports 33000/35001/30241 forward to the Shield's.
+shield_forwards_ok() {
+  local spec
+  for spec in "tcp:33000 tcp:3000" "tcp:35001 tcp:5001" "tcp:30241 tcp:20241"; do
+    # shellcheck disable=SC2086
+    timeout 6 "$ADB_BIN" -s "$SHIELD_ADB" forward $spec >/dev/null 2>&1 || {
+      timeout 8 "$ADB_BIN" connect "$SHIELD_ADB" >/dev/null 2>&1
+      # shellcheck disable=SC2086
+      timeout 6 "$ADB_BIN" -s "$SHIELD_ADB" forward $spec >/dev/null 2>&1 || return 1
+    }
+  done
+}
 shield_origin_ok() {
-  curl -s -o /dev/null -m 4 "http://$SHIELD_TAILNET:3000/" &&
-  curl -s -o /dev/null -m 4 "http://$SHIELD_TAILNET:5001/api/health" &&
-  curl -s -m 4 "http://$SHIELD_TAILNET:20241/ready" 2>/dev/null | grep -q '"readyConnections":[1-9]'
+  shield_forwards_ok &&
+  curl -s -o /dev/null -m 4 "http://127.0.0.1:33000/" &&
+  curl -s -o /dev/null -m 4 "http://127.0.0.1:35001/api/health" &&
+  curl -s -m 4 "http://127.0.0.1:30241/ready" 2>/dev/null | grep -q '"readyConnections":[1-9]'
 }
 shield_ok_streak=0
 shield_fail_streak=0

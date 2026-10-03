@@ -13,9 +13,7 @@ LOG_DIR="$APP_DIR/logs"
 WATCHDOG_LOG="$LOG_DIR/watchdog.log"
 PIDFILE="$LOG_DIR/presek_watchdog_v2.pid"
 LOCKFILE="$LOG_DIR/presek_watchdog_v2.lock"
-# Password is not stored here: set PRESEK_REDIS_PASS, else it is read from the
-# app .env (REDIS_URL). Never hardcode it in a tracked file.
-REDIS_PASS="${PRESEK_REDIS_PASS:-$(sed -n 's#^REDIS_URL=redis://:\([^@]*\)@.*#\1#p' "$ENV_FILE" 2>/dev/null | head -1)}"
+REDIS_PASS="${PRESEK_REDIS_PASS:-$(sed -n 's%^REDIS_URL=redis://:\([^@]*\)@.*%\1%p' "$ENV_FILE" 2>/dev/null | head -1)}"
 INTERVAL="${WATCHDOG_INTERVAL:-30}"
 DEPLOY_SCRIPT="/root/scripts/presek_deploy.sh"
 POLL_INTERVAL="${POLL_INTERVAL:-120}"
@@ -62,7 +60,7 @@ ensure_redis() {
     log "redis down -> starting"
     # Close the flock fd in the daemon: redis would otherwise inherit fd 8,
     # leak presek_watchdog_v2.lock, and block any future watchdog from starting.
-    ( exec 8>&-; redis-server --daemonize yes --dir /root \
+    ( exec 8>&-; redis-server --daemonize yes --bind 127.0.0.1 --protected-mode yes --dir /root \
       --requirepass "$REDIS_PASS" --maxmemory 64mb --maxmemory-policy allkeys-lru --save "" --appendonly no --logfile "$LOG_DIR/redis.log" )
     sleep 1
   fi
@@ -102,8 +100,8 @@ ensure_postgres() {
 }
 
 # --- service commands -------------------------------------------------------
-cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 0.0.0.0 --port 5001 --workers ${UVICORN_WORKERS:-2} >> $LOG_DIR/fastapi.log 2>&1"
-cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=0.0.0.0 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=384 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
+cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5001 --workers ${UVICORN_WORKERS:-2} >> $LOG_DIR/fastapi.log 2>&1"
+cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=384 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
 cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=1 --logfile=$LOG_DIR/worker.log"
 cmd_beat="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$LOG_DIR/beat.log"
 cmd_tunnel="exec cloudflared tunnel --config /root/.cloudflared/config.yml run >> $LOG_DIR/cloudflared.log 2>&1"
