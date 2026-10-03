@@ -102,8 +102,8 @@ ensure_postgres() {
 }
 
 # --- service commands -------------------------------------------------------
-cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5001 --workers 1 >> $LOG_DIR/fastapi.log 2>&1"
-cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=384 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
+cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 0.0.0.0 --port 5001 --workers ${UVICORN_WORKERS:-2} >> $LOG_DIR/fastapi.log 2>&1"
+cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=0.0.0.0 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=384 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
 cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=1 --logfile=$LOG_DIR/worker.log"
 cmd_beat="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$LOG_DIR/beat.log"
 cmd_tunnel="exec cloudflared tunnel --config /root/.cloudflared/config.yml run >> $LOG_DIR/cloudflared.log 2>&1"
@@ -146,6 +146,34 @@ if [ ! -f "$TUNNEL_START_FILE" ] && pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1; th
   date +%s > "$TUNNEL_START_FILE"
 fi
 
+# --- apply a staged web dist pushed over adb (phone -> /sdcard) -------------
+# The phone ships web_dist.tgz + web_dist.fp to /sdcard/presek_stage/ over adb
+# (works even when this host's sshd is wedged). Apply whenever the fp changes.
+apply_staged_dist() {
+  local stage="/sdcard/presek_stage"
+  local tgz="$stage/web_dist.tgz"
+  local fpfile="$stage/web_dist.fp"
+  local stamp="$LOG_DIR/.dist_applied_fp"
+  [ -f "$tgz" ] || return 0
+  local fp
+  fp="$(cat "$fpfile" 2>/dev/null)"
+  [ -n "$fp" ] || fp="$(stat -c '%Y-%s' "$tgz" 2>/dev/null)"
+  [ -n "$fp" ] || return 0
+  [ -f "$stamp" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$fp" ] && return 0
+  local tmp
+  tmp="$(mktemp -d "$APP_DIR/web/.dist_stage.XXXXXX" 2>/dev/null)" || return 0
+  if tar xzf "$tgz" -C "$tmp" 2>/dev/null && [ -f "$tmp/dist/server/entry.mjs" ]; then
+    rm -rf "$APP_DIR/web/dist" && mv "$tmp/dist" "$APP_DIR/web/dist"
+    printf '%s' "$fp" > "$stamp"
+    printf '%s' "$fp" > "$stage/web_dist.applied"
+    log "applied staged dist ($fp) -> restarting astro"
+    pkill -f 'dist/server/entry[.]mjs' 2>/dev/null
+  else
+    log "staged dist invalid, not applied"
+  fi
+  rm -rf "$tmp"
+}
+
 last_poll=0
 while true; do
   now="$(date +%s)"
@@ -157,6 +185,9 @@ while true; do
   # postgres supervised by Termux-host keepalive (pg_ctl refuses root)
   ensure_redis
   rotate_logs
+
+  # Apply a web dist the phone pushed to /sdcard over adb (if changed).
+  apply_staged_dist
 
   http_ok "http://127.0.0.1:5001/api/health" || spawn fastapi "$cmd_fastapi" "uvicorn core.api_fast"
   http_ok "http://127.0.0.1:3000/" || spawn astro "$cmd_astro" "node ./dist/server/entry.mjs"
