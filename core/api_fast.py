@@ -515,6 +515,13 @@ async def _ai_quota_payload() -> dict:
         return {"enabled": None, "providers": {}}
 
 
+# /api/health runs expensive probes (DB COUNT/size, Redis, Celery queue) and is
+# polled frequently by the origin warmup + monitoring, so cache the snapshot
+# briefly. Each uvicorn worker keeps its own copy.
+_HEALTH_SNAPSHOT_TTL = float(os.environ.get("HEALTH_CACHE_TTL", "30"))
+_HEALTH_SNAPSHOT: dict = {"t": 0.0, "data": None}
+
+
 @app.get("/api/health")
 @exempt_from_rate_limit
 async def health_check(request: Request):
@@ -522,45 +529,58 @@ async def health_check(request: Request):
     import core.health as health
     from core.health import _freshness_payload, _start_time
 
-    db_status = _probe_database()
-    redis_status = _probe_redis()
-    db_public = dict(db_status)
-    redis_public = dict(redis_status)
-    db_public.pop("error", None)
-    redis_public.pop("url", None)
-    redis_public.pop("error", None)
-    redis_public.pop("config", None)
+    now = time.time()
+    snap = _HEALTH_SNAPSHOT["data"]
+    if snap is None or (now - _HEALTH_SNAPSHOT["t"]) >= _HEALTH_SNAPSHOT_TTL:
+        db_status = _probe_database()
+        redis_status = _probe_redis()
+        db_public = dict(db_status)
+        redis_public = dict(redis_status)
+        db_public.pop("error", None)
+        redis_public.pop("url", None)
+        redis_public.pop("error", None)
+        redis_public.pop("config", None)
 
-    synthesis_quality = health.get_synthesis_quality_snapshot()
-    celery_queue = health._probe_celery_queue()
-    operational_status = health.get_operational_status(
-        db_status["ok"],
-        redis_status["ok"],
-        synthesis_quality,
-        celery_queue,
-    )
+        synthesis_quality = health.get_synthesis_quality_snapshot()
+        celery_queue = health._probe_celery_queue()
+        operational_status = health.get_operational_status(
+            db_status["ok"],
+            redis_status["ok"],
+            synthesis_quality,
+            celery_queue,
+        )
+        snap = {
+            "status": operational_status,
+            "database": db_public,
+            "redis": redis_public,
+            "synthesis_quality": synthesis_quality,
+            "celery_queue": celery_queue,
+        }
+        _HEALTH_SNAPSHOT["data"] = snap
+        _HEALTH_SNAPSHOT["t"] = now
 
     payload = {
-        "status": operational_status,
+        "status": snap["status"],
         "version": APP_VERSION,
         "uptime_seconds": int(time.time() - _start_time),
-        "database": db_public,
-        "redis": redis_public,
+        "database": snap["database"],
+        "redis": snap["redis"],
         "time": datetime.datetime.now().isoformat(),
     }
 
     if _is_trusted_ops_client(request):
+        cq = snap["celery_queue"]
         celery_public = {
-            "celery_depth": celery_queue.get("celery_depth", 0),
-            "total_depth": celery_queue.get("total_depth", 0),
-            "warn_depth": celery_queue.get("warn_depth", 100),
-            "critical_depth": celery_queue.get("critical_depth", 500),
-            "degraded": celery_queue.get("degraded", False),
-            "queues": celery_queue.get("queues", {}),
+            "celery_depth": cq.get("celery_depth", 0),
+            "total_depth": cq.get("total_depth", 0),
+            "warn_depth": cq.get("warn_depth", 100),
+            "critical_depth": cq.get("critical_depth", 500),
+            "degraded": cq.get("degraded", False),
+            "queues": cq.get("queues", {}),
         }
         payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
         payload["celery_queue"] = celery_public
-        payload["synthesis_quality"] = synthesis_quality
+        payload["synthesis_quality"] = snap["synthesis_quality"]
         payload["ai"] = await _ai_quota_payload()
 
     return payload
