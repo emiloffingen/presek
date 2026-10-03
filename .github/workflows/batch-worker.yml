@@ -23,10 +23,8 @@ name: Batch worker
 # any branch that has this file.
 
 on:
-  # PAUSED (manual-only) while the rotating groups are validated. Re-enable
-  # (uncomment schedule) once groups 0-3 all complete within budget.
-  # schedule:
-  #   - cron: "17 */3 * * *"      # every 3h; keep in sync with BATCH_SLOT_HOURS=3
+  schedule:
+    - cron: "17 */3 * * *"      # every 3h; keep in sync with BATCH_SLOT_HOURS=3
   workflow_dispatch:
     inputs:
       budget:
