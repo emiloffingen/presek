@@ -1,10 +1,19 @@
 name: CI/CD
 
+# Actions minutes are shared with batch-worker.yml and offload-backfill.yml
+# (~2000/month on a private repo), so CI runs once per change on main, skips
+# docs-only commits, and cancels a run superseded by a newer push.
 on:
   push:
-    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
-    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
+    branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend-tests:
