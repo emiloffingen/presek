@@ -50,7 +50,8 @@ GROUPS = [
         ("extractive", "tasks.summarization.build_extractive_clusters_task", {}, None),
     ],
     [  # 1: homepage + first synthesis
-        ("homepage-supply", "tasks.maintenance.boost_homepage_cluster_supply_task", {}, None),
+        # No homepage-supply here: it only runs two more repair_split_clusters
+        # passes (limits 600/800, ~270s from CI), which group 0 already covers.
         ("homepage-synth", "tasks.maintenance.prioritize_homepage_syntheses_task", {}, None),
         ("auto-summarize", "tasks.intelligence.auto_summarize_task", {}, None),
         ("upgrade-to-ai", "tasks.summarization.upgrade_extractive_to_ai_task", {}, None),
