@@ -23,8 +23,12 @@ name: Batch worker
 # any branch that has this file.
 
 on:
-  schedule:
-    - cron: "17 */2 * * *"
+  # PAUSED (manual-only) until a full cycle fits the job timeout. A manual run
+  # ran ingest/deferred-crawls/embed fine, then hung in `recluster` and was
+  # cancelled at the 15m job limit (run 37114192898). Re-enable the schedule
+  # once the hang is fixed and a manual run completes within budget.
+  # schedule:
+  #   - cron: "17 */2 * * *"
   workflow_dispatch:
     inputs:
       budget:
