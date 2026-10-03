@@ -66,15 +66,21 @@ const { t } = Astro.props;
     });
   }
 
-  document.querySelectorAll('.cluster-analysis-summary').forEach((summary) => {
-    summary.addEventListener('click', () => {
-      const details = summary.closest('.cluster-analysis-details');
-      if (details instanceof HTMLDetailsElement) {
-        details.dataset.userToggled = 'true';
-      }
+  function bindClusterAnalysisSummary() {
+    document.querySelectorAll('.cluster-analysis-summary').forEach((summary) => {
+      if (summary.dataset.bound === 'true') return;
+      summary.dataset.bound = 'true';
+      summary.addEventListener('click', () => {
+        const details = summary.closest('.cluster-analysis-details');
+        if (details instanceof HTMLDetailsElement) {
+          details.dataset.userToggled = 'true';
+        }
+      });
     });
-  });
+    syncClusterAnalysisOpenState();
+  }
 
-  syncClusterAnalysisOpenState();
+  bindClusterAnalysisSummary();
   window.addEventListener('resize', syncClusterAnalysisOpenState);
+  document.addEventListener('astro:page-load', bindClusterAnalysisSummary);
 </script>

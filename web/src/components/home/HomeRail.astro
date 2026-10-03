@@ -1,5 +1,4 @@
 ---
-import { TrendingUp } from 'lucide-react';
 import NationalMoodIsland from '../NationalMoodIsland.tsx';
 import HomeRailSuggestionsIsland from '../HomeRailSuggestionsIsland.tsx';
 import SourceMapIsland from '../SourceMapIsland.tsx';
@@ -7,7 +6,6 @@ import NewsletterIsland from '../NewsletterIsland.tsx';
 import { getDisplayTitle } from '../../utils/textUtils';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
-import PresekRailAd from '../PresekRailAd.astro';
 import { normalizeFocusEntitySurface } from '../../lib/focusEntityNormalize';
 
 
@@ -43,8 +41,11 @@ for (const ent of focusEntities) {
     let name = normalizeFocusEntitySurface(rawName);
     let lowerName = name.toLowerCase();
 
-    // Skip short words or stop words
-    if (lowerName.length <= 3 || STOP_WORDS.has(lowerName)) {
+    // Skip short words or stop words. Multi-word entries (e.g. "oglasio se")
+    // and phrases whose every token is a stop word must be filtered too, which a
+    // plain Set.has(lowerName) lookup never matched.
+    const tokens = lowerName.split(/\s+/).filter(Boolean);
+    if (lowerName.length <= 3 || STOP_WORDS.has(lowerName) || (tokens.length > 1 && tokens.every((token) => STOP_WORDS.has(token)))) {
         continue;
     }
 
@@ -69,11 +70,8 @@ const uniqueEntities = Array.from(uniqueEntitiesMap.values())
 			<p class="rail-brief-text">
 				{getBriefingSnippet(briefing.content)}
 			</p>
-			<a href={l('/briefing')} class="rail-cta">{t('rail.full_overview')} <TrendingUp size={10} /></a>
 		</section>
 	)}
-
-	<PresekRailAd class="rail-inlined-ad" />
 
 	<NationalMoodIsland lang={lang} client:visible />
 

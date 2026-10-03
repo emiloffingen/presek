@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
 from prometheus_client import REGISTRY, Counter
 
+from core.config import DEFAULT_LANG
 from core.database import db_manager as db
 from utils import cached_response, set_cache
 
@@ -126,13 +127,15 @@ async def health(request: Request):
 
 
 @router.get("/system/media-quality")
-async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "sr"):
+async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "mk"):
     """Report recent clusters with missing or weak representative imagery."""
     cache_key = f"system:media-quality:v1:{lang}:{limit}"
     cached = cached_response(cache_key, ttl=300)
     if cached:
         return cached
 
+    # The articles table has no `lang` column; edition is expressed by `country`.
+    country = "MK" if (lang or "mk") == "mk" else "RS"
     rows = await db.async_execute(
         """
         SELECT
@@ -145,12 +148,12 @@ async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optio
         FROM cluster_metadata cm
         JOIN articles a ON a.cluster_id = cm.cluster_id
         LEFT JOIN cluster_summaries s ON s.cluster_id = cm.cluster_id
-        WHERE COALESCE(a.lang, %s) = %s
+        WHERE a.country = %s
         GROUP BY cm.cluster_id, cm.representative_image, cm.dominant_color, s.synthetic_headline
         ORDER BY latest_at DESC NULLS LAST
         LIMIT %s
         """,
-        (lang, lang, limit),
+        (country, limit),
     )
 
     items = []
@@ -201,8 +204,8 @@ async def robots_txt():
             "Disallow: /api/\n"
             "Disallow: /admin/\n"
             "Disallow: /debug/\n\n"
-            "Sitemap: https://presek.live/sitemap.xml\n"
-            "Sitemap: https://presek.live/rss.xml\n"
+            "Sitemap: https://presek.mk/sitemap.xml\n"
+            "Sitemap: https://presek.mk/rss.xml\n"
         ),
         media_type="text/plain",
     )
@@ -219,7 +222,7 @@ async def get_categories():
 
 
 @router.get("/weather")
-async def get_weather(lang: Optional[str] = "sr"):
+async def get_weather(lang: Optional[str] = DEFAULT_LANG):
     city = "skopje" if lang == "mk" else "beograd"
     cache_key = f"weather:{city}"
     cached = cached_response(cache_key, ttl=900)
@@ -256,7 +259,7 @@ async def get_weather(lang: Optional[str] = "sr"):
 
 
 @router.get("/trending")
-async def get_trending_route(lang: Optional[str] = "sr"):
+async def get_trending_route(lang: Optional[str] = DEFAULT_LANG):
     cache_key = f"api:trending:v5:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -294,7 +297,7 @@ async def get_trending_route(lang: Optional[str] = "sr"):
 
 
 @router.get("/navigation")
-async def get_navigation(lang: Optional[str] = "sr"):
+async def get_navigation(lang: Optional[str] = DEFAULT_LANG):
     """Returns high-intelligence dynamic navigation with activity thresholds."""
     cache_key = f"api:navigation:v6:{lang}"
     cached = cached_response(cache_key)
@@ -391,8 +394,10 @@ async def get_navigation(lang: Optional[str] = "sr"):
     cluster_ids = [c["cluster_id"] for c in recent_clusters if c.get("cluster_id") and c.get("title")]
     articles_by_cluster: dict[str, list] = defaultdict(list)
     if cluster_ids:
+        from routes.news import _ARTICLE_LIST_COLUMNS
+
         article_rows = await db.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s)",
+            f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s)",  # nosec B608 - static column constant with bound params
             (cluster_ids,),
         )
         for row in article_rows:
@@ -835,6 +840,12 @@ async def proxy_image(
         except Exception:
             return serve_fallback("parse_error")
 
+        # httpx requires an ASCII URL and rejects raw non-ASCII bytes (e.g.
+        # Cyrillic image filenames). Percent-encode only the non-ASCII bytes
+        # while preserving existing escapes and URL structure, so already
+        # encoded URLs are not double-encoded.
+        request_url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
+
         target_w = int(w) if w and w.isdigit() else 600
         target_w = max(20, min(1200, target_w))
 
@@ -884,7 +895,7 @@ async def proxy_image(
         if not img_data:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Referer": url,
+                "Referer": request_url,
                 "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
             }
 
@@ -892,7 +903,7 @@ async def proxy_image(
                 import httpx
 
                 async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                    async with client.stream("GET", url, headers=headers) as resp:
+                    async with client.stream("GET", request_url, headers=headers) as resp:
                         p_ip = _peer_ip(resp)
                         if not p_ip or p_ip not in safe_ips:
                             return serve_fallback("security_ssrf_block")

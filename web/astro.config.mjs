@@ -6,15 +6,15 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import node from '@astrojs/node';
 
-// Site URL is determined dynamically in Layout.astro based on language
+// The public product is the Macedonian edition at presek.mk.
 // https://astro.build/config
 export default defineConfig({
-  site: import.meta.env.PUBLIC_SITE_URL || 'https://presek.live',
+  site: import.meta.env.PUBLIC_SITE_URL || 'https://presek.mk',
   trailingSlash: 'never',
   output: 'server',
   i18n: {
-    defaultLocale: 'sr',
-    locales: ['sr', 'mk'],
+    defaultLocale: 'mk',
+    locales: ['mk'],
     routing: {
       prefixDefaultLocale: false
     }

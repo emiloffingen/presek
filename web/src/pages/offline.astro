@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
-import { WifiOff, BookOpen, Clock } from 'lucide-react';
+import { WifiOff, Archive, Clock } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 
@@ -38,8 +38,8 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                     <p class="text-[11px] text-muted-foreground">{t('offline.action_home_desc')}</p>
                 </div>
             </a>
-            <a href={l('/briefing')} class="offline-action-card">
-                <BookOpen size={24} className="text-nyt-accent" />
+            <a href={l('/archive')} class="offline-action-card">
+                <Archive size={24} className="text-nyt-accent" />
                 <div class="text-left">
                     <h3 class="font-black text-xs uppercase tracking-widest mb-1">{t('offline.action_briefing_title')}</h3>
                     <p class="text-[11px] text-muted-foreground">{t('offline.action_briefing_desc')}</p>
@@ -47,7 +47,7 @@ const l = (path: string) => localePath(path, lang, hostHeader);
             </a>
         </div>
 
-        <button onclick="window.location.reload()" class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
+        <button data-reload class="mt-12 px-8 py-3 bg-foreground text-background font-black uppercase text-[10px] tracking-[0.2em] hover:bg-nyt-accent transition-colors">
             {t('offline.button_retry')}
         </button>
     </main>

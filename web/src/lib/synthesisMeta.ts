@@ -43,7 +43,7 @@ export function buildCopyPurityNote(
   const reason = String(meta.copy_purity_reason || '').trim();
   const mapped = REASON_LABELS[reason];
   if (mapped) {
-    return mapped[lang];
+    return mapped[lang] ?? mapped.mk;
   }
   return lang === 'mk'
     ? 'Јазичниот квалитет на синтезата се проверува.'

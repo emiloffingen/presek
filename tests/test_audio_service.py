@@ -1,103 +1,108 @@
-import sys
-import types
+"""Regression tests for the Edge TTS briefing service.
+
+The important invariant: edge-tts does NOT accept raw SSML. Its Communicate()
+escapes the input and wraps it in its own <speak>/<prosody>, so any markup we
+pass is read aloud literally (garbled, heavily padded audio). These tests fail
+if that regresses.
+"""
+
+from unittest.mock import MagicMock, patch
+
+import core.audio_service as audio
 
 
-def test_auto_engine_uses_edge_for_sr_and_mk(monkeypatch):
-    import core.audio_service as audio_service
-
-    monkeypatch.setattr(audio_service, "_TTS_ENGINE", "auto")
-    monkeypatch.setattr(audio_service, "_SR_TTS_ENGINE", "edge")
-    monkeypatch.setattr(audio_service, "_MK_TTS_ENGINE", "edge")
-
-    assert audio_service.AudioService._engine_for_lang("sr") == "edge"
-    assert audio_service.AudioService._engine_for_lang("mk") == "edge"
+def test_join_for_speech_contains_no_ssml_markup():
+    text = "Владата донесе одлука. Министерот изјави дека е усвоена!"
+    out = audio._join_for_speech(text)
+    assert "<" not in out and ">" not in out
+    assert "<break" not in out and "<prosody" not in out and "speak" not in out
 
 
-def test_serbian_audio_paths_use_new_profile_without_changing_macedonian(monkeypatch, tmp_path):
-    import core.audio_service as audio_service
-
-    monkeypatch.setattr(audio_service, "_AUDIO_DIR", str(tmp_path))
-
-    sr_path, sr_url = audio_service.AudioService.get_audio_path_and_url("2026-06-01", "sr")
-    mk_path, mk_url = audio_service.AudioService.get_audio_path_and_url("2026-06-01", "mk")
-    sr_cluster_path, sr_cluster_url = audio_service.AudioService.get_cluster_audio_path_and_url("abc123", "sr")
-    mk_cluster_path, mk_cluster_url = audio_service.AudioService.get_cluster_audio_path_and_url("abc123", "mk")
-
-    assert sr_path.endswith("briefing_2026-06-01_sr_v3.mp3")
-    assert sr_url == "/static/uploads/audio/briefing_2026-06-01_sr_v3.mp3"
-    assert mk_path.endswith("briefing_2026-06-01_mk.mp3")
-    assert mk_url == "/static/uploads/audio/briefing_2026-06-01_mk.mp3"
-    assert sr_cluster_path.endswith("cluster_abc123_sr_v3.mp3")
-    assert sr_cluster_url == "/static/uploads/audio/cluster_abc123_sr_v3.mp3"
-    assert mk_cluster_path.endswith("cluster_abc123_mk.mp3")
-    assert mk_cluster_url == "/static/uploads/audio/cluster_abc123_mk.mp3"
+def test_join_for_speech_adds_terminal_punctuation_per_sentence():
+    # Headlines frequently arrive without trailing punctuation.
+    out = audio._join_for_speech("Прва вест\nВтора вест. Трета вест")
+    assert out == "Прва вест. Втора вест. Трета вест."
 
 
-def test_serbian_latin_to_cyrillic_uses_serbian_letters():
-    import core.audio_service as audio_service
+def test_normalize_for_speech_expands_units_and_groups_big_numbers():
+    out = audio._normalize_for_speech("Инвестициите се 1234567 евра, раст од 25%.")
+    assert "1234567" not in out
+    assert "1 234 567" in out
+    assert "проценти" in out
+    assert "евра" in out
 
-    result = audio_service.serbian_latin_to_cyrillic(
-        "Danas: Đoković, Ljubiša, Njegoš, džez, Čačak, ćirilica, šuma, žito."
+
+def test_normalize_for_speech_reads_scorelines_as_words():
+    assert audio._normalize_for_speech("Швајцарија со 3-0 над Македонија") == (
+        "Швајцарија со 3 спрема 0 над Македонија"
+    )
+    assert "3 спрема 2" in audio._normalize_for_speech("заврши 3:2 на Вембли")
+    # A dash inside non-score text must survive.
+    assert "спрема" not in audio._normalize_for_speech("2024-2026 година")
+
+
+def test_normalize_for_speech_respects_abbreviations():
+    assert "С.А.Д." in audio._normalize_for_speech("договор меѓу САД и Кина")
+    assert "Е.У." in audio._normalize_for_speech("раст во ЕУ")
+    # Acronyms pronounced as words are left intact.
+    assert "НАТО" in audio._normalize_for_speech("членка на НАТО")
+    # No partial-word corruption.
+    assert "ЕУРОПА" in audio._normalize_for_speech("ЕУРОПА")
+
+
+def test_synthesize_async_never_passes_markup_to_edge_tts():
+    captured = {}
+
+    class FakeCommunicate:
+        def __init__(self, text, voice, **kwargs):
+            captured["text"] = text
+            captured["voice"] = voice
+            captured["kwargs"] = kwargs
+
+        async def save(self, path):
+            captured["path"] = path
+
+    fake_module = MagicMock()
+    fake_module.Communicate = FakeCommunicate
+
+    with patch.dict("sys.modules", {"edge_tts": fake_module}):
+        import asyncio
+
+        asyncio.run(
+            audio._synthesize_async("Plain narration.", "mk-MK-MarijaNeural", "/tmp/x.mp3", "-8%", "-2Hz", "+0%")
+        )
+
+    assert "<" not in captured["text"] and ">" not in captured["text"]
+    assert captured["kwargs"] == {"rate": "-8%", "pitch": "-2Hz", "volume": "+0%"}
+    assert captured["kwargs"].get("rate", "").startswith("-")
+
+
+def test_prosody_helpers_return_edge_tts_values_not_markup():
+    for lang in ("mk", "sr"):
+        assert not audio._rate_for_lang(lang).startswith("<")
+        assert audio._rate_for_lang(lang).endswith("%")
+        assert audio._pitch_for_lang(lang).endswith("Hz")
+        assert audio._volume_for_lang(lang).endswith("%")
+
+
+def test_generate_cluster_audio_passes_plain_text(monkeypatch, tmp_path):
+    monkeypatch.setenv("STATIC_ROOT", str(tmp_path))
+    seen = {}
+
+    def fake_synth(text, voice, path, rate="-8%", pitch="-2Hz", volume="+0%"):
+        seen["text"] = text
+        with open(path, "wb") as fh:
+            fh.write(b"\x00" * 4096)
+
+    async def fake_synth_async(*args, **kwargs):
+        fake_synth(*args, **kwargs)
+
+    monkeypatch.setattr(audio, "_synthesize_async", fake_synth_async)
+
+    url = audio.AudioService.generate_cluster_audio(
+        "cluster123", "Прва реченица. Втора реченица со 30% раст.", "mk"
     )
 
-    assert result == "Данас: Ђоковић, Љубиша, Његош, џез, Чачак, ћирилица, шума, жито."
-
-
-def test_clean_briefing_text_joins_paragraphs_without_double_periods():
-    import core.audio_service as audio_service
-
-    cleaned = audio_service.clean_briefing_text_for_tts("Prvi pasus.\n\nDrugi pasus.")
-
-    assert cleaned == "Prvi pasus. Drugi pasus."
-    assert ". ." not in cleaned
-
-
-def test_select_cluster_audio_text_uses_first_two_article_paragraphs():
-    import core.audio_service as audio_service
-
-    article = (
-        "Lead vest sa dovoljno teksta da prođe prag za audio sintezu.\n"
-        "Drugi pasus sa dodatnim kontekstom za slušaoce.\n"
-        "Meta o izvorima i nepotvrđenim detaljima."
-    )
-    summary = "Kratak sažetak koji ne bi trebalo da se koristi."
-
-    selected = audio_service.select_cluster_audio_text(article, summary)
-
-    assert "Lead vest" in selected
-    assert "Drugi pasus" in selected
-    assert "Meta o izvorima" not in selected
-
-
-def test_select_cluster_audio_text_falls_back_to_summary():
-    import core.audio_service as audio_service
-
-    selected = audio_service.select_cluster_audio_text("", "Sažetak prve vesti.\nDrugi deo.")
-
-    assert selected == "Sažetak prve vesti.\nDrugi deo."
-
-
-def test_serbian_edge_failure_falls_back_like_macedonian_without_gtts(monkeypatch, tmp_path):
-    import core.audio_service as audio_service
-
-    soundfile = types.ModuleType("soundfile")
-    soundfile.write = lambda *args, **kwargs: None
-    monkeypatch.setitem(sys.modules, "soundfile", soundfile)
-
-    gtts_calls = []
-
-    monkeypatch.setattr(audio_service, "_AUDIO_DIR", str(tmp_path))
-    monkeypatch.setattr(audio_service, "_TTS_ENGINE", "auto")
-    monkeypatch.setattr(audio_service, "_SR_TTS_ENGINE", "edge")
-    monkeypatch.setattr(audio_service.AudioService, "_generate_edge_mp3", classmethod(lambda cls, *args: False))
-    monkeypatch.setattr(
-        audio_service.AudioService,
-        "_generate_gtts_mp3",
-        classmethod(lambda cls, *args: gtts_calls.append(args) or False),
-    )
-    monkeypatch.setattr(audio_service.AudioService, "_get_omnivoice_model", staticmethod(lambda: None))
-
-    result = audio_service.AudioService.generate_briefing_audio("2026-06-01", "Danas je važna vest.", "sr")
-
-    assert result is None
-    assert gtts_calls == []
+    assert url and url.endswith(".mp3")
+    assert "<" not in seen["text"] and ">" not in seen["text"]
+    assert "проценти" in seen["text"]

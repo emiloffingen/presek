@@ -1,68 +1,57 @@
-from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
-from core.entities import extract_entities, validate_person_names
-from core.prompts import (
-    SUMMARY_SYSTEM_PROMPT_MK,
-    SUMMARY_SYSTEM_PROMPT_SR,
-    SYNTHESIS_SYSTEM_PROMPT_MK,
-    SYNTHESIS_SYSTEM_PROMPT_SR,
+"""Celery-safe no-op intelligence tasks for the MK-only deployment.
+
+The expensive local-AI implementation is disabled on Android, but scheduled
+jobs must remain registered so Celery does not discard messages as unknown.
+"""
+
+from core.celery_app import celery_app
+
+
+def _task(name):
+    def noop_task(*args, **kwargs):
+        return None
+
+    noop_task.__name__ = name.rsplit(".", 1)[-1]
+    return celery_app.task(name=name)(noop_task)
+
+
+auto_summarize_task = _task("tasks.intelligence.auto_summarize_task")
+backfill_cover_art_single_task = _task("tasks.intelligence.backfill_cover_art_single_task")
+backfill_cover_art_task = _task("tasks.intelligence.backfill_cover_art_task")
+classify_topics_task = _task("tasks.intelligence.classify_topics_task")
+detect_global_story_task = _task("tasks.intelligence.detect_global_story_task")
+detect_global_stories_batch_task = _task("tasks.intelligence.detect_global_stories_batch_task")
+discover_storylines_task = _task("tasks.intelligence.discover_storylines_task")
+extract_entities_task = _task("tasks.intelligence.extract_entities_task")
+generate_cluster_metadata_task = _task("tasks.intelligence.generate_cluster_metadata_task")
+generate_embeddings_task = _task("tasks.intelligence.generate_embeddings_task")
+# Real implementations (see cluster_ops). These must NOT be no-op stubs: cluster
+# repair is what merges same-story clusters that ingestion split apart, and
+# without it those clusters stay single-source and never get a synthesis.
+from tasks.intelligence.cluster_ops import (  # noqa: E402
+    recluster_recent_articles_task as recluster_recent_articles_task,
+    repair_split_clusters_task as repair_split_clusters_task,
 )
-from core.text_extraction import clean_extracted_article_text
-from nlp import (
-    deShout,
-    extract_cluster_tags_locally,
-    filter_cluster_tags,
-    generate_local_placeholder,
-    summarize_article_fallback,
-    synthesize_cluster_fallback,
-)
-from nlp.categories import detect_category, detect_topic, normalize_headline
-from nlp.local_analyst import analyst
-from nlp.utils import extract_clean_summary_text
 
-# Re-export private helpers for tests, scripts, and patch targets.
-from tasks.intelligence import synthesis as _synthesis_mod
-from tasks.intelligence._constants import *  # noqa: F401,F403
-from tasks.intelligence._queue import *  # noqa: F401,F403
-from tasks.intelligence.backfill import *  # noqa: F401,F403
-from tasks.intelligence.cluster_ops import *  # noqa: F401,F403
-from tasks.intelligence.metadata import *  # noqa: F401,F403
-from tasks.intelligence.style import *  # noqa: F401,F403
-from tasks.intelligence.summarization import *  # noqa: F401,F403
-from tasks.intelligence.synthesis import *  # noqa: F401,F403
-from tasks.synthesis_sanitize import sanitize_synthesis_outputs as _sanitize_synthesis_outputs
-from tasks.utils import (
-    acquire_task_lock,
-    get_celery_queue_depth,
-    invalidate_cluster_caches,
-    invalidate_public_data_caches,
-    log,
-    record_runtime_event,
-    redis_client,
-    release_task_lock,
-    schedule_task_once,
-)
-from utils import get_dominant_color
+refine_knowledge_graph_sentiment_task = _task("tasks.intelligence.refine_knowledge_graph_sentiment_task")
+summarize_article_task = _task("tasks.intelligence.summarize_article_task")
+summarize_articles_batch_task = _task("tasks.intelligence.summarize_articles_batch_task")
+summarize_articles_local_batch_task = _task("tasks.intelligence.summarize_articles_local_batch_task")
+synthesize_cluster_task = _task("tasks.intelligence.synthesize_cluster_task")
+synthesize_urgent_task = _task("tasks.intelligence.synthesize_urgent_task")
+upgrade_fast_synthesis_task = _task("tasks.intelligence.upgrade_fast_synthesis_task")
+recategorize_clusters_task = _task("tasks.intelligence.recategorize_clusters_task")
+schedule_backfill_cluster_summaries_task = _task("tasks.intelligence.schedule_backfill_cluster_summaries_task")
+schedule_backfill_historical_summaries_task = _task("tasks.intelligence.schedule_backfill_historical_summaries_task")
 
-for _name in dir(_synthesis_mod):
-    if _name.startswith("_") and not _name.startswith("__"):
-        globals()[_name] = getattr(_synthesis_mod, _name)
 
-from tasks.intelligence import metadata as _metadata_mod
+def _dispatch_batched(*args, **kwargs):
+    return None
 
-for _name in dir(_metadata_mod):
-    if _name.startswith("_") and not _name.startswith("__"):
-        globals()[_name] = getattr(_metadata_mod, _name)
 
-from tasks.intelligence import backfill as _backfill_mod
+def intelligence_batches_deferred(*args, **kwargs):
+    return False
 
-for _name in dir(_backfill_mod):
-    if _name.startswith("_") and not _name.startswith("__"):
-        globals()[_name] = getattr(_backfill_mod, _name)
 
-from tasks.intelligence import _queue as _queue_mod
-
-for _name in dir(_queue_mod):
-    if _name.startswith("_") and not _name.startswith("__"):
-        globals()[_name] = getattr(_queue_mod, _name)
-
-del _synthesis_mod, _metadata_mod, _backfill_mod, _queue_mod, _name
+def intelligence_soft_deferred(*args, **kwargs):
+    return False

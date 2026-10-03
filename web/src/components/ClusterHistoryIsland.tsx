@@ -10,7 +10,7 @@ interface HistoryItem {
   verification_report: any;
 }
 
-export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clusterId: string, lang?: string }) {
+export default function ClusterHistoryIsland({ clusterId, lang = 'mk' }: { clusterId: string, lang?: string }) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'sr' }: { clust
             <div className="flex items-center gap-[var(--grid-gap)] p-4 border border-border/40 bg-secondary/5 rounded-sm">
                 <Sparkles size={14} className="text-nyt-accent" />
                 <span className="text-[11px] font-black uppercase tracking-widest text-foreground">
-                    {isMK ? 'Нов наратив: Прва верзија на синтезата' : 'Nov narativ: Prva verzija sinteze'}
+                    {isMK ? 'Нов наратив: Прва верзија на прегледот' : 'Nov narativ: Prva verzija sinteze'}
                 </span>
             </div>
           ) : (

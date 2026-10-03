@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 import re
@@ -71,6 +72,14 @@ async def lifespan(app: FastAPI):
             await async_db._ensure_pool()
         except Exception as e:
             log.error(f"Failed to initialize async database pools on startup: {e}")
+
+    # Load the local embedding model in the background so the first search isn't slow.
+    try:
+        from core.embeddings import warm_up
+
+        asyncio.get_running_loop().run_in_executor(None, warm_up)
+    except Exception as e:
+        log.warning(f"Embedding warm-up skipped: {e}")
 
     yield
 
@@ -491,6 +500,21 @@ def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_
         return []
 
 
+async def _ai_quota_payload() -> dict:
+    """Compact per-provider daily AI budget for the status page."""
+    try:
+        from core.config import AI_ENABLED
+
+        if not AI_ENABLED:
+            return {"enabled": False, "providers": {}}
+        from core.ai_quota import async_snapshot
+
+        return {"enabled": True, "providers": await async_snapshot()}
+    except Exception as exc:  # never let quota reporting break /health
+        log.debug("[health] ai quota snapshot failed: %s", exc)
+        return {"enabled": None, "providers": {}}
+
+
 @app.get("/api/health")
 @exempt_from_rate_limit
 async def health_check(request: Request):
@@ -537,6 +561,7 @@ async def health_check(request: Request):
         payload["freshness"] = _freshness_payload(health.load_last_refresh_time())
         payload["celery_queue"] = celery_public
         payload["synthesis_quality"] = synthesis_quality
+        payload["ai"] = await _ai_quota_payload()
 
     return payload
 
@@ -760,7 +785,7 @@ def trigger_reclustering(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task("tasks.intelligence.recluster_recent_articles_task", args=[hours, limit])
+        task = celery_app.send_task("tasks.extractive.recluster_recent_articles_task", args=[hours, limit])
 
         return {
             "status": "success",
@@ -784,7 +809,7 @@ def trigger_storyline_discovery(
     try:
         from core.celery_app import celery_app
 
-        task = celery_app.send_task("tasks.intelligence.discover_storylines_task")
+        task = celery_app.send_task("tasks.extractive.discover_storylines_task")
 
         return {
             "status": "success",

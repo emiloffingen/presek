@@ -15,6 +15,7 @@ from core.config import (
     API_MAX_Q_LEN,
     BREAKING_SCORE_THRESHOLD,
     DEFAULT_CREDIBILITY,
+    DEFAULT_LANG,
     SOURCE_CREDIBILITY,
 )
 from core.database import db_manager as db
@@ -75,6 +76,39 @@ def get_date_range(date_str: str):
     return start, end
 
 
+async def _nearest_archive_days(d_start, d_end, country, q, source, topic):
+    """Closest earlier/later day (within a year) that has articles matching the filters."""
+    clause = " AND country = %s"
+    fparams = [country]
+    if q:
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        clause += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
+        fparams.extend([f"%{escaped}%", f"%{escaped}%"])
+    if source:
+        clause += " AND source = %s"
+        fparams.append(source)
+    if topic:
+        clause += " AND topic = %s"
+        fparams.append(topic)
+    window = timedelta(days=365)
+    prev_sql = f"SELECT MAX(created_at) AS d FROM articles WHERE created_at < %s AND created_at >= %s{clause}"  # nosec B608 - static clause with bound params
+    next_sql = f"SELECT MIN(created_at) AS d FROM articles WHERE created_at >= %s AND created_at < %s{clause}"  # nosec B608
+    try:
+        prev_row, next_row = await asyncio.gather(
+            db.async_execute_one(prev_sql, (d_start, d_start - window, *fparams)),
+            db.async_execute_one(next_sql, (d_end, d_end + window, *fparams)),
+        )
+    except Exception as e:
+        log.warning(f"[archive] nearest-day lookup failed: {e}")
+        return {"prev": None, "next": None}
+
+    def _day(row):
+        value = (row or {}).get("d")
+        return value.strftime("%Y-%m-%d") if hasattr(value, "strftime") else None
+
+    return {"prev": _day(prev_row), "next": _day(next_row)}
+
+
 def _pick_quote_of_the_day(row) -> dict | None:
     if not row:
         return None
@@ -118,7 +152,7 @@ def _pick_quote_of_the_day(row) -> dict | None:
 
 
 @router.get("/archive/heatmap")
-async def get_archive_heatmap(lang: str = "sr"):
+async def get_archive_heatmap(lang: str = DEFAULT_LANG):
     country_filter = "RS" if lang == "sr" else "MK"
     cache_key = f"archive:heatmap:v3:{lang}"
     cached = cached_response(cache_key, ttl=3600)
@@ -159,28 +193,29 @@ async def get_archive_heatmap(lang: str = "sr"):
 
 @router.get("/archive")
 async def get_archive(
-    date: str = Query(...),
+    date: str = Query(""),
     q: str = "",
     source: str = "",
     topic: str = "",
-    lang: str = "sr",
+    lang: str = DEFAULT_LANG,
     page: int = 0,
     page_size: int = 50,
 ):
     try:
-        # Validate inputs
+        # Validate inputs (a missing date means "today")
+        date = date or datetime.now().strftime("%Y-%m-%d")
         validate_date(date)
         q = validate_string_param(q, "q", max_length=API_MAX_Q_LEN, allow_empty=True)
         source = validate_string_param(source, "source", max_length=200, allow_empty=True)
         topic = validate_string_param(topic, "topic", max_length=200, allow_empty=True)
 
         if page < 0 or page > 1000:
-            raise HTTPException(status_code=400, detail="Nevaliden broj na stranica")
+            raise HTTPException(status_code=400, detail="Невалиден број на страница")
         if page_size < 1 or page_size > 50:
-            raise HTTPException(status_code=400, detail="Nevalidna golemina na stranica (1-50)")
+            raise HTTPException(status_code=400, detail="Невалидна големина на страница (1-50)")
 
         # 1. Caching - Only for historical dates (older than today)
-        cache_key = f"api:archive:v4:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
+        cache_key = f"api:archive:v5:{date}:{q}:{source}:{topic}:{lang}:{page}:{page_size}"
         today_str = datetime.now().strftime("%Y-%m-%d")
         is_today = date == today_str
 
@@ -193,14 +228,17 @@ async def get_archive(
         country = "MK" if lang == "mk" else "RS"
 
         # 2. Main content query
+        from routes.news import _ARTICLE_LIST_COLUMNS
+
         if q:
             # Escape LIKE special characters in search query
             escaped_q = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            base_sql = """
-                SELECT * FROM articles
+            # embedding is needed only here, to re-rank search hits by similarity.
+            base_sql = f"""
+                SELECT {_ARTICLE_LIST_COLUMNS}, embedding FROM articles
                 WHERE created_at >= %s AND created_at < %s AND country = %s
                   AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\' OR description ILIKE %s ESCAPE '\\')
-            """
+            """  # nosec B608 - static column constant with bound params
             params = [
                 d_start,
                 d_end,
@@ -210,7 +248,7 @@ async def get_archive(
                 f"%{escaped_q}%",
             ]
         else:
-            base_sql = "SELECT * FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
+            base_sql = f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"  # nosec B608 - static column constant with bound params
             params = [d_start, d_end, country]
 
         if source:
@@ -236,37 +274,32 @@ async def get_archive(
             metrics_sql += " AND topic = %s"
             metrics_params.append(topic)
 
-        # Groupings
-        group_source_sql = (
-            "SELECT source, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
-        )
-        group_source_params = [d_start, d_end, country]
-        if source:
-            group_source_sql += " AND source = %s"
-            group_source_params.append(source)
-        if topic:
-            group_source_sql += " AND topic = %s"
-            group_source_params.append(topic)
-        group_source_sql += " GROUP BY source ORDER BY n DESC LIMIT 8"
+        # Facet counts: each facet ignores its own filter so the chips stay switchable
+        # (selecting a topic must not collapse the topic list to that one topic).
+        def _facet_sql(column: str, skip: str):
+            sql = f"SELECT {column}, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"  # nosec B608 - column is a literal from this function
+            fparams = [d_start, d_end, country]
+            if q:
+                sql += " AND (title ILIKE %s ESCAPE '\\' OR summary ILIKE %s ESCAPE '\\')"
+                fparams.extend([f"%{escaped_q}%", f"%{escaped_q}%"])
+            if source and skip != "source":
+                sql += " AND source = %s"
+                fparams.append(source)
+            if topic and skip != "topic":
+                sql += " AND topic = %s"
+                fparams.append(topic)
+            sql += f" GROUP BY {column} ORDER BY n DESC LIMIT 12"  # nosec B608
+            return sql, tuple(fparams)
 
-        group_topic_sql = (
-            "SELECT topic, COUNT(*) AS n FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"
-        )
-        group_topic_params = [d_start, d_end, country]
-        if source:
-            group_topic_sql += " AND source = %s"
-            group_topic_params.append(source)
-        if topic:
-            group_topic_sql += " AND topic = %s"
-            group_topic_params.append(topic)
-        group_topic_sql += " GROUP BY topic ORDER BY n DESC LIMIT 8"
+        group_source_sql, group_source_params = _facet_sql("source", "source")
+        group_topic_sql, group_topic_params = _facet_sql("topic", "topic")
 
         # Execute in parallel
         rows, metrics, top_sources, top_topics = await asyncio.gather(
             db.async_execute(base_sql, tuple(params)),
             db.async_execute_one(metrics_sql, tuple(metrics_params)),
-            db.async_execute(group_source_sql, tuple(group_source_params)),
-            db.async_execute(group_topic_sql, tuple(group_topic_params)),
+            db.async_execute(group_source_sql, group_source_params),
+            db.async_execute(group_topic_sql, group_topic_params),
         )
 
         clusters = defaultdict(list)
@@ -277,20 +310,24 @@ async def get_archive(
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
 
         if q:
-            import numpy as np
+            from core.embeddings import get_query_embedding_async, parse_embedding_value
 
-            from core.embeddings import generate_query_embedding, parse_embedding_value
-
-            query_vec = generate_query_embedding(q)
+            query_vec = await get_query_embedding_async(q)
             if query_vec:
+                q_norm = sum(v * v for v in query_vec) ** 0.5
                 for arts in ranked:
-                    best_sim = 0
+                    best_sim = 0.0
                     for a in arts:
                         if a.get("embedding"):
                             a_vec = parse_embedding_value(a["embedding"])
-                            sim = np.dot(query_vec, a_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(a_vec))
-                            if sim > best_sim:
-                                best_sim = sim
+                            if not a_vec:
+                                continue
+                            dot = sum(x * y for x, y in zip(query_vec, a_vec))
+                            a_norm = sum(v * v for v in a_vec) ** 0.5
+                            if q_norm and a_norm:
+                                sim = dot / (q_norm * a_norm)
+                                if sim > best_sim:
+                                    best_sim = sim
                     arts[0]["match_score"] = best_sim
                 ranked.sort(key=lambda x: x[0].get("match_score", 0), reverse=True)
         else:
@@ -325,8 +362,11 @@ async def get_archive(
             for c in paged
         ]
 
+        nearest = await _nearest_archive_days(d_start, d_end, country, q, source, topic) if not ranked else None
+
         res = {
             "clusters": payload,
+            "nearest": nearest,
             "total": metrics["total"],
             "sources": metrics["source_count"],
             "date": date,
@@ -354,11 +394,11 @@ async def get_archive(
         raise HTTPException(status_code=400, detail="Nevalidan format datuma. Koristite YYYY-MM-DD")
     except Exception as e:
         log.error(f"Archive Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Neuspešno učitavanje arhive")
+        raise HTTPException(status_code=500, detail="Неуспешно вчитување на архивата")
 
 
 @router.get("/archive/daily-briefing")
-async def get_archive_daily_briefing(date: str = Query(...), lang: str = "sr"):
+async def get_archive_daily_briefing(date: str = Query(...), lang: str = DEFAULT_LANG):
     """Provides an AI-generated briefing for a specific historical date."""
     validate_date(date)
     cache_key = f"archive:briefing:{date}:{lang}:v1"
@@ -415,7 +455,7 @@ async def get_archive_daily_briefing(date: str = Query(...), lang: str = "sr"):
 
 
 @router.get("/archive/on-this-day")
-async def get_archive_on_this_day(date: str = Query(...), lang: str = "sr"):
+async def get_archive_on_this_day(date: str = Query(...), lang: str = DEFAULT_LANG):
     """Finds a significant cluster from exactly 1 or 2 years ago."""
     validate_date(date)
     dt = datetime.strptime(date, "%Y-%m-%d")
@@ -458,7 +498,7 @@ async def get_stats_route():
 
 
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
-async def get_stats_summary(lang: Optional[str] = "sr"):
+async def get_stats_summary(lang: Optional[str] = DEFAULT_LANG):
     cache_key = f"api:stats:summary:v4:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -550,7 +590,7 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     email = validate_email(body.get("email", ""), "email")
     locale = "mk" if str(body.get("locale") or "sr").strip().lower() == "mk" else "sr"
     try:
@@ -601,7 +641,7 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
 
 
 @router.get("/newsletter/unsubscribe")
-async def unsubscribe_newsletter(token: str, lang: str = "sr"):
+async def unsubscribe_newsletter(token: str, lang: str = DEFAULT_LANG):
     """Deactivate a newsletter subscription using a signed token."""
     from core.signed_tokens import parse_newsletter_unsubscribe_token
 
@@ -680,7 +720,7 @@ from routes.security import admin_auth
 
 
 @router.get("/stats/full")
-async def get_stats_full(request: Request, lang: str = "sr", authorized: str = Depends(admin_auth)):
+async def get_stats_full(request: Request, lang: str = DEFAULT_LANG, authorized: str = Depends(admin_auth)):
     cached = cached_response("stats:full:sr", ttl=120)
     if cached:
         return cached
@@ -826,6 +866,11 @@ async def get_stats_full(request: Request, lang: str = "sr", authorized: str = D
 
 @router.get("/sources")
 async def get_sources_route():
+    cache_key = "api:sources:v2:all"
+    cached = cached_response(cache_key, ttl=120)
+    if cached:
+        return cached
+
     rows = await db.async_execute(
         "SELECT name, country, category, credibility, is_active, last_fetched, pause_mode, pause_reason, paused_at FROM sources ORDER BY is_active DESC, name ASC"
     )
@@ -841,7 +886,13 @@ async def get_sources_route():
     cats = await db.async_execute(
         f"SELECT source, category, COUNT(*) as count FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' AND category IS NOT NULL AND category != '' GROUP BY source, category ORDER BY source, count DESC"  # nosec B608 - static freshness constant, no params
     )
-    return build_source_reputation_rows(rows, pulse, speed, history, cats)
+    daily = await db.async_execute(
+        f"SELECT source, DATE_TRUNC('day', {_FRESHNESS_EXPR})::date AS day, COUNT(*) as n FROM articles WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '30 days' GROUP BY source, day"  # nosec B608 - static freshness constant, no params
+    )
+    result = build_source_reputation_rows(rows, pulse, speed, history, cats, daily)
+    set_cache(cache_key, result, ttl=120)
+    # Same shape as the cached path above (a bare list) -- the page consumes a list.
+    return result
 
 
 @router.post("/sources/{name}/control")
@@ -851,7 +902,7 @@ async def control_source_route(name: str, request: Request, csrf_valid: bool = D
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     action = str(payload.get("action", "")).strip().lower()
     source = await db.async_execute_one("SELECT credibility FROM sources WHERE name = %s", (name,))
     if not source:
@@ -897,7 +948,7 @@ async def control_source_route(name: str, request: Request, csrf_valid: bool = D
 
 
 @router.get("/stats/sentiment-trends")
-async def get_sentiment_trends(lang: Optional[str] = "sr"):
+async def get_sentiment_trends(lang: Optional[str] = DEFAULT_LANG):
     """Returns average sentiment and tone analysis for the last 7 days, filtered by language."""
     cache_key = f"api:stats:sentiment:trends:v2:{lang}"
     cached = cached_response(cache_key, ttl=1800)
@@ -950,11 +1001,11 @@ async def get_sentiment_trends(lang: Optional[str] = "sr"):
         return res
     except Exception as e:
         log.error(f"Sentiment Trends Error: {e}")
-        return soft_error(message="Neuspešno učitavanje sentimenta")
+        return soft_error(message="Неуспешно вчитување на сентиментот")
 
 
 @router.get("/stats/mood")
-async def get_current_mood(lang: Optional[str] = "sr"):
+async def get_current_mood(lang: Optional[str] = DEFAULT_LANG):
     """Returns a real-time 'National Mood' based on today's coverage, filtered by language."""
     cache_key = f"api:stats:mood:v2:{lang}"
     cached = cached_response(cache_key, ttl=600)

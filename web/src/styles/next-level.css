@@ -210,19 +210,14 @@ body.has-consent-banner .ui-concept-onboarding {
 
   html[data-page="home"] .search-entry-wrap--desktop {
     display: block;
-    width: 2rem;
-    min-width: 2rem;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 6.5rem;
   }
 
   html[data-page="home"] .search-entry-wrap {
-    width: 2rem !important;
-    min-width: 2rem !important;
-  }
-
-  html[data-page="home"] .search-entry-wrap :where(button, [role="button"]) {
-    min-width: 2rem;
-    width: 2rem;
-    height: 2rem;
+    width: auto !important;
+    min-width: 6.5rem !important;
   }
 
   .topbar-left-stack {

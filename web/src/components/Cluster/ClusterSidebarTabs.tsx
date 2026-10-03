@@ -24,7 +24,7 @@ interface Props {
 }
 
 export default function ClusterSidebarTabs({
-  lang = 'sr',
+  lang = 'mk',
   articles,
   allSourcesNames,
   sentimentData,
@@ -35,7 +35,7 @@ export default function ClusterSidebarTabs({
   adjacentTopic,
   keyEntities,
 }: Props) {
-  const locale = lang === 'mk' ? 'mk' : 'sr';
+  const locale = lang === 'sr' ? 'sr' : 'mk';
   const t = useClientTranslations(locale, cluster);
   const tabs = useMemo(() => {
     const items: { id: TabId; label: string; disabled?: boolean }[] = [
@@ -64,7 +64,9 @@ export default function ClusterSidebarTabs({
     };
     const onSidebarTab = (event: Event) => {
       const tab = (event as CustomEvent<{ tab?: TabId }>).detail?.tab;
-      if (tab) {
+      // Ignore tabs that were filtered out (e.g. compare when unavailable),
+      // otherwise the sidebar would show a panel with no matching button.
+      if (tab && tabs.some((entry) => entry.id === tab)) {
         selectTab(tab);
       }
     };
@@ -79,11 +81,25 @@ export default function ClusterSidebarTabs({
       window.removeEventListener('presek:reading-mode-changed', onReadingMode);
       window.removeEventListener('presek:sidebar-tab', onSidebarTab);
     };
-  }, [showCompare, selectTab]);
+  }, [showCompare, selectTab, tabs]);
+
+  const onTablistKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const ids = tabs.map((entry) => entry.id);
+    if (ids.length === 0) return;
+    const current = ids.indexOf(activeTab);
+    if (current === -1) return;
+    e.preventDefault();
+    const next = e.key === 'ArrowRight'
+      ? ids[(current + 1) % ids.length]
+      : ids[(current - 1 + ids.length) % ids.length];
+    selectTab(next);
+    document.getElementById(`cluster-tab-${next}`)?.focus();
+  };
 
   return (
     <div className="cluster-sidebar-tabs" data-active-tab={activeTab}>
-      <div className="cluster-sidebar-tablist" role="tablist" aria-label={t('cluster.sidebar_tools')}>
+      <div className="cluster-sidebar-tablist" role="tablist" aria-label={t('cluster.sidebar_tools')} onKeyDown={onTablistKeyDown}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -92,6 +108,7 @@ export default function ClusterSidebarTabs({
             id={`cluster-tab-${tab.id}`}
             aria-selected={activeTab === tab.id}
             aria-controls={`cluster-panel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
             className={`cluster-sidebar-tab ${activeTab === tab.id ? 'is-active' : ''}`}
             onClick={() => selectTab(tab.id)}
           >
@@ -145,7 +162,7 @@ export default function ClusterSidebarTabs({
             hidden={activeTab !== 'more'}
             className="cluster-sidebar-panel cluster-sidebar-more"
           >
-            <NewsletterIsland lang={locale} />
+            <NewsletterIsland lang="mk" />
             <ClusterFollowSuggestionsIsland
               topic={topic}
               source={source}

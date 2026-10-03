@@ -104,6 +104,7 @@ export function buildHomepageViewModel(options: {
         synthesisPicks,
         homepageLeadDisplay,
         pipeline,
+        analysisClusters,
     } = homepageState;
 
     let supportingClusters = homepageState.supportingClusters;
@@ -147,6 +148,7 @@ export function buildHomepageViewModel(options: {
         wireArticles: homepageState.wireArticles,
         excludedClusterIds,
         isHomepage,
+        analysisClusters,
     });
 
     ({
@@ -169,12 +171,26 @@ export function buildHomepageViewModel(options: {
         topWireArticles,
     } = homepageSections;
 
+    const feedExcludeIds = new Set<string>();
+    [
+        leadCluster,
+        ...supportingFeatured,
+        ...supportingCompact,
+        ...consensusClusters,
+        ...perspectivesClusters,
+        ...radarClusters,
+        ...displayedTrendingClusters,
+    ].forEach((cluster) => {
+        if (cluster?.cluster_id) feedExcludeIds.add(cluster.cluster_id);
+    });
+
     const unifiedFeedItems = isHomepage
         ? buildUnifiedFeedItems({
             developmentsFeatured,
             developmentsCompact,
             globalClusters,
             wireClusters,
+            excludeIds: feedExcludeIds,
         })
         : [];
     const pluralismPct = stats?.intelligence?.pluralism?.pluralism_pct ?? null;
@@ -336,7 +352,7 @@ export function buildHomepageViewModel(options: {
         },
         {
             label: t('home.analysis_overview_pluralism'),
-            value: `${pluralismPct}%`,
+            value: Number.isFinite(pluralismPct as number) ? `${pluralismPct}%` : '—',
             note: t('home.analysis_overview_pluralism_note'),
         },
         {

@@ -280,8 +280,8 @@ async def drain_stale_clusters(
         return {"status": "success", "message": "Nema zastarelih klastera za osvežavanje.", "enqueued": 0}
 
     celery_app.send_task(
-        "tasks.intelligence.auto_summarize_task",
-        args=[sample_ids[:40]],
+        "tasks.summarization.build_extractive_clusters_task",
+        kwargs={"hours": 168, "limit": 60},
         countdown=5,
     )
     return {
@@ -342,7 +342,7 @@ async def get_cluster_synthesis_trace(
 
     trace = await build_cluster_synthesis_trace(cluster_id, lang=lang)
     if not trace.get("article_count"):
-        raise HTTPException(status_code=404, detail="Klaster nije pronađen.")
+        raise HTTPException(status_code=404, detail="Кластерот не е пронајден.")
     return {"status": "success", "trace": trace}
 
 

@@ -576,7 +576,7 @@ def send_profile_weekly_digests_task():
 
             if channel == "email":
                 # Build custom HTML email briefing
-                _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.live").rstrip("/")
+                _PUBLIC_SITE_URL = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.mk").rstrip("/")
                 from core.signed_tokens import build_newsletter_unsubscribe_url
 
                 unsubscribe_url = build_newsletter_unsubscribe_url(_PUBLIC_SITE_URL, target, lang)

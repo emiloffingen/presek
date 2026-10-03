@@ -1,6 +1,8 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import { safeJsonForScript } from '../../lib/safeJson';
+import sourceSerif400Url from '@fontsource/source-serif-4/files/source-serif-4-cyrillic-400-normal.woff2?url';
+import notoSerif900Url from '@fontsource/noto-serif/files/noto-serif-cyrillic-900-normal.woff2?url';
 
 interface Props {
   lang: 'sr' | 'mk';
@@ -9,8 +11,6 @@ interface Props {
   description: string;
   canonicalUrl: string;
   imageUrl: string;
-  srHref: string;
-  mkHref: string;
   type: string;
   robots?: string;
   image: string;
@@ -27,8 +27,6 @@ const {
   description,
   canonicalUrl,
   imageUrl,
-  srHref,
-  mkHref,
   type,
   robots,
   image,
@@ -41,6 +39,10 @@ const {
 const ClientRouterAny = ClientRouter as any;
 ---
 
+<link rel="preconnect" href="https://www.googletagmanager.com" />
+<link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+<link rel="preload" as="font" type="font/woff2" href={sourceSerif400Url} crossorigin="anonymous" />
+<link rel="preload" as="font" type="font/woff2" href={notoSerif900Url} crossorigin="anonymous" />
 <script async src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`} nonce={cspNonce}></script>
 <script is:inline nonce={cspNonce} define:vars={{ gtagId }}>
   window.dataLayer = window.dataLayer || [];
@@ -58,7 +60,7 @@ const ClientRouterAny = ClientRouter as any;
 <script is:inline src="/js/presek-boot.js?v=2"></script>
 
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link rel="icon" type="image/svg+xml" href="/img/presek_emblem.svg?v=4" />
 <link rel="apple-touch-icon" href="/img/icons/presek-apple-touch.png?v=1" />
 <link rel="manifest" href="/manifest.json" />
@@ -73,9 +75,8 @@ const ClientRouterAny = ClientRouter as any;
 {robots && <meta name="robots" content={robots} />}
 
 <link rel="canonical" href={canonicalUrl} />
-<link rel="alternate" hreflang="sr-Latn-RS" href={srHref} />
-<link rel="alternate" hreflang="mk-MK" href={mkHref} />
-<link rel="alternate" hreflang="x-default" href={srHref} />
+<link rel="alternate" hreflang="mk-MK" href={canonicalUrl} />
+<link rel="alternate" hreflang="x-default" href={canonicalUrl} />
 
 {image && !image.includes('presek_emblem') && (
   <link rel="preload" as="image" href={imageUrl} fetchpriority="high" />
@@ -91,7 +92,7 @@ const ClientRouterAny = ClientRouter as any;
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@presek_rs" />
+<meta name="twitter:site" content={lang === 'sr' ? '@presek_rs' : '@presek_mk'} />
 <meta name="twitter:title" content={pageTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={imageUrl} />

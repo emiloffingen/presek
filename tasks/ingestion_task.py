@@ -11,6 +11,7 @@ if _ROOT not in sys.path:
 from celery import chain, group
 
 from core.celery_app import celery_app
+from core.config import FULLTEXT_ENABLED, FULLTEXT_MAX_CHARS
 from core.crawler import crawler
 from core.database import db_manager as db
 from core.health import record_refresh, record_task_event
@@ -21,11 +22,14 @@ from core.ingestion_lock import (
     try_acquire_ingestion_lock,
 )
 from core.services.notifier import SystemNotifier as Notifier
+from core.text_extraction import clean_extracted_article_text
 from core.version import APP_VERSION_LABEL
 from tasks.utils import (
     invalidate_public_data_caches,
     invalidate_public_data_caches_debounced,
+    is_permanent_crawl_error,
     log,
+    mark_crawl_dead,
     safe_async_run,
 )
 
@@ -45,6 +49,8 @@ def crawl_article_task(article_id, url):
         res = safe_async_run(crawler.extract_all(url))
         if res.get("error"):
             log.warning(f"Crawl failed for article {article_id}: {res['error']}")
+            if is_permanent_crawl_error(res["error"]):
+                mark_crawl_dead(article_id)
             return
 
         # Build UPDATE query using whitelist to prevent SQL injection
@@ -53,7 +59,6 @@ def crawl_article_task(article_id, url):
 
         # Only allow whitelisted columns
         column_mappings = {
-            "content": "full_content",
             "image_url": "image_url",
         }
 
@@ -63,6 +68,28 @@ def crawl_article_task(article_id, url):
                 params.append(res[crawler_key])
 
         image_url = res.get("image_url")
+
+        # Full-text transparency: persist the extracted body when enabled and the
+        # source has not opted out (sources.full_text_allowed).
+        if FULLTEXT_ENABLED and res.get("content"):
+            allowed = True
+            try:
+                rows = db.execute(
+                    "SELECT s.full_text_allowed FROM articles a JOIN sources s ON a.source = s.name WHERE a.id = %s",
+                    (article_id,),
+                )
+                if rows:
+                    allowed = bool(rows[0].get("full_text_allowed", True))
+            except Exception as e:
+                log.debug(f"full_text_allowed lookup failed for {article_id}: {e}")
+
+            if allowed:
+                body = clean_extracted_article_text(str(res.get("content") or "")).strip()
+                if len(body) > FULLTEXT_MAX_CHARS:
+                    body = body[:FULLTEXT_MAX_CHARS]
+                if body:
+                    updates.append("full_content = %s")
+                    params.append(body)
 
         if updates:
             params.append(article_id)
@@ -75,7 +102,7 @@ def crawl_article_task(article_id, url):
             if image_url:
                 post_crawl_tasks.append(process_article_image_task.signature(args=(article_id, image_url)))
 
-            if res.get("content"):
+            if res.get("content") or image_url:
                 post_crawl_tasks.append(post_crawl_invalidation_task.signature(args=(article_id,)))
 
             if post_crawl_tasks:

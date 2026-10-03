@@ -1,5 +1,21 @@
 import DOMPurify from "isomorphic-dompurify";
 
+// DOMPurify does not add rel to target="_blank" links on its own, so AI/source
+// links rendered into synthesis could reverse-tabnab. Install the hook once.
+let relHookInstalled = false;
+function ensureBlankTargetRelHook() {
+  if (relHookInstalled) return;
+  relHookInstalled = true;
+  DOMPurify.addHook("afterSanitizeAttributes", (node: any) => {
+    if (node?.tagName === "A" && node.getAttribute("target") === "_blank") {
+      const rel = node.getAttribute("rel") || "";
+      if (!rel.includes("noopener")) {
+        node.setAttribute("rel", `${rel} noopener noreferrer`.trim());
+      }
+    }
+  });
+}
+
 /**
  * Sanitize HTML content to prevent XSS attacks.
  *
@@ -25,6 +41,8 @@ export function sanitizeHtml(dirty: string): string {
   const trimmed = dirty.trim();
   if (!trimmed) return "";
 
+  ensureBlankTargetRelHook();
+
   return DOMPurify.sanitize(trimmed, {
     // Only allow safe formatting and structural tags
     ALLOWED_TAGS: [
@@ -46,10 +64,9 @@ export function sanitizeHtml(dirty: string): string {
       "onmouseout", "onmousedown", "onmouseup", "onkeydown",
       "onkeyup", "onfocus", "onblur", "javascript:", "data:"
     ],
-    // Force all links to have rel="noopener noreferrer" if target="_blank"
+    // Attributes are allowlisted above; the afterSanitizeAttributes hook adds
+    // rel="noopener noreferrer" to target="_blank" links.
     ADD_ATTR: ["target"],
-    // Transform target="_blank" to include rel="noopener noreferrer"
-    ADD_URI_SAFE_ATTR: ["target"],
     // Only allow http:, https:, and mailto: URLs in href
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|#|\/)/i,
     // Return DOM clobbering-safe string (no document.write, etc.)

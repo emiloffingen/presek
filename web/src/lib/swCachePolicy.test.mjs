@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   shouldCacheApiPath,
   shouldStoreApiResponse,
+  offlinePageForPath,
 } from '../../public/sw-cache-policy.js';
 
 test('shouldCacheApiPath allows public read feeds', () => {
@@ -31,4 +34,28 @@ test('shouldStoreApiResponse respects private cache directives', () => {
     false,
   );
   assert.equal(shouldStoreApiResponse(new Response('ok', { status: 200 })), true);
+});
+
+test('offlinePageForPath picks the locale-aware fallback', () => {
+  assert.equal(offlinePageForPath('/'), '/offline');
+  assert.equal(offlinePageForPath('/cluster/abc'), '/offline');
+  assert.equal(offlinePageForPath('/mk'), '/mk/offline');
+  assert.equal(offlinePageForPath('/mk/'), '/mk/offline');
+  assert.equal(offlinePageForPath('/mk/cluster/abc'), '/mk/offline');
+  assert.equal(offlinePageForPath(undefined), '/offline');
+  assert.equal(offlinePageForPath(''), '/offline');
+});
+
+test('sw.js precaches the offline fallbacks and uses the shared policy', () => {
+  const sw = readFileSync(
+    fileURLToPath(new URL('../../public/sw.js', import.meta.url)),
+    'utf8',
+  );
+  assert.match(sw, /offlinePageForPath/, 'sw.js should reuse the shared offline policy');
+  assert.match(sw, /'\/offline'/, 'sw.js should precache /offline');
+  assert.match(sw, /'\/mk\/offline'/, 'sw.js should precache /mk/offline');
+  assert.match(sw, /navigationPreload/, 'sw.js should enable navigation preload');
+  const version = sw.match(/const CACHE_NAME = 'presek-v(\d+)'/);
+  assert.ok(version, 'sw.js should declare a versioned CACHE_NAME');
+  assert.ok(Number(version[1]) >= 31, 'CACHE_NAME should be bumped to invalidate old caches');
 });

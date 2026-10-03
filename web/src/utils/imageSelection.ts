@@ -37,9 +37,13 @@ function normalizeText(value?: string | null) {
 
 function fallbackContext(cluster: ClusterLike) {
   const primary = cluster?.articles?.[0] || {};
+  // Keep the fallback title short: it is percent-encoded into every proxied
+  // image URL (src, srcset x3, data-fallback-url), so a full 150-char headline
+  // costs ~1KB per card. 70 chars is plenty for a thumbnail placeholder.
+  const fullTitle = cluster?.synthetic_headline || primary.title || cluster?.synthetic_standfirst || '';
   return {
     cid: cluster?.cluster_id || '',
-    title: cluster?.synthetic_headline || primary.title || cluster?.synthetic_standfirst || '',
+    title: fullTitle.length > 70 ? fullTitle.slice(0, 70).trimEnd() : fullTitle,
     category: primary.category || primary.topic || cluster?.topics?.[0] || cluster?.tags?.[0] || 'vesti',
   };
 }
@@ -104,14 +108,17 @@ export function buildProxyFallbackUrl(
   const context = fallbackContext(cluster);
   const params = new URLSearchParams();
   if (context.cid) params.set('cid', context.cid);
-  if (context.title) params.set('t', context.title);
+  // The t= param is only used to label the server-side fallback placeholder.
+  // Percent-encoded Cyrillic headlines are bulky and repeated in src+srcset, so
+  // cap the length; a shorter label is enough for the placeholder.
+  if (context.title) params.set('t', context.title.slice(0, 90));
   if (context.category) params.set('cat', context.category);
   params.set('lang', lang);
   params.set('w', String(VARIANT_WIDTH[variant]));
   return proxyUrl(`/proxy?${params.toString()}`);
 }
 
-export function buildEmergencyFallbackUrl(lang: SiteLang = 'sr') {
+export function buildEmergencyFallbackUrl(lang: SiteLang = 'mk') {
   const params = new URLSearchParams({
     cat: lang === 'mk' ? 'вести' : 'vesti',
     lang,
@@ -183,7 +190,7 @@ export function chooseClusterImage(
       lang,
     });
     if (context.cid) params.set('cid', context.cid);
-    if (context.title && variant !== 'hero') params.set('t', context.title);
+    if (context.title && variant !== 'hero') params.set('t', context.title.slice(0, 90));
     if (context.category) params.set('cat', context.category);
     proxiedUrl = proxyUrl(`/proxy?${params.toString()}`);
   }

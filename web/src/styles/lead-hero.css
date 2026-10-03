@@ -253,6 +253,17 @@
 		color: color-mix(in srgb, var(--foreground) 64%, var(--muted-foreground));
 	}
 
+	.lead-edition-link {
+		margin-left: 0.4rem;
+		color: var(--presek-mark);
+		text-decoration: none;
+		border-bottom: 1px solid color-mix(in srgb, var(--presek-mark) 45%, transparent);
+	}
+
+	.lead-edition-link:hover {
+		border-bottom-color: var(--presek-mark);
+	}
+
 	.lead-summary {
 		font-family: var(--font-nyt-body);
 		font-size: var(--text-lg);

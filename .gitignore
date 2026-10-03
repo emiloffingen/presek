@@ -85,7 +85,8 @@ digests/
 .hf_cache/
 
 # Application specific
-celerybeat-schedule
+celerybeat-schedule*
+presek-runtime/
 *.log
 *.pid
 logs/
@@ -140,3 +141,12 @@ certs/
 
 # Previews
 previews/
+
+web/public/downloads/
+docs/tablet-mcp-setup.txt
+.pubkey
+
+# Runtime state / data (DB backups, logs, generated artifacts)
+shared/
+shared/backups/
+shared/logs/

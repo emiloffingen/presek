@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
+const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.mk').replace(/\/+$/, '');
 const API_URL = apiBaseUrl();
 
 function escapeXml(str: string): string {
@@ -86,8 +86,8 @@ export const GET: APIRoute = async () => {
     <language>${language}</language>
     <pubDate>${now}</pubDate>
     <lastBuildDate>${now}</lastBuildDate>
-    <managingEditor>editor@presek.live</managingEditor>
-    <webMaster>webmaster@presek.live</webMaster>
+    <managingEditor>editor@presek.mk</managingEditor>
+    <webMaster>webmaster@presek.mk</webMaster>
     <atom:link href="${escapeXml(siteUrl)}/${rssPath}" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

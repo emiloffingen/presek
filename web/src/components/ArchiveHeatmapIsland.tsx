@@ -15,29 +15,36 @@ interface HeatmapDay {
 interface Props {
   selectedDate?: string;
   lang?: string;
+  q?: string;
+  source?: string;
+  topic?: string;
 }
 
-export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Props) {
+export default function ArchiveHeatmapIsland({ selectedDate, lang = 'mk', q = '', source = '', topic = '' }: Props) {
   const [data, setData] = useState<HeatmapDay[]>([]);
   const [loading, setLoading] = useState(true);
   const activeLang = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(activeLang, archive, news);
 
   useEffect(() => {
-    console.log('[ArchiveHeatmap] Fetching data...');
     fetch(`${apiBaseUrl()}/archive/heatmap?lang=${lang}`)
       .then(res => res.json())
       .then(json => {
-        console.log('[ArchiveHeatmap] Data received:', json);
         if (json.status === 'success') {
           setData(json.data);
         }
       })
-      .catch(err => {
-        console.error('[ArchiveHeatmap] Fetch failed:', err);
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [lang]);
+
+  const archiveHref = (day: string) => {
+    const params = new URLSearchParams({ date: day });
+    if (q) params.set('q', q);
+    if (source) params.set('source', source);
+    if (topic) params.set('topic', topic);
+    return `${localePathForLang('/archive', activeLang)}?${params.toString()}`;
+  };
 
   if (loading) {
     return (
@@ -136,7 +143,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'sr' }: Prop
             return (
               <a
                 key={dayData.day}
-                href={`${localePathForLang('/archive', activeLang)}?date=${dayData.day}`}
+                href={archiveHref(dayData.day)}
                 className={`group flex flex-col items-center justify-end h-full gap-1 ${isActive ? 'scale-110 z-20' : ''}`}
                 title={`${getLabel(dayData.day)}: ${dayData.total_clusters} ${t('news.section_default').toLowerCase()}, ${dayData.breaking_clusters} ${t('archive.heatmap_urgent').toLowerCase()}`}
               >

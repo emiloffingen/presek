@@ -31,10 +31,10 @@ test('buildEmbedClusterUrl is locale-aware', () => {
 });
 
 test('buildEmbedTrustViewModel maps cluster fixture contract', () => {
-  const vm = buildEmbedTrustViewModel(fixture.data, 'sr', 'cluster-42');
+  const vm = buildEmbedTrustViewModel(fixture.data, 'mk', 'cluster-42');
   assert.equal(vm.headline, 'Vlada usvojila izmene zakona');
   assert.equal(vm.trustChip.sourcesCount, 3);
   assert.equal(vm.trustSummary.tier, 'verified');
-  assert.match(vm.clusterUrl, /presek\.live\/cluster\/cluster-42/);
+  assert.match(vm.clusterUrl, /presek\.mk\/cluster\/cluster-42/);
   assert.ok(vm.detail);
 });

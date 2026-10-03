@@ -321,3 +321,11 @@ def _restore_runtime_modules(request):
             sys.modules.pop("database", None)
         else:
             sys.modules["database"] = original_db
+
+
+@pytest.fixture
+def ai_enabled(monkeypatch):
+    """AI is off by default (PRESEK_AI_ENABLED=0); provider-cascade tests need it on."""
+    import core.ai_engine
+
+    monkeypatch.setattr(core.ai_engine, "AI_ENABLED", True)

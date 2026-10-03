@@ -3,20 +3,21 @@
 import '../../styles/home-page.css';
 import '../../styles/home-feed.css';
 import '../../styles/next-level-home.css';
+import '../../styles/home-v4.css';
+import '../../styles/home-ux.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
 import AnalysisBandsLazy from './AnalysisBandsLazy.astro';
-import AnalizaSectionNav from './AnalizaSectionNav.astro';
 import Footer from '../Footer.astro';
 
 import ForYouIsland from '../ForYouIsland.tsx';
 import LeadHero from './LeadHero.astro';
+import SourceComparisonPanel from './SourceComparisonPanel.astro';
 import SupportingBand from './SupportingBand.astro';
 import { ErrorBoundary } from '../ErrorBoundary.tsx';
 import SynthesisPicksSection from './SynthesisPicksSection.astro';
 import DevelopmentsSection from './DevelopmentsSection.astro';
 import HomeUnifiedFeed from './HomeUnifiedFeed.astro';
-import HomePregledTeaser from './HomePregledTeaser.astro';
 import HomeSynthesisTeaser from './HomeSynthesisTeaser.astro';
 import PresekInlinedAd from '../PresekInlinedAd.astro';
 import PresekRailAd from '../PresekRailAd.astro';
@@ -26,10 +27,10 @@ import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
-import HomeBriefingTeaser from './HomeBriefingTeaser.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
+import HomeStatsStrip from './HomeStatsStrip.astro';
+import HomeTrendingFocus from './HomeTrendingFocus.astro';
 import HomeEditionModeDock from './HomeEditionModeDock.astro';
-import HomeStartHere from './HomeStartHere.astro';
 import LeadEvidenceChips from './LeadEvidenceChips.astro';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiBaseUrl } from '../../lib/apiBase';
@@ -57,13 +58,21 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 const API_URL = apiBaseUrl();
 
 async function fetchJson(url: string) {
-    const response = await fetch(url);
-    if (!response.ok) {
-        const err: any = new Error(`Request failed: ${response.status} ${url}`);
-        err.status = response.status;
-        throw err;
+    // Bound the primary SSR fetch so a hung backend can't hold the whole
+    // homepage render open (the fallback path should still get a chance).
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) {
+            const err: any = new Error(`Request failed: ${response.status} ${url}`);
+            err.status = response.status;
+            throw err;
+        }
+        return response.json();
+    } finally {
+        clearTimeout(timer);
     }
-    return response.json();
 }
 
 const homepageVm = await loadHomepageViewModel({
@@ -176,8 +185,7 @@ if (analizaNavItems.length > 0) {
 >
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
-	<main
-		id="main-content"
+	<div
 		class:list={[
 			'site-layout broadsheet-layout py-0 max-w-full home-page-scope',
 			isPregled ? 'home-page-variant-pregled' : 'home-page-variant-feed',
@@ -197,7 +205,13 @@ if (analizaNavItems.length > 0) {
 			<div class="broadsheet-main home-mobile-feed">
                 {!error && isHomepage && (
                     <div class="home-mobile-order-edition">
-                        <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} />
+                        <DailyEditionBar lang={lang} modeLabel={dailyModeLabel} stats={stats} />
+                        {!q && !category && !topic && !entity && !subcategory && clusters.length > 0 && (
+                            <HomeStatsStrip clusters={clusters} lang={lang} />
+                        )}
+                        {!q && !category && !topic && !entity && !subcategory && trending.length > 0 && (
+                            <HomeTrendingFocus trending={trending} lang={lang} />
+                        )}
                         {isPregled && (
                             <a href={l('/')} class="home-pregled-nav-link">{t('home.back_to_feed')}</a>
                         )}
@@ -238,6 +252,9 @@ if (analizaNavItems.length > 0) {
                         {hasPartialFeedContent && (
                             <p class="home-error-note">{t('home.partial_error_note')}</p>
                         )}
+                        <button type="button" class="home-error-retry" data-reload>
+                            {t('home.retry')}
+                        </button>
                     </div>
                 )}
 
@@ -264,7 +281,7 @@ if (analizaNavItems.length > 0) {
                             showHeroVisual={showLeadHeroVisual}
                             pipelineBusy={pipelineBusy}
 						/>
-                        {leadStatus && leadEvidenceItems.length > 0 && (
+						{leadStatus && leadEvidenceItems.length > 0 && (
                             <div class="homepage-analiza-only">
                                 <LeadEvidenceChips
                                     statusLabel={leadStatus.label}
@@ -275,6 +292,9 @@ if (analizaNavItems.length > 0) {
                                 />
                             </div>
                         )}
+                        <div class="home-source-compare-slot">
+                            <SourceComparisonPanel cluster={leadCluster} lang={lang} />
+                        </div>
 					</div>
 				)}
 
@@ -287,12 +307,6 @@ if (analizaNavItems.length > 0) {
 						/>
 					</div>
 				)}
-
-                {!error && isHomepage && briefing && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-briefing home-feed-only home-edition-core">
-                        <HomeBriefingTeaser briefing={briefing} getBriefingSnippet={getBriefingSnippet} />
-                    </div>
-                )}
 
                 {isHomepage && !isPregled && !error && (unifiedFeedItems.length > 0 || globalClusters.length > 0) && (
                     <div id="home-unified-feed" class="section-wrapper home-mobile-order-feed home-edition-core presek-section-mark home-feed-only">
@@ -311,44 +325,7 @@ if (analizaNavItems.length > 0) {
                 )}
 
                 {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-expand-analysis home-edition-expand-panel home-mobile-order-expand home-feed-only">
-                        <p class="type-kicker home-expand-analysis-kicker">{t('home.mode_analiza')}</p>
-                        {expandPreviewChips.length > 0 && (
-                            <div class="home-expand-analysis-preview" aria-label={t('home.expand_preview_label')}>
-                                {expandPreviewChips.map((chip) => (
-                                    <span class="home-expand-analysis-chip">{chip}</span>
-                                ))}
-                            </div>
-                        )}
-                        <button type="button" class="home-expand-analysis-btn" data-expand-home-analysis>
-                            {t('home.mode_open_analiza')}
-                        </button>
-                        <p class="home-expand-analysis-copy">
-                            {t('home.mode_analiza_hint')}
-                        </p>
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && !q && !category && !topic && !entity && !subcategory && (
-                    <div class="home-mobile-order-start-here home-feed-only home-edition-collapsed">
-                        <HomeStartHere lang={lang} />
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-mobile-order-pregled-teaser home-feed-only homepage-analiza-only">
-                        <HomePregledTeaser lang={lang} pluralismPct={pluralismPct} stats={stats} />
-                    </div>
-                )}
-
-                {!error && isHomepage && analizaNavItems.length > 0 && (
-                    <div class="homepage-analiza-only">
-                        <AnalizaSectionNav items={analizaNavItems} lang={lang} />
-                    </div>
-                )}
-
-                {!error && isHomepage && !isPregled && (
-                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only home-edition-collapsed">
+                    <div class="section-wrapper home-inline-ad-slot home-inline-ad-slot--rail-feed home-feed-only">
                         <PresekRailAd class="home-feed-rail-ad" />
                     </div>
                 )}
@@ -466,31 +443,21 @@ if (analizaNavItems.length > 0) {
 
 				</div>
 
-                <div id="home-core-feed" class:list={['home-mobile-order-feed-extended home-feed-core home-feed-only', isHomepage ? 'homepage-analiza-only' : 'home-filtered-feed-extended']}>
+                {!isHomepage && (
+                <div id="home-core-feed" class="home-mobile-order-feed-extended home-feed-core home-feed-only home-filtered-feed-extended">
                 {!error && !isPregled && (developmentsFeatured.length > 0 || developmentsCompact.length > 0) && (
                     <div class="section-wrapper presek-section-mark">
                         <DevelopmentsSection
-                            title={isHomepage ? t('home.developing_title') : (activeFilterLabel || t('home.feed_title'))}
-                            note={isHomepage ? t('home.developing_desc') : t('layout.filtered_description')}
+                            title={activeFilterLabel || t('home.feed_title')}
+                            note={t('layout.filtered_description')}
                             developmentsFeatured={developmentsFeatured}
                             developmentsCompact={developmentsCompact}
-                            tone={isHomepage ? 'developing' : 'default'}
-                        />
-                    </div>
-                )}
-                {!error && isHomepage && !isPregled && wireClusters.length > 0 && (
-                    <div class="section-wrapper presek-section-mark">
-                        <DevelopmentsSection
-                            title={t('home.wire_title')}
-                            note={t('home.wire_desc')}
-                            developmentsFeatured={wireClusters}
-                            developmentsCompact={[]}
-                            variant="wire"
-                            tone="wire"
+                            tone="default"
                         />
                     </div>
                 )}
                 </div>
+                )}
 
                 <div class="home-mobile-order-feed-extended homepage-analiza-only">
                 {isHomepage && forYouClusters.length > 0 && (
@@ -504,7 +471,7 @@ if (analizaNavItems.length > 0) {
                 </div>
 
                 {!error && isHomepage && !isPregled && feedSynthesisTeaser && showAnalysisLayers && (
-                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-analiza-deferred home-feed-only">
+                    <div class="section-wrapper home-mobile-order-synthesis-teaser home-feed-only">
                         <HomeSynthesisTeaser
                             cluster={feedSynthesisTeaser}
                             lang={lang}
@@ -527,7 +494,7 @@ if (analizaNavItems.length > 0) {
 				/>
 			</div>
 		</div>
-	</main>
+	</div>
 
 	<Footer />
 </Layout>

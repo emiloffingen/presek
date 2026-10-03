@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from core.api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
-from core.config import BREAKING_SCORE_THRESHOLD
+from core.config import BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
+from core.embeddings import local_similarity
 from core.limiter import custom_rate_limit
 from utils import annotate_cluster_articles, delete_cache, is_balanced, score_cluster, score_cluster_for_homepage
 
@@ -223,7 +224,7 @@ async def save_profile_sync(request: Request, csrf_valid: bool = Depends(verify_
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = _validate_sync_token_value(payload.get("token"))
     incoming = _normalize_synced_profile(payload.get("profile") or {})
     existing = await db.async_execute_one(
@@ -269,10 +270,10 @@ async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(ver
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = _validate_sync_token_value(payload.get("token"))
     if not await db.async_execute_one("SELECT 1 FROM synced_reader_profiles WHERE sync_token = %s", (token,)):
-        raise HTTPException(status_code=400, detail="Nevaliden kluc za sinhronizacija")
+        raise HTTPException(status_code=400, detail="Невалиден клуч за синхронизација")
     sub = _normalize_server_delivery_subscription(payload.get("subscription") or {})
     locale = str(payload.get("locale") or "sr").strip().lower()[:5]
     await db.async_execute(
@@ -300,7 +301,7 @@ async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(ver
     return {"status": "success", "subscription": sub}
 
 
-async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = "sr") -> List[dict]:
+async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = DEFAULT_LANG) -> List[dict]:
     """
     Core personalization search using pgvector. Computes dynamic interest vectors
     from recently read articles or followed topics, and returns semantically matching clusters.
@@ -368,11 +369,11 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         )
         SELECT DISTINCT ON (cluster_id) *
         FROM pool
-        WHERE similarity > 0.55
+        WHERE similarity > %s
         ORDER BY cluster_id, similarity DESC
         LIMIT 100
     """,  # nosec B608 - static freshness fragment with bound params
-        (vec_str, country_filter, recent_ids),
+        (vec_str, country_filter, recent_ids, local_similarity(0.55)),
     )
 
     # 3. Group and annotate
@@ -389,8 +390,10 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
     if not cids:
         return []
 
+    from routes.news import _ARTICLE_LIST_COLUMNS
+
     all_articles = await db.async_execute(
-        f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",  # nosec B608 - static column constant with bound params
+        f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC",  # nosec B608 - static column constant with bound params
         (cids,),
     )
     meta_rows = await db.async_execute("SELECT * FROM cluster_metadata WHERE cluster_id = ANY(%s)", (cids,))
@@ -475,7 +478,7 @@ async def get_personalized_news_sync(request: Request, csrf_valid: bool = Depend
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
 
     profile = _normalize_synced_profile(payload.get("profile") or {})
     limit = payload.get("limit") or 6
@@ -497,7 +500,7 @@ async def save_suggestion_events(request: Request, csrf_valid: bool = Depends(ve
     try:
         payload = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nevaliden JSON")
+        raise HTTPException(status_code=400, detail="Невалиден JSON")
     token = str(payload.get("token") or "").strip()
     client_id = str(payload.get("clientId") or "").strip()[:64]
     events = payload.get("events") or []
@@ -505,7 +508,7 @@ async def save_suggestion_events(request: Request, csrf_valid: bool = Depends(ve
         raise HTTPException(status_code=400, detail="Nedostasuvaat podatoci")
     # Validate client_id
     if len(client_id) < 1 or len(client_id) > 64:
-        raise HTTPException(status_code=400, detail="Nevaliden klient ID")
+        raise HTTPException(status_code=400, detail="Невалиден клиент ID")
     for item in events[:24]:
         surface = _normalize_suggestion_surface(item.get("surface"))
         etype = _normalize_suggestion_event_type(item.get("eventType"))

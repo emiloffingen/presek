@@ -1,0 +1,113 @@
+---
+import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+  clusters?: any[];
+  lang?: string;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const urlLang = getLangFromUrl(Astro.url, hostHeader);
+const lang = (Astro.props.lang || urlLang) as 'sr' | 'mk';
+const clusters = Array.isArray(Astro.props.clusters) ? Astro.props.clusters : [];
+const t = useTranslations(lang);
+const sourcesPath = localePath('/izvori', lang, hostHeader);
+
+const sourceSet = new Set<string>();
+let reports = 0;
+let factChecks = 0;
+for (const cluster of clusters) {
+  const articles = Array.isArray(cluster?.articles) ? cluster.articles : [];
+  reports += articles.length;
+  for (const article of articles) {
+    if (article?.source) sourceSet.add(article.source);
+  }
+  if (cluster?.has_fact_check) factChecks += 1;
+}
+
+const items = [
+  { label: t('home.today_stats_stories'), value: clusters.length },
+  { label: t('home.today_stats_sources'), value: sourceSet.size },
+  { label: t('home.today_stats_reports'), value: reports },
+  { label: t('home.today_stats_factchecks'), value: factChecks },
+];
+---
+
+<div class="today-stats-strip" role="group" aria-label={t('home.today_stats_title')}>
+  <span class="today-stats-title">{t('home.today_stats_title')}</span>
+  <div class="today-stats-items">
+    {items.map((item) => (
+      <span class="today-stats-item">
+        <strong>{item.value}</strong>
+        <span class="today-stats-label">{item.label}</span>
+      </span>
+    ))}
+  </div>
+  <a href={sourcesPath} class="today-stats-link">{t('home.stats_open_sources')}</a>
+</div>
+
+<style>
+  .today-stats-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    padding: 0.5rem 0;
+    margin: 0.35rem 0 0.75rem;
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, var(--border));
+    font-family: var(--font-ui);
+  }
+
+  .today-stats-title {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--presek-mark);
+  }
+
+  .today-stats-items {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.1rem;
+  }
+
+  .today-stats-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+  }
+
+  .today-stats-item strong {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-foreground);
+  }
+
+  .today-stats-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+  }
+
+  .today-stats-link {
+    margin-left: auto;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--presek-mark);
+    text-decoration: none;
+  }
+
+  .today-stats-link:hover {
+    text-decoration: underline;
+  }
+</style>

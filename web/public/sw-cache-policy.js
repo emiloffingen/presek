@@ -27,7 +27,6 @@ export const API_CACHE_ALLOW_PREFIXES = [
   '/api/search',
   '/api/cluster/',
   '/api/entity-graph/',
-  '/api/intelligence/briefing',
   '/api/stats/',
   '/api/v1/home',
   '/api/v1/news',
@@ -36,7 +35,6 @@ export const API_CACHE_ALLOW_PREFIXES = [
   '/api/v1/search',
   '/api/v1/cluster/',
   '/api/v1/entity-graph/',
-  '/api/v1/intelligence/briefing',
   '/api/v1/stats/',
 ];
 
@@ -59,4 +57,15 @@ export function shouldStoreApiResponse(response) {
     return false;
   }
   return true;
+}
+
+/**
+ * Pick the offline fallback page for a navigation request. The site serves the
+ * Macedonian edition from both `/` and `/mk/*`, so a request under `/mk` falls
+ * back to `/mk/offline` and everything else to `/offline`.
+ */
+export function offlinePageForPath(pathname) {
+  const p = pathname || '';
+  if (p === '/mk' || p.startsWith('/mk/')) return '/mk/offline';
+  return '/offline';
 }

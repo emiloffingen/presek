@@ -17,7 +17,6 @@ import { localePathForLang, type Locale } from '../lib/localePaths';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { common } from '../i18n/namespaces/common';
 import { getDisplayTitle, getStoryPreviewText, highlightScores, getPersonalizedText } from '../utils/textUtils';
-import { PerformanceMonitor } from './PerformanceMonitor';
 
 function getSummary(cluster: any, lang: string) {
   const article = cluster?.articles?.[0];
@@ -37,12 +36,9 @@ interface ForYouIslandProps {
   lang?: Locale;
 }
 
-function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = 'sr' }: ForYouIslandProps) {
+function ForYouIslandComponent({ clusters = [], excludeClusterIds = [], lang = 'mk' }: ForYouIslandProps) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
-  
-  // Performance monitoring - only in development
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  isDevelopment && <PerformanceMonitor componentName="ForYouIsland" enabled={isDevelopment} />;
+
   const t = useClientTranslations(locale, common);
   const profile = useStore($profile);
   const syncToken = useStore($syncToken);
@@ -312,7 +308,7 @@ ForYouIsland.displayName = 'ForYouIsland';
 
 export default ForYouIsland;
 
-function OnboardingIslandCompact({ profile, recommendations, lang = 'sr' }: any) {
+function OnboardingIslandCompact({ profile, recommendations, lang = 'mk' }: any) {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, common);
   if (((profile?.followedTopics || []).length + (profile?.followedSources || []).length >= 5)) return null;

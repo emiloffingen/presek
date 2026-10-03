@@ -26,7 +26,6 @@ def _load_required_modules() -> tuple[str, ...]:
             "core.api_fast",
             "core.health",
             "tasks.intelligence.synthesis",
-            "tasks.intelligence.synthesis_pipeline",
             "tasks.delivery.briefing",
         )
     contract = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
@@ -42,15 +41,7 @@ def _load_required_modules() -> tuple[str, ...]:
         "core.synthesis_quality",
         "core.synthesis_trace",
         "core.personalization_score",
-        "tasks.intelligence.synthesis_persist",
-        "tasks.intelligence.synthesis_generation",
-        "tasks.intelligence.synthesis_grounding",
-        "tasks.intelligence.synthesis_translation",
         "tasks.intelligence.synthesis_bundle",
-        "tasks.intelligence.synthesis_merge",
-        "tasks.intelligence.synthesis_scheduling",
-        "tasks.delivery.briefing_quality",
-        "tasks.delivery.briefing_alerts",
     ):
         if extra not in seen:
             seen.add(extra)

@@ -28,8 +28,8 @@ const t = (key, params = {}) => {
 test('trustFreshnessFixtures cover pending synthesis trust chip', () => {
   const pending = trustChipFixtures.find((fixture) => fixture.id === 'pending-synthesis');
   assert.ok(pending);
-  const chip = buildTrustChip(pending.props, 'sr');
-  assert.equal(chip.label, 'U pripremi');
+  const chip = buildTrustChip(pending.props, 'mk');
+  assert.equal(chip.label, 'Се подготвува');
 });
 
 test('trustFreshnessFixtures cover pending freshness badge tone', () => {

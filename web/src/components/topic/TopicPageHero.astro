@@ -21,7 +21,6 @@ interface Props {
   clusterCount: number;
   uniqueSourceCount: number;
   totalReports: number;
-  breakingCount: number;
   synthesisLines: string[];
   topicFollowSuggestions: TopicFollowSuggestion[];
   sourceFollowSuggestions: SourceFollowSuggestion[];
@@ -33,7 +32,6 @@ interface Props {
     statsClusters: string;
     statsSources: string;
     statsReports: string;
-    statsBreaking: string;
   };
 }
 
@@ -45,7 +43,6 @@ const {
   clusterCount,
   uniqueSourceCount,
   totalReports,
-  breakingCount,
   synthesisLines,
   topicFollowSuggestions,
   sourceFollowSuggestions,
@@ -76,10 +73,6 @@ const {
       <div>
         <span class="micro-label">{labels.statsReports}</span>
         <strong>{totalReports}</strong>
-      </div>
-      <div>
-        <span class="micro-label">{labels.statsBreaking}</span>
-        <strong>{breakingCount}</strong>
       </div>
     </div>
   </div>

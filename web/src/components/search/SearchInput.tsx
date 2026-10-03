@@ -25,6 +25,7 @@ export function SearchInput({
         value={query}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="w-full bg-transparent pr-12 py-2.5 sm:py-4 text-xl sm:text-2xl md:text-3xl font-serif font-black text-foreground outline-none placeholder:text-muted-foreground/40 border-b-2 border-transparent focus:border-foreground transition-colors search-cmd-input"
         autoComplete="off"
         spellCheck="false"

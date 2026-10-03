@@ -1,19 +1,18 @@
 [project]
 name = "presek"
-version = "8.2.3"
-description = "News aggregation and analysis platform for Serbian and Macedonian media"
+version = "8.3.8"
+description = "Macedonian news aggregation platform with minimal local AI"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.3",
     "anyio>=4.13.0",
     "bleach>=6.4.0",
     "boto3>=1.43.2",
+    "brotli>=1.2.0",
     "celery>=5.6.2",
     "feedparser>=6.0.12,<6.1.0",
     "httpx>=0.28.1",
-    "numpy>=1.26.4,<2.0.0",
-    "pgvector>=0.4.1",
     "pillow>=12.2.0",
     "pillow-avif-plugin>=1.5.5",
     "prometheus-client>=0.24.0,<0.25.0",
@@ -26,6 +25,7 @@ dependencies = [
     "sgmllib3k>=1.0.0",
     "trafilatura>=2.0.0",
     "aiohttp>=3.14.3",
+    "edge-tts>=7.2.8",
     "pyjwt>=2.13.0",
     "cryptography>=50.0.0",
     "idna>=3.18",
@@ -41,10 +41,16 @@ dependencies = [
     "tqdm>=4.66.0,<4.68.0",
     "babel>=2.16.0,<2.17.0",
     "humanize>=4.0.0,<5.0.0",
+    # Imported directly (crawler, Celery config); previously only present transitively.
+    "justext>=3.0.2",
+    # Local multilingual embeddings (core/embeddings.py); replaces the paid Jina API.
+    "fastembed>=0.8.1",
+    "lxml>=6.1.1",
+    "kombu>=5.6.2",
+    "billiard>=4.2.4",
 ]
 
 [project.optional-dependencies]
-# Legacy pip extras — prefer uv dependency-groups (api/worker) for installs.
 api = [
     "fastapi>=0.136.1",
     "starlette>=1.3.1",
@@ -55,20 +61,9 @@ api = [
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
     "opentelemetry-exporter-otlp-proto-http>=1.27.0",
-    "sentence-transformers>=5.4.1",
-    "fasttext>=0.9.3",
 ]
 worker = [
-    "torch>=2.13.0",
-    "spacy>=3.8.13",
-    "xx-ent-wiki-sm @ https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.8.0/xx_ent_wiki_sm-3.8.0-py3-none-any.whl",
-    "keybert>=0.9.0",
     "llama-cpp-python>=0.3.22",
-    "playwright>=1.59.0",
-    "edge-tts>=7.2.3",
-    "gTTS>=2.5.4",
-    "omnivoice>=0.1.5",
-    "numba>=0.60.0",
 ]
 dev = [
     "bandit>=1.9.0",
@@ -93,20 +88,9 @@ api = [
     "opentelemetry-sdk>=1.27.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
     "opentelemetry-exporter-otlp-proto-http>=1.27.0",
-    "sentence-transformers>=5.4.1",
-    "fasttext>=0.9.3",
 ]
 worker = [
-    "torch>=2.13.0",
-    "spacy>=3.8.13",
-    "xx-ent-wiki-sm @ https://github.com/explosion/spacy-models/releases/download/xx_ent_wiki_sm-3.8.0/xx_ent_wiki_sm-3.8.0-py3-none-any.whl",
-    "keybert>=0.9.0",
     "llama-cpp-python>=0.3.22",
-    "playwright>=1.59.0",
-    "edge-tts>=7.2.3",
-    "gTTS>=2.5.4",
-    "omnivoice>=0.1.5",
-    "numba>=0.60.0",
 ]
 dev = [
     "bandit>=1.9.0",
@@ -121,7 +105,11 @@ dev = [
 ]
 
 [tool.uv]
-default-groups = ["api", "worker"]
+# `worker` (llama-cpp-python) is intentionally NOT a default group. The MK
+# deployment uses the hosted AI cascade, not local Gemma, and llama-cpp-python
+# cannot be built on the Android/proot hosts (hardlink + C++ toolchain limits).
+# Install it explicitly where needed: `uv sync --group worker`.
+default-groups = ["api"]
 
 [tool.ruff]
 line-length = 120
@@ -134,15 +122,9 @@ line-length = 120
 "tasks/*.py" = ["E402"]
 "migrations/*.py" = ["E402"]
 "scripts/*.py" = ["E402"]
-"tests/test_optimization.py" = ["E402"]
-# Re-export facade for tests/scripts/patch targets — imports are intentional
-"tasks/intelligence/__init__.py" = ["F401"]
-# Intentional star-imports from tasks.intelligence._constants (has __all__);
-# F405 is reported at use sites, so ignore per file rather than noqa spam
-"tasks/intelligence/backfill.py" = ["F405"]
-"tasks/intelligence/metadata.py" = ["F405"]
-"tasks/intelligence/summarization.py" = ["F405"]
-"tasks/intelligence/cluster_ops.py" = ["F405"]
-"tasks/intelligence/_queue.py" = ["F405"]
-"tasks/intelligence/style.py" = ["F405"]
-"tasks/intelligence/synthesis.py" = ["F405"]
+# tasks/intelligence stubs re-export shared constants via `from ... import *`
+"tasks/intelligence/_queue.py" = ["F403", "F405"]
+"tasks/intelligence/backfill.py" = ["F403", "F405"]
+"tasks/intelligence/metadata.py" = ["F403", "F405"]
+"tasks/intelligence/style.py" = ["F403", "F405"]
+"tasks/intelligence/summarization.py" = ["F403", "F405"]

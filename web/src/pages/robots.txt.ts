@@ -4,7 +4,7 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const host = request.headers.get('host') || url.hostname;
   const isMk = host.includes('presek.mk');
-  const siteUrl = isMk ? 'https://presek.mk' : 'https://presek.live';
+  const siteUrl = 'https://presek.mk';
 
   const robots = `User-agent: *
 Allow: /

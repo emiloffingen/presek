@@ -13,7 +13,7 @@ export default function PreferenceToggle({
   kind,
   value,
   label,
-  lang = 'sr',
+  lang = 'mk',
   onChanged,
   analyticsSurface,
 }: {

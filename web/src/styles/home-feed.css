@@ -492,6 +492,8 @@
   opacity: 0;
   transform: translateY(8px);
   animation: homeFeedReveal 0.5s var(--ease-editorial, ease) forwards;
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
 }
 
 .home-feed-synthesis-badge {
@@ -590,6 +592,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-feed-item {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
 
@@ -841,6 +851,10 @@
 
   .home-feed-ad-break {
     padding: 0.35rem 0 0.55rem;
+  }
+
+  .home-feed-synthesis-badge {
+    display: none;
   }
 }
 

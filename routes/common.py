@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 
 from core.api_errors import api_error_response, rate_limit_payload
+from core.config import DEFAULT_LANG
 from core.database import db_manager as db
 from nlp.utils import cleanAndDecode
 
@@ -59,7 +60,7 @@ def _validate_sync_token_value(value: str, *, required: bool = True) -> str:
             raise HTTPException(status_code=400, detail="Nedostasuva kluc za sinhronizacija")
         return ""
     if not SYNC_TOKEN_PATTERN.fullmatch(token):
-        raise HTTPException(status_code=400, detail="Nevaliden format na klucot za sinhronizacija")
+        raise HTTPException(status_code=400, detail="Невалиден формат на клучот за синхронизација")
     return token
 
 
@@ -258,15 +259,6 @@ _RATE_LIMITED_API_PATHS = {
     "/api/proxy",
     "/api/news",
     "/api/trending",
-    "/api/intelligence/cluster/{cluster_id}/research",
-    "/api/intelligence/cluster/{cluster_id}/analyst",
-    "/api/intelligence/top-entities",
-    "/api/intelligence/network-graph",
-    "/api/intelligence/synthesize-nodes",
-    "/api/intelligence/live-map",
-    "/api/intelligence/pulse-overview",
-    "/api/intelligence/compare-sources",
-    "/api/intelligence/briefing/audio",
     "/api/research/{cluster_id}",
     "/api/profile/sync/init",
     "/api/profile/sync",
@@ -310,7 +302,7 @@ async def build_intelligence_summary_payload(
     last_24h: int,
     category: Optional[str] = None,
     runtime_events: Optional[dict] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = DEFAULT_LANG,
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     import asyncio

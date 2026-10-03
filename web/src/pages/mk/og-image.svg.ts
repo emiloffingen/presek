@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 
-const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.live').replace(/\/+$/, '');
+const SITE_URL = (import.meta.env.PUBLIC_SITE_URL || 'https://presek.mk').replace(/\/+$/, '');
 const API_URL = apiBaseUrl();
 
 export const GET: APIRoute = async () => {

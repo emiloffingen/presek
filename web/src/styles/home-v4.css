@@ -1,0 +1,66 @@
+/* home-v4.css — "Times-dense" homepage layout.
+ *
+ * Scoped under .home-page-scope so it cannot affect other pages. The goal is a
+ * tighter, more list-driven broadsheet: denser feed columns, a compact lead,
+ * and the source-comparison block seated beside the lead story.
+ *
+ * Overrides are intentionally additive/low-specificity so the existing
+ * editorial styles still win where they need to.
+ */
+
+/* ── Source-comparison slot (transparency-first lead) ────────────────────── */
+.home-page-scope .home-source-compare-slot {
+    margin-top: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+    /* Beside the lead on wide screens instead of stacked below it. */
+    .home-page-scope .lead-wrapper:has(.home-source-compare-slot) {
+        display: grid;
+        grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+        gap: 1.75rem;
+        align-items: start;
+    }
+    .home-page-scope .lead-wrapper:has(.home-source-compare-slot) .home-source-compare-slot {
+        margin-top: 0;
+        position: sticky;
+        top: 1rem;
+    }
+}
+
+/* ── Denser feed river ───────────────────────────────────────────────────── */
+@media (min-width: 1280px) {
+    .home-page-scope .news-feed-grid {
+        column-count: 4;
+        column-gap: 1.5rem;
+        column-rule: 1px solid var(--border);
+    }
+    .home-page-scope .news-feed-grid > * {
+        break-inside: avoid;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .home-page-scope .news-feed-grid {
+        column-count: 3;
+        column-gap: 1.4rem;
+        column-rule: 1px solid var(--border);
+    }
+}
+
+/* ── Compact the lead slightly so more sits above the fold ───────────────── */
+@media (min-width: 1024px) {
+    .home-page-scope .lead-wrapper .headline-lead {
+        font-size: clamp(1.6rem, 2.4vw, 2.15rem);
+        line-height: 1.14;
+    }
+    .home-page-scope .lead-wrapper .lead-summary-block {
+        font-size: 1rem;
+    }
+}
+
+/* ── Tighten vertical rhythm between sections ────────────────────────────── */
+.home-page-scope .home-edition-core + .home-edition-core,
+.home-page-scope .section-wrapper + .section-wrapper {
+    margin-top: 1.75rem;
+}

@@ -1,21 +1,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 let cachedVersion = '8.2.3';
 
 try {
   // Only execute this in Node.js server environment
   if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-    const rootPath = process.cwd();
-    // VERSION file is located at root, which is one level up from the web directory
-    const versionPath = path.join(rootPath, '../VERSION');
-    if (fs.existsSync(versionPath)) {
-      cachedVersion = fs.readFileSync(versionPath, 'utf-8').trim();
-    } else {
-      // Try current directory as well just in case
-      const localVersionPath = path.join(rootPath, 'VERSION');
-      if (fs.existsSync(localVersionPath)) {
-        cachedVersion = fs.readFileSync(localVersionPath, 'utf-8').trim();
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    // Resolve against the module (stable) before falling back to cwd, so the
+    // reported version doesn't depend on where the server was launched from.
+    const candidates = [
+      path.resolve(here, '../../VERSION'),   // web/src/lib -> repo root
+      path.resolve(here, '../../../VERSION'),
+      path.join(process.cwd(), '../VERSION'), // web -> repo root
+      path.join(process.cwd(), 'VERSION'),
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        cachedVersion = fs.readFileSync(candidate, 'utf-8').trim();
+        break;
       }
     }
   }

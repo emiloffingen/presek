@@ -23,7 +23,6 @@ export interface Article {
     trust_level?: number;
     role_tone?: string;
   };
-  is_breaking?: boolean;
   is_fact_check?: boolean;
   image_caption?: string;
   is_global?: boolean;
@@ -56,7 +55,6 @@ export interface NewsCluster {
   synthetic_headline?: string | null;
   synthetic_standfirst?: string | null;
   score: number;
-  is_breaking: boolean;
   has_synthesis: boolean;
   has_audio?: boolean;
   audio_url?: string | null;

@@ -1,12 +1,21 @@
 import { homePath, localePathForLang } from '../lib/localePaths';
-import React, { useEffect, useMemo, useState } from 'react';
-import { apiBaseUrl } from '../lib/apiBase';
-import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Search, ShieldCheck, Zap, Activity, ChevronRight, Globe, Compass, HelpCircle, X, ExternalLink } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { sources as sourcesNamespace } from '../i18n/namespaces/sources';
-import { briefing } from '../i18n/namespaces/briefing';
 import PresekAdRailSlot from './PresekAdRailSlot';
 import type { ui } from '../i18n/ui';
+
+// Inlined API base so this island does not import the shared apiBase chunk.
+// That chunk (/ _astro/apiBase.*.js) was intermittently 404ing on the public
+// edge, which broke the island's module graph and left /izvori stuck on its
+// loading spinner. Keeping the value local makes the island self-contained.
+function apiBaseUrl(): string {
+  const fromEnv = import.meta.env?.PUBLIC_API_URL;
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined') return '/api';
+  return (typeof process !== 'undefined' && process.env.INTERNAL_API_URL) || 'http://127.0.0.1:5001/api';
+}
 
 interface SourceRow {
   source: string;
@@ -16,6 +25,10 @@ interface SourceRow {
   credibility: number;
   effective_weight: number;
   trust_tier: string;
+  trust_tier_code?: string;
+  trend_code?: string;
+  tendency_code?: string;
+  daily_volume?: number[];
   recent_volume: number;
   speed_first_count: number;
   lead_count_30d: number;
@@ -38,6 +51,16 @@ interface SourceRow {
 
 const HIGH_TRUST_TIERS = new Set(['Visoko poverenje', 'Висока доверба']);
 const VERIFIED_TIERS = new Set(['Potvrden izvor', 'Потврден извор']);
+
+// /api/sources returns category values in Latin; render them in Macedonian.
+const CATEGORY_MK: Record<string, string> = {
+  Makedonija: 'Македонија', Svet: 'Свет', Balkan: 'Балкан', Region: 'Регион',
+  Politika: 'Политика', Ekonomija: 'Економија', Sport: 'Спорт', Kultura: 'Култура',
+  Tehnologija: 'Технологија', Zivot: 'Живот', Zabava: 'Забава', Zdravje: 'Здравје',
+};
+function localizeCategory(cat: string, lang: string) {
+  return lang === 'mk' ? (CATEGORY_MK[cat] || cat) : cat;
+}
 
 function formatLastFetched(value: string | undefined, noSignalLabel: string, locale: string) {
   if (!value) return noSignalLabel;
@@ -64,6 +87,14 @@ function getHealthStatus(lastFetched?: string): 'active' | 'stale' | 'critical' 
   } catch {
     return 'critical';
   }
+}
+
+// Pipeline health (last_fetched) says nothing about whether the outlet is actually
+// being ingested: surface paused sources and sources with no articles in 24h.
+function getSourceStatus(source: { is_active?: boolean; recent_volume?: number }): 'paused' | 'quiet' | null {
+  if (source.is_active === false) return 'paused';
+  if (!source.recent_volume) return 'quiet';
+  return null;
 }
 
 // Media Bias Coordinate Mapper Function
@@ -169,13 +200,15 @@ const getCoordinates = (source: SourceRow, lang: string) => {
   return { x, y, pctX, pctY };
 };
 
-const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
+const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
   const [sources, setSources] = useState<SourceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
-  const t = useClientTranslations(lang, sourcesNamespace, briefing);
+  const t = useClientTranslations(lang, sourcesNamespace);
+  const tRef = useRef(t);
+  tRef.current = t;
   const dateLocale = lang === 'mk' ? 'mk-MK' : 'sr-RS';
   const defaultCountry = lang === 'mk' ? 'MK' : 'RS';
 
@@ -184,24 +217,78 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
   const [hoveredSource, setHoveredSource] = useState<SourceRow | null>(null);
   const [selectedSource, setSelectedSource] = useState<SourceRow | null>(null);
 
+  // Rankings table + source detail drawer
+  type SortKey = 'source' | 'recent_volume' | 'speed_first_count' | 'corroboration_rate' | 'lone_lead_rate' | 'effective_weight';
+  const [sortKey, setSortKey] = useState<SortKey>('effective_weight');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [drawerSource, setDrawerSource] = useState<SourceRow | null>(null);
+  const [drawerStories, setDrawerStories] = useState<any[]>([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+
+  const tierLabel = (s: SourceRow) => {
+    const code = s.trust_tier_code
+      || (HIGH_TRUST_TIERS.has(s.trust_tier) ? 'high' : VERIFIED_TIERS.has(s.trust_tier) ? 'verified' : 'standard');
+    return t(`sources.tier_${code}`);
+  };
+  const trendLabel = (s: SourceRow) => t(`sources.trend_${s.trend_code || 'stable'}`);
+  const tendencyLabel = (s: SourceRow) => t(`sources.tendency_${s.tendency_code || 'follower'}`);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const openDrawer = async (source: SourceRow) => {
+    setDrawerSource(source);
+    setDrawerLoading(true);
+    setDrawerStories([]);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('source', source.source);
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+    try {
+      const res = await fetch(`${apiBaseUrl()}/news?source=${encodeURIComponent(source.source)}&lang=${lang}&page_size=8`);
+      const data = await res.json();
+      const clusters = Array.isArray(data?.clusters) ? data.clusters : (Array.isArray(data) ? data : []);
+      setDrawerStories(clusters.slice(0, 8));
+    } catch {
+      setDrawerStories([]);
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
+  const closeDrawer = () => {
+    setDrawerSource(null);
+    setDrawerStories([]);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('source');
+      window.history.replaceState({}, '', url.toString());
+    } catch {}
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(`${apiBaseUrl()}/sources?t=${Date.now()}`);
         if (!res.ok) {
-          setError(t('sources.connection_error'));
+          setError(tRef.current('sources.connection_error'));
           return;
         }
-        const allRes = await res.json();
-        setSources(allRes);
+        const payload = await res.json();
+        // Tolerate both the bare list and a {status, data} envelope.
+        const rows = Array.isArray(payload) ? payload : payload?.data;
+        setSources(Array.isArray(rows) ? rows : []);
       } catch {
-        setError(t('sources.connection_error'));
+        setError(tRef.current('sources.connection_error'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [lang, t]);
+  }, [lang]);
 
   const filtered = useMemo(() => {
     let results = sources;
@@ -214,6 +301,38 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     }
     return results;
   }, [sources, searchTerm, filterTier]);
+
+  const rankedSources = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      const av = a[sortKey] as any;
+      const bv = b[sortKey] as any;
+      const cmp = typeof av === 'string' || typeof bv === 'string'
+        ? String(av).localeCompare(String(bv))
+        : (Number(av) || 0) - (Number(bv) || 0);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  // Deep link: /izvori?source=NAME opens the drawer for that source.
+  useEffect(() => {
+    if (loading || !sources.length || drawerSource) return;
+    const wanted = new URLSearchParams(window.location.search).get('source');
+    if (!wanted) return;
+    const match = sources.find((s) => s.source === wanted);
+    if (match) void openDrawer(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, sources]);
+
+  // Escape closes the drawer.
+  useEffect(() => {
+    if (!drawerSource) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeDrawer(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerSource]);
 
   const mkSources = filtered.filter((s) => lang === 'mk' ? (s.country === 'MK') : (s.country === 'RS' || !s.country));
   const intSources = filtered.filter((s) => lang === 'mk' ? (s.country !== 'MK') : (s.country && s.country !== 'RS'));
@@ -247,11 +366,25 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
     }
   };
 
+  const renderStatusBadge = (source: SourceRow) => {
+    const status = getSourceStatus(source);
+    if (!status) return null;
+    return (
+      <span
+        className={`source-status-badge is-${status}`}
+        title={t(status === 'paused' ? 'sources.status_paused_tip' : 'sources.status_quiet_tip')}
+      >
+        {t(status === 'paused' ? 'sources.status_paused' : 'sources.status_quiet')}
+      </span>
+    );
+  };
+
   const renderSourceRow = (source: SourceRow) => {
-    const health = getHealthStatus(source.last_fetched);
-    const reliabilityIndex = ((source.corroboration_rate * 0.7) + ((source.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
-    const isSelected = selectedSource?.source === source.source;
+    const health = source.is_active === false ? 'critical' : getHealthStatus(source.last_fetched);
+    const isSelected = selectedSource?.source === source.source || drawerSource?.source === source.source;
     const rowId = `source-${encodeURIComponent(source.source)}`;
+    const daily = Array.isArray(source.daily_volume) && source.daily_volume.length ? source.daily_volume : null;
+    const dailyMax = daily ? Math.max(1, ...daily) : 1;
 
     return (
       <a
@@ -260,24 +393,26 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         href={`${localePathForLang('/', lang)}?source=${encodeURIComponent(source.source)}`}
         className={`editorial-source-item group no-underline transition-all duration-300 ${isSelected ? 'border-l-4 border-l-presek-mark pl-4 bg-presek-mark/5' : ''}`}
         onClick={(e) => {
-          // If they click on the item directly, let normal navigation run, but record selection state
-          setSelectedSource(source);
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+          e.preventDefault();
+          void openDrawer(source);
         }}
       >
         <div className="item-main">
           <div className="item-head mb-2">
             <div className={`health-dot ${health}`} title={health === 'active' ? t('sources.health_active') : health === 'stale' ? t('sources.health_stale') : t('sources.health_critical')}></div>
             <h3 className="section-heading group-hover:text-presek-mark transition-colors">{source.source}</h3>
-            {HIGH_TRUST_TIERS.has(source.trust_tier) && (
+            {renderStatusBadge(source)}
+            {(HIGH_TRUST_TIERS.has(source.trust_tier) || source.trust_tier_code === 'high') && (
               <ShieldCheck size={14} className="text-presek-mark" />
             )}
           </div>
-          <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{source.tendency}</p>
+          <p className="item-tendency font-nyt-body text-sm text-muted-foreground line-clamp-1 mb-2 md:mb-3">{tendencyLabel(source)}</p>
           <div className="item-meta flex items-center gap-2 md:gap-[var(--grid-gap)]">
             <span className="px-2 py-0.5 bg-foreground text-background ui-status">{source.country || defaultCountry}</span>
             <div className="flex gap-1.5">
               {source.top_categories?.slice(0, 2).map(cat => (
-                <span key={cat} className="px-2 py-0.5 border border-border rounded-none ui-status text-muted-foreground/80">{cat}</span>
+                <span key={cat} className="px-2 py-0.5 border border-border rounded-none ui-status text-muted-foreground/80">{localizeCategory(cat, lang)}</span>
               ))}
             </div>
             <span className="ui-status text-muted-foreground/40 ml-auto flex items-center gap-1.5">
@@ -291,41 +426,31 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <span className="ui-kicker text-muted-foreground mb-0.5">{t('sources.news_24h')}</span>
               <strong className="text-base md:text-lg font-black tabular-nums leading-none">{source.recent_volume}</strong>
             </div>
-            <div className="stat-box flex flex-col items-end text-presek-mark">
-              <span className="ui-kicker opacity-60 mb-0.5">{t('sources.quality')}</span>
-              <strong className="text-base md:text-lg font-black tabular-nums leading-none">{reliabilityIndex}</strong>
+            <div className="stat-box flex flex-col items-end text-presek-mark" title={t('sources.metric_corroboration_tip')}>
+              <span className="ui-kicker opacity-60 mb-0.5">{t('sources.metric_corroboration')}</span>
+              <strong className="text-base md:text-lg font-black tabular-nums leading-none">{formatPercent(source.corroboration_rate)}</strong>
             </div>
           </div>
 
           <div className="heatmap-container flex gap-[2px] items-end h-8 shrink-0" title={t('sources.activity_30d')}>
-            {Array.from({ length: 30 }).map((_, i) => {
-              const isRecent = i >= 28;
-              const avgVolume = Math.max(1, (source.recent_7d_volume || 0) / 7);
-              const noise = Math.sin((i + source.source.length) * 0.5) * 0.3 + 0.8;
-              let baseVol = isRecent ? (source.recent_volume || 0) : (source.previous_7d_volume / 7 || avgVolume);
-              baseVol = baseVol * noise * (1 + (i / 30) * 0.2);
-
-              const value = Math.max(0.1, baseVol / (avgVolume * 2));
-
+            {daily ? daily.map((v, i) => {
+              const ratio = v / dailyMax;
+              let opacity = ratio > 0.75 ? 'opacity-100' : ratio > 0.45 ? 'opacity-60' : ratio > 0.15 ? 'opacity-40' : 'opacity-10';
               let bgClass = 'bg-foreground';
-              let opacity = 'opacity-20';
-              if (value > 0.8) opacity = 'opacity-100';
-              else if (value > 0.5) opacity = 'opacity-60';
-              else if (value > 0.2) opacity = 'opacity-40';
-
-              if (HIGH_TRUST_TIERS.has(source.trust_tier)) bgClass = 'bg-emerald-500';
-              else if (VERIFIED_TIERS.has(source.trust_tier)) bgClass = 'bg-presek-mark';
-
-              const height = Math.min(100, Math.max(15, value * 100));
-
+              if (HIGH_TRUST_TIERS.has(source.trust_tier) || source.trust_tier_code === 'high') bgClass = 'bg-emerald-500';
+              else if (VERIFIED_TIERS.has(source.trust_tier) || source.trust_tier_code === 'verified') bgClass = 'bg-presek-mark';
+              const height = Math.min(100, Math.max(8, ratio * 100));
               return (
                 <div
                   key={i}
-                  className={`w-[3px] md:w-1.5 rounded-none ${bgClass} ${opacity} hover:opacity-100 hover:scale-y-125 transition-all duration-200 cursor-crosshair origin-bottom`}
+                  className={`w-[3px] md:w-1.5 rounded-none ${bgClass} ${opacity} hover:opacity-100 transition-all duration-200 origin-bottom`}
                   style={{ height: `${height}%` }}
+                  title={`${v} · ${daily.length - 1 - i}d`}
                 />
               );
-            })}
+            }) : (
+              <span className="ui-label-min text-muted-foreground/40">{t('sources.no_signal')}</span>
+            )}
           </div>
         </div>
       </a>
@@ -528,7 +653,6 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                   const coords = getCoordinates(hoveredSource, lang);
                   const showLeft = coords.pctX > 50;
                   const showTop = coords.pctY > 50;
-                  const reliability = ((hoveredSource.corroboration_rate * 0.7) + ((hoveredSource.speed_first_count > 0 ? 0.3 : 0))).toFixed(2);
                   
                   return (
                     <div
@@ -544,12 +668,12 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                           {hoveredSource.country || defaultCountry}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground italic mb-3 line-clamp-1">{hoveredSource.tendency}</p>
+                      <p className="text-[11px] text-muted-foreground italic mb-3 line-clamp-1">{tendencyLabel(hoveredSource)}</p>
                       
                       <div className="grid grid-cols-2 gap-2 ui-label-min border-t border-border/60 pt-2.5">
                         <div className="flex flex-col">
-                          <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_quality')}</span>
-                          <strong className="text-xs font-black text-presek-mark">{reliability}</strong>
+                          <span className="ui-kicker text-muted-foreground/60">{t('sources.metric_corroboration')}</span>
+                          <strong className="text-xs font-black text-presek-mark">{formatPercent(hoveredSource.corroboration_rate)}</strong>
                         </div>
                         <div className="flex flex-col">
                           <span className="ui-kicker text-muted-foreground/60">{t('sources.hover_consensus')}</span>
@@ -567,7 +691,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
                       
                       <div className="mt-3.5 ui-label-min text-presek-mark flex items-center gap-1">
                         <ShieldCheck size={10} />
-                        {hoveredSource.trust_tier}
+                        {tierLabel(hoveredSource)}
                       </div>
                     </div>
                   );
@@ -624,20 +748,73 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
               <h2 className="font-serif text-2xl italic text-muted-foreground">{error}</h2>
             </div>
           ) : (
-            <div className="space-y-14 md:space-y-24">
+            <div className="space-y-10 md:space-y-14">
+              <section className="sources-rankings">
+                <h2 className="section-heading mb-2 pb-2 md:pb-3 border-b-4 border-foreground">{t('sources.rankings_title')}</h2>
+                <p className="text-sm text-muted-foreground mb-4 md:mb-6">{t('sources.rankings_desc')}</p>
+                <div className="sources-rank-scroll overflow-x-auto">
+                  <table className="sources-rank-table w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-foreground text-left ui-kicker">
+                        {([
+                          ['source', t('sources.col_source')],
+                          ['recent_volume', t('sources.col_volume')],
+                          ['speed_first_count', t('sources.col_scoops')],
+                          ['corroboration_rate', t('sources.col_corroboration')],
+                          ['lone_lead_rate', t('sources.col_lone')],
+                          ['effective_weight', t('sources.col_weight')],
+                        ] as [SortKey, string][]).map(([key, label]) => (
+                          <th key={key} className="py-2 pr-3 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => toggleSort(key)}
+                              className="inline-flex items-center gap-1 hover:text-presek-mark transition-colors"
+                            >
+                              {label}
+                              <span aria-hidden="true" className="opacity-70">{sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                            </button>
+                          </th>
+                        ))}
+                        <th className="py-2 whitespace-nowrap">{t('sources.col_trend')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankedSources.map((s) => (
+                        <tr
+                          key={s.source}
+                          className="border-b border-border/40 hover:bg-secondary/10 cursor-pointer"
+                          onClick={() => void openDrawer(s)}
+                        >
+                          <td className="py-2 pr-3 font-serif font-bold">{s.source}{renderStatusBadge(s)}</td>
+                          <td className="py-2 pr-3 tabular-nums">{s.recent_volume}</td>
+                          <td className="py-2 pr-3 tabular-nums">+{s.speed_first_count}</td>
+                          <td className="py-2 pr-3 tabular-nums">{formatPercent(s.corroboration_rate)}</td>
+                          <td className="py-2 pr-3 tabular-nums">{formatPercent(s.lone_lead_rate)}</td>
+                          <td className="py-2 pr-3 tabular-nums">{s.effective_weight}</td>
+                          <td className={`py-2 whitespace-nowrap ${s.trend_code === 'up' ? 'text-emerald-600' : s.trend_code === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>{trendLabel(s)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <details className="mt-4">
+                  <summary className="cursor-pointer ui-kicker text-presek-mark">{t('sources.how_we_score')}</summary>
+                  <p className="text-xs text-muted-foreground mt-2 leading-relaxed max-w-3xl">{t('sources.how_we_score_body')}</p>
+                </details>
+              </section>
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                <h2 className="section-heading mb-3 md:mb-5 pb-2 md:pb-3 border-b-4 border-foreground">
                   {lang === 'mk' ? t('sources.mk_media') : t('sources.sr_media')}
                 </h2>
-                <div className="flex flex-col">
+                <div className="sources-compact-list">
                   {mkSources.map(renderSourceRow)}
                 </div>
               </section>
               <section>
-                <h2 className="section-heading mb-6 md:mb-10 pb-2 md:pb-3 border-b-4 border-foreground">
+                <h2 className="section-heading mb-3 md:mb-5 pb-2 md:pb-3 border-b-4 border-foreground">
                   {t('sources.intl_signals')}
                 </h2>
-                <div className="flex flex-col">
+                <div className="sources-compact-list">
                   {intSources.map(renderSourceRow)}
                 </div>
               </section>
@@ -648,7 +825,7 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
         <aside className="broadsheet-rail pl-0 md:pl-4">
           <PresekAdRailSlot lang={lang} />
           <section className="rail-module mb-8 md:mb-12 p-4 md:p-8 bg-presek-mark/5 border border-presek-mark/10 rounded-none">
-            <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('briefing.system_balance')}</span>
+            <span className="block ui-kicker ui-kicker--accent mb-3 md:mb-4">{t('sources.system_balance')}</span>
             <h3 className="section-heading mb-4 leading-tight tracking-tight">{t('sources.qi_title')}</h3>
             <p className="font-nyt-body text-sm leading-relaxed text-muted-foreground">
               {t('sources.qi_desc')}
@@ -700,6 +877,87 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'sr' }) => {
           </details>
         </aside>
       </div>
+
+      {drawerSource && (
+        <div className="fixed inset-0 z-[9000] flex justify-end" role="dialog" aria-modal="true" aria-label={drawerSource.source}>
+          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={closeDrawer} />
+          <aside className="relative h-full w-full max-w-md bg-background border-l border-border overflow-y-auto p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className="min-w-0">
+                <h3 className="font-serif font-black text-2xl leading-tight truncate">{drawerSource.source}</h3>
+                <p className="text-sm text-muted-foreground italic mt-1">{tierLabel(drawerSource)} · {trendLabel(drawerSource)}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDrawer}
+                aria-label={t('sources.detail_close')}
+                className="p-1.5 border border-border hover:bg-secondary transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.news_24h')}</div>
+                <strong className="text-xl font-black tabular-nums">{drawerSource.recent_volume}</strong>
+              </div>
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.col_scoops')}</div>
+                <strong className="text-xl font-black tabular-nums">+{drawerSource.speed_first_count}</strong>
+              </div>
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.metric_corroboration')}</div>
+                <strong className="text-xl font-black tabular-nums">{formatPercent(drawerSource.corroboration_rate)}</strong>
+              </div>
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.col_lone')}</div>
+                <strong className="text-xl font-black tabular-nums">{formatPercent(drawerSource.lone_lead_rate)}</strong>
+              </div>
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.col_weight')}</div>
+                <strong className="text-xl font-black tabular-nums">{drawerSource.effective_weight}</strong>
+              </div>
+              <div className="border border-border p-3">
+                <div className="ui-kicker text-muted-foreground mb-1">{t('sources.col_source')} · 30д</div>
+                <strong className="text-xl font-black tabular-nums">{drawerSource.lead_count_30d}</strong>
+              </div>
+            </div>
+
+            <a
+              href={`${localePathForLang('/archive', lang)}?source=${encodeURIComponent(drawerSource.source)}`}
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-presek-mark mb-6 no-underline hover:underline"
+            >
+              {t('sources.detail_all')} <ExternalLink size={13} />
+            </a>
+
+            <h4 className="ui-kicker border-b border-border pb-2 mb-3">{t('sources.detail_recent')}</h4>
+            {drawerLoading ? (
+              <p className="text-sm text-muted-foreground">{t('sources.detail_loading')}</p>
+            ) : drawerStories.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('sources.detail_none')}</p>
+            ) : (
+              <ul className="space-y-3">
+                {drawerStories.map((c: any, i: number) => {
+                  const id = c?.cluster_id || c?.id;
+                  const title = c?.synthetic_headline || c?.title || (Array.isArray(c?.articles) ? c.articles[0]?.title : '') || '';
+                  if (!id || !title) return null;
+                  return (
+                    <li key={`${id}-${i}`} className="border-b border-border/40 pb-3">
+                      <a
+                        href={localePathForLang(`/cluster/${id}`, lang)}
+                        className="font-serif font-bold text-[15px] leading-snug no-underline hover:text-presek-mark"
+                      >
+                        {title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </aside>
+        </div>
+      )}
 
       <style>{`
         .editorial-source-item { display: flex; justify-content: space-between; align-items: center; padding: 1.35rem 0; border-bottom: 1px solid var(--border); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }

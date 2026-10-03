@@ -15,7 +15,7 @@ try:
 except ImportError:
     HAS_AVIF = False
 
-from utils import _peer_ip, _resolve_public_ips
+from utils import _peer_ip, _peer_is_public, _resolve_public_ips
 
 log = logging.getLogger("presek.image_service")
 
@@ -82,14 +82,13 @@ class ImageService:
             return rel_path
 
         try:
-            safe_ips = _resolve_public_ips(url)
+            _resolve_public_ips(url)  # raises for private/reserved hostnames
             async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
-                    if not p_ip or p_ip not in safe_ips:
+                    if not p_ip or not _peer_is_public(resp):
                         log.warning(f"SSRF blocked for image {url}: {p_ip}")
                         return None
-
                     content = await resp.aread()
                     if resp.status_code != 200:
                         return None

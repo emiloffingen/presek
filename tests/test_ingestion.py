@@ -462,3 +462,21 @@ def test_fill_missing_og_images_only_updates_missing_candidates():
     assert candidates[0]["image_url"] is None
     assert candidates[1]["image_url"] == "https://cdn.example.com/existing.jpg"
     assert candidates[2]["image_url"] == "https://example.com/3/og.jpg"
+
+
+def test_brotli_guard_matches_availability():
+    """Accept-Encoding must not advertise 'br' when no decoder is installed.
+
+    Several MK feeds serve Brotli; requesting 'br' without brotli/brotlicffi
+    makes httpx return raw compressed bytes and feedparser parse zero entries,
+    silently dropping the source. The header and the availability check must
+    agree.
+    """
+    from core.ingestion import _BROWSER_LIKE_HEADERS, _brotli_available
+
+    encoding = _BROWSER_LIKE_HEADERS["Accept-Encoding"]
+    if _brotli_available():
+        assert "br" in encoding
+    else:
+        assert "br" not in encoding
+        assert "gzip" in encoding

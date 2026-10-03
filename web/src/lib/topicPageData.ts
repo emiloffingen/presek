@@ -114,7 +114,6 @@ export async function loadTopicPageData({
   const uniqueSources = new Set(
     clusters.flatMap((cluster: any) => (cluster?.articles || []).map((article: any) => article?.source).filter(Boolean)),
   );
-  const breakingCount = clusters.filter((cluster: any) => cluster?.is_breaking).length;
   const sourceRows = countTopicValues(
     clusters.flatMap((cluster: any) => (cluster?.articles || []).map((article: any) => article?.source)),
   ).slice(0, 6);
@@ -141,7 +140,6 @@ export async function loadTopicPageData({
     compactFeedClusters: feedClusters.slice(4),
     totalReports,
     uniqueSources,
-    breakingCount,
     sourceRows,
     tagRows,
     topicConnections,
@@ -154,23 +152,15 @@ export async function loadTopicPageData({
 export function buildTopicIntro(
   topic: string,
   clusters: any[],
-  uniqueSources: Set<string>,
   totalReports: number,
-  breakingCount: number,
   lang: 'sr' | 'mk',
 ) {
   if (!clusters.length) return '';
   if (lang === 'mk') {
-    if (breakingCount >= 2) {
-      return `Темата ${topic} денес се развива брзо, со ${clusters.length} активни кластери и ${uniqueSources.size} извори што додаваат нови детали.`;
-    }
     if (clusters.length >= 6) {
       return `Темата ${topic} е широко присутна низ денешниот циклус, со ${clusters.length} кластери и ${totalReports} извештаи што се надоврзуваат еден на друг.`;
     }
     return `Темата ${topic} останува релевантна денес, со ${clusters.length} кластери и повеќе редакции што ја следат од различни агли.`;
-  }
-  if (breakingCount >= 2) {
-    return `Tema ${topic} se danas razvija brzo, sa ${clusters.length} aktivnih klastera i ${uniqueSources.size} izvora koji dodaju nove detalje.`;
   }
   if (clusters.length >= 6) {
     return `Tema ${topic} je široko prisutna kroz današnji ciklus, sa ${clusters.length} klastera i ${totalReports} izveštaja koji se nadovezuju jedan na drugi.`;
@@ -186,7 +176,6 @@ export type TopicPageLabels = {
   statsClusters: string;
   statsSources: string;
   statsReports: string;
-  statsBreaking: string;
   leadTitle: string;
   leadNote: string;
   anglesTitle: string;
@@ -222,7 +211,6 @@ export function buildTopicPageLabels(lang: 'sr' | 'mk'): TopicPageLabels {
       statsClusters: 'кластери',
       statsSources: 'извори',
       statsReports: 'Извештаи',
-      statsBreaking: 'Во развој',
       leadTitle: 'Водечка приказна',
       leadNote: 'кластерот што најмногу ја носи темата напред во моментов.',
       anglesTitle: 'Каде се разликува покривањето',
@@ -257,7 +245,6 @@ export function buildTopicPageLabels(lang: 'sr' | 'mk'): TopicPageLabels {
     statsClusters: 'klasteri',
     statsSources: 'izvori',
     statsReports: 'Izveštaji',
-    statsBreaking: 'U razvoju',
     leadTitle: 'Vodeća priča',
     leadNote: 'klaster koji najviše nosi temu napred u ovom trenutku.',
     anglesTitle: 'Gde se razlikuje pokrivanje',
@@ -298,6 +285,6 @@ export function buildTopicPageMeta(lang: 'sr' | 'mk', topic: string) {
     title: topic ? `${topic} | Tema` : 'Tema',
     description: `još što je aktivno za temu ${topic} — klasteri, izvori, perspektive i razvoj.`,
     breadcrumbTopics: 'Teme',
-    siteUrl: 'https://presek.live',
+    siteUrl: 'https://presek.mk',
   };
 }

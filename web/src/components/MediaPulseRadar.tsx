@@ -19,7 +19,7 @@ interface Props {
   lang?: 'sr' | 'mk';
 }
 
-export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'sr' }) => {
+export const MediaPulseRadar: React.FC<Props> = ({ data, lang = 'mk' }) => {
   const { tone_analysis, sentiment } = data;
   const [isMounted, setIsMounted] = React.useState(false);
   const [activeTooltip, setActiveTooltip] = React.useState<{x: number, y: number, label: string, value: string} | null>(null);

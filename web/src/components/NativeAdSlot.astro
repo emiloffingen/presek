@@ -2,9 +2,10 @@
 import { apiBaseUrl } from '../lib/apiBase';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath } from '../lib/localePaths';
+import { SLOT_META, PROMO_PERCENT, localCpm, type AdSlotId } from '../lib/adPricing';
 
 interface Props {
-  slotId: 'top_banner' | 'sidebar' | 'mobile_content';
+  slotId: AdSlotId;
   class?: string;
 }
 
@@ -14,14 +15,14 @@ const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const marketingUrl = localePath('/marketing', lang, hostHeader);
 
-let activeAd = null;
+let activeAd: { id: string; image_url: string; target_url: string } | null = null;
 try {
   const res = await fetch(`${apiBaseUrl()}/marketing/ads/active`);
   if (res.ok) {
     const data = await res.json();
     const ads = data.ads?.[slotId] || [];
     if (ads.length > 0) {
-      // Pick a random active ad for the slot
+      // Pick a random active ad for the slot.
       activeAd = ads[Math.floor(Math.random() * ads.length)];
     }
   }
@@ -29,84 +30,86 @@ try {
   console.error(`[NativeAdSlot] Error fetching active ads for ${slotId}:`, e);
 }
 
-// CPM rates and sizes for fallback metadata
-const meta = {
-  top_banner: {
-    price: 1.00,
-    priceMkd: 60,
-    size: '990x80 / 990x150',
-    minHeight: '120px'
-  },
-  sidebar: {
-    price: 1.25,
-    priceMkd: 75,
-    size: '300x250 / 300x600',
-    minHeight: '250px'
-  },
-  mobile_content: {
-    price: 2.00,
-    priceMkd: 125,
-    size: '300x250',
-    minHeight: '250px'
-  }
-}[slotId];
-
+const meta = SLOT_META[slotId];
 const isMk = lang === 'mk';
+const local = localCpm(meta.eur, lang);
+
+const adLabel = isMk ? 'Реклама' : 'Oglas';
+const kicker = isMk ? 'Слободен рекламен простор' : 'Slobodan reklamni prostor';
 const title = isMk ? 'Купете го овој рекламен простор' : 'Kupite ovaj reklamni prostor';
-const desc = isMk 
-  ? 'Автоматизиран самопослужен систем за реклами со Stripe плаќање.' 
-  : 'Automatski samouslužni sistem za reklame sa Stripe plaćanjem.';
-const rsdPrice = Math.round(meta.price * 117);
-const priceStr = isMk 
-  ? `Од €${meta.price.toFixed(2)} / 1000 импресии (~${meta.priceMkd} ден.)` 
-  : `Od €${meta.price.toFixed(2)} / 1000 impresija (~${rsdPrice} RSD)`;
-const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
+const desc = isMk
+  ? 'Автоматизиран самопослужен систем. Резервирајте, платете онлајн и следете ги резултатите во реално време.'
+  : 'Automatizovan samouslužni sistem. Rezervišite, platite onlajn i pratite rezultate u realnom vremenu.';
+const unit = isMk ? 'за 1.000 прикажувања' : 'za 1.000 prikazivanja';
+const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 ---
 
 {activeAd ? (
-  <div 
-    class={`native-ad-slot active-ad-container ${slotId} ${className}`} 
+  <div
+    class={`native-ad native-ad--active native-ad--${slotId} ${className}`}
     data-ad-id={activeAd.id}
-    style={`min-height: ${meta.minHeight}`}
+    style={`min-height:${meta.minHeight}`}
   >
-    <div class="ad-badge">{isMk ? 'Реклама' : 'Oglas'}</div>
-    <a 
-      href={activeAd.target_url} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      class="ad-link"
+    <span class="native-ad__label">{adLabel}</span>
+    <a
+      href={activeAd.target_url}
+      target="_blank"
+      rel="noopener noreferrer sponsored"
+      class="native-ad__link ad-link"
       data-ad-id={activeAd.id}
     >
-      <img src={activeAd.image_url} alt="Advertisement" class="ad-image" />
+      <img src={activeAd.image_url} alt={adLabel} class="native-ad__image" loading="lazy" decoding="async" />
     </a>
   </div>
 ) : (
-  <div class={`native-ad-slot fallback-ad-card ${slotId} ${className}`} style={`min-height: ${meta.minHeight}`}>
-    <div class="fallback-content">
-      <div class="fallback-text-side">
-        <div class="fallback-kicker-wrap">
-          <span class="pulse-indicator"></span>
-          <div class="fallback-kicker">{isMk ? 'СЛОБОДЕН РЕКЛАМЕН ПРОСТОР' : 'SLOBODAN REKLAMNI PROSTOR'} ({meta.size})</div>
-        </div>
-        <h4 class="fallback-title">{title}</h4>
-        <p class="fallback-desc">{desc}</p>
+  <aside
+    class={`native-ad native-ad--empty native-ad--${slotId} ${className}`}
+    style={`min-height:${meta.minHeight}`}
+    aria-label={kicker}
+  >
+    <div class="native-ad__main">
+      <div class="native-ad__head">
+        <span class="native-ad__kicker">{kicker}</span>
+        <span class="native-ad__format">{meta.size}</span>
       </div>
-      <div class="fallback-footer">
-        <span class="fallback-price">{priceStr}</span>
-        <a href={marketingUrl} class="fallback-btn">
-          <span>{btnText}</span>
-          <span class="btn-arrow">➔</span>
-        </a>
-      </div>
+      <h3 class="native-ad__title">{title}</h3>
+      <p class="native-ad__desc">{desc}</p>
     </div>
-  </div>
+    <div class="native-ad__foot">
+      <div class="native-ad__pricing">
+        <span class="native-ad__price-now">€{meta.eur.toFixed(2)}</span>
+        <span class="native-ad__price-was">€{meta.baseEur.toFixed(2)}</span>
+        <span class="native-ad__promo">−{PROMO_PERCENT}%</span>
+        <span class="native-ad__price-unit">{unit} · ~{local.amount} {local.currency}</span>
+      </div>
+      <a href={marketingUrl} class="native-ad__cta">
+        <span>{cta}</span>
+        <span class="native-ad__cta-arrow" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </aside>
 )}
 
 <script>
+  import { buildCsrfHeadersAsync } from '../lib/personalization';
+
   // Client-side tracking
   document.addEventListener('DOMContentLoaded', () => {
+    const trackAdEvent = async (adId: string, event: 'impression' | 'click') => {
+      try {
+        const headers = await buildCsrfHeadersAsync();
+        await fetch(`/api/marketing/ads/${adId}/${event}`, {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+        });
+      } catch (err) {
+        console.error(`Failed to log ad ${event}:`, err);
+      }
+    };
+
     // 1. Impression Tracking
-    const activeAds = document.querySelectorAll('.active-ad-container');
+    const activeAds = document.querySelectorAll('.native-ad--active');
     const observerOptions = {
       root: null,
       threshold: 0.1 // Trigger when 10% visible
@@ -118,8 +121,7 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
           const adContainer = entry.target;
           const adId = adContainer.getAttribute('data-ad-id');
           if (adId) {
-            fetch(`/api/marketing/ads/${adId}/impression`, { method: 'POST' })
-              .catch(err => console.error('Failed to log impression:', err));
+            void trackAdEvent(adId, 'impression');
             // Unobserve to avoid double logging impressions on scroll
             observer.unobserve(adContainer);
           }
@@ -138,8 +140,7 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       if (adLink) {
         const adId = adLink.getAttribute('data-ad-id');
         if (adId) {
-          fetch(`/api/marketing/ads/${adId}/click`, { method: 'POST' })
-            .catch(err => console.error('Failed to log click:', err));
+          void trackAdEvent(adId, 'click');
         }
       }
     });
@@ -147,237 +148,272 @@ const btnText = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 </script>
 
 <style>
-  .native-ad-slot {
+  .native-ad {
     position: relative;
+    width: 100%;
+    margin: 1.5rem auto;
+    box-sizing: border-box;
+  }
+
+  .native-ad--top_banner {
+    max-width: 990px;
+  }
+
+  .native-ad--sidebar,
+  .native-ad--mobile_content {
+    max-width: 300px;
+  }
+
+  /* Active creative */
+  .native-ad--active {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    margin: 1.5rem auto;
-    overflow: hidden;
-    border-radius: 0px;
-    box-sizing: border-box;
-    transition: all 0.3s var(--ease-editorial);
-  }
-
-  /* Active Ad Styling */
-  .active-ad-container {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-soft);
     border: 1px solid var(--border);
-  }
-  
-  :global(.dark) .active-ad-container {
-    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
   }
 
-  .ad-badge {
+  .native-ad__label {
     position: absolute;
-    top: 6px;
-    left: 8px;
-    background: var(--foreground);
-    color: var(--background);
-    font-size: 10px;
-    font-weight: 700;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    padding: 2px 7px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 0px;
-    pointer-events: none;
-    z-index: 10;
-    letter-spacing: 0.05em;
+    color: var(--background);
+    background: var(--foreground);
+    opacity: 0.8;
   }
 
-  .ad-link {
+  .native-ad__link {
     display: block;
     width: 100%;
     height: 100%;
     text-align: center;
   }
 
-  .ad-image {
+  .native-ad__image {
+    display: block;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     margin: 0 auto;
-    display: block;
-    border-radius: 0px;
   }
 
-  /* Fallback Card Aesthetics */
-  .fallback-ad-card {
-    background-color: var(--surface-soft);
-    border: 1px solid var(--border);
-    box-shadow: none;
-    color: var(--foreground);
-    padding: 1.5rem;
-    position: relative;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .fallback-ad-card:hover {
-    border-color: var(--foreground);
-    background-color: var(--surface-strong);
-  }
-
-  .fallback-content {
-    position: relative;
-    z-index: 2;
+  /* House / empty slot */
+  .native-ad--empty {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 1.1rem 1.2rem;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
   }
 
-  .fallback-kicker-wrap {
+  .native-ad--empty:hover {
+    border-color: var(--foreground);
+    background: var(--surface-strong);
+  }
+
+  .native-ad__main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .native-ad__head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.15rem;
   }
 
-  .pulse-indicator {
-    width: 6px;
-    height: 6px;
-    background: var(--nyt-red);
-    border-radius: 50%;
-    box-shadow: 0 0 6px var(--nyt-red);
-    animation: indicator-pulsing 1.8s infinite ease-in-out;
-  }
-
-  @keyframes indicator-pulsing {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px var(--nyt-red); }
-  }
-
-  .fallback-kicker {
-    font-size: 10px;
+  .native-ad__kicker {
+    font-size: 9px;
     font-weight: 800;
-    color: var(--nyt-gray-500);
-    letter-spacing: 0.15em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
+    color: var(--presek-mark, var(--muted-foreground));
   }
 
-  .fallback-title {
-    font-family: var(--font-serif);
-    font-size: 1.15rem;
-    font-weight: 700;
+  .native-ad__format {
+    font-family: var(--font-mono, monospace);
+    font-size: 9px;
+    color: var(--muted-foreground);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  .native-ad__title {
     margin: 0;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    font-weight: 700;
     line-height: 1.3;
     color: var(--foreground);
   }
 
-  .fallback-desc {
-    font-size: 0.8rem;
-    color: var(--muted-foreground);
-    opacity: 0.85;
+  .native-ad__desc {
     margin: 0;
-    line-height: 1.35;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--muted-foreground);
   }
 
-  .fallback-footer {
+  .native-ad__foot {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-top: 0.75rem;
-    gap: 1rem;
+    justify-content: space-between;
+    gap: 0.75rem;
     flex-wrap: wrap;
+    margin-top: 0.25rem;
   }
 
-  .fallback-price {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--nyt-red);
+  .native-ad__pricing {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .native-ad__price-now {
     font-family: var(--font-mono, monospace);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--foreground);
   }
 
-  .fallback-btn {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.55rem 1.15rem;
-    border-radius: 0px;
-    text-decoration: none;
+  .native-ad__price-was {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--muted-foreground);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .native-ad__promo {
+    padding: 1px 5px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #fff;
+    background: var(--presek-mark, #b91c1c);
+  }
+
+  .native-ad__price-unit {
+    width: 100%;
+    font-size: 0.66rem;
+    color: var(--muted-foreground);
+  }
+
+  .native-ad__cta {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    transition: all 0.25s var(--transition-base);
+    gap: 0.35rem;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--primary-foreground);
+    background: var(--primary);
     border: 1px solid var(--primary);
-    box-shadow: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  .fallback-btn:hover {
-    background-color: transparent;
+  .native-ad__cta:hover {
+    background: transparent;
     color: var(--primary);
-    border-color: var(--primary);
   }
 
-  .btn-arrow {
+  .native-ad__cta-arrow {
     transition: transform 0.2s ease;
   }
 
-  .fallback-btn:hover .btn-arrow {
+  .native-ad__cta:hover .native-ad__cta-arrow {
     transform: translateX(3px);
   }
 
-  /* Responsive Adjustments based on Slot type */
-  .top_banner {
-    max-width: 990px;
-    margin-inline: auto;
-  }
-
-  .top_banner .fallback-content {
+  /* Top banner runs horizontally on wide screens */
+  .native-ad--top_banner.native-ad--empty {
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    gap: 2rem;
-  }
-
-  .top_banner .fallback-text-side {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    gap: 0.15rem;
-  }
-
-  .top_banner .fallback-footer {
-    margin-top: 0;
-    flex-shrink: 0;
+    justify-content: space-between;
     gap: 1.5rem;
+    padding: 1rem 1.5rem;
   }
 
-  .sidebar {
-    max-width: 300px;
-    flex-direction: column;
+  .native-ad--top_banner .native-ad__main {
+    flex: 1 1 auto;
   }
 
-  .mobile_content {
-    max-width: 300px;
+  .native-ad--top_banner .native-ad__foot {
+    flex: 0 0 auto;
     flex-direction: column;
+    align-items: flex-end;
+    margin-top: 0;
+    text-align: right;
+  }
+
+  .native-ad--top_banner .native-ad__pricing {
+    justify-content: flex-end;
   }
 
   @media (max-width: 768px) {
-    .top_banner {
-      min-height: 120px !important;
-      padding: 1rem;
-    }
-    .top_banner .fallback-content {
+    .native-ad--top_banner.native-ad--empty {
       flex-direction: column;
       align-items: stretch;
-      gap: 1rem;
+      gap: 0.75rem;
     }
-    .top_banner .fallback-footer {
+
+    .native-ad--top_banner .native-ad__foot {
       flex-direction: row;
-      justify-content: space-between;
       align-items: center;
-      margin-top: 0.5rem;
+      justify-content: space-between;
     }
-    .fallback-footer {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
+
+    .native-ad--top_banner .native-ad__pricing {
+      justify-content: flex-start;
     }
-    .fallback-btn {
+
+    /* Unsold house ad: a slim strip, not a full screen of promo copy. */
+    .native-ad--top_banner.native-ad--empty {
+      min-height: 0 !important;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+    }
+    .native-ad--top_banner .native-ad__desc,
+    .native-ad--top_banner .native-ad__format,
+    .native-ad--top_banner .native-ad__price-was,
+    .native-ad--top_banner .native-ad__price-unit,
+    .native-ad--top_banner .native-ad__promo {
+      display: none;
+    }
+    .native-ad--top_banner .native-ad__title {
+      font-size: 0.95rem;
+      line-height: 1.25;
+      margin: 0.1rem 0 0;
+    }
+    .native-ad--top_banner .native-ad__foot {
+      flex-direction: row;
+      gap: 0.6rem;
+      flex: 0 0 auto;
+    }
+    .native-ad--top_banner .native-ad__cta {
+      width: auto;
+      min-height: 2.5rem;
+      padding-inline: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .native-ad__cta {
       width: 100%;
       justify-content: center;
     }

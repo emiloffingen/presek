@@ -4,6 +4,7 @@ import NYTHeader from '../../components/NYTHeader.astro';
 import Footer from '../../components/Footer.astro';
 import AdBookingForm from '../../components/marketing/AdBookingForm.tsx';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
+import { CPM_RATES_EUR, CPM_BASE_EUR, localCpm, PROMO_PERCENT } from '../../lib/adPricing';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -11,6 +12,16 @@ const t = useTranslations(lang);
 
 const status = Astro.url.searchParams.get('status');
 const campaignId = Astro.url.searchParams.get('campaign_id');
+const checkoutEnabled = process.env.STRIPE_CHECKOUT_ENABLED === 'true';
+
+function promo(slot: 'top_banner' | 'sidebar' | 'mobile_content') {
+  const now = localCpm(CPM_RATES_EUR[slot], lang);
+  const base = localCpm(CPM_BASE_EUR[slot], lang);
+  return { now: now.amount, base: base.amount, currency: now.currency };
+}
+const pTop = promo('top_banner');
+const pSide = promo('sidebar');
+const pMobile = promo('mobile_content');
 ---
 
 <Layout
@@ -75,17 +86,18 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
             <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{lang === 'mk' ? 'Цена по импресија' : 'Cena po impresiji'}</span>
           </div>
           <div class="flex justify-between items-center text-sm">
-            <span class="text-foreground font-bold">Top Billboard (990x90 / 990x150)</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{lang === 'mk' ? '60 MKD' : '117 RSD'}</span>
+            <span class="text-foreground font-bold">Top Billboard (990x80 / 990x150)</span>
+            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pTop.now} {pTop.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pTop.base}</span></span>
           </div>
           <div class="flex justify-between items-center text-sm">
             <span class="text-foreground font-bold">Companion Sidebar (300x250 / 300x600)</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{lang === 'mk' ? '75 MKD' : '146 RSD'}</span>
+            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pSide.now} {pSide.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pSide.base}</span></span>
           </div>
           <div class="flex justify-between items-center text-sm">
             <span class="text-foreground font-bold">Inline Mobile Content (300x250)</span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-bold font-mono">{lang === 'mk' ? '125 MKD' : '234 RSD'}</span>
+            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pMobile.now} {pMobile.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pMobile.base}</span></span>
           </div>
+          <p class="text-xs text-[var(--presek-mark)] font-bold pt-1">−{PROMO_PERCENT}% воведна понуда</p>
         </div>
       </div>
 
@@ -97,17 +109,19 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
             </svg>
           </div>
           <h3 class="text-xl font-bold text-foreground font-serif">
-            {lang === 'mk' ? 'Плаќањето е безбедно со Stripe' : 'Plaćajte bezbedno uz Stripe'}
+             {checkoutEnabled ? 'Плаќањето е безбедно' : 'Плаќањата моментално не се достапни'}
           </h3>
           <p class="text-muted-foreground text-xs md:text-sm leading-relaxed font-sans">
-            {lang === 'mk'
-              ? 'Вашите трансакции се 100% безбедни преку Stripe Checkout. Кампањата започнува автоматски на избраниот почетен датум.'
+             {lang === 'mk'
+               ? checkoutEnabled
+                 ? 'Плаќањето се обработува преку безбеден платежен систем. Кампањата започнува автоматски на избраниот почетен датум.'
+                 : 'Системот за резервирање рекламни позиции наскоро повторно ќе биде достапен.'
               : 'Vaše transakcije su 100% bezbedne preko Stripe Checkout-a. Kampanja počinje automatski na izabrani početni datum.'}
           </p>
           <ul class="text-left text-xs text-muted-foreground space-y-2 max-w-xs mx-auto pt-2 font-sans">
             <li class="flex items-center gap-2">
               <span class="text-[var(--presek-mark)]">•</span>
-              <span>{lang === 'mk' ? 'Минимален износ за кошничка: 3,000 денари' : 'Minimalni iznos za korpu: 3,000 MKD'}</span>
+              <span>{lang === 'mk' ? 'Минимален износ за кошничка: 30 EUR (~1.845 ден.)' : 'Minimalni iznos za korpu: 30 EUR (~3.510 RSD)'}</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-[var(--presek-mark)]">•</span>
@@ -123,7 +137,15 @@ const campaignId = Astro.url.searchParams.get('campaign_id');
     </section>
 
     {/* Booking Form component */}
-    <AdBookingForm client:load lang={lang} />
+     {checkoutEnabled ? (
+       <AdBookingForm client:load lang={lang} />
+     ) : (
+       <div class="max-w-4xl mx-auto border border-[var(--presek-mark-line)] bg-[var(--presek-mark-soft)] p-8 text-center">
+         <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--presek-mark)] mb-3">Наскоро</p>
+         <h2 class="text-2xl font-black font-serif mb-3">Рекламирањето е привремено паузирано</h2>
+         <p class="text-sm text-muted-foreground max-w-xl mx-auto">Следете ја оваа страница за повторно отворање на резервациите.</p>
+       </div>
+     )}
   </main>
 
   <Footer />

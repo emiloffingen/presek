@@ -6,8 +6,8 @@ test('buildLeadStatus returns early signal for single-source clusters', () => {
   const status = buildLeadStatus({
     cluster_id: 'abc',
     articles: [{ source: 'A', title: 'Test' }],
-  }, 'sr');
+  }, 'mk');
 
   assert.equal(status?.tone, 'early');
-  assert.match(status?.label || '', /RANI SIGNAL/i);
+  assert.match(status?.label || '', /РАН СИГНАЛ/);
 });

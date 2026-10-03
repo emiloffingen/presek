@@ -65,7 +65,7 @@ interface ShareIslandProps {
   lang?: 'sr' | 'mk';
 }
 
-export default function ShareIsland({ title, url, lang = 'sr' }: ShareIslandProps) {
+export default function ShareIsland({ title, url, lang = 'mk' }: ShareIslandProps) {
   const t = useClientTranslations(lang, cluster);
   const [currentUrl, setCurrentUrl] = useState(url);
 

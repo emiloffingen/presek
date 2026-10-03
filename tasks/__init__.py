@@ -22,7 +22,6 @@ from tasks.intelligence import (
     recluster_recent_articles_task,
     refine_knowledge_graph_sentiment_task,
     repair_split_clusters_task,
-    standardize_article_style_task,
     summarize_article_task,
     synthesize_cluster_task,
 )
@@ -33,7 +32,6 @@ __all__ = [
     "crawl_article_task",
     "run_ingestion",
     "auto_repair_sources_task",
-    "standardize_article_style_task",
     "detect_global_story_task",
     "summarize_article_task",
     "synthesize_cluster_task",

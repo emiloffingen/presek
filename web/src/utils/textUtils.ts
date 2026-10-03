@@ -342,7 +342,7 @@ export function isSyntheticStandfirstBoilerplate(input: any): boolean {
 export function getStoryPreviewText(cluster: any, fallbackArticle?: any, lang?: string): string {
     const standfirst = extractCleanSummaryText(cluster?.synthetic_standfirst || '');
     if (standfirst && !isSyntheticStandfirstBoilerplate(standfirst)) {
-        const cleaned = prepareSynthesisParagraph(standfirst, lang || 'sr');
+        const cleaned = prepareSynthesisParagraph(standfirst, lang || 'mk');
         if (lang === 'sr' && isMostlyCyrillic(cleaned)) {
             return transliterate(cleaned);
         }
@@ -351,7 +351,7 @@ export function getStoryPreviewText(cluster: any, fallbackArticle?: any, lang?: 
 
     const article = fallbackArticle || cluster?.articles?.[0];
     const summary = getDisplaySummary(article, lang);
-    return prepareSynthesisParagraph(summary, lang || 'sr');
+    return prepareSynthesisParagraph(summary, lang || 'mk');
 }
 
 export function getPersonalizedText(text: string, lang: string): string {

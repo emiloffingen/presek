@@ -11,8 +11,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from core.api_errors import soft_error
-from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD
+from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
+from core.embeddings import local_similarity
 from core.input_validation import validate_cluster_id as validate_cluster_id_input
 from core.input_validation import validate_language_code
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
@@ -97,9 +98,11 @@ _FEATURE_PATTERNS = [
 
 
 def _is_publicly_displayable_article(article):
-    if article.get("is_translated"):
+    # Support both dict and tuple (psycopg Row) formats
+    a = dict(article) if not isinstance(article, dict) else article
+    if a.get("is_translated"):
         return True
-    return is_cyrillic_south_slavic(f"{article.get('title') or ''}. {article.get('description') or ''}")
+    return is_cyrillic_south_slavic(f"{a.get('title') or ''}. {a.get('description') or ''}")
 
 
 _PUBLIC_ARTICLE_FIELDS = {
@@ -143,7 +146,7 @@ _ARTICLE_LIST_COLUMNS = (
 )
 
 
-def _public_article_payload(article, lang="sr", include_full_content: bool = False):
+def _public_article_payload(article, lang=DEFAULT_LANG, include_full_content: bool = False):
     from core.language import transliterate_cyr_to_lat, transliterate_lat_to_cyr
     from nlp.categories import normalize_headline
 
@@ -353,13 +356,16 @@ async def get_news(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = "mk",
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
 ):
     try:
+        # The public deployment is Macedonian-only. Legacy callers may still
+        # send lang=sr, but must not receive the retired Serbian edition.
+        lang = "mk"
         return await fetch_news_data(
             q=q,
             category=category,
@@ -385,7 +391,7 @@ async def fetch_news_data(
     entity: Optional[str] = None,
     subcategory: Optional[str] = None,
     country: Optional[str] = None,
-    lang: Optional[str] = "sr",
+    lang: Optional[str] = DEFAULT_LANG,
     sort: str = "recent",
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
@@ -819,7 +825,7 @@ async def fetch_news_data(
 async def semantic_search(
     q: str = Query(..., min_length=3, max_length=API_MAX_Q_LEN),
     limit: int = Query(24, ge=1, le=50),
-    lang: str = "sr",
+    lang: str = DEFAULT_LANG,
 ):
     """
     Explicit Semantic Search endpoint.
@@ -836,7 +842,7 @@ async def semantic_search(
         query_vec = await get_query_embedding_async(q)
         if not query_vec:
             detail = (
-                "Neuspešno generisanje vektora za pretraživanje"
+                "Неуспешно генерирање вектори за пребарување"
                 if lang == "sr"
                 else "Неуспешно генерирање на вектор за пребарување"
             )
@@ -1026,8 +1032,8 @@ def _maybe_enqueue_missing_synthesis(cluster_id: str, freshness: dict, unique_so
             return
 
         celery_app.send_task(
-            "tasks.intelligence.auto_summarize_task",
-            args=[[cluster_id]],
+            "tasks.summarization.build_extractive_clusters_task",
+            kwargs={"cluster_ids": [cluster_id]},
             countdown=5,
         )
         log.info("[cluster] JIT synthesis enqueued for %s (%s sources)", cluster_id, unique_sources)
@@ -1054,8 +1060,131 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
         log.debug("[cluster] JIT synthesis cache hook failed for %s: %s", cluster_id, e)
 
 
+@router.get("/entity-graph/{entity_name}")
+async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
+    """Entity context card: bio, importance, recency, mentions and relations.
+
+    Backed by entity_knowledge, knowledge_entities, cluster_entities and
+    knowledge_relationships. Returns {status, data} as the frontend expects.
+    """
+    name = cleanAndDecode(entity_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="entity name required")
+
+    cache_key = f"api:entity-graph:v1:{name.lower()}:{lang}"
+    cached = cached_response(cache_key, ttl=300)
+    if cached:
+        return cached
+
+    try:
+        ent = await db.async_execute_one(
+            "SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score "
+            "FROM knowledge_entities WHERE LOWER(name) = LOWER(%s)",
+            (name,),
+        )
+        mentions = await db.async_execute_one(
+            "SELECT COUNT(DISTINCT cluster_id) AS n FROM cluster_entities WHERE LOWER(entity_name) = LOWER(%s)",
+            (name,),
+        )
+        rels = await db.async_execute(
+            """
+            SELECT entity_b AS related, weight FROM knowledge_relationships
+            WHERE LOWER(entity_a) = LOWER(%s)
+            UNION
+            SELECT entity_a AS related, weight FROM knowledge_relationships
+            WHERE LOWER(entity_b) = LOWER(%s)
+            ORDER BY weight DESC
+            LIMIT 8
+            """,
+            (name, name),
+        )
+
+        cluster_count = (mentions or {}).get("n", 0)
+        if not ent and not cluster_count:
+            result = {"status": "not_found", "data": None}
+            set_cache(cache_key, result, ttl=120)
+            return result
+
+        mentions_total = (ent or {}).get("total_mentions") or cluster_count or 1
+        # Lightweight extractive bio: how often and where the entity appears.
+        etype = (ent or {}).get("type") or "MISC"
+        bio = f"{name} се појавува во {cluster_count} кластери ({mentions_total} споменувања)."
+        data = {
+            "name": (ent or {}).get("name") or name,
+            "bio_summary": bio,
+            "summary": bio,
+            "importance_score": mentions_total,
+            "category": etype,
+            "type": etype,
+            "last_seen": (ent or {}).get("last_seen"),
+            "first_seen": (ent or {}).get("first_seen"),
+            "total_mentions": mentions_total,
+            "cluster_count": cluster_count,
+            "sentiment_score": (ent or {}).get("sentiment_score"),
+            "related": [
+                {"name": r.get("related"), "weight": r.get("weight")} for r in (rels or []) if r.get("related")
+            ],
+        }
+        result = {"status": "success", "data": data}
+        set_cache(cache_key, result, ttl=300)
+        return result
+    except Exception as e:
+        log.debug("[entity-graph] lookup failed for %s: %s", name, e)
+        return {"status": "error", "data": None}
+
+
+@router.get("/article/{article_id}")
+async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG):
+    """Full original text for a single article, with source attribution.
+
+    The body is only returned when the source allows full-text display
+    (``sources.full_text_allowed``); otherwise the client falls back to a link.
+    """
+    lang = validate_language_code(lang, allowed_languages=["sr", "mk"])
+    cache_key = f"api:article:detail:v1:{article_id}:{lang}"
+    cached = cached_response(cache_key, ttl=3600)
+    if cached:
+        return cached
+
+    try:
+        row = await db.async_execute_one(
+            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE id = %s",  # nosec B608 - static column constant with bound params
+            (article_id,),
+            read_only=True,
+        )
+    except Exception as e:
+        log.debug("[article] lookup failed for %s: %s", article_id, e)
+        row = None
+
+    if not row or not _is_publicly_displayable_article(row):
+        raise HTTPException(status_code=404, detail="tekstot ne e najden")
+
+    allowed = True
+    attribution_name = None
+    try:
+        srow = await db.async_execute_one(
+            "SELECT full_text_allowed, attribution_name FROM sources WHERE name = %s",
+            (row.get("source"),),
+            read_only=True,
+        )
+        if srow:
+            allowed = bool(srow.get("full_text_allowed", True))
+            attribution_name = srow.get("attribution_name")
+    except Exception as e:
+        log.debug("[article] source flag lookup failed for %s: %s", article_id, e)
+
+    payload = _public_article_payload(row, lang=lang, include_full_content=allowed)
+    payload["full_text_allowed"] = allowed
+    payload["attribution"] = attribution_name or row.get("source")
+    payload["original_url"] = row.get("link")
+    payload["published_at"] = row.get("created_at")
+
+    set_cache(cache_key, payload, ttl=3600)
+    return payload
+
+
 @router.get("/cluster/{cluster_id}")
-async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     # Validate cluster_id using comprehensive validation
     validate_cluster_id_input(cluster_id)
     # Validate language code
@@ -1063,27 +1192,39 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
     cache_key = f"api:cluster:detail:v3:{cluster_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
+        if isinstance(cached, dict) and cached.get("__missing"):
+            # Negative cache: known-missing cluster (crawler sweep of
+            # purged/merged IDs). Short TTL so newly-ingested IDs recover fast.
+            raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         _maybe_enqueue_missing_synthesis_from_cache(cluster_id, cached)
         return cached
+
+    def _remember_missing():
+        try:
+            set_cache(cache_key, {"__missing": True}, ttl=120)
+        except Exception:
+            log.debug("[cluster] negative cache write failed for %s", cluster_id)
 
     try:
         # Map language to country for article filtering
         country_filter = "MK" if lang == "mk" else "RS"
         rows = await db.async_execute(
-            f"SELECT {_ARTICLE_LIST_COLUMNS}, full_content FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
+            f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = %s AND country = %s ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
             (cluster_id, country_filter),
             read_only=True,
         )
         if not rows:
+            _remember_missing()
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         rows = [row for row in rows if _is_publicly_displayable_article(row)]
         if not rows:
+            _remember_missing()
             raise HTTPException(status_code=404, detail="klaster nije pronadjen")
         articles = annotate_cluster_articles(rows, prefer_recent=True)
         for a in articles:
             a["reading_time"] = calculate_reading_time(a.get("description", ""))
         public_articles = [
-            _public_article_payload(article, lang=lang, include_full_content=True) for article in articles
+            _public_article_payload(article, lang=lang, include_full_content=False) for article in articles
         ]
 
         log.debug(f"[debug] Fetching summary for cluster_id: '{cluster_id}' ({lang})")
@@ -1225,7 +1366,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
             for r in related_results:
                 similarity = float(r.get("similarity", 0))
                 # We can be slightly more lenient here since the centroid is a stable representation
-                if similarity >= 0.65:
+                if similarity >= local_similarity(0.65):
                     related_cids.append(r["cluster_id"])
 
             if related_cids:
@@ -1565,7 +1706,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = "sr"):
 
 
 @router.get("/cluster/{cluster_id}/history")
-async def get_cluster_history(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_history(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     """
     Returns the historical versions of a cluster synthesis.
     """
@@ -1634,22 +1775,11 @@ async def get_historical_events(cluster_id: str):
         if not vec_rows:
             return {"status": "success", "events": []}
 
-        import sys
+        from core.embeddings import average_embeddings
 
-        if "numpy" in sys.modules:
-            np = sys.modules["numpy"]
-        else:
-            import numpy as np
-
-        def parse_vec(v):
-            if isinstance(v, str):
-                import json
-
-                v = json.loads(v)
-            return np.array(v, dtype=np.float32)
-
-        vecs = [parse_vec(r["embedding"]) for r in vec_rows]
-        avg_vec = np.mean(vecs, axis=0).tolist()
+        avg_vec = average_embeddings([r["embedding"] for r in vec_rows])
+        if not avg_vec:
+            return {"status": "success", "events": []}
         vec_str = "[" + ",".join(map(str, avg_vec)) + "]"
 
         # 2. Query archive using vector similarity
@@ -1667,11 +1797,11 @@ async def get_historical_events(cluster_id: str):
             SELECT DISTINCT ON (cluster_id)
                    cluster_id, title, created_at, category, similarity
             FROM archive_pool
-            WHERE similarity > 0.68
+            WHERE similarity > %s
             ORDER BY cluster_id, similarity DESC, created_at DESC
             LIMIT 5
         """,
-            (vec_str, cluster_id),
+            (vec_str, cluster_id, local_similarity(0.68)),
             read_only=True,
         )
 
@@ -1701,7 +1831,7 @@ async def get_live_route(request: Request):
 
 
 @router.get("/cluster/{cluster_id}/audio")
-async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
+async def get_cluster_audio(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
     validate_cluster_id(cluster_id)
 
@@ -1715,17 +1845,35 @@ async def get_cluster_audio(cluster_id: str, lang: Optional[str] = "sr"):
             (cluster_id,),
         )
 
-    if not s_row or (not s_row.get("generated_article") and not s_row.get("summary")):
-        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
-
     from core.audio_service import AudioService, select_cluster_audio_text
 
-    content = select_cluster_audio_text(
-        s_row.get("generated_article"),
-        s_row.get("summary"),
-    )
+    content = ""
+    if s_row and (s_row.get("generated_article") or s_row.get("summary")):
+        content = select_cluster_audio_text(
+            s_row.get("generated_article"),
+            s_row.get("summary"),
+        )
     if not content:
-        raise HTTPException(status_code=404, detail="Sinteza nije pronađena za ovaj klaster.")
+        # No synthesis stored yet: narrate the cluster's latest headlines instead.
+        a_rows = (
+            await db.async_execute(
+                "SELECT title, description FROM articles WHERE cluster_id = %s ORDER BY created_at DESC LIMIT 5",
+                (cluster_id,),
+                read_only=True,
+            )
+            or []
+        )
+        headlines = [str(r.get("title") or "").strip() for r in a_rows]
+        headlines = [h for h in headlines if h]
+        if not headlines:
+            raise HTTPException(status_code=404, detail="Не е пронајдена синтеза за овој кластер.")
+        lead = str((a_rows[0] or {}).get("description") or "").strip()
+        narration = "Вести: " + ". ".join(headlines)
+        if lead:
+            narration += ". " + lead
+        content = select_cluster_audio_text(None, narration)
+    if not content:
+        raise HTTPException(status_code=404, detail="Не е пронајдена синтеза за овој кластер.")
     loop = asyncio.get_running_loop()
     audio_url = await loop.run_in_executor(None, AudioService.generate_cluster_audio, cluster_id, content, lang)
 

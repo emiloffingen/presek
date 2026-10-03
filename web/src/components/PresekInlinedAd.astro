@@ -13,7 +13,7 @@ const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const lang = getLangFromUrl(requestUrl, hostHeader);
 
 // Exclude ad-free pages
-const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+const adFreePaths = ['/marketing', '/mk/marketing'];
 const showAd = !adFreePaths.some(p => requestUrl.pathname.endsWith(p));
 ---
 

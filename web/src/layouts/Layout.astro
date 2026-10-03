@@ -1,9 +1,8 @@
 ---
-// 🌐 PRESEK - Consolidated Multi-language Site (Serbian & Macedonian)
-// This layout handles both presek.live (sr) and presek.mk (mk) via Astro i18n.
+// PRESEK.MK public layout.
 
 import '../styles/global.css';
-import '../lib/transliterationInit.js';
+import '../styles/theme-warm.css';
 import LayoutBodyChrome from '../components/layout/LayoutBodyChrome.astro';
 import LayoutHead from '../components/layout/LayoutHead.astro';
 
@@ -34,7 +33,6 @@ const hostHeader = Astro.request?.headers.get('host') || requestUrl.hostname;
 const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
-import '../styles/fonts-sr.css';
 import '../styles/fonts-mk.css';
 const t = useTranslations(lang);
 
@@ -51,7 +49,7 @@ const {
 const defaultDescription = t('layout.default_description');
 const siteName = siteDisplayName(lang);
 const pageTitle = buildPageTitle(title, lang);
-const { canonicalUrl, imageUrl, srHref, mkHref } = resolveLayoutUrls(
+const { canonicalUrl, imageUrl } = resolveLayoutUrls(
 	requestUrl.pathname,
 	lang,
 	image,
@@ -64,10 +62,23 @@ const organizationSchema = buildOrganizationSchema(lang);
 const metaDescription = description || defaultDescription;
 const normalizedPath = requestUrl.pathname.replace(/\/$/, '') || '/';
 const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : 'default';
+
+// Opt-in style direction for A/B testing: ?style=warm applies the warm palette
+// (theme-warm.css) and persists via cookie; ?style=default clears it.
+const styleParam = Astro.url.searchParams.get('style');
+if (styleParam === 'warm' || styleParam === 'default') {
+	Astro.cookies.set('presek_style', styleParam, {
+		path: '/',
+		maxAge: 60 * 60 * 24 * 30,
+		sameSite: 'lax',
+	});
+}
+const stylePref = styleParam || Astro.cookies.get('presek_style')?.value || '';
+const isWarmTheme = stylePref === 'warm';
 ---
 
 <!doctype html>
-<html lang={lang === 'sr' ? 'sr-Latn' : 'mk'} data-proxy-base={proxyBase} data-page={pageKind}>
+<html lang="mk" data-proxy-base={proxyBase} data-page={pageKind}>
 	<head>
 		<LayoutHead
 			lang={lang}
@@ -76,8 +87,6 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 			description={metaDescription}
 			canonicalUrl={canonicalUrl}
 			imageUrl={imageUrl}
-			srHref={srHref}
-			mkHref={mkHref}
 			type={type}
 			robots={robots}
 			image={image}
@@ -91,7 +100,7 @@ const pageKind = normalizedPath === '/' || normalizedPath === '/mk' ? 'home' : '
 		id="top"
 		class:list={[
 			'antialiased min-h-screen bg-background text-foreground transition-colors duration-300 overflow-x-hidden w-full',
-			{ 'script-latin': lang === 'sr', 'script-cyrillic': lang === 'mk' },
+			{ 'script-cyrillic': true, 'theme-warm': isWarmTheme },
 		]}
 	>
 		<SkipLink targetId="main-content" />

@@ -42,21 +42,6 @@
       button.setAttribute('title', nextLabel);
       button.setAttribute('data-theme-state', resolvedTheme);
     });
-
-    // 2. Segmented switcher support
-    document.querySelectorAll('[data-theme-switcher]').forEach(function (switcher) {
-      switcher.setAttribute('data-active-theme', theme);
-      switcher.querySelectorAll('[data-theme-val]').forEach(function (btn) {
-        var val = btn.getAttribute('data-theme-val');
-        if (val === theme) {
-          btn.classList.add('active');
-          btn.setAttribute('aria-current', 'true');
-        } else {
-          btn.classList.remove('active');
-          btn.removeAttribute('aria-current');
-        }
-      });
-    });
   }
 
   function setResolvedTheme(theme, persist) {
@@ -104,13 +89,6 @@
   window.presekApplyTheme = setResolvedTheme;
   applyTheme();
   document.addEventListener('click', function (event) {
-    var btn = event.target && event.target.closest ? event.target.closest('[data-theme-val]') : null;
-    if (btn) {
-      var nextTheme = btn.getAttribute('data-theme-val');
-      setResolvedTheme(nextTheme, true);
-      return;
-    }
-
     var toggle = event.target && event.target.closest ? event.target.closest('[data-theme-toggle]') : null;
     if (toggle) {
       var isDark = document.documentElement.classList.contains('dark');

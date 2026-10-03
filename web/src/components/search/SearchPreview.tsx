@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { proxiedImage } from './utils';
+import { localePathForLang } from '../../lib/localePaths';
 import type { EntityResult, SearchAction, Suggestion, TFunction } from './types';
 
 type SearchPreviewProps = {
@@ -30,7 +31,7 @@ type SearchPreviewProps = {
 export const SearchPreview = React.memo(function SearchPreview({
   item,
   t,
-  lang = 'sr',
+  lang = 'mk',
   onOpenCluster,
   onOpenEntity,
   onOpenAction,
@@ -75,22 +76,24 @@ function ClusterPreview({
 }) {
   const [copied, setCopied] = React.useState(false);
   const [canShare, setCanShare] = React.useState(false);
+  const copyTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     setCanShare(!!navigator.share);
+    return () => {
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    };
   }, []);
 
-  const getPath = () => {
-    const isMk = lang === 'mk';
-    return `${isMk ? '/mk' : ''}/cluster/${data.cluster_id}`;
-  };
+  const getPath = () => localePathForLang(`/cluster/${data.cluster_id}`, lang === 'sr' ? 'sr' : 'mk');
 
   const handleCopy = async () => {
     try {
       const url = `${window.location.origin}${getPath()}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy: ', err);
     }
@@ -248,22 +251,24 @@ function EntityPreview({
 }) {
   const [copied, setCopied] = React.useState(false);
   const [canShare, setCanShare] = React.useState(false);
+  const copyTimerRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     setCanShare(!!navigator.share);
+    return () => {
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    };
   }, []);
 
-  const getPath = () => {
-    const isMk = lang === 'mk';
-    return `${isMk ? '/mk' : ''}/?q=${encodeURIComponent(data.name)}`;
-  };
+  const getPath = () => localePathForLang(`/?q=${encodeURIComponent(data.name)}`, lang === 'sr' ? 'sr' : 'mk');
 
   const handleCopy = async () => {
     try {
       const url = `${window.location.origin}${getPath()}`;
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy: ', err);
     }

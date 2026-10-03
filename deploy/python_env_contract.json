@@ -15,13 +15,9 @@
   ],
   "worker_runtime_imports": [
     "tasks.intelligence.synthesis",
-    "tasks.intelligence.synthesis_pipeline",
-    "tasks.intelligence.synthesis_persist",
-    "tasks.intelligence.synthesis_generation",
     "tasks.intelligence.synthesis_grounding",
     "tasks.intelligence.synthesis_translation",
     "tasks.delivery.briefing",
-    "tasks.delivery.briefing_quality",
     "tasks.delivery.briefing_alerts"
   ]
 }

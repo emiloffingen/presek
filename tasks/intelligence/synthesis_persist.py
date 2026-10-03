@@ -6,11 +6,9 @@ import datetime
 import json
 import os
 
-from core.ai_engine import clean_json_response
 from nlp import generate_local_placeholder
 from tasks.intelligence._constants import (
     STRONG_IMAGE_SQL_FILTER,
-    _call_ai,
     db,
     generate_cover_art,
 )
@@ -19,37 +17,35 @@ from tasks.intelligence.synthesis_scheduling import _schedule_deep_analyst_work
 from tasks.utils import invalidate_cluster_caches, log
 
 
-def _translate_key_facts_to_mk(key_facts: list) -> list:
-    if not key_facts:
-        return key_facts
+_HISTORY_TABLE_EXISTS: bool | None = None
+_CLUSTER_METADATA_IMPACT: bool | None = None
 
-    facts_text = "\n".join(f"- {fact}" for fact in key_facts)
-    translate_prompt = (
-        "Преведи ги следните клучни факти од српски (латиница) на чист македонски литературен јазик (кирилица).\n"
-        'Врати ги преведените факти како чист JSON од тип {"facts": ["факт 1", "факт 2", ...]} '
-        "без никакви дополнителни објаснувања, markdown или воведи.\n\n"
-        f"{facts_text}"
-    )
-    try:
-        raw_trans, _ = _call_ai(
-            prompt=translate_prompt,
-            system="Ти си професионален преведувач за вести од српски на македонски јазик.",
-            task_type="translation",
-            max_tokens=500,
-            json_mode=True,
-            lang="mk",
-        )
-        if not raw_trans:
-            return key_facts
-        trans_data = clean_json_response(raw_trans)
-        if isinstance(trans_data, dict) and trans_data.get("facts"):
-            translated_facts = trans_data["facts"]
-            if isinstance(translated_facts, list) and len(translated_facts) == len(key_facts):
-                log.info("Successfully translated key_facts from Serbian to Macedonian")
-                return translated_facts
-    except Exception as exc:
-        log.warning(f"Failed to translate key_facts to Macedonian: {exc}")
-    return key_facts
+
+def _history_table_exists() -> bool:
+    """cluster_summary_history was dropped on the MK-only schema; cache the check."""
+    global _HISTORY_TABLE_EXISTS
+    if _HISTORY_TABLE_EXISTS is None:
+        try:
+            row = db.execute_one("SELECT to_regclass('public.cluster_summary_history') AS t")
+            _HISTORY_TABLE_EXISTS = bool(row and row.get("t"))
+        except Exception:
+            _HISTORY_TABLE_EXISTS = False
+    return bool(_HISTORY_TABLE_EXISTS)
+
+
+def _cluster_metadata_has_impact() -> bool:
+    """impact_score/impact_explanation are absent on the MK-only schema."""
+    global _CLUSTER_METADATA_IMPACT
+    if _CLUSTER_METADATA_IMPACT is None:
+        try:
+            row = db.execute_one(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='cluster_metadata' AND column_name='impact_score'"
+            )
+            _CLUSTER_METADATA_IMPACT = bool(row)
+        except Exception:
+            _CLUSTER_METADATA_IMPACT = False
+    return bool(_CLUSTER_METADATA_IMPACT)
 
 
 def persist_lang_synthesis(
@@ -96,16 +92,14 @@ def persist_lang_synthesis(
     if not key_facts or not isinstance(key_facts, list):
         key_facts = shared_metrics["deep_metadata"].get("facts") or _fallback_key_facts(article_rows, summary)
 
-    if lang == "mk" and key_facts:
-        key_facts = _translate_key_facts_to_mk(key_facts)
-
-    db.execute(
-        """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason)
+    if _history_table_exists():
+        db.execute(
+            """INSERT INTO cluster_summary_history (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason)
            SELECT cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, verification_report, citation_sources, tone_analysis, created_at, key_facts, analyst_entities, generation_provider, generation_model, quality_score, fallback_reason
            FROM cluster_summaries WHERE cluster_id = %s AND lang = %s""",
-        (cluster_id, lang),
-        fetch=False,
-    )
+            (cluster_id, lang),
+            fetch=False,
+        )
 
     if res_data.get("full_article_draft") and len(res_data["full_article_draft"]) > 100:
         db.execute(
@@ -150,8 +144,8 @@ def persist_lang_synthesis(
         )
     else:
         db.execute(
-            """INSERT INTO cluster_summaries (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, centroid, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative, generation_provider, generation_model, quality_score, fallback_reason)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """INSERT INTO cluster_summaries (cluster_id, lang, summary, perspectives, generated_article, synthetic_headline, synthetic_standfirst, created_at, sentiment, tone_analysis, verification_report, quote, citation_sources, key_facts, analyst_entities, pulse_score, pluralism_score, narrative_diversity, storyline_narrative, generation_provider, generation_model, quality_score, fallback_reason)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                ON CONFLICT (cluster_id, lang) DO UPDATE SET
                    summary = EXCLUDED.summary,
                    perspectives = EXCLUDED.perspectives,
@@ -163,7 +157,6 @@ def persist_lang_synthesis(
                    tone_analysis = EXCLUDED.tone_analysis,
                    verification_report = EXCLUDED.verification_report,
                    quote = EXCLUDED.quote,
-                   centroid = EXCLUDED.centroid,
                    citation_sources = EXCLUDED.citation_sources,
                    key_facts = EXCLUDED.key_facts,
                    analyst_entities = EXCLUDED.analyst_entities,
@@ -188,7 +181,6 @@ def persist_lang_synthesis(
                 json.dumps(res_data.get("tone_analysis", {})),
                 (json.dumps(verification_report) if verification_report else None),
                 quote,
-                shared_metrics["centroid_str"],
                 json.dumps(shared_metrics["citation_sources"]),
                 json.dumps(key_facts),
                 json.dumps(shared_metrics["analyst_entities"]),
@@ -266,15 +258,16 @@ def finalize_cluster_synthesis(
         log.error(f"All synthesis attempts failed for cluster {cluster_id}")
         return
 
-    db.execute(
-        """
+    if _cluster_metadata_has_impact():
+        db.execute(
+            """
         UPDATE cluster_metadata
         SET impact_score = %s, impact_explanation = %s
         WHERE cluster_id = %s
     """,
-        (shared_metrics["impact_score"], shared_metrics["impact_reasoning"], cluster_id),
-        fetch=False,
-    )
+            (shared_metrics["impact_score"], shared_metrics["impact_reasoning"], cluster_id),
+            fetch=False,
+        )
 
     try:
         from utils import publish_event

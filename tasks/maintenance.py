@@ -289,11 +289,11 @@ def run_prune_db():
     try:
         valid_rows = db.execute("SELECT DISTINCT cluster_id FROM articles")
         valid_ids = {str(r["cluster_id"]) for r in valid_rows if r["cluster_id"]}
-        from core.ai_engine import cleanup_cover_art
+        from core.ai_engine import cleanup_generated_images
 
-        cleanup_cover_art(valid_ids)
+        cleanup_generated_images(valid_ids)
     except Exception as e:
-        log.error(f"[tasks] cleanup_cover_art failed: {e}", exc_info=True)
+        log.error(f"[tasks] cleanup_generated_images failed: {e}", exc_info=True)
 
     try:
         # 3. Clean up orphaned local images and logs
@@ -593,7 +593,7 @@ def catch_up_deferred_crawls_task(limit=None):
     """Enqueue crawls for recent articles missing full_content when crawl queue has headroom."""
     from core.runtime_limits import CRAWL_CATCH_UP_LIMIT, CRAWL_QUEUE_SOFT_LIMIT
     from tasks.ingestion_task import crawl_article_task
-    from tasks.utils import crawl_dispatches_deferred, get_celery_queue_depth
+    from tasks.utils import crawl_dispatches_deferred, filter_dead_crawls, get_celery_queue_depth
 
     if crawl_dispatches_deferred():
         log.info("[maintenance] Skipping deferred crawl catch-up while ingestion-crawl backlog is high.")
@@ -622,7 +622,7 @@ def catch_up_deferred_crawls_task(limit=None):
     )
 
     enqueued = 0
-    for row in rows:
+    for row in filter_dead_crawls(rows):
         crawl_article_task.delay(int(row["id"]), row["link"])
         enqueued += 1
 
@@ -898,6 +898,115 @@ def refresh_low_score_syntheses_task(min_score=None, limit=None):
     if enqueued:
         log.info("[maintenance] Enqueued low-score synthesis refresh for %s clusters", enqueued)
     return {"enqueued": enqueued}
+
+
+def _selfheal_budget_remaining() -> int:
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_HOURLY_CAP
+
+    cap = SELFHEAL_SYNTHESIS_HOURLY_CAP
+    if cap <= 0:
+        return 0
+    try:
+        from utils import redis_client
+
+        used = int(redis_client.get("presek:synthesis_selfheal_hourly") or 0)
+        return max(0, cap - used)
+    except Exception:
+        return cap
+
+
+def _consume_selfheal_budget(count: int = 1) -> bool:
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_HOURLY_CAP
+
+    cap = SELFHEAL_SYNTHESIS_HOURLY_CAP
+    if cap <= 0:
+        return False
+    try:
+        from utils import redis_client
+
+        key = "presek:synthesis_selfheal_hourly"
+        current = int(redis_client.incrby(key, max(0, int(count))))
+        if current == max(0, int(count)):
+            redis_client.expire(key, 3600)
+        return current <= cap
+    except Exception:
+        return True
+
+
+@maintenance_task
+def self_heal_low_score_syntheses_task(min_score=None, limit=None):
+    """Regenerate recent low-scoring multi-source mk syntheses via the full cascade.
+
+    Bounded self-heal: only a handful per hour, only clusters with >=2 articles,
+    skipped while the synthesis queue is backed up. Uses the gated cascade
+    (grounding / hallucination / copy-purity) so regenerated rows carry a real
+    quality score and provenance.
+    """
+    from core.runtime_limits import SELFHEAL_SYNTHESIS_MIN
+    from tasks.intelligence.synthesis_pipeline import run_cluster_synthesis
+
+    if _synthesis_dispatch_deferred():
+        return {"skipped": True, "reason": "synthesis_backlog"}
+
+    budget = _selfheal_budget_remaining()
+    if budget <= 0:
+        return {"skipped": True, "reason": "hourly_cap"}
+
+    score_floor = float(min_score if min_score is not None else SELFHEAL_SYNTHESIS_MIN)
+    batch_limit = min(int(limit or budget), budget)
+
+    rows = (
+        db.execute(
+            """
+        SELECT cs.cluster_id, cs.summary, cs.quality_score
+        FROM cluster_summaries cs
+        JOIN articles a ON a.cluster_id = cs.cluster_id
+        WHERE cs.lang = 'mk'
+          AND cs.quality_score IS NOT NULL
+          AND cs.quality_score < %s
+          AND cs.created_at >= NOW() - INTERVAL '3 days'
+          AND COALESCE(cs.generation_provider, '') NOT IN ('enhanced_fallback', 'extractive')
+        GROUP BY cs.cluster_id, cs.summary, cs.quality_score
+        HAVING COUNT(*) >= 2
+        ORDER BY cs.quality_score ASC, MAX(a.created_at) DESC
+        LIMIT %s
+        """,
+            (score_floor, max(batch_limit * 3, batch_limit)),
+            read_only=True,
+        )
+        or []
+    )
+
+    regenerated = 0
+    for row in rows:
+        if regenerated >= batch_limit or not _consume_selfheal_budget():
+            break
+        try:
+            run_cluster_synthesis(str(row["cluster_id"]), row.get("summary") or "")
+            regenerated += 1
+        except Exception as e:
+            log.warning("[maintenance] synthesis self-heal failed for %s: %s", row["cluster_id"], e)
+
+    if regenerated:
+        invalidate_public_data_caches()
+    log.info("[maintenance] synthesis self-heal regenerated %s clusters", regenerated)
+    return {"regenerated": regenerated, "candidates": len(rows)}
+
+
+@maintenance_task(name="tasks.maintenance.embed_recent_articles_task")
+def embed_recent_articles_task(hours=24, limit=120):
+    """Keep a rolling window of article embeddings fresh for semantic clustering.
+
+    local model only (no LLM), bounded per run. Ingestion now persists embeddings for new
+    articles; this catches gaps from earlier rows (or embedding failures) so
+    find_or_create_cluster has vectors to match against.
+    """
+    from core.embeddings import embed_recent_articles
+
+    embedded = embed_recent_articles(hours=int(hours), limit=int(limit))
+    if embedded:
+        log.info("[maintenance] embedded %s recent articles", embedded)
+    return {"embedded": embedded}
 
 
 @maintenance_task

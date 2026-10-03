@@ -93,6 +93,10 @@ def _cyrillic_heuristic(text: str) -> str:
     """Distinguish Macedonian from Bulgarian and Serbian in Cyrillic text."""
     lower = text.lower()
 
+    # Macedonian-specific letters are the strongest fallback signal when the
+    # optional fastText model is unavailable.
+    mk_markers = sum(1 for ch in lower if ch in "ѓќѕ")
+
     # Unique letters check (Strongest signal)
     # Bulgarian-only vs RS: ъ, щ, ю, я (RS uses j + vowel)
     bg_markers = sum(1 for ch in lower if ch in "ъщюя")
@@ -100,6 +104,8 @@ def _cyrillic_heuristic(text: str) -> str:
     # Serbian-only vs RS: ђ, ћ (RS uses Dj, c)
     sr_markers = sum(1 for ch in lower if ch in "ђћ")
 
+    if mk_markers >= 1:
+        return "mk"
     if bg_markers >= 1:
         return "bg"
     if sr_markers >= 1:
@@ -130,6 +136,16 @@ def _cyrillic_heuristic(text: str) -> str:
     if bg_words >= 1:
         return "bg"
 
+    # Macedonian function words and inflections that distinguish common
+    # Serbian Cyrillic headlines when unique letters are absent.
+    mk_words = sum(
+        1
+        for w in ("ќе", "што", "како", "поради", "исто така", "одржа", "изјави", "соопшти", "граѓаните")
+        if f" {w} " in f" {lower} "
+    )
+    if mk_words >= 2:
+        return "mk"
+
     # Serbian function words not used in RS
     # 'da li' is very SR (RS uses 'dali')
     # 'tokom' is SR (RS uses 'za vreme na')
@@ -145,6 +161,15 @@ def _cyrillic_heuristic(text: str) -> str:
             "saopstio",
             "izjavio",
             "navodi",
+            "донела",
+            "донео",
+            "нове",
+            "мере",
+            "владе",
+            "председник",
+            "изјавио",
+            "одржао",
+            "саопштила",
         )
         if f" {w} " in f" {lower} "
     )

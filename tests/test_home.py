@@ -171,50 +171,15 @@ def test_rank_latest_wire_articles_dedupes_cleaned_titles():
     assert len(ranked) == 1
 
 
-def test_extract_preview_summary_parses_jsonish_summary_blob():
+def test_extract_preview_summary_returns_short_text_unchanged():
     home = _load_home_module()
 
     article = {
-        "summary": "",
-        "description": '{"summary":"Cisto rezime","text":"Rezervno"}',
-    }
-
-    assert home._extract_preview_summary(article) == "Cisto rezime"
-
-
-def test_extract_preview_summary_unwraps_truncated_json_blob():
-    home = _load_home_module()
-
-    article = {
-        "summary": '{"summary":"Izvestaj austrijskog dnevnika *Standard* ukazuje na duboke veze',
+        "summary": "Short text",
         "description": "",
     }
 
-    assert home._extract_preview_summary(article) == "Izvestaj austrijskog dnevnika Standard ukazuje na duboke veze"
-
-
-def test_build_lead_display_returns_cleaned_preview_fields():
-    home = _load_home_module()
-
-    cluster = {
-        "is_breaking": True,
-        "articles": [
-            {
-                "title": "Vladata &amp; merki",
-                "summary": "Procitaj povece",
-                "description": "Opis",
-            },
-            {"title": "Vtor ugao"},
-        ],
-    }
-
-    display = home._build_lead_display(cluster)
-    mk_display = home._build_lead_display(cluster, lang="mk")
-
-    assert display["title"] == "Vladata & merki"
-    assert display["summary"] == ""
-    assert display["signal"] == "Najbrži razvoj dana"
-    assert mk_display["signal"] == "Најбрз развој денес"
+    assert home._extract_preview_summary(article) == "Short text"
 
 
 def test_decorate_cluster_display_adds_display_fields_to_articles():
@@ -237,166 +202,32 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
     assert decorated["articles"][0]["display_summary"] == "Opis"
 
 
-def test_apply_synthesis_lead_tiebreak_prefers_synthesis_within_window():
-    home = _load_home_module()
-
-    clusters = [
-        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
-        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": True},
-        {"cluster_id": "c", "homepage_score": 50, "has_synthesis": True},
-    ]
-
-    reordered = home._apply_synthesis_lead_tiebreak(clusters)
-
-    assert reordered[0]["cluster_id"] == "b"
-    assert [cluster["cluster_id"] for cluster in reordered] == ["b", "a", "c"]
 
 
-def test_apply_synthesis_lead_tiebreak_keeps_leader_when_gap_is_large():
-    home = _load_home_module()
-
-    clusters = [
-        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
-        {"cluster_id": "b", "homepage_score": 80, "has_synthesis": True},
-    ]
-
-    reordered = home._apply_synthesis_lead_tiebreak(clusters)
-
-    assert reordered[0]["cluster_id"] == "a"
 
 
-def test_select_homepage_hero_clusters_prefers_synthesis_within_score_band():
-    home = _load_home_module()
-
-    clusters = [
-        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
-        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
-        {"cluster_id": "c", "homepage_score": 80, "has_synthesis": True, "generated_article": "Synth C"},
-        {"cluster_id": "d", "homepage_score": 78, "has_synthesis": True, "generated_article": "Synth D"},
-        {"cluster_id": "e", "homepage_score": 50, "has_synthesis": True, "generated_article": "Synth E"},
-    ]
-
-    hero, remainder = home._select_homepage_hero_clusters(clusters, hero_count=4, force_synthesis=True)
-
-    assert [cluster["cluster_id"] for cluster in hero] == ["c", "d", "e"]
-    assert [cluster["cluster_id"] for cluster in remainder] == ["a", "b"]
 
 
-def test_select_homepage_hero_clusters_backfills_from_synthesis_pool():
-    home = _load_home_module()
+def test_api_default_language_is_mk():
+    """MK-only deployment: endpoints must default to 'mk', not 'sr'.
 
-    clusters = [
-        {"cluster_id": "a", "homepage_score": 100, "has_synthesis": False},
-        {"cluster_id": "b", "homepage_score": 95, "has_synthesis": False},
-    ]
-    synthesis_backfill = [
-        {"cluster_id": "s1", "homepage_score": 70, "has_synthesis": True, "generated_article": "One"},
-        {"cluster_id": "s2", "homepage_score": 65, "has_synthesis": True, "generated_article": "Two"},
-    ]
+    'sr' filters country='RS' and the Serbian dataset was purged, so any
+    endpoint whose default was 'sr' silently returned empty payloads
+    (e.g. GET /api/home with no ?lang returned total_articles=0).
+    """
+    import inspect
 
-    hero, remainder = home._select_homepage_hero_clusters(
-        clusters,
-        synthesis_backfill=synthesis_backfill,
-        hero_count=2,
-        force_synthesis=True,
-    )
+    from core.config import DEFAULT_LANG
 
-    assert [cluster["cluster_id"] for cluster in hero] == ["s1", "s2"]
-    assert remainder == clusters
+    assert DEFAULT_LANG == "mk"
 
+    # The home endpoint's lang parameter must default to DEFAULT_LANG.
+    from routes import home as home_routes
 
-def test_schedule_cluster_synthesis_uses_fast_track_once(monkeypatch):
-    home = _load_home_module()
-    calls = []
+    sig = inspect.signature(home_routes.get_home)
+    assert sig.parameters["lang"].default == DEFAULT_LANG
 
-    def fake_schedule_task_once(lock_key, ttl, task, *, args=None, kwargs=None, countdown=0, queue=None):
-        calls.append((lock_key, args, queue))
-        return True
+    from routes import news as news_routes
 
-    monkeypatch.setattr("tasks.utils.schedule_task_once", fake_schedule_task_once)
-
-    home._schedule_cluster_synthesis("cluster-1")
-
-    assert calls == [("lock:home_synth:cluster-1", ("cluster-1", None), "fast-track")]
-
-
-def test_fill_developing_clusters_backfills_when_primary_pool_empty():
-    home = _load_home_module()
-
-    feed = [
-        {
-            "cluster_id": "wire-only",
-            "homepage_score": 0.01,
-            "has_synthesis": False,
-            "articles": [{"title": "Singleton", "source": "A"}],
-        },
-        {
-            "cluster_id": "scored",
-            "homepage_score": 2.5,
-            "has_synthesis": True,
-            "source_count": 1,
-            "articles": [{"title": "Lead story", "source": "B"}],
-        },
-        {
-            "cluster_id": "corroborated",
-            "homepage_score": 1.8,
-            "has_synthesis": False,
-            "source_count": 3,
-            "articles": [{"title": "Multi", "source": "C"}],
-        },
-    ]
-
-    developing = home._fill_developing_clusters(feed, exclude_ids=set(), limit=10, backfill_min=2)
-
-    assert [cluster["cluster_id"] for cluster in developing] == ["scored", "corroborated"]
-
-
-def test_fill_for_you_pool_backfills_from_scored_clusters():
-    home = _load_home_module()
-
-    hero_clusters = [
-        {
-            "cluster_id": f"hero-{idx}",
-            "homepage_score": float(20 - idx),
-            "articles": [{"title": f"Hero {idx}", "topic": "Zabava", "category": "Srbija"}],
-        }
-        for idx in range(5)
-    ]
-    story_clusters = [
-        {
-            "cluster_id": f"story-{idx}",
-            "homepage_score": float(idx),
-            "articles": [{"title": f"Story {idx}", "topic": "Zabava", "category": "Srbija"}],
-        }
-        for idx in range(5, 9)
-    ]
-    clusters = hero_clusters + story_clusters
-
-    pool = home._fill_for_you_pool(
-        clusters,
-        start=5,
-        exclude_ids={cluster["cluster_id"] for cluster in hero_clusters},
-        limit=6,
-        backfill_min=3,
-    )
-
-    assert [cluster["cluster_id"] for cluster in pool] == ["story-8", "story-7", "story-6", "story-5"]
-
-
-def test_fill_live_now_clusters_backfills_recent_hard_news():
-    home = _load_home_module()
-
-    clusters = [
-        {
-            "cluster_id": "feature",
-            "articles": [{"title": "Izdanie na 360: intervju", "topic": "Politika", "category": "Srbija", "created_at": "2026-04-22T20:00:00Z"}],
-        },
-        {
-            "cluster_id": "budget",
-            "articles": [{"title": "Sobranieto o budzetot", "topic": "Ekonomija", "category": "Srbija", "created_at": "2026-04-22T19:00:00Z"}],
-        },
-    ]
-
-    live_now = home._fill_live_now_clusters(clusters, exclude_ids=set(), limit=4, backfill_min=1)
-
-    assert [cluster["cluster_id"] for cluster in live_now] == ["budget"]
+    sig2 = inspect.signature(news_routes._public_article_payload)
+    assert sig2.parameters["lang"].default == DEFAULT_LANG

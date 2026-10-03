@@ -11,7 +11,7 @@ interface StorylineItem {
     image_url?: string;
 }
 
-const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang?: string }> = ({ clusterId, apiUrl, lang = 'sr' }) => {
+const StorylineHistoryIsland: React.FC<{ clusterId: string; apiUrl: string; lang?: string }> = ({ clusterId, apiUrl, lang = 'mk' }) => {
     const [history, setHistory] = useState<StorylineItem[]>([]);
     const [loading, setLoading] = useState(true);
     const isMK = lang === 'mk';

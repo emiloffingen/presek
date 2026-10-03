@@ -31,7 +31,7 @@ const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
 const l = (path: string) => localePath(path, lang, hostHeader);
 
-const currentDate = new Intl.DateTimeFormat(lang === 'sr' ? 'sr-Latn-RS' : 'mk-MK', {
+const currentDate = new Intl.DateTimeFormat('mk-MK', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -83,7 +83,7 @@ try {
                 return {
                     label: cluster?.synthetic_headline || lead?.title || t('header.latest'),
                     href: `${l('/cluster/')}${cluster?.cluster_id}`,
-                    type: cluster?.is_breaking ? 'breaking' : 'latest',
+                    type: 'latest',
                     created_at: lead?.ingested_at || lead?.created_at || null,
                 };
             }).filter((item: any) => item.href && item.label).slice(0, 6);
@@ -125,32 +125,24 @@ const baseOverflowNavItems = overflowNavSections.flatMap((section: any) =>
 );
 
 const mobileOverflowExtras: NavItem[] = [
-    { label: t('nav.deep_analysis'), href: '/pregled' },
     ...((nonTrendingSections[1]?.items || []) as any[]).map((item: any) => ({
         label: String(item.label || ''),
         href: String(item.href || ''),
     })),
 ];
 
-const overflowNavItems = (lang === 'sr' || lang === 'mk')
+const overflowNavItems = true
     ? dedupeNavItems([...mobileOverflowExtras, ...baseOverflowNavItems])
     : baseOverflowNavItems;
 
-const pregledHref = l('/pregled');
 const homeHref = l('/');
 const toolNavItems: NavItem[] = [
-    { label: t('nav.briefing'), href: l('/briefing') },
-    { label: t('nav.for_you'), href: l('/for-you') },
-    { label: t('nav.pulse'), href: l('/pulse') },
-    { label: t('nav.graph'), href: l('/graf') },
-    { label: t('nav.marketing'), href: l('/marketing') },
-    { label: t('nav.settings'), href: l('/settings') },
+    { label: t('nav.sources'), href: l('/izvori') },
+    { label: t('nav.archive'), href: l('/archive') },
 ];
 const normalizedPath = Astro.url.pathname.replace(/\/$/, '');
-const isPregledActive = normalizedPath === pregledHref.replace(/\/$/, '');
 const isBrowseEditionActive =
     (normalizedPath === homeHref.replace(/\/$/, '') || normalizedPath === '') &&
-    !isPregledActive &&
     !category &&
     !topic &&
     !entity &&
@@ -179,7 +171,7 @@ function getRelativeTimeStr(dateStr?: string) {
         if (diffMins < 1) return t('news.now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+        return date.toLocaleTimeString('mk-MK', {
             hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'
@@ -189,11 +181,9 @@ function getRelativeTimeStr(dateStr?: string) {
     }
 }
 
-const adFreePaths = ['/for-you', '/settings', '/briefing', '/marketing', '/mk/marketing'];
+const adFreePaths = ['/marketing', '/mk/marketing'];
 const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
 ---
-
-{showTopAd && <NativeAdSlot slotId="top_banner" class="max-w-[990px] mx-auto my-4 px-4" />}
 
 <div class="header-sticky-wrapper" id="main-header">
     {hasTicker && (
@@ -304,8 +294,15 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
 
             <div class="topbar-actions">
                 <div class="topbar-util">
-                    <a href={l('/for-you')} class="user-action-link utility-desktop-only">{t('nav.for_you')}</a>
                     <div class="utility-inline utility-desktop-only" data-no-script-convert>
+                        <button
+                            type="button"
+                            class="utility-menu-link pwa-install-btn"
+                            data-pwa-install
+                            hidden
+                        >
+                            {t('pwa.install')}
+                        </button>
                         <ScriptSwitcher />
                         <SimpleThemeToggle />
                         <TextScaleIsland client:load lang={lang} />
@@ -325,13 +322,16 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                             >
                                 {t('search.dialog_label')}
                             </button>
-                            <a href={l('/for-you')} class="utility-menu-link">{t('nav.for_you')}</a>
-                            <a href={l('/briefing')} class="utility-menu-link">{t('nav.briefing')}</a>
-                            <a href={pregledHref} class="utility-menu-link">{t('nav.pregled')}</a>
-                            <a href={l('/pulse')} class="utility-menu-link">{t('nav.pulse')}</a>
-                            <a href={l('/graf')} class="utility-menu-link">{t('nav.graph')}</a>
-                            <a href={l('/marketing')} class="utility-menu-link">{t('nav.marketing')}</a>
-                            <a href={l('/settings')} class="utility-menu-link">{t('nav.settings')}</a>
+                            <a href={l('/izvori')} class="utility-menu-link">{t('nav.sources')}</a>
+                            <a href={l('/archive')} class="utility-menu-link">{t('nav.archive')}</a>
+                            <button
+                                type="button"
+                                class="utility-menu-link pwa-install-btn"
+                                data-pwa-install
+                                hidden
+                            >
+                                {t('pwa.install')}
+                            </button>
                             <ScriptSwitcher />
                             <TextScaleIsland client:load lang={lang} />
                         </div>
@@ -349,9 +349,6 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
                         <div class="group-links nav-entry-links">
                             <a href={homeHref} class:list={['nav-rail-link', 'nav-rail-link--browse', { 'is-active': isBrowseEditionActive }]}>
                                 <span class="link-label">{t('nav.browse_edition')}</span>
-                            </a>
-                            <a href={pregledHref} class:list={['nav-rail-link', 'nav-rail-link--analysis', { 'is-active': isPregledActive }]}>
-                                <span class="link-label">{t('nav.deep_analysis')}</span>
                             </a>
                         </div>
                     </div>
@@ -414,6 +411,23 @@ const showTopAd = !adFreePaths.some(p => Astro.url.pathname.endsWith(p));
         </div>
     </nav>
 </div>
+
+{showTopAd && <NativeAdSlot slotId="top_banner" class="max-w-[990px] mx-auto my-3 md:my-4 px-4" />}
+
+<nav class="mobile-bottom-nav" aria-label={t('header.quick_nav')}>
+    <a href={homeHref} class:list={{ 'is-active': isBrowseEditionActive }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">⌂</span>
+        <span>{t('nav.browse_edition')}</span>
+    </a>
+    <a href={l('/izvori')} class:list={{ 'is-active': normalizedPath.startsWith('/izvori') }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">◈</span>
+        <span>{t('nav.sources')}</span>
+    </a>
+    <a href={l('/archive')} class:list={{ 'is-active': normalizedPath.startsWith('/archive') }}>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">◉</span>
+        <span>{t('nav.archive')}</span>
+    </a>
+</nav>
 
 <div class="search-fab-mobile">
     <button

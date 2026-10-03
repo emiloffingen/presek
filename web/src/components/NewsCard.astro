@@ -33,12 +33,6 @@ if (!main) return;
 const sourceSignal = main?.source_signal || {};
 const totalSources = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles.length);
 const showTrustBadge = totalSources >= 2 && Boolean(sourceSignal.trust_label);
-const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
-const significanceLabel =
-	totalSources >= 6 ? t('news.breaking') :
-	totalSources >= 4 ? t('news.tracked') :
-	cluster.is_breaking ? t('news.urgent') :
-	t('news.ongoing');
 
 const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', lang as 'sr' | 'mk');
 const thumbSrc = selectedImage.proxiedUrl;
@@ -51,10 +45,12 @@ const tintColor = resolvePlaceholderTint(cluster.dominant_color);
 const rawLeadTitle = cluster.synthetic_headline || getDisplayTitle(main);
 
 let displayTitle = highlightScores(cluster.synthetic_headline || getDisplayTitle(main));
-if (lang === 'sr' && isMostlyCyrillic(displayTitle)) {
+if (false && isMostlyCyrillic(displayTitle)) {
     displayTitle = highlightScores(transliterate(cluster.synthetic_headline || getDisplayTitle(main)));
 }
 const titleIsCyrillic = isMostlyCyrillic(displayTitle);
+// Alt text must be plain text; displayTitle carries score-highlight markup.
+const displayTitlePlain = displayTitle.replace(/<[^>]*>/g, '');
 
 const clusterSlug = slugify(cluster.synthetic_headline || getDisplayTitle(main));
 const clusterUrl = `${l('/cluster/')}${cluster.cluster_id}-${clusterSlug}`;
@@ -111,7 +107,6 @@ const IconComponent =
 
 const slimCluster = {
 	cluster_id: cluster.cluster_id,
-	is_breaking: cluster.is_breaking,
 	topics: cluster.topics,
 	tags: cluster.tags,
 	homepage_score: cluster.homepage_score,
@@ -131,7 +126,7 @@ function getCardSummary(article: Article, lead = false) {
 }
 
 let displaySummary = getCardSummary(main, isLead);
-if (lang === 'sr' && isMostlyCyrillic(displaySummary)) {
+if (false && isMostlyCyrillic(displaySummary)) {
     displaySummary = highlightScores(transliterate(cleanAndDecode(displaySummary)));
 }
 const summaryIsCyrillic = isMostlyCyrillic(displaySummary);
@@ -147,7 +142,7 @@ function getTimeStr(dateStr: string) {
         if (diffMins < 1) return t('news.just_now');
         if (diffMins < 60) return `${t('news.ago')} ${diffMins} ${t('news.min_short')}`;
 
-        return date.toLocaleTimeString(lang === 'sr' ? 'sr-RS' : 'mk-MK', {
+        return date.toLocaleTimeString('mk-MK', {
             hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Belgrade'
@@ -163,13 +158,13 @@ function getTimeStr(dateStr: string) {
         <div class="article-meta-v2">
             <div class="kicker-group">
                 <span class="kicker">{main.source}</span>
-                {cluster.is_breaking && (
-                    <span class="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
+                {totalSources >= 2 && !primaryCardBadge && (
+                    <span class="corroboration-chip" title={t('news.sources')}>{totalSources} {t('news.sources')}</span>
                 )}
             </div>
         </div>
 
-        <a href={clusterUrl} class="headline-link group" data-testid="cluster-link" onmouseenter={`fetch('${clusterUrl}', { priority: 'low' })`}>
+        <a href={clusterUrl} class="headline-link group" data-testid="cluster-link">
             <h2 class:list={["headline", isLead ? "headline-lead" : (variant === 'compact' || variant === 'wire' ? "headline-compact" : "headline-standard"), { "headline-cyrillic": titleIsCyrillic }]} set:html={sanitizeHtml(displayTitle)}>
             </h2>
         </a>
@@ -203,8 +198,14 @@ function getTimeStr(dateStr: string) {
         )}
 
         <div class="article-footer-meta mt-auto">
-            <span class="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
-            {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
+            {uniqueSources > 1 && totalSources < 2 && !primaryCardBadge && (
+                <>
+                    <span class="source-count">{uniqueSources} {uniqueSources === 1 ? t('news.source') : t('news.sources')}</span>
+                    <span class="meta-dot">·</span>
+                </>
+            )}
+            <time class="time-stamp" datetime={main.ingested_at || main.created_at}>{getTimeStr(main.ingested_at || main.created_at)}</time>
+            {variant === 'wire' && primaryCardBadge && (
                 <>
                     <span class="meta-dot">·</span>
                     <span class={`card-primary-badge card-primary-badge--${primaryBadgeTier} card-primary-badge--compact`}>
@@ -252,7 +253,7 @@ function getTimeStr(dateStr: string) {
                         src={mediaSrc}
                         srcset={cardSrcset}
                         sizes="(max-width: 640px) 7.25rem, (max-width: 1280px) 50vw, 33vw"
-                        alt={displayTitle}
+                        alt={displayTitlePlain}
                         width="700"
                         height="500"
                         class="article-image"
@@ -261,7 +262,6 @@ function getTimeStr(dateStr: string) {
                         decoding="async"
                         fetchpriority={isLead ? "high" : "auto"}
                         data-fallback-url={fallbackImageUrl}
-                        onload="this.classList.add('is-loaded'); const w = this.closest('.image-wrap'); if (w) w.setAttribute('data-image-state', 'ready');"
                     />
                 </div>
             )}
@@ -387,21 +387,17 @@ function getTimeStr(dateStr: string) {
         white-space: nowrap;
     }
 
-    .significance-badge {
+    .corroboration-chip {
         font-family: var(--font-ui-condensed);
-        font-size: 0.62rem;
+        font-size: 0.6rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--nyt-red);
-        padding: 0.1rem 0.35rem;
-        border: 1px solid var(--nyt-red);
+        letter-spacing: 0.06em;
+        color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
+        padding: 0.08rem 0.34rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
         line-height: 1;
-    }
-
-    .significance-badge.is-breaking {
-        color: white;
-        background: var(--nyt-red);
+        white-space: nowrap;
     }
 
     .article-footer-meta {

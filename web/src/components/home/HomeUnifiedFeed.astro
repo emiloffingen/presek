@@ -2,7 +2,7 @@
 import NewsCard from '../NewsCard.astro';
 import PresekInlinedAd from '../PresekInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
-import type { UnifiedFeedItem } from '../../lib/unifiedFeed';
+import type { FeedBucket, UnifiedFeedItem } from '../../lib/unifiedFeed';
 import { countFeedBuckets } from '../../lib/unifiedFeed';
 
 interface Props {
@@ -30,6 +30,26 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
     if (count >= 4 || importanceScore > 0.65) return '2x1';
     return '1x1';
 }
+
+// Phase-1 prototype: band the feed by bucket (Developing → Global → Wire)
+// behind ?banded=1. Items are already bucket-ordered upstream; this only adds
+// visual rhythm (subheadings), no reordering, no data change.
+const BAND_ORDER: FeedBucket[] = ['developing', 'global', 'wire'];
+const bandedPreview = Astro.url.searchParams.get('banded') === '1';
+const bandLabels: Record<FeedBucket, string> = {
+    developing: t('home.developing_title'),
+    global: t('home.global_title'),
+    wire: t('home.wire_title'),
+};
+const bands = BAND_ORDER
+    .map((bucket) => ({
+        bucket,
+        label: bandLabels[bucket],
+        items: items
+            .map((item, globalIdx) => ({ ...item, globalIdx }))
+            .filter((it) => it.bucket === bucket),
+    }))
+    .filter((band) => band.items.length > 0);
 ---
 
 {items.length > 0 && (
@@ -56,6 +76,52 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
             </div>
         </div>
 
+        {bandedPreview ? (
+            bands.map((band) => (
+                <div class="home-feed-band" data-feed-band={band.bucket}>
+                    <div class="home-feed-band-head section-heading-row">
+                        <span class="type-kicker">{band.label}</span>
+                        <span class="home-feed-band-count">{band.items.length}</span>
+                    </div>
+                    <div class="home-unified-feed-grid">
+                        {band.items.map((item) => {
+                            const span = item.variant === 'featured' ? getBentoSpan(item.cluster) : '1x1';
+                            const showMidFeedAd = adInsertAfter > 0 && item.globalIdx === adInsertAfter;
+                            return (
+                                <>
+                                    {showMidFeedAd && (
+                                        <div class="home-feed-ad-break">
+                                            <PresekInlinedAd class="home-inline-ad home-inline-ad--mid-feed" />
+                                        </div>
+                                    )}
+                                <div
+                                    class:list={[
+                                        'home-feed-item',
+                                        `home-feed-item--${item.variant}`,
+                                        item.variant === 'featured' ? `bento-${span}` : '',
+                                        { 'home-feed-item--synthesis': Boolean(item.cluster.has_synthesis) },
+                                    ]}
+                                    data-feed-bucket={item.bucket}
+                                    style={`animation-delay: ${item.globalIdx * 0.05}s`}
+                                >
+                                    {item.cluster.has_synthesis && (
+                                        <span class="home-feed-synthesis-badge ui-status">{t('home.feed_synthesis_badge')}</span>
+                                    )}
+                                    {item.variant === 'wire' ? (
+                                        <NewsCard cluster={item.cluster} variant="wire" lang={lang} />
+                                    ) : item.variant === 'featured' ? (
+                                        <NewsCard cluster={item.cluster} variant="featured" bentoSpan={span} lang={lang} />
+                                    ) : (
+                                        <NewsCard cluster={item.cluster} variant="compact" lang={lang} />
+                                    )}
+                                </div>
+                                </>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))
+        ) : (
         <div class="home-unified-feed-grid">
             {items.map((item, idx) => {
                 const span = item.variant === 'featured' ? getBentoSpan(item.cluster) : '1x1';
@@ -92,6 +158,7 @@ function getBentoSpan(cluster: UnifiedFeedItem['cluster']) {
                 );
             })}
         </div>
+        )}
     </section>
 )}
 

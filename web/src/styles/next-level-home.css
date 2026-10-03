@@ -327,6 +327,17 @@
   margin-top: 1.25rem;
 }
 
+/* Analysis mode reuses the daily unified feed and shows the analysis sections;
+   only the daily synthesis teaser is suppressed (SynthesisPicksSection covers it). */
+.home-page-variant-feed.home-analysis-expanded .home-mobile-order-synthesis-teaser {
+  display: none !important;
+}
+
+.home-feed-band.is-filtered-out,
+.home-feed-ad-break.is-filtered-out {
+  display: none !important;
+}
+
 html[data-page="home"] .search-fab-mobile {
   display: none !important;
 }

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import html
 import logging
 import random
 import re
@@ -26,11 +25,11 @@ from prometheus_client import Counter
 
 import core.clustering as clustering
 from core.api_helpers import is_safe_url
-from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS
+from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
-from core.embeddings import generate_embeddings_batch
+from core.embeddings import article_text, generate_embeddings_batch, jina_distance
 from core.health import get_source_statuses, record_source_fetch
-from core.language import is_cyrillic_south_slavic
+from core.language import is_macedonian
 from core.text_extraction import clean_extracted_article_text
 from nlp.categories import (
     detect_category,
@@ -76,6 +75,38 @@ _BROWSER_LIKE_HEADERS = {
     "Sec-Fetch-Site": "none",
     "Sec-Fetch-User": "?1",
 }
+
+
+def _brotli_available() -> bool:
+    """Whether httpx can transparently decode Brotli responses.
+
+    httpx only decodes ``Content-Encoding: br`` when the optional ``brotli``
+    (or ``brotlicffi``) package is installed. Several MK outlets (meta.mk,
+    republika.mk, kurir.mk, kanal5, ...) serve feeds as Brotli, so requesting
+    ``br`` without a decoder hands raw compressed bytes to feedparser, which
+    silently parses zero entries and the source stops producing articles.
+    """
+    try:
+        import brotli  # noqa: F401
+
+        return True
+    except ImportError:
+        try:
+            import brotlicffi  # noqa: F401
+
+            return True
+        except ImportError:
+            return False
+
+
+if not _brotli_available():
+    # Don't advertise an encoding we cannot decode.
+    _BROWSER_LIKE_HEADERS["Accept-Encoding"] = "gzip, deflate"
+    logging.getLogger("presek").warning(
+        "[ingest] brotli not installed: dropping 'br' from Accept-Encoding. "
+        "Feeds served with Brotli will be requested uncompressed; install the "
+        "'brotli' package to restore full encoding support."
+    )
 _OG_IMAGE_SKIP_DOMAINS = {
     "fokus.mk",
 }
@@ -169,44 +200,6 @@ def _fetch_with_cloudscraper(url: str, timeout: int = 30) -> bytes:
         raise
     finally:
         scraper.close()
-
-
-async def _fetch_with_playwright(url: str, timeout: float = 30.0) -> bytes:
-    """Fetch URL content using headless Playwright to bypass Cloudflare and complex challenge protections."""
-    from playwright.async_api import async_playwright
-
-    log.debug(f"[ingest] Launching headless Playwright for {url}")
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        try:
-            context = await browser.new_context(
-                viewport={"width": 1280, "height": 800},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            )
-            page = await context.new_page()
-            # Navigate and wait for page to load
-            await page.goto(url, wait_until="load", timeout=int(timeout * 1000))
-
-            # Allow a small delay for any script execution/CF challenge completion
-            await asyncio.sleep(2)
-
-            content = await page.content()
-
-            # Playwright might wrap XML inside an HTML pre tag or document structure when rendering.
-            # Let's extract the raw pre content if the page is XML rendered in pre.
-            if "<pre" in content.lower():
-                # Extract text inside <pre> tag if present
-                match = re.search(r"<pre[^>]*>(.*?)</pre>", content, re.DOTALL | re.IGNORECASE)
-                if match:
-                    raw_xml = html.unescape(match.group(1))
-                    return raw_xml.encode("utf-8", errors="replace")
-
-            return content.encode("utf-8", errors="replace")
-        except Exception as e:
-            log.warning(f"[ingest] Playwright detailed error for {url}: {e}")
-            raise
-        finally:
-            await browser.close()
 
 
 def is_junk(title: str, desc: str) -> bool:
@@ -340,9 +333,9 @@ def clean_rss_footer(text: str) -> str:
 
 
 def is_supported_display_language(title: str, description: str = "") -> bool:
-    """Only ingest articles that can be displayed naturally without translation."""
+    """Only ingest Macedonian articles for the MK-only public edition."""
     sample = f"{title or ''}. {description or ''}".strip()
-    return is_cyrillic_south_slavic(sample)
+    return is_macedonian(sample)
 
 
 def normalize_feed_link(link: str) -> str:
@@ -769,18 +762,9 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
                         log.debug(f"[ingest] {name}: fetched {len(entries)} articles via cloudscraper")
                         return name, entries, None
                     except Exception as e:
-                        log.debug(f"[ingest] {name}: cloudscraper failed: {e}, falling back to headless Playwright...")
-                        try:
-                            content = await _fetch_with_playwright(url, timeout)
-                            cleaned_content = cleanup_rss_xml(content)
-                            feed = feedparser.parse(cleaned_content)
-                            entries = feed.entries[:limit]
-                            log.debug(f"[ingest] {name}: fetched {len(entries)} articles via Playwright")
-                            return name, entries, None
-                        except Exception as pe:
-                            log.debug(f"[ingest] {name}: Playwright fallback failed: {pe}, retrying with httpx...")
-                            await asyncio.sleep(1.0 * (attempt + 1))
-                            continue
+                        log.debug(f"[ingest] {name}: cloudscraper failed: {e}, retrying with httpx...")
+                        await asyncio.sleep(1.0 * (attempt + 1))
+                        continue
                 else:
                     if is_cf_challenge:
                         raise RuntimeError(f"Cloudflare challenge blocked feed: {url}")
@@ -837,8 +821,12 @@ async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) ->
 
 
 def get_active_sources():
-    """Fetches all active sources from the database."""
-    rows = db.execute("""
+    """Fetches all active sources from the database.
+
+    In MK-only mode (the public product) only Macedonian sources are ingested.
+    """
+    country_clause = " AND s.country = 'MK'" if MK_ONLY else ""
+    rows = db.execute(f"""
         SELECT
             fs.name,
             fs.url,
@@ -850,8 +838,8 @@ def get_active_sources():
             s.pause_reason
         FROM feed_sources fs
         JOIN sources s ON fs.name = s.name
-        WHERE fs.is_active = TRUE AND s.is_active = TRUE
-        """)
+        WHERE fs.is_active = TRUE AND s.is_active = TRUE{country_clause}
+        """)  # nosec B608 - country_clause is a fixed literal
     return [dict(r) for r in rows]
 
 
@@ -914,6 +902,8 @@ async def ingest_all_sources_async():
     # 2. Parallel Fetching with httpx
     candidates = []
     errors = []
+    new_count = 0
+    inserted_ids = []
     source_stats = {source["name"]: {"status": "ok", "fetched": 0, "accepted": 0, "error": ""} for source in sources}
     seen_links = set()
     seen_titles_by_source = defaultdict(set)
@@ -1047,7 +1037,7 @@ async def ingest_all_sources_async():
         log.warning("[ingestion] Failed to renew ingestion lock before candidate processing")
 
     # Generate embeddings in one batch
-    texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
+    texts_to_embed = [article_text(c["title"], c["desc"]) for c in candidates]
     loop = asyncio.get_running_loop()
     embeddings = await loop.run_in_executor(None, generate_embeddings_batch, texts_to_embed)
 
@@ -1059,7 +1049,7 @@ async def ingest_all_sources_async():
     with db.connection() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT title, cluster_id, created_at, category, topic FROM articles ORDER BY created_at DESC LIMIT %s",
+            "SELECT title, cluster_id, created_at, category, topic, embedding::text AS embedding FROM articles ORDER BY created_at DESC LIMIT %s",
             (CLUSTER_LOOKBACK,),
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
@@ -1098,6 +1088,7 @@ async def ingest_all_sources_async():
                 is_intl = c["country"] != "RS"
                 # Always normalize headlines to strip VIDEO, FOTO, etc.
                 display_title = normalize_headline(c["title"])
+                emb_literal = "[" + ",".join(map(str, emb)) + "]" if emb else None
 
                 cluster_id = None
                 if emb:
@@ -1107,7 +1098,7 @@ async def ingest_all_sources_async():
                         # often arrive together in the same fetch cycle.
                         if bc["category"] != category or bc["topic"] != topic:
                             continue
-                        dist = cosine_dist(emb, bc["embedding"])
+                        dist = jina_distance(cosine_dist(emb, bc["embedding"]))
                         if dist >= (VECTOR_THRESHOLD * 0.78):
                             continue
                         if topic == "vesti" or not topic:
@@ -1157,9 +1148,9 @@ async def ingest_all_sources_async():
                         clean_desc if is_intl else "",
                         c["country"],
                         0,
-                        str(emb) if emb else None,
                         topic,
                         is_fact,
+                        emb_literal,
                     )
                 )
 
@@ -1182,6 +1173,7 @@ async def ingest_all_sources_async():
                         "created_at": created_at,
                         "category": category,
                         "topic": topic,
+                        "embedding": emb_literal,
                     },
                 )
                 if len(recent_articles) > CLUSTER_LOOKBACK:
@@ -1204,9 +1196,9 @@ async def ingest_all_sources_async():
                 INSERT INTO articles (
                     title, original_title, link, source, category, subcategory,
                     cluster_id, created_at, ingested_at, image_url, description, original_description,
-                    country, is_translated, embedding, topic, is_fact_check
+                    country, is_translated, topic, is_fact_check, embedding
                 ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector
                 ) ON CONFLICT (link) DO NOTHING RETURNING id
             """
             cur.executemany(sql, prepared_rows, returning=True)
@@ -1286,7 +1278,6 @@ async def ingest_all_sources_async():
                     detect_global_stories_batch_task,
                     intelligence_batches_deferred,
                     intelligence_soft_deferred,
-                    standardize_article_styles_batch_task,
                     summarize_articles_batch_task,
                 )
                 from tasks.utils import crawl_dispatch_cap, crawl_dispatches_deferred
@@ -1326,11 +1317,6 @@ async def ingest_all_sources_async():
                 else:
                     # Batch global story detection
                     _dispatch_batched(detect_global_stories_batch_task, inserted_ids)
-
-                    # Batch style normalization (low-credibility sources only)
-                    credibility_ids = [art["id"] for art in inserted_data if art.get("credibility", 1.5) < 1.2]
-                    if credibility_ids:
-                        _dispatch_batched(standardize_article_styles_batch_task, credibility_ids)
 
     current_statuses = get_source_statuses()
     for source_name, stats in source_stats.items():

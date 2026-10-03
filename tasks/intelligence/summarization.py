@@ -54,15 +54,6 @@ def detect_global_stories_batch_task(article_ids):
         detect_global_story_task(article_id)
 
 
-@celery_app.task(name="tasks.intelligence.standardize_article_styles_batch_task")
-def standardize_article_styles_batch_task(article_ids):
-    """Batch processes style standardization for articles."""
-    if _skip_when_intel_backlog("style standardization batch"):
-        return
-    for article_id in article_ids:
-        standardize_article_style_task(article_id)
-
-
 @celery_app.task(
     name="tasks.intelligence.summarize_article_task",
     rate_limit="50/m",

@@ -1,4 +1,12 @@
-/* Macedonian (Cyrillic) editorial stack — subset imports only */
+/* Macedonian (Cyrillic) editorial stack — subset imports only.
+   Effective families on the MK edition (body.script-cyrillic):
+     - Source Serif 4   serif / body / display
+     - Noto Serif       headlines (html[lang="mk"] h1-h6)
+     - IBM Plex Sans    UI
+     - Manrope          default sans text
+   Noto Sans and Noto Serif Display were imported but never resolved on the
+   rendered page (all --font-* variables are remapped by .script-cyrillic and
+   html[lang="mk"]), so their faces have been removed. */
 
 @import "@fontsource/source-serif-4/cyrillic-400.css";
 @import "@fontsource/source-serif-4/cyrillic-700.css";
@@ -6,18 +14,9 @@
 @import "@fontsource/ibm-plex-sans/cyrillic-500.css";
 @import "@fontsource/ibm-plex-sans/cyrillic-600.css";
 @import "@fontsource/ibm-plex-sans/cyrillic-700.css";
-@import "@fontsource/noto-sans/cyrillic-400.css";
-@import "@fontsource/noto-sans/cyrillic-700.css";
-
-/* Broadsheet 2.0 Font System - Macedonian Cyrillic */
 @import "@fontsource/noto-serif/cyrillic-700.css";
 @import "@fontsource/noto-serif/cyrillic-900.css";
 @import "@fontsource/noto-serif/cyrillic-900-italic.css";
-
-@import "@fontsource/noto-serif-display/cyrillic-700.css";
-@import "@fontsource/noto-serif-display/cyrillic-900.css";
-@import "@fontsource/noto-serif-display/cyrillic-900-italic.css";
-
 @import "@fontsource/manrope/cyrillic-600.css";
 @import "@fontsource/manrope/cyrillic-700.css";
 @import "@fontsource/manrope/cyrillic-800.css";

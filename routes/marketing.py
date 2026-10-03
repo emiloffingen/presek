@@ -1,4 +1,5 @@
 import io
+import json
 import logging
 import os
 import re
@@ -11,6 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from PIL import Image
 
 from core.database import db_manager as db
+from core.image_service import _UPLOAD_ROOT
 from core.limiter import custom_rate_limit
 from routes.security import verify_csrf_token
 
@@ -22,17 +24,57 @@ EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 # Configure Stripe
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+MOCK_PAYMENTS_ENABLED = os.environ.get("MOCK_PAYMENTS_ENABLED", "false").lower() == "true"
+STRIPE_CHECKOUT_ENABLED = os.environ.get("STRIPE_CHECKOUT_ENABLED", "false").lower() == "true"
+
+# Pin the Stripe API version so an SDK upgrade can never silently change the
+# payload shape we depend on. Defaults to the version bundled with stripe-python
+# 15.3.0; override with STRIPE_API_VERSION when intentionally upgrading.
+STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-06-24.dahlia").strip()
+if STRIPE_API_VERSION:
+    stripe.api_version = STRIPE_API_VERSION
+
+# Stripe Managed Payments is enabled by default on this account and adds
+# merchant-of-record/tax handling. Ad checkout is a plain card payment, so it is
+# disabled by default; enabling it requires a product tax code.
+MANAGED_PAYMENTS_ENABLED = os.environ.get("STRIPE_MANAGED_PAYMENTS_ENABLED", "false").lower() == "true"
+STRIPE_PRODUCT_TAX_CODE = os.environ.get("STRIPE_PRODUCT_TAX_CODE", "").strip()
+
+# Minimums enforced server-side so they cannot be bypassed by crafting requests.
+# Must stay in sync with web/src/components/marketing/AdBookingForm.tsx.
+MIN_CHARGE_CENTS = 3000  # €30 minimum cart value
+MIN_DAILY_IMPRESSIONS = 2000
+
 stripe.api_key = STRIPE_API_KEY
 
-# CPM Prices in EUR (converted from MKD at ~61.5 MKD/EUR)
-# Display MKD equivalents on frontend for local context
-# Adjusted to achieve exactly 50% savings vs traditional media rates
+# CPM pricing. Base rates are benchmarked against MK news outlets (200-400 MKD
+# CPM in their 2026 rate cards) and sit deliberately below that field, then the
+# introductory promo discount is applied. Keep CPM_BASE_EUR / PROMO_DISCOUNT in
+# sync with web/src/lib/adPricing.ts (the UI mirrors these numbers).
 MKD_PER_EUR = 61.5
-CPM_RATES_EUR = {
-    "top_banner": 0.9756,  # 60 MKD exactly — 990x80 / 990x150 (50% of 120 MKD)
-    "sidebar": 1.2207,  # 75 MKD exactly — 300x250 / 300x600 (50% of 150 MKD)
-    "mobile_content": 2.00,  # 125 MKD — 300x250 / 800x200 (50% of 250 MKD)
+CPM_BASE_EUR = {
+    "top_banner": 2.44,  # ~150 MKD — 990x80 / 990x150
+    "sidebar": 2.93,  # ~180 MKD — 300x250 / 300x600
+    "mobile_content": 3.25,  # ~200 MKD — 300x250
 }
+
+
+def _env_promo_discount() -> float:
+    """Introductory discount from PROMO_DISCOUNT (0-0.95). Set 0 to end the promo."""
+    try:
+        value = float(os.environ.get("PROMO_DISCOUNT", "0.25"))
+    except (TypeError, ValueError):
+        return 0.25
+    return min(max(value, 0.0), 0.95)
+
+
+PROMO_DISCOUNT = _env_promo_discount()
+CPM_RATES_EUR = {slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()}
+
+
+def _amount_cents(slot_id: str, target_impressions: int) -> int:
+    amount_eur = round((target_impressions / 1000.0) * CPM_RATES_EUR[slot_id], 2)
+    return max(50, int(round(amount_eur * 100)))
 
 
 @router.post("/marketing/checkout")
@@ -47,9 +89,13 @@ async def create_ad_checkout(
     start_date: str = Form(...),
     end_date: str = Form(...),
     file: UploadFile = File(...),
+    idempotency_key: str = Form(""),
     csrf_valid: bool = Depends(verify_csrf_token),
 ):
     try:
+        if not STRIPE_CHECKOUT_ENABLED:
+            raise HTTPException(status_code=503, detail="Advertising checkout is temporarily unavailable")
+
         # 1. Validation
         # Validate email format
         if not EMAIL_REGEX.match(buyer_email):
@@ -77,6 +123,28 @@ async def create_ad_checkout(
         if start_dt > end_dt:
             raise HTTPException(status_code=400, detail="Start date must be before or equal to end date")
 
+        # Enforce the same minimums the booking form applies client-side.
+        num_days = (end_dt - start_dt).days + 1
+        daily_avg = target_impressions / num_days
+        if daily_avg < MIN_DAILY_IMPRESSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Minimum average of {MIN_DAILY_IMPRESSIONS:,} impressions per day required",
+            )
+
+        amount_cents = _amount_cents(slot_id, target_impressions)
+        if amount_cents < MIN_CHARGE_CENTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Minimum checkout amount is €{MIN_CHARGE_CENTS / 100:.2f}",
+            )
+
+        if MANAGED_PAYMENTS_ENABLED and not STRIPE_PRODUCT_TAX_CODE:
+            raise HTTPException(
+                status_code=503,
+                detail="Managed Payments requires STRIPE_PRODUCT_TAX_CODE",
+            )
+
         # Validate file size (max 150KB)
         content = await file.read()
         if len(content) > 150 * 1024:
@@ -96,23 +164,41 @@ async def create_ad_checkout(
         except Exception:
             raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
 
-        # 2. File Upload Persistence
+        # Idempotency: a client-supplied token lets retried submissions return the
+        # original Stripe session instead of creating a duplicate campaign/charge.
+        client_key = (idempotency_key or "").strip()[:120]
+        if client_key:
+            existing = await db.async_execute_one(
+                "SELECT id, stripe_session_id FROM advertising_campaigns WHERE idempotency_key = %s",
+                (client_key,),
+            )
+            if existing:
+                existing_url = f"/marketing?status=success&campaign_id={existing['id']}"
+                session_ref = str(existing["stripe_session_id"] or "")
+                if session_ref and STRIPE_API_KEY and not session_ref.startswith("mock_"):
+                    try:
+                        prior = stripe.checkout.Session.retrieve(session_ref)
+                        if "url" in prior and prior["url"]:
+                            existing_url = prior["url"]
+                    except Exception as retrieve_err:
+                        log.warning(f"[marketing] idempotent session retrieve failed: {retrieve_err}")
+                return {
+                    "status": "success",
+                    "checkout_url": existing_url,
+                    "campaign_id": existing["id"],
+                    "deduplicated": True,
+                }
+
+        # Reserve the campaign ID before creating the Stripe session so it can be
+        # bound to Stripe metadata, but persist the file only after checkout succeeds.
         campaign_id = str(uuid.uuid4())
-        upload_dir = "static/uploads/ads"
-        os.makedirs(upload_dir, exist_ok=True)
         safe_filename = f"{campaign_id}{ext}"
-        file_path = os.path.join(upload_dir, safe_filename)
+        # Serve through the image proxy: /static/uploads/* is only reachable from
+        # the API (never from the public Astro origin), whereas /proxy is routed
+        # to the API by the Cloudflare tunnel and accepts local /static paths.
+        image_url = f"/proxy?url=/static/uploads/ads/{safe_filename}"
 
-        with open(file_path, "wb") as f:
-            f.write(content)
-
-        image_url = f"/static/uploads/ads/{safe_filename}"
-
-        # 3. Pricing Calculation (in EUR)
-        cpm_eur = CPM_RATES_EUR[slot_id]
-        total_amount_eur = round((target_impressions / 1000.0) * cpm_eur, 2)
-        if total_amount_eur < 0.50:  # Stripe minimum charge is €0.50
-            total_amount_eur = 0.50
+        idem_key = f"ad-checkout-{client_key or campaign_id}"
 
         # 4. Stripe Checkout Session Creation
         session_id = None
@@ -122,55 +208,68 @@ async def create_ad_checkout(
             try:
                 base_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.mk").rstrip("/")
 
+                product_data = {
+                    "name": f"Presek Banner Ad - {slot_id.replace('_', ' ').title()}",
+                    "description": f"{target_impressions:,} impressions target from {start_date} to {end_date}",
+                }
+                if MANAGED_PAYMENTS_ENABLED:
+                    product_data["tax_code"] = STRIPE_PRODUCT_TAX_CODE
+
                 session = stripe.checkout.Session.create(
-                    payment_method_types=["card"],
+                    # payment_method_types is intentionally omitted: the account
+                    # uses dynamic payment methods, and passing it is rejected
+                    # when Managed Payments is active.
                     line_items=[
                         {
                             "price_data": {
                                 "currency": "eur",
-                                "product_data": {
-                                    "name": f"Presek Banner Ad - {slot_id.replace('_', ' ').title()}",
-                                    "description": f"{target_impressions:,} impressions target from {start_date} to {end_date}",
-                                },
-                                "unit_amount": int(round(total_amount_eur * 100)),  # Stripe expects cents
+                                "product_data": product_data,
+                                "unit_amount": amount_cents,
                             },
                             "quantity": 1,
                         }
                     ],
                     mode="payment",
+                    # Ad checkout is a plain card payment; Managed Payments
+                    # (MoR/tax) is opt-in via STRIPE_MANAGED_PAYMENTS_ENABLED.
+                    managed_payments={"enabled": MANAGED_PAYMENTS_ENABLED},
                     success_url=f"{base_url}/marketing?status=success&campaign_id={campaign_id}",
                     cancel_url=f"{base_url}/marketing?status=cancel",
                     metadata={"campaign_id": campaign_id},
+                    idempotency_key=idem_key,
                 )
                 session_id = session.id
                 checkout_url = session.url
             except Exception as stripe_err:
                 log.error(f"[marketing] Stripe checkout session creation failed: {stripe_err}")
                 raise HTTPException(status_code=500, detail="Payment gateway session creation failed")
-        else:
-            # Sandbox bypass is strictly forbidden in production to prevent fraud
-            if os.environ.get("ENV") == "production":
-                log.error("[marketing] Stripe API key missing in production environment!")
-                raise HTTPException(
-                    status_code=500,
-                    detail="Payment gateway is misconfigured. Please contact support.",
-                )
-
-            # Development/Testing Sandbox fallback
+        elif MOCK_PAYMENTS_ENABLED and os.environ.get("ENV") in {"development", "test"}:
+            # Explicit local-only mock mode. It must never be enabled on a public deployment.
             log.info("[marketing] No Stripe API Key configured. Emulating booking checkout bypass.")
             session_id = f"mock_session_{campaign_id}"
-            # Automatically set status to 'paid' for developer sandbox if Stripe isn't configured
             status = "paid"
             checkout_url = f"/marketing?status=success&campaign_id={campaign_id}"
+        else:
+            log.error("[marketing] Stripe API key missing and mock payments are disabled")
+            raise HTTPException(
+                status_code=503,
+                detail="Payment gateway is temporarily unavailable. Please try again later.",
+            )
 
-        status = "paid" if not STRIPE_API_KEY else "pending"
+        upload_dir = os.path.join(_UPLOAD_ROOT, "ads")
+        os.makedirs(upload_dir, exist_ok=True)
+        with open(os.path.join(upload_dir, safe_filename), "wb") as f:
+            f.write(content)
+
+        status = "pending" if STRIPE_API_KEY else "paid"
 
         # 5. Save pending campaign to database
         sql = """
             INSERT INTO advertising_campaigns (
                 id, buyer_name, buyer_email, slot_id, target_impressions,
-                image_url, target_url, start_date, end_date, status, stripe_session_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                image_url, target_url, start_date, end_date, status,
+                stripe_session_id, idempotency_key
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         await db.async_execute(
             sql,
@@ -186,6 +285,7 @@ async def create_ad_checkout(
                 end_dt,
                 status,
                 session_id,
+                client_key or None,
             ),
             fetch=False,
         )
@@ -212,37 +312,92 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Missing signature or webhook configuration")
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        # Verify the signature against the raw payload. construct_event returns a
+        # StripeObject (no dict.get()), so after verification we re-parse the same
+        # bytes into a plain dict and drive the handler with that.
+        stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        event = json.loads(payload)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    if event["type"] == "checkout.session.completed":
+    event_type = event["type"]
+    if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
         session = event["data"]["object"]
         campaign_id = session.get("metadata", {}).get("campaign_id")
         session_id = session.get("id")
 
-        if campaign_id:
-            # Enforce webhook handler idempotency
-            check_sql = "SELECT status FROM advertising_campaigns WHERE id = %s"
-            row = await db.async_execute_one(check_sql, (campaign_id,))
-            if row and row.get("status") == "paid":
-                log.info(f"[marketing] Ad campaign {campaign_id} already marked as paid (webhook call ignored).")
-            else:
-                sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE id = %s"
-                await db.async_execute(sql, (campaign_id,), fetch=False)
-                log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
-        elif session_id:
-            # Enforce webhook handler idempotency
-            check_sql = "SELECT status FROM advertising_campaigns WHERE stripe_session_id = %s"
-            row = await db.async_execute_one(check_sql, (session_id,))
-            if row and row.get("status") == "paid":
-                log.info(f"[marketing] Ad session {session_id} already marked as paid (webhook call ignored).")
-            else:
-                sql = "UPDATE advertising_campaigns SET status = 'paid' WHERE stripe_session_id = %s"
-                await db.async_execute(sql, (session_id,), fetch=False)
-                log.info(f"[marketing] Ad session {session_id} successfully paid and activated.")
+        if not campaign_id or not session_id or session.get("payment_status") != "paid":
+            raise HTTPException(status_code=400, detail="Incomplete or unpaid checkout session")
+
+        row = await db.async_execute_one(
+            """
+            SELECT id, stripe_session_id, status, slot_id, target_impressions
+            FROM advertising_campaigns
+            WHERE id = %s
+            """,
+            (campaign_id,),
+        )
+        if not row or row["stripe_session_id"] != session_id:
+            raise HTTPException(status_code=400, detail="Checkout session does not match campaign")
+        if session.get("mode") != "payment":
+            raise HTTPException(status_code=400, detail="Unsupported checkout mode")
+        if session.get("currency") != "eur":
+            raise HTTPException(status_code=400, detail="Unexpected checkout currency")
+        if session.get("amount_total") != _amount_cents(row["slot_id"], row["target_impressions"]):
+            raise HTTPException(status_code=400, detail="Checkout amount does not match campaign")
+
+        payment_intent = session.get("payment_intent")
+        await db.async_execute(
+            """
+            UPDATE advertising_campaigns
+            SET status = CASE WHEN status = 'pending' THEN 'paid' ELSE status END,
+                stripe_payment_intent = COALESCE(%s, stripe_payment_intent)
+            WHERE id = %s
+            """,
+            (payment_intent, campaign_id),
+            fetch=False,
+        )
+        if row["status"] != "paid":
+            log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
+
+    elif event_type in {"checkout.session.async_payment_failed", "checkout.session.expired"}:
+        session = event["data"]["object"]
+        campaign_id = session.get("metadata", {}).get("campaign_id")
+        session_id = session.get("id")
+        if campaign_id and session_id:
+            await db.async_execute(
+                """
+                UPDATE advertising_campaigns
+                SET status = CASE WHEN %s = 'checkout.session.expired' THEN 'expired' ELSE 'failed' END
+                WHERE id = %s AND stripe_session_id = %s AND status = 'pending'
+                """,
+                (event_type, campaign_id, session_id),
+                fetch=False,
+            )
+
+    elif event_type in {"charge.refunded", "charge.dispute.created"}:
+        # A fully refunded or disputed campaign must stop serving. Partial
+        # refunds leave the campaign running (the customer still got value).
+        charge = event["data"]["object"]
+        payment_intent = charge.get("payment_intent")
+        is_dispute = event_type == "charge.dispute.created"
+        fully_refunded = bool(charge.get("refunded")) or (
+            charge.get("amount") and charge.get("amount_refunded", 0) >= charge.get("amount")
+        )
+        if payment_intent and (is_dispute or fully_refunded):
+            await db.async_execute(
+                """
+                UPDATE advertising_campaigns
+                SET status = 'suspended'
+                WHERE stripe_payment_intent = %s
+                  AND status IN ('paid', 'completed')
+                """,
+                (payment_intent,),
+                fetch=False,
+            )
+            log.info(f"[marketing] Campaign for payment_intent {payment_intent} suspended ({event_type}).")
 
     return {"status": "ok"}
 
@@ -282,7 +437,15 @@ async def get_active_ads():
 @custom_rate_limit("20/minute")
 async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
-        sql = "UPDATE advertising_campaigns SET clicks = clicks + 1 WHERE id = %s"
+        sql = """
+            UPDATE advertising_campaigns
+            SET clicks = clicks + 1
+            WHERE id = %s
+              AND status = 'paid'
+              AND start_date <= CURRENT_DATE
+              AND end_date >= CURRENT_DATE
+              AND impressions_delivered < target_impressions
+        """
         await db.async_execute(sql, (ad_id,), fetch=False)
         return {"status": "success"}
     except Exception as e:
@@ -294,7 +457,15 @@ async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depend
 @custom_rate_limit("60/minute")
 async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
-        sql = "UPDATE advertising_campaigns SET impressions_delivered = impressions_delivered + 1 WHERE id = %s"
+        sql = """
+            UPDATE advertising_campaigns
+            SET impressions_delivered = impressions_delivered + 1
+            WHERE id = %s
+              AND status = 'paid'
+              AND start_date <= CURRENT_DATE
+              AND end_date >= CURRENT_DATE
+              AND impressions_delivered < target_impressions
+        """
         await db.async_execute(sql, (ad_id,), fetch=False)
 
         # Check if campaign target was reached to auto-complete
@@ -312,7 +483,8 @@ async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = D
 
 
 @router.get("/marketing/campaign/{campaign_id}")
-async def get_campaign_status(campaign_id: str):
+@custom_rate_limit("10/minute")
+async def get_campaign_status(request: Request, campaign_id: str):
     try:
         sql = """
             SELECT id, buyer_name, buyer_email, slot_id, target_impressions,

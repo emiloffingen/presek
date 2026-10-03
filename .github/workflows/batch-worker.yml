@@ -1,0 +1,143 @@
+name: Batch worker
+
+# Runs one ingestion + synthesis cycle (scripts/batch_worker.py) on a schedule,
+# replacing the always-on Celery worker/beat on the phone/Shield. Celery runs in
+# eager mode; Redis is a throwaway service container (locks/caches only), and
+# all durable state lives in the primary Postgres (Supabase).
+#
+# Repo secrets (Settings -> Secrets and variables -> Actions):
+#   DATABASE_URL               required - the primary Postgres DSN.
+#   GEMINI_API_KEY, GEMINI2_API_KEY, GEMINI3_API_KEY, GROQ_API_KEY,
+#   OPENROUTER_API_KEY, NVIDIA_API_KEY, JINA_API_KEY
+#                              AI/crawl providers; unset ones are skipped by the
+#                              PROVIDER_FALLBACK_ORDER chain.
+#   HEALTHCHECK_WORKER_URL     optional - healthchecks.io ping URL (dead-man's switch).
+#   TELEGRAM_BOT_TOKEN         optional - failure alerts.
+#   TELEGRAM_CHAT_ID           optional - failure alerts.
+#
+# Private-repo budget: ~2000 Actions minutes/month, shared with
+# offload-backfill.yml. Every 2h with a 3-minute step budget is ~360 runs x
+# ~4-5 billed minutes. Adjust cron and budget together.
+#
+# The schedule only fires from the default branch (main); manual runs work from
+# any branch that has this file.
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      budget:
+        description: "Step budget in minutes"
+        default: "3"
+      only:
+        description: "Run only these steps (space-separated, optional)"
+        default: ""
+
+concurrency:
+  group: batch-worker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_WORKER_URL }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Preflight
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL secret is not set"
+            exit 1
+          fi
+
+      - name: healthchecks start
+        if: ${{ env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL/start" || true
+
+      - name: Run cycle
+        env:
+          ENV: production
+          LOG_LEVEL: INFO
+          SECRET_KEY: ci-worker-${{ github.run_id }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: redis://localhost:6379/0
+          PUBLIC_SITE_URL: https://presek.mk
+          # Mirrors the production .env runtime flags.
+          MK_ONLY: "true"
+          FULLTEXT_ENABLED: "true"
+          FULLTEXT_MAX_CHARS: "20000"
+          SYNTHESIS_PROFILE: balanced
+          FREE_API_KEYS_ENABLED: "false"
+          LOCAL_SYNTHESIS_PREFER_LOCAL: "true"
+          SYNTHESIS_LOCAL_ONLY: "false"
+          LOCAL_TRANSLATION_ENABLED: "false"
+          ENABLE_EXPENSIVE_STYLE_TASKS: "false"
+          HOMEPAGE_SYNTHESIS_ONLY: "false"
+          ENABLE_AI_SCHEDULES: "false"
+          PRESEK_AI_ENABLED: "1"
+          LOCAL_MODEL_CONTEXT: "2048"
+          LOCAL_MODEL_MAX_PROMPT_CHARS: "4000"
+          BOT_USER_AGENT: "PresekBot/1.0 (+https://presek.mk/bot; bot@presek.mk)"
+          PROVIDER_FALLBACK_ORDER: gemini2,gemini,groq,openrouter,cerebras,nvidia,mistral,mistral2,local
+          GEMINI_MODEL: gemini-3.1-flash-lite
+          GEMINI2_MODEL: gemini-flash-lite-latest
+          GEMINI3_MODEL: gemini-3.5-flash-lite
+          GROQ_MODEL: openai/gpt-oss-120b
+          OPENROUTER_MODEL: nvidia/nemotron-3-ultra-550b-a55b:free
+          NVIDIA_MODEL: nvidia/nemotron-3-super-120b-a12b
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI2_API_KEY: ${{ secrets.GEMINI2_API_KEY }}
+          GEMINI3_API_KEY: ${{ secrets.GEMINI3_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+          BATCH_BUDGET_MINUTES: ${{ github.event.inputs.budget || '3' }}
+          ONLY_STEPS: ${{ github.event.inputs.only }}
+        run: |
+          if [ -n "$ONLY_STEPS" ]; then
+            uv run python scripts/batch_worker.py --only $ONLY_STEPS
+          else
+            uv run python scripts/batch_worker.py
+          fi
+
+      - name: healthchecks success
+        if: ${{ success() && env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL" || true
+
+      - name: healthchecks failure
+        if: ${{ failure() && env.HEALTHCHECK_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECK_URL/fail" || true
+
+      - name: notify Telegram on failure
+        if: ${{ failure() && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        run: |
+          curl -fsS -m 10 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=presek batch-worker FAILED run=${GITHUB_RUN_ID} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

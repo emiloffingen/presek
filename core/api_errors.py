@@ -61,7 +61,7 @@ def normalize_http_exception_content(detail: Any) -> dict[str, Any]:
     if isinstance(detail, str):
         return api_error_payload(detail)
     if isinstance(detail, list):
-        return api_error_payload("Nevaliden baranie", detail=detail, code="validation_error")
+        return api_error_payload("Невалидно барање", detail=detail, code="validation_error")
     return api_error_payload(str(detail), detail=detail)
 
 

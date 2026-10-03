@@ -2,8 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import NYTHeader from '../components/NYTHeader.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
-import IzvoriPage from '../components/IzvoriPage';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary.tsx';
+import IzvoriPageIsland from '../components/IzvoriPageIsland';
 import Footer from '../components/Footer.astro';
 import PresekInlinedAd from '../components/PresekInlinedAd.astro';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
@@ -19,10 +18,8 @@ const t = useTranslations(lang);
 
 	<main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] sources-page-scope">
 		<Breadcrumbs items={[{ label: t('sources.breadcrumb') }]} />
-		<PresekInlinedAd class="page-inline-ad mb-10" />
-		<ErrorBoundary client:idle lang={lang}>
-			<IzvoriPage lang={lang} client:visible />
-		</ErrorBoundary>
+		<IzvoriPageIsland client:load lang={lang} />
+		<PresekInlinedAd class="page-inline-ad mt-10" />
 	</main>
 	<Footer />
 </Layout>

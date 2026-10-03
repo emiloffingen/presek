@@ -3,18 +3,15 @@ import assert from 'node:assert/strict';
 
 import { buildTopicConnections } from './topicDiscovery.js';
 
-test('buildTopicConnections ranks breaking and shared-context topics first', () => {
+test('buildTopicConnections ranks shared-context topics first', () => {
   const clusters = [
     {
-      is_breaking: true,
       articles: [{ source: 'MIA' }, { source: 'Telma' }],
     },
     {
-      is_breaking: true,
       articles: [{ source: 'MIA' }, { source: 'Sitel' }],
     },
     {
-      is_breaking: false,
       articles: [{ source: 'Kanal 5' }],
     },
   ];
@@ -28,14 +25,12 @@ test('buildTopicConnections ranks breaking and shared-context topics first', () 
   const result = buildTopicConnections('Politika', clusters, details, 3);
 
   assert.equal(result[0].topic, 'Ekonomija');
-  assert.equal(result[0].relationshipLabel, 'Следна развојна линија');
   assert.equal(result[1].topic, 'Obrazovanje');
 });
 
 test('buildTopicConnections skips the current topic and preserves sample tags', () => {
   const clusters = [
     {
-      is_breaking: false,
       articles: [{ source: 'MIA' }, { source: 'Alsat' }],
     },
   ];

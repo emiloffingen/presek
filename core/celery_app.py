@@ -113,6 +113,8 @@ celery_app = Celery(
     include=[
         "tasks.ingestion_task",
         "tasks.intelligence",
+        "tasks.summarization",
+        "tasks.extractive_maintenance",
         "tasks.delivery",
         "tasks.maintenance",
     ],
@@ -166,25 +168,38 @@ celery_app.conf.update(
             "task": "tasks.intelligence.auto_summarize_task",
             "schedule": 900.0,  # Increased from 3m to 15m
         },
+        "build-extractive-overviews": {
+            # Deterministic, LLM-free cluster overviews (AI kill-switch path).
+            "task": "tasks.summarization.build_extractive_clusters_task",
+            "schedule": 600.0,  # Every 10 minutes
+            "options": {"expires": 540},
+        },
+        "upgrade-overviews-to-ai": {
+            # Progressively regenerate extractive overviews with a real LLM
+            # (no-op when AI is disabled). Small batches to respect rate limits.
+            "task": "tasks.summarization.upgrade_extractive_to_ai_task",
+            "schedule": 300.0,  # Every 5 minutes
+            "options": {"expires": 290},
+        },
         "recluster-recent-articles": {
-            "task": "tasks.intelligence.recluster_recent_articles_task",
+            "task": "tasks.extractive.recluster_recent_articles_task",
             "schedule": 1200.0,
         },
         "repair-split-clusters": {
-            "task": "tasks.intelligence.repair_split_clusters_task",
+            "task": "tasks.extractive.repair_split_clusters_task",
             "schedule": 1800.0,
         },
         "refine-knowledge-graph-sentiment": {
-            "task": "tasks.intelligence.refine_knowledge_graph_sentiment_task",
+            "task": "tasks.extractive.refine_knowledge_graph_sentiment_task",
             "schedule": 1800.0,  # Every 30 minutes
         },
         "backfill-cluster-summaries-sr": {
-            "task": "tasks.intelligence.schedule_backfill_cluster_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_cluster_summaries_task",
             "kwargs": {"lang": "sr"},
             "schedule": crontab(hour="*/6"),  # Every 6 hours for Serbian
         },
         "backfill-cluster-summaries-mk": {
-            "task": "tasks.intelligence.schedule_backfill_cluster_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_cluster_summaries_task",
             "kwargs": {"lang": "mk"},
             "schedule": crontab(hour="*/6"),  # Every 6 hours for Macedonian
         },
@@ -248,6 +263,20 @@ celery_app.conf.update(
             "schedule": 3600.0,
             "options": {"expires": 3300},
         },
+        "self-heal-low-score-syntheses": {
+            # Bounded regeneration of recent low-scoring multi-source mk summaries
+            # through the full gated cascade. Deliberately small (hourly cap).
+            "task": "tasks.maintenance.self_heal_low_score_syntheses_task",
+            "schedule": 3600.0,
+            "options": {"expires": 3300},
+        },
+        "embed-recent-articles": {
+            # Rolling local embeddings for recent articles (no LLM), so semantic
+            # clustering recall (find_or_create_cluster) has vectors to match.
+            "task": "tasks.maintenance.embed_recent_articles_task",
+            "schedule": 1800.0,  # Every 30 minutes
+            "options": {"expires": 1620},
+        },
         "prune-ingestion-queue": {
             "task": "tasks.maintenance.prune_ingestion_queue_task",
             "schedule": 900.0,
@@ -269,7 +298,7 @@ celery_app.conf.update(
             "options": {"expires": 810},
         },
         "backfill-historical-summaries": {
-            "task": "tasks.intelligence.schedule_backfill_historical_summaries_task",
+            "task": "tasks.extractive.schedule_backfill_historical_summaries_task",
             "schedule": 1800.0,  # Every 30 minutes, Gemma-only
         },
         "generate-daily-briefing-sr": {
@@ -303,7 +332,7 @@ celery_app.conf.update(
             "schedule": 600.0,  # Increased from 3m to 10m
         },
         "backfill-cover-art": {
-            "task": "tasks.intelligence.backfill_cover_art_task",
+            "task": "tasks.extractive.backfill_cover_art_task",
             "schedule": 3600.0,  # Increased from 30m to 1h
         },
         "auto-repair-sources": {
@@ -311,7 +340,7 @@ celery_app.conf.update(
             "schedule": crontab(hour="*/6", minute=30),  # Every 6 hours
         },
         "discover-storylines": {
-            "task": "tasks.intelligence.discover_storylines_task",
+            "task": "tasks.extractive.discover_storylines_task",
             "schedule": crontab(minute="15", hour="*/2"),  # Every 2 hours
         },
         "validate-cluster-images": {
@@ -358,6 +387,40 @@ celery_app.conf.update(
     # Default when workers omit --concurrency (production units set this explicitly).
     worker_concurrency=int(os.environ.get("CELERY_WORKER_CONCURRENCY", "4")),
 )
+
+# The Android MK-only deployment uses deterministic clustering and ingestion.
+# Keep expensive synthesis, intelligence backfills, and email delivery opt-in
+# so a fresh worker does not spend memory on disabled AI paths.
+if os.environ.get("ENABLE_AI_SCHEDULES", "false").lower() != "true":
+    for _schedule_name in (
+        "auto-summarize-clusters",
+        "recluster-recent-articles",
+        "repair-split-clusters",
+        "refine-knowledge-graph-sentiment",
+        "backfill-cluster-summaries-sr",
+        "backfill-cluster-summaries-mk",
+        "backfill-historical-summaries",
+        "generate-daily-briefing-sr",
+        "generate-daily-briefing-mk",
+        "send-daily-digest",
+        "send-daily-newsletter",
+        "send-profile-briefings",
+        "send-profile-weekly-digests",
+        "send-profile-breaking-alerts",
+        "backfill-cover-art",
+        "discover-storylines",
+        # Synthesis-quality / homepage-synthesis maintenance: all no-ops or
+        # crashing stubs on the MK-only (minimal-AI) deployment.
+        "refresh-synthesis-quality",
+        "upgrade-stuck-fast-syntheses",
+        "refresh-fallback-syntheses",
+        "refresh-low-score-syntheses",
+        "catch-up-recent-summaries",
+        "catch-up-cluster-syntheses",
+        "prioritize-homepage-syntheses",
+        "boost-homepage-cluster-supply",
+    ):
+        celery_app.conf.beat_schedule.pop(_schedule_name, None)
 
 # Setup logging for Celery workers
 from core.logging_config import setup_logging

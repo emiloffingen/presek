@@ -16,7 +16,7 @@ function getCookie(name: string): string | undefined {
 }
 
 export default function MorningEmailSignup({
-  lang = 'sr',
+  lang = 'mk',
   variant = 'default',
 }: {
   lang?: keyof typeof ui;

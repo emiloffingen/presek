@@ -23,7 +23,7 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
   source,
   topic,
   pageSize,
-  lang = 'sr'
+  lang = 'mk'
 }) => {
   const [clusters, setClusters] = useState(initialClusters);
   const [hasMore, setHasMore] = useState(initialHasMore);

@@ -13,11 +13,10 @@ import {
   Mic,
   SlidersHorizontal,
   Compass,
-  Activity,
   Archive,
 } from 'lucide-react';
 
-import { fetchJsonCached } from '../lib/apiCache';
+import { fetchJson } from '../lib/apiCache';
 import { getDisplayTitle, getStoryPreviewText } from '../utils/textUtils';
 import { SearchInput } from './search/SearchInput';
 import { SearchFilters } from './search/SearchFilters';
@@ -58,7 +57,7 @@ function isSpeechRecognitionSupported(): boolean {
 
 export default function SearchIsland({
   initialQuery = '',
-  lang = 'sr',
+  lang = 'mk',
   startOpen = false,
   hideTrigger = false,
   onClose,
@@ -72,6 +71,7 @@ export default function SearchIsland({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [entityResult, setEntityResult] = useState<EntityResult | null>(null);
   const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
+  const [trendingLoaded, setTrendingLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTime, setSearchTime] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -122,28 +122,12 @@ export default function SearchIsland({
   const SEARCH_ACTIONS: SearchAction[] = useMemo(
     () => [
       {
-        id: 'act-briefing',
-        label: t('search.action_briefing_label'),
+        id: 'act-sources',
+        label: t('search.action_sources_label'),
         icon: Zap,
-        href: localePathForLang('/briefing', lang),
+        href: localePathForLang('/izvori', lang),
         category: 'NAVIGATION',
-        desc: t('search.action_briefing_desc'),
-      },
-      {
-        id: 'act-foryou',
-        label: t('search.action_foryou_label'),
-        icon: Compass,
-        href: localePathForLang('/for-you', lang),
-        category: 'NAVIGATION',
-        desc: t('search.action_foryou_desc'),
-      },
-      {
-        id: 'act-pulse',
-        label: t('search.action_pulse_label'),
-        icon: Activity,
-        href: localePathForLang('/pulse', lang),
-        category: 'NAVIGATION',
-        desc: t('search.action_pulse_desc'),
+        desc: t('search.action_sources_desc'),
       },
       {
         id: 'act-archive',
@@ -153,6 +137,14 @@ export default function SearchIsland({
         category: 'NAVIGATION',
         desc: t('search.action_archive_desc'),
       },
+      {
+        id: 'act-methodology',
+        label: t('search.action_methodology_label'),
+        icon: Compass,
+        href: localePathForLang('/methodology', lang),
+        category: 'NAVIGATION',
+        desc: t('search.action_methodology_desc'),
+      },
       // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
     [lang]
@@ -161,7 +153,9 @@ export default function SearchIsland({
   const CATEGORIES: CategoryOption[] = useMemo(
     () => [
       { id: 'all', labelKey: 'search.category_all', apiValue: '', color: 'bg-foreground' },
-      { id: 'country', labelKey: 'search.category_country', apiValue: t('search.category_country_value'), color: 'bg-nyt-red' },
+      // The API stores the domestic category in Latin ("Makedonija"); sending
+      // the cyrillic label filtered every row out.
+      { id: 'country', labelKey: 'search.category_country', apiValue: 'Makedonija', color: 'bg-nyt-red' },
       { id: 'politics', labelKey: 'search.category_politika', apiValue: 'Politika', color: 'bg-blue-600' },
       { id: 'economy', labelKey: 'search.category_ekonomija', apiValue: 'Ekonomija', color: 'bg-emerald-600' },
       { id: 'sports', labelKey: 'search.category_sport', apiValue: 'Sport', color: 'bg-orange-500' },
@@ -225,7 +219,8 @@ export default function SearchIsland({
     // Restore search session state from sessionStorage
     const sessionState = loadSearchSession();
     if (sessionState) {
-      if (sessionState.query) setQuery(sessionState.query);
+      // A deep-linked ?q= must win over a stale session snapshot.
+      if (sessionState.query && !initialQuery) setQuery(sessionState.query);
       if (sessionState.timespan) setTimespan(sessionState.timespan);
       if (sessionState.categoryFilter) setCategoryFilter(sessionState.categoryFilter);
       if (sessionState.isOpen) setIsOpen(true);
@@ -248,8 +243,10 @@ export default function SearchIsland({
       }
       if (e.key === 'Escape') closeSearch();
 
-      // Numerical hotkeys for Quick Actions when search query is empty
-      if (isOpen && !queryRef.current.trim()) {
+      // Numerical hotkeys for Quick Actions when search query is empty.
+      // Skip while the user is editing: the search input is auto-focused, so
+      // otherwise typing a leading digit would navigate away instead.
+      if (isOpen && !queryRef.current.trim() && !isEditableTarget(e.target)) {
         const keyNum = parseInt(e.key, 10);
         if (keyNum >= 1 && keyNum <= 4) {
           const action = SEARCH_ACTIONS[keyNum - 1];
@@ -279,6 +276,13 @@ export default function SearchIsland({
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) return;
 
+    // Stop any in-flight recognition before starting a new one.
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+    }
+
     const recognition = new SpeechRecognitionCtor();
     recognitionRef.current = recognition;
     recognition.continuous = false;
@@ -287,11 +291,11 @@ export default function SearchIsland({
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => {
       setIsListening(false);
-      recognitionRef.current = null;
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
     };
     recognition.onerror = () => {
       setIsListening(false);
-      recognitionRef.current = null;
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
     };
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript;
@@ -311,7 +315,16 @@ export default function SearchIsland({
         console.error(e);
       }
     }
+    recognitionRef.current = null;
     setIsListening(false);
+  }, []);
+
+  // Abort speech recognition on unmount so it can't keep the mic / callbacks alive.
+  useEffect(() => () => {
+    try {
+      recognitionRef.current?.abort?.();
+    } catch (e) {}
+    recognitionRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -321,6 +334,7 @@ export default function SearchIsland({
       setActiveIndex(-1);
       setSuggestions([]);
       setError(null);
+      setIsLoading(false);
       return;
     }
     lastFocusedRef.current = document.activeElement as HTMLElement;
@@ -340,11 +354,14 @@ export default function SearchIsland({
     const handleTabKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
       if (!dialogRef.current) return;
-      const focusableElements = dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
+      // Exclude hidden/disabled nodes so the trap's first/last are real targets.
+      const focusableElements = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex !== -1 && el.getClientRects().length > 0);
       if (focusableElements.length === 0) return;
 
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
@@ -375,6 +392,8 @@ export default function SearchIsland({
         }
       } catch {
         if (!cancelled) setTrendingItems([]);
+      } finally {
+        if (!cancelled) setTrendingLoaded(true);
       }
     };
     loadTrending();
@@ -411,13 +430,19 @@ export default function SearchIsland({
     }
 
     let cancelled = false;
+    const aborter = new AbortController();
     const startTime = performance.now();
     const timer = window.setTimeout(async () => {
       setIsLoading(true);
       setError(null);
       try {
         const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
-        const data = (await fetchJsonCached(url + timespanPart + categoryPart, 120_000)) as SearchApiResponse;
+        // Direct (non-promise-cached) fetch: each keystroke is a unique URL and the
+        // per-query sync cache above already covers repeats. Abortable so typing
+        // cancels superseded backend searches instead of queueing them.
+        const data = (await fetchJson(url + timespanPart + categoryPart, 2, {
+          signal: aborter.signal,
+        })) as SearchApiResponse;
         const nextSuggestions = Array.isArray(data.clusters)
           ? data.clusters.map((cluster: unknown) => {
               const clusterRecord = cluster as Record<string, unknown>;
@@ -438,7 +463,7 @@ export default function SearchIsland({
                 sourceCount: Array.isArray(clusterRecord.articles) ? clusterRecord.articles.length : 0,
                 pulse_score: typeof clusterRecord.pulse_score === 'number' ? clusterRecord.pulse_score : undefined,
                 has_synthesis: Boolean(clusterRecord.has_synthesis),
-                matchLabel: clusterRecord.is_breaking ? t('search.match_urgent') : t('search.match_story'),
+                matchLabel: t('search.match_story'),
               };
             })
           : [];
@@ -447,13 +472,20 @@ export default function SearchIsland({
           const entity = isEntityResult(data.entity) ? data.entity : null;
           const duration = Math.round(performance.now() - startTime);
           setSearchTime(duration);
-          // Save in cache
-          queryCacheRef.current[cacheKey] = { suggestions: nextSuggestions, entity };
+          // Save in cache (bounded so long sessions can't grow unbounded).
+          const cache = queryCacheRef.current;
+          cache[cacheKey] = { suggestions: nextSuggestions, entity };
+          const cacheKeys = Object.keys(cache);
+          if (cacheKeys.length > 100) {
+            delete cache[cacheKeys[0]];
+          }
           setSuggestions(nextSuggestions);
           setEntityResult(entity);
           setActiveIndex(-1);
         }
       } catch (err) {
+        // Aborted by newer keystrokes: stay silent, a fresher request is in flight.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         if (!cancelled) {
           setSuggestions([]);
           setEntityResult(null);
@@ -463,13 +495,14 @@ export default function SearchIsland({
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    }, 100); // Reduced debounce from 200ms to 100ms for a snappier, instant typing feel
+    }, 280); // Debounced to avoid firing a ~1.5s backend search on every keystroke
 
     return () => {
       cancelled = true;
+      aborter.abort();
       if (typeof window !== 'undefined') window.clearTimeout(timer);
     };
-  }, [query, isOpen, timespan, categoryFilter, lang, t, activeCategory]);
+  }, [query, isOpen, timespan, categoryFilter, lang, activeCategory]);
 
   // Auto-scroll highlighted keyboard navigation element into view. Skip the
   // default "search all" selection (activeIndex === -1) to avoid smooth-scroll
@@ -555,6 +588,16 @@ export default function SearchIsland({
         e.preventDefault();
         setActiveIndex((prev) => (prev <= 0 ? -1 : prev - 1));
       } else if (e.key === 'Enter') {
+        // Don't hijack Enter when a real control (filter chip, close, mic, …) is
+        // focused — let it activate natively instead of running the search action.
+        const eventTarget = e.target as HTMLElement | null;
+        if (
+          eventTarget
+          && eventTarget !== inputRef.current
+          && eventTarget.closest('button, a, [role="tab"], [role="option"], input, select, textarea')
+        ) {
+          return;
+        }
         e.preventDefault();
         if (activeIndex === -1) {
           navigateToQuery(query);
@@ -669,22 +712,28 @@ export default function SearchIsland({
           />
           <div className="flex items-center gap-1 sm:gap-[var(--grid-gap)]">
             <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
               data-testid="search-filter-toggle"
+              aria-expanded={showFilters}
+              aria-controls="search-filters-panel"
               className={`search-cmd-toolbar-btn p-2 hover:bg-secondary transition-colors ${showFilters ? 'text-muted-foreground' : 'text-muted-foreground'}`}
               title={t('search.filters_title')}
             >
               <SlidersHorizontal size={18} />
             </button>
             <button
-              onClick={startVoiceSearch}
+              type="button"
+              onClick={isListening ? stopVoiceSearch : startVoiceSearch}
               aria-label={isListening ? 'Stop voice search' : 'Start voice search'}
               className={`search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary transition-colors ${isListening ? 'text-muted-foreground animate-pulse' : 'text-muted-foreground'}`}
             >
               <Mic size={18} />
             </button>
             <button
+              type="button"
               onClick={closeSearch}
+              aria-label={t('search.close_search')}
               className="search-cmd-toolbar-btn p-2 rounded-none hover:bg-secondary text-muted-foreground transition-colors"
             >
               <X size={18} />
@@ -716,6 +765,7 @@ export default function SearchIsland({
             searchActions={SEARCH_ACTIONS}
             recentSearches={recentSearches}
             trendingItems={trendingItems}
+            trendingLoaded={trendingLoaded}
             activeIndex={activeIndex}
             registerNavRef={registerNavRef}
             onSearchAll={() => navigateToQuery(query)}
@@ -725,6 +775,7 @@ export default function SearchIsland({
             onRemoveRecentSearch={handleRemoveRecentSearch}
             onClearRecentSearches={handleClearRecentSearches}
             searchTime={searchTime}
+            error={error}
             closeSearch={closeSearch}
             t={t}
             scrollRef={scrollRef}

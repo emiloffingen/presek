@@ -35,44 +35,44 @@ const l = (path: string) => localePath(path, lang, hostHeader);
             <div class="broadsheet-main">
                 <article class="prose-editorial">
                     <p class="first-paragraph">
-                        Presek funkcioniše kao računarski opservatorijum koji primenjuje stroge matematičke i lingvističke modele na analizu medijskih tekstova. Naša metodologija je u potpunosti transparentna, automatizovana i izgrađena da isključi ljudsku subjektivnost pri proceni medijskog pejzaža.
+                        Пресек функционира како сметачки опсерваториум што применува строги математички и лингвистички модели за анализа на медиумските текстови. Нашата методологија е целосно транспарентна, автоматизирана и изградена така што ја исклучува човечката субјективност при проценката на медиумскиот пејзаж.
                     </p>
 
-                    <h2 class="section-title-italic">1. Vektorsko grupisanje (Semantic Clustering)</h2>
+                    <h2 class="section-title-italic">1. Векторско групирање (Semantic Clustering)</h2>
                     <p>
-                        Prvi korak u našoj obradi je ekstrakcija i grupisanje vesti. Svaki medijski članak se čisti od metapodataka i pretvara u višedimenzionalni numerički vektor korišćenjem embedding modela optimizovanih za južnoslovenske jezike.
+                        Првиот чекор во нашата обработка е извлекување и групирање на вестите. Секој медиумски напис се чисти од метаподатоци и се претвора во повеќедимензионален нумерички вектор со помош на модел за вгнездување (embedding), оптимизиран за јужнословенските јазици.
                     </p>
                     <p>
-                        Sličnost između članaka se utvrđuje računanjem <strong>kosinusne sličnosti</strong> (Cosine Similarity) između vektora. Kada skup članaka pređe prag sličnosti od 0.78, oni se automatski grupišu u jedinstvenu priču ili "klaster". Ovaj proces nam omogućava da pratimo kako različite redakcije pokrivaju potpuno isti događaj.
+                        Сличноста меѓу написите се утврдува со пресметување на <strong>косинусната сличност</strong> (Cosine Similarity) меѓу векторите. Кога една група написи ќе го надмине прагот на сличност од 0.78, тие автоматски се групираат во единствена приказна или „кластер“. Овој процес ни овозможува да следиме како различни редакции го покриваат истиот настан.
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">2. Indeks Medijskog Pluralizma (Pluralism Score)</h2>
+                    <h2 class="section-title-italic">2. Индекс на медиумски плурализам (Pluralism Score)</h2>
                     <p>
-                        <strong>Indeks Pluralizma</strong> je naša primarna metrička vrednost izražena u procentima (0% do 100%). On meri raznolikost perspektiva i narativni diverzitet unutar jednog klastera:
+                        <strong>Индексот на плурализам</strong> е нашата основна метричка вредност изразена во проценти (од 0% до 100%). Тој ја мери разновидноста на перспективите и наративниот диверзитет во рамките на еден кластер:
                     </p>
                     <ul class="editorial-list">
-                        <li><strong>Broj nezavisnih izvora (Težinski koeficijent):</strong> Veći broj jedinstvenih izveštaja iz različitih medijskih grupacija povećava indeks.</li>
-                        <li><strong>Semantička disperzija:</strong> Analiziramo varijaciju u izboru reči i sintaksi između članaka. Ako svi mediji koriste identične agencijske fraze (npr. direktan copy-paste saopštenja), indeks opada, ukazujući na nizak pluralizam.</li>
-                        <li><strong>Tonalna entropija:</strong> Meri distribuciju pozitivnih, neutralnih i negativnih tonova. Ujednačen sentiment širom celog političkog i medijskog spektra vodi ka većoj narativnoj raznolikosti.</li>
+                        <li><strong>Број на независни извори (тежински коефициент):</strong> Поголем број единствени извештаи од различни медиумски групации го зголемува индексот.</li>
+                        <li><strong>Семантичка дисперзија:</strong> Анализираме варијација во изборот на зборови и во синтаксата меѓу написите. Ако сите медиуми користат идентични агенциски фрази (на пр. директно копирање на соопштенија), индексот опаѓа, што укажува на низок плурализам.</li>
+                        <li><strong>Тонална ентропија:</strong> Ја мери распределбата на позитивни, неутрални и негативни тонови. Избалансираниот сентимент низ целиот политички и медиумски спектар води кон поголема наративна разновидност.</li>
                     </ul>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">3. Analiza Sentimenta i Tonaliteta (Sentiment Pulse)</h2>
+                    <h2 class="section-title-italic">3. Анализа на сентимент и тоналитет (Sentiment Pulse)</h2>
                     <p>
-                        Svaki novinski članak prolazi kroz sintaksičku raščlanjenost gde se evaluira emotivni naboj i tonalitet. Svakoj rečenici se dodeljuje vrednost od -1 (izrazito negativan/senzacionalistički ton) do +1 (izrazito pozitivan/promotivni ton).
+                        Секој новинарски напис поминува низ синтаксичка анализа при што се оценува емоционалниот набој и тоналитетот. На секоја реченица ѝ се доделува вредност од -1 (изразито негативен/сензационалистички тон) до +1 (изразито позитивен/промотивен тон).
                     </p>
                     <p>
-                        Zbirni <strong>Sentiment Pulse</strong> prikazuje opšti emotivni profil vesti. Izbalansiran i neutralan tonalitet ukazuje na visokokvalitetno agencijsko izveštavanje, dok ekstremi ukazuju na potencijalnu senzacionalističku pristrasnost.
+                        Збирниот <strong>Sentiment Pulse</strong> го прикажува општиот емотивен профил на вестите. Избалансираниот и неутрален тоналитет укажува на висококвалитетно агенциско известување, додека екстремите укажуваат на можна сензационалистичка пристрасност.
                     </p>
 
                     <div class="editorial-divider"></div>
 
-                    <h2 class="section-title-italic">4. Automatska Sinteza (Editorial Synthesis)</h2>
+                    <h2 class="section-title-italic">4. Автоматска синтеза (Editorial Synthesis)</h2>
                     <p>
-                        Kako bismo uštedeli vreme čitaocima i ponudili objektivan pregled, naši generativni NLP modeli analiziraju čitavu grupu članaka u klasteru, izdvajaju unakrsno potvrđene ključne činjenice (fakte) i stvaraju neutralnu sintezu. Ovaj proces sintetiše informacije bez preuzimanja subjektivnog mišljenja pojedinačnih autora, stvarajući jedinstveni doprinos medijskoj analizi.
+                        За да им заштедиме време на читателите и да понудиме објективен преглед, нашите генеративни NLP модели ја анализираат целата група написи во кластерот, ги издвојуваат вкрстено потврдените клучни факти и создаваат неутрална синтеза. Овој процес ги синтетизира информациите без преземање на субјективното мислење на поединечните автори, создавајќи единствен придонес кон медиумската анализа.
                     </p>
 
                     <div class="editorial-divider"></div>
@@ -111,7 +111,6 @@ const l = (path: string) => localePath(path, lang, hostHeader);
                         <a href={l('/about')} class="dir-link"><span class="name">{t('nav.about')}</span></a>
                         <a href={l('/editorial')} class="dir-link"><span class="name">{t('nav.standards')}</span></a>
                         <a href={l('/izvori')} class="dir-link"><span class="name">{t('nav.sources')}</span></a>
-                        <a href={l('/analize')} class="dir-link"><span class="name">{t('nav.analize')}</span></a>
                     </div>
                 </section>
             </aside>

@@ -30,7 +30,7 @@ const { lang, filteredRelated, getRelativeTimeStr, describeRelatedEvidence, t } 
                 {rel.relationship_label || t('cluster.related_topic')}
               </span>
               {rel.created_at && (
-                <span class="cluster-related-time text-muted-foreground">{getRelativeTimeStr(rel.created_at)}</span>
+                <time class="cluster-related-time text-muted-foreground" datetime={rel.created_at}>{getRelativeTimeStr(rel.created_at)}</time>
               )}
             </div>
             <h3 class="related-title font-serif text-lg md:text-xl font-bold leading-tight group-hover:text-nyt-red transition-colors">

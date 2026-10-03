@@ -58,7 +58,6 @@ const {
 	compactFeedClusters = [],
 	totalReports = 0,
 	uniqueSources = new Set<string>(),
-	breakingCount = 0,
 	sourceRows = [],
 	tagRows = [],
 	topicConnections = [],
@@ -81,7 +80,7 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
 	reason: topicLabels.sourceFollowReason(count),
 }));
-const topicIntroText = buildTopicIntro(topic, clusters, uniqueSources, totalReports, breakingCount, lang);
+	const topicIntroText = buildTopicIntro(topic, clusters, totalReports, lang);
 const canonicalUrl = new URL(Astro.url.pathname, pageMeta.siteUrl).href.replace(/\/+$/, '');
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) || topicLabels.defaultLeadSummary;
@@ -139,7 +138,6 @@ const homeHref = lang === 'mk' ? homePath('mk', hostHeader) : l('/');
 				compactFeedClusters={compactFeedClusters}
 				uniqueSources={uniqueSources}
 				totalReports={totalReports}
-				breakingCount={breakingCount}
 				synthesisLines={synthesisLines}
 				topicFollowSuggestions={topicFollowSuggestions}
 				sourceFollowSuggestions={sourceFollowSuggestions}

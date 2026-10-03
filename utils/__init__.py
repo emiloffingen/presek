@@ -12,7 +12,7 @@ from .cache import (
     set_cache,
 )
 from .db_helpers import get_source_registry
-from .network import _peer_ip, _resolve_public_ips, get_dominant_color
+from .network import _peer_ip, _peer_is_public, _resolve_public_ips, get_dominant_color
 from .ranking import (
     _cluster_title_overlap,
     annotate_cluster_articles,
@@ -46,6 +46,7 @@ __all__ = [
     "set_cache",
     "get_source_registry",
     "_peer_ip",
+    "_peer_is_public",
     "_resolve_public_ips",
     "get_dominant_color",
     "_cluster_title_overlap",

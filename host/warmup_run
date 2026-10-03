@@ -1,0 +1,9 @@
+#!/data/data/com.termux/files/usr/bin/sh
+exec 2>&1
+# presek-warmup: keep the origin's SSR process + JIT warm and pages resident,
+# so the first request after idle is not a ~5s cold start.
+while true; do
+  curl -s -o /dev/null -m 10 http://127.0.0.1:3000/ || true
+  curl -s -o /dev/null -m 10 http://127.0.0.1:5001/api/health || true
+  sleep 30
+done

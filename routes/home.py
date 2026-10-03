@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from core.api_errors import soft_error
 from core.audio_service import AudioService
+from core.config import DEFAULT_LANG
 from core.queue_status import reader_pipeline_status
 from nlp import normalize_focus_entity_surface
 from utils import cached_response, set_cache
@@ -357,6 +358,7 @@ class HomeResponse(BaseModel):
     stats: Dict[str, Any] = Field(default_factory=dict)
     focus_entities: List[Any] = Field(default_factory=list)
     excluded_cluster_ids: List[str] = Field(default_factory=list)
+    analysis_pool: List[Any] = Field(default_factory=list)
     pipeline: Optional[Dict[str, Any]] = None
     briefing: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
@@ -651,7 +653,7 @@ def _rank_latest_wire_articles(items, limit=15):
     return selected
 
 
-def _build_lead_display(cluster, lang: Optional[str] = "sr"):
+def _build_lead_display(cluster, lang: Optional[str] = DEFAULT_LANG):
     article = _primary_article(cluster)
     if not article:
         return {}
@@ -764,8 +766,10 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     if not cids:
         return []
 
+    from routes.news import _ARTICLE_LIST_COLUMNS
+
     art_rows = await db.async_execute(
-        "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
+        f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
         (cids,),
         read_only=True,
     )
@@ -845,18 +849,18 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     return formatted_clusters
 
 
-async def fetch_synthesis_hero_candidates(lang: str = "sr", limit: int = 24) -> List[Dict[str, Any]]:
+async def fetch_synthesis_hero_candidates(lang: str = DEFAULT_LANG, limit: int = 24) -> List[Dict[str, Any]]:
     """Return the strongest recent synthesized clusters for homepage hero backfill."""
     return await _fetch_synthesized_clusters(lang, limit=limit)
 
 
-async def fetch_synthesis_picks(lang: str = "sr") -> List[Dict[str, Any]]:
+async def fetch_synthesis_picks(lang: str = DEFAULT_LANG) -> List[Dict[str, Any]]:
     """Fetches the latest clusters that have a generated synthesis for the given language."""
     return await _fetch_synthesized_clusters(lang, limit=4)
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home(request: Request = None, lang: Optional[str] = "sr"):
+async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
     # Support legacy tests passing lang as a positional argument
     if isinstance(request, str):
         lang = request
@@ -886,10 +890,19 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             get_stats_summary(lang=lang),
             fetch_synthesis_hero_candidates(lang=lang),
             get_latest_briefing(lang=lang),
+            fetch_news_data(sort="score", page_size=60, lang=lang, timespan="7d"),
             return_exceptions=True,
         )
 
-        news_result, trending, top_entities, stats, synthesis_hero_pool, briefing_result = results
+        (
+            news_result,
+            trending,
+            top_entities,
+            stats,
+            synthesis_hero_pool,
+            briefing_result,
+            analysis_result,
+        ) = results
 
         # Basic error check (ensure news_result is a dict)
         if isinstance(news_result, Exception):
@@ -911,6 +924,8 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
         if isinstance(briefing_result, Exception):
             log.error(f"Failed to fetch briefing for home: {briefing_result}")
             briefing_result = None
+
+        analysis_pool = (analysis_result.get("clusters") if isinstance(analysis_result, dict) else []) or []
 
         briefing = (
             briefing_result
@@ -1100,6 +1115,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
             "trending": trending if isinstance(trending, list) else [],
             "focus_entities": focus_entities[:10],
             "excluded_cluster_ids": excluded_cluster_ids,
+            "analysis_pool": _compact_home_clusters(_decorate_clusters_display(analysis_pool), max_articles=4),
         }
         set_cache(cache_key, response, ttl=300)
         return response
@@ -1109,7 +1125,7 @@ async def get_home(request: Request = None, lang: Optional[str] = "sr"):
 
 
 @router.get("/home/live-now")
-async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
+async def get_home_live_now(exclude: str = "", lang: Optional[str] = DEFAULT_LANG):
     cache_key = f"api:home:live-now:v3:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
     if cached:
@@ -1132,7 +1148,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = "sr"):
 
 
 @router.get("/home/latest-wire")
-async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = "sr"):
+async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = DEFAULT_LANG):
     bounded_limit = max(1, min(int(limit or 15), 30))
     cache_key = f"api:home:latest-wire:v3:{bounded_limit}:{lang}"
     cached = cached_response(cache_key, ttl=120)

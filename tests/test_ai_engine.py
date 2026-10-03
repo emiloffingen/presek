@@ -1,5 +1,7 @@
 import sys
 import types
+
+import pytest
 from unittest.mock import Mock
 
 from core.ai_engine import (
@@ -207,6 +209,7 @@ def test_local_provider_returns_none_when_synthesis_fails(monkeypatch):
     assert result is None
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_provider_override_local_cascades_to_remote(monkeypatch):
     monkeypatch.setenv("SYNTHESIS_LOCAL_ONLY", "false")
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
@@ -245,6 +248,7 @@ def test_provider_override_local_cascades_to_remote(monkeypatch):
     assert remote_provider.call.call_count == 1
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_build_provider_fallback_order_excludes_providers(monkeypatch):
     monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "true")
     monkeypatch.setattr(
@@ -272,6 +276,7 @@ def test_build_provider_fallback_order_excludes_providers(monkeypatch):
     assert order == ["local"]
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monkeypatch):
     monkeypatch.setattr(
         "core.ai_engine.PROVIDERS",
@@ -293,6 +298,7 @@ def test_build_provider_fallback_order_omits_local_synthesis_when_disabled(monke
     assert "local" not in order
 
 
+@pytest.mark.usefixtures("ai_enabled")
 def test_call_ai_skips_rate_limited_provider(monkeypatch):
     from core import ai_engine
 
@@ -362,8 +368,133 @@ def test_groq_provider_initialization(monkeypatch):
     assert isinstance(PROVIDERS["groq"], GroqProvider)
     assert PROVIDERS["groq"].api_url == "https://api.groq.com/openai/v1/chat/completions"
 
-    # Verify _default_remote_provider picks groq if gemini isn't set but groq is
+    # Verify _default_remote_provider picks groq when no Gemini key is set but groq is
+    monkeypatch.delenv("GEMINI3_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI2_API_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("PRESEK_DEFAULT_REMOTE_PROVIDER", raising=False)
     monkeypatch.setenv("GROQ_API_KEY", "gsk-testkey")
     assert _default_remote_provider() == "groq"
 
+
+def test_effective_max_tokens_enforces_groq_floor():
+    from core.ai_engine import _effective_max_tokens
+
+    assert _effective_max_tokens("groq", 100) == 600
+    assert _effective_max_tokens("groq", 1200) == 1200
+    assert _effective_max_tokens("gemini", 100) == 100
+    assert _effective_max_tokens("openrouter", 100) == 100
+
+
+def test_local_provider_returns_none_when_analyst_missing(monkeypatch):
+    """The local analyst is a stub with no `analyst`; the provider must not raise."""
+    from core import ai_engine
+
+    module = types.ModuleType("nlp.local_analyst")  # present but no `analyst` attr
+    monkeypatch.setitem(sys.modules, "nlp.local_analyst", module)
+
+    provider = ai_engine.LocalProvider()
+    assert provider.call("prompt", "system", 256, False) is None
+
+
+def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
+    from core import ai_quota
+
+    store: dict[str, int] = {}
+    monkeypatch.setattr(
+        ai_quota, "_db_add_usage", lambda provider, amount: store.__setitem__(provider, store.get(provider, 0) + amount) or store[provider]
+    )
+    monkeypatch.setattr(ai_quota, "_db_get_usage", lambda provider: store.get(provider, 0))
+    ai_quota.reset_cache()
+    monkeypatch.setenv("AI_DAILY_LIMIT_GROQ", "10")
+    monkeypatch.setenv("AI_QUOTA_SKIP_RATIO", "0.9")
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
+
+    assert ai_quota.daily_limit("groq") == 10
+    assert ai_quota.daily_limit("local") is None
+    assert ai_quota.is_exhausted("groq") is False
+
+    for _ in range(9):
+        ai_quota.record_usage("groq")
+
+    assert ai_quota.usage("groq") == 9
+    assert ai_quota.is_exhausted("groq") is True  # 9 >= int(10 * 0.9)
+
+
+def test_ai_quota_async_path(monkeypatch):
+    import asyncio
+    from core import ai_quota
+
+    store: dict[str, int] = {}
+    monkeypatch.setenv("AI_DAILY_LIMIT_GROQ", "4")
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
+    ai_quota.reset_cache()
+
+    async def fake_add(provider, amount):
+        store[provider] = store.get(provider, 0) + amount
+        return store[provider]
+
+    async def fake_get(provider):
+        return store.get(provider, 0)
+
+    monkeypatch.setattr(ai_quota, "_db_add_usage_async", fake_add)
+    monkeypatch.setattr(ai_quota, "_db_get_usage_async", fake_get)
+
+    async def scenario():
+        await ai_quota.async_record_usage("groq")
+        await ai_quota.async_record_usage("groq")
+        assert await ai_quota.async_usage("groq") == 2
+        assert await ai_quota.async_is_exhausted("groq") is False
+        await ai_quota.async_record_usage("groq")
+        await ai_quota.async_record_usage("groq")
+        assert await ai_quota.async_is_exhausted("groq") is True  # 4 >= int(4 * 0.9)=3
+
+    asyncio.run(scenario())
+
+
+def test_ai_quota_zero_limit_disables_provider(monkeypatch):
+    from core import ai_quota
+
+    monkeypatch.setenv("AI_QUOTA_READ_TTL_SECONDS", "0")
+    # Any provider can be disabled with a 0 limit; mistral is no longer a
+    # default, but the override path must still hard-disable.
+    monkeypatch.setenv("AI_DAILY_LIMIT_FAKE", "0")
+    assert ai_quota.daily_limit("fake") == 0
+    assert ai_quota.is_exhausted("fake") is True
+
+
+@pytest.mark.usefixtures("ai_enabled")
+def test_call_ai_skips_quota_exhausted_provider(monkeypatch):
+    from core import ai_engine
+
+    exhausted = Mock()
+    exhausted.call.return_value = '{"summary":["a"],"article":"a"}'
+    healthy = Mock()
+    healthy.call.return_value = '{"summary":["ok"],"article":"ok"}'
+
+    monkeypatch.setattr(ai_engine, "PROVIDERS", {"a": exhausted, "b": healthy})
+    monkeypatch.setattr(ai_engine, "PROVIDER_FALLBACK_ORDER_SUMMARY", ["a", "b"])
+    monkeypatch.setattr(
+        "core.llm_router.SmartModelRouter.get_dynamic_fallback_order",
+        lambda task_type="synthesis": ["a", "b"],
+    )
+    monkeypatch.setattr(ai_engine.ai_quota, "is_exhausted", lambda provider: provider == "a")
+    monkeypatch.setattr(ai_engine.ai_quota, "record_usage", lambda provider, amount=1: 0)
+    monkeypatch.setenv("LOCAL_SYNTHESIS_PREFER_LOCAL", "false")
+
+    raw, provider = ai_engine._call_ai("prompt", "system", task_type="synthesis", json_mode=True)
+
+    assert provider == "b"
+    assert raw == '{"summary":["ok"],"article":"ok"}'
+    exhausted.call.assert_not_called()
+    healthy.call.assert_called_once()
+
+
+
+
+def test_ai_disabled_by_default_short_circuits(monkeypatch):
+    import core.ai_engine
+
+    monkeypatch.setattr(core.ai_engine, "AI_ENABLED", False)
+    assert core.ai_engine.build_provider_fallback_order("synthesis") == []
+    assert core.ai_engine._call_ai("prompt", "system", task_type="summary") == (None, None)

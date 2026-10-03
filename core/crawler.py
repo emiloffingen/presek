@@ -1,17 +1,65 @@
 import asyncio
 import logging
 import random
-from typing import Any, Dict
-from urllib.parse import urljoin
+import re
+import time
+from typing import Any, Dict, Optional
+from urllib.parse import urljoin, urlsplit
+from urllib.robotparser import RobotFileParser
 
-import httpx
 import trafilatura
-from playwright.async_api import async_playwright
 
+from core.config import BOT_USER_AGENT
+from core.http_pool import pooled_async_client
 from core.text_extraction import clean_extracted_article_text
-from utils import _peer_ip, _resolve_public_ips
+from utils import _peer_is_public, _resolve_public_ips
 
 log = logging.getLogger("presek.crawler")
+
+# robots.txt cache: origin -> (fetched_at, RobotFileParser | None)
+_ROBOTS_CACHE: Dict[str, tuple] = {}
+_ROBOTS_TTL_SECONDS = 3600.0
+
+
+async def _robots_allows(url: str) -> bool:
+    """Return True if robots.txt permits fetching ``url`` for our bot UA.
+
+    Fails open (returns True) when robots.txt is missing, unreachable, or the
+    SSRF guard rejects the robots.txt origin.
+    """
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return True
+    origin = f"{parts.scheme}://{parts.netloc}"
+    now = time.time()
+    cached = _ROBOTS_CACHE.get(origin)
+    if cached and (now - cached[0]) < _ROBOTS_TTL_SECONDS:
+        rp: Optional[RobotFileParser] = cached[1]
+    else:
+        rp = None
+        try:
+            robots_url = f"{origin}/robots.txt"
+            _resolve_public_ips(robots_url)
+            async with pooled_async_client("robots", timeout=10.0, follow_redirects=True) as client:
+                async with client.stream("GET", robots_url, headers={"User-Agent": BOT_USER_AGENT}) as resp:
+                    if not _peer_is_public(resp):
+                        rp = None
+                    elif resp.status_code == 200:
+                        await resp.aread()
+                        parser = RobotFileParser()
+                        parser.set_url(robots_url)
+                        parser.parse(resp.text.splitlines())
+                        rp = parser
+        except Exception as e:
+            log.debug("robots.txt fetch failed for %s: %s", origin, e)
+            rp = None
+        _ROBOTS_CACHE[origin] = (now, rp)
+    if rp is None:
+        return True
+    try:
+        return rp.can_fetch(BOT_USER_AGENT, url)
+    except Exception:
+        return True
 
 
 def prune_boilerplate_html(html_str: str) -> str:
@@ -151,11 +199,15 @@ class CrawlerService:
         ]
 
     def _get_headers(self):
+        # Content fetches use a browser UA: several MK outlets (e.g. ohridnews)
+        # return 403 for unknown/polite bot UAs at the WAF level. robots.txt is
+        # still evaluated against BOT_USER_AGENT in `_robots_allows`, so we stay
+        # compliant while actually getting the HTML.
         return {
             "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
-            "Referer": "https://www.google.com/",
+            "Accept-Language": "mk,en;q=0.8",
+            "Referer": "https://presek.mk/",
         }
 
     async def extract_all(self, url: str) -> Dict[str, Any]:
@@ -163,6 +215,10 @@ class CrawlerService:
         Main entry point: Try fast extraction first, fall back to headless browser if needed.
         """
         await asyncio.sleep(random.uniform(0.5, 2.0))
+
+        if not await _robots_allows(url):
+            log.info("robots.txt disallows crawling %s", url)
+            return {"url": url, "error": "blocked by robots.txt", "method": "fast"}
 
         result = {
             "url": url,
@@ -176,12 +232,11 @@ class CrawlerService:
 
         try:
             headers = self._get_headers()
-            safe_ips = _resolve_public_ips(url)
-            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=15.0) as client:
-                async with client.stream("GET", url) as resp:
-                    p_ip = _peer_ip(resp)
-                    if not p_ip or p_ip not in safe_ips:
-                        log.warning(f"SSRF blocked: Peer IP {p_ip} not in safe list for {url}")
+            _resolve_public_ips(url)
+            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
+                async with client.stream("GET", url, headers=headers) as resp:
+                    if not _peer_is_public(resp):
+                        log.warning(f"SSRF blocked: peer not public for {url}")
                         return {
                             "url": url,
                             "error": "Security block: peer IP mismatch",
@@ -197,15 +252,24 @@ class CrawlerService:
             return {"url": url, "error": f"Security block: {e}"}
         except Exception as e:
             log.warning(f"Fast crawl failed for {url}: {e}")
-            return await self._extract_headless(url)
+            return {"url": url, "error": str(e), "method": "fast"}
 
         extracted = self._parse_with_trafilatura(html_content, final_url)
+        content = extracted.get("content") or ""
 
-        if not extracted.get("content") or len(extracted.get("content", "")) < 200:
-            log.info(f"Low quality content from fast path for {url}, falling back to headless")
-            return await self._extract_headless(url)
+        if len(content) < 200:
+            # Middle fallback: jusText is local and token-free (already installed).
+            # Keep whichever extractor yields more text; jusText can only help.
+            justext_text = self._parse_with_justext(html_content) or ""
+            if len(justext_text) > len(content):
+                log.info(f"jusText improved {url} ({len(content)} -> {len(justext_text)} chars)")
+                extracted["content"] = justext_text
+                content = justext_text
+                result["method"] = "fast-justext"
 
         result.update(extracted)
+        if len(content) < 200:
+            log.info(f"Low quality content for {url} ({len(content)} chars); returning as-is")
         return result
 
     def _parse_with_trafilatura(self, html: str, url: str) -> Dict[str, Any]:
@@ -219,6 +283,21 @@ class CrawlerService:
             include_tables=True,
             no_fallback=False,
         )
+        # Boilerplate pruning is over-aggressive on some CMS layouts and can
+        # return a short-but-plausible wrong block (e.g. telma.com.mk's cookie
+        # consent banner extracts to ~235 chars, which clears the 200-char
+        # gate and suppressed the old raw retry). Always extract the raw HTML
+        # too and keep it when the pruned result is missing, tiny, or
+        # materially shorter.
+        raw_content = trafilatura.extract(
+            html,
+            url=url,
+            include_comments=False,
+            include_tables=True,
+            no_fallback=False,
+        )
+        if raw_content and (not content or len(content) < 200 or len(raw_content) > len(content) * 1.5):
+            content = raw_content
         metadata = trafilatura.metadata.extract_metadata(html, default_url=url)
 
         return {
@@ -229,123 +308,49 @@ class CrawlerService:
             "published_at": metadata.date if metadata else None,
         }
 
-    async def _extract_headless(self, url: str) -> Dict[str, Any]:
-        """
-        Fallback path: Uses Playwright to render the page.
-        """
-        log.info(f"Starting headless crawl for {url}")
-        result = {"url": url, "method": "headless"}
-        browser = None
-
+    @staticmethod
+    def _parse_with_justext(html: str) -> str | None:
+        """Boilerplate removal with jusText (Macedonian stoplist). Returns cleaned text or None."""
         try:
-            _resolve_public_ips(url)
+            import justext
 
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                user_agent = random.choice(self.user_agents)
-                context = await browser.new_context(
-                    viewport={
-                        "width": random.randint(1200, 1920),
-                        "height": random.randint(800, 1080),
-                    },
-                    user_agent=user_agent,
-                )
-                page = await context.new_page()
-                await page.goto(url, wait_until="networkidle", timeout=30000)
-                await asyncio.sleep(1)
-
-                html_content = await page.content()
-                final_url = page.url
-
-                metadata = await page.evaluate("""() => {
-                    const getMeta = (name) => {
-                        const el = document.querySelector(`meta[property="${name}"], meta[name="${name}"]`);
-                        return el ? el.getAttribute('content') : null;
-                    };
-                    return {
-                        title: document.title,
-                        ogImage: getMeta('og:image'),
-                        description: getMeta('og:description') || getMeta('description'),
-                        author: getMeta('author') || getMeta('article:author'),
-                    };
-                }""")
-
-                await browser.close()
-                browser = None
-
-                extracted = self._parse_with_trafilatura(html_content, final_url)
-
-                result.update(
-                    {
-                        "title": (
-                            str(metadata.get("title"))
-                            if metadata.get("title")
-                            else (str(extracted.get("title")) if extracted.get("title") else None)
-                        ),
-                        "content": (str(extracted.get("content")) if extracted.get("content") else None),
-                        "image_url": (
-                            str(metadata.get("ogImage"))
-                            if metadata.get("ogImage")
-                            else (str(extracted.get("image_url")) if extracted.get("image_url") else None)
-                        ),
-                        "author": (
-                            str(metadata.get("author"))
-                            if metadata.get("author")
-                            else (str(extracted.get("author")) if extracted.get("author") else None)
-                        ),
-                        "published_at": (str(extracted.get("published_at")) if extracted.get("published_at") else None),
-                    }
-                )
+            paragraphs = justext.justext(html, justext.get_stoplist("Macedonian"))
+            text = "\n\n".join(p.text.strip() for p in paragraphs if not p.is_boilerplate and p.text.strip())
+            return clean_extracted_article_text(text) if text else None
         except Exception as e:
-            log.error(f"Headless crawl failed for {url}: {e}")
-            result["error"] = str(e)
-        finally:
-            if browser:
-                await browser.close()
-
-        return result
+            log.debug(f"jusText extraction failed: {e}")
+            return None
 
     async def find_feeds(self, homepage_url: str) -> list[str]:
         """
         Visits a homepage and looks for RSS/Atom feed links.
         """
         log.info(f"Searching for feeds on {homepage_url}")
-        feeds = []
+        feeds: list[str] = []
         try:
             _resolve_public_ips(homepage_url)
+            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
+                resp = await client.get(homepage_url, headers=self._get_headers())
+                resp.raise_for_status()
+                html = resp.text
 
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                try:
-                    page = await browser.new_page(user_agent=self._get_headers()["User-Agent"])
-                    await page.goto(homepage_url, wait_until="networkidle", timeout=30000)
+            for tag in re.findall(
+                r'<link[^>]+type=["\']application/(?:rss|atom)\+xml["\'][^>]*>',
+                html,
+                re.IGNORECASE,
+            ):
+                href = re.search(r'href=["\']([^"\']+)["\']', tag, re.IGNORECASE)
+                if href:
+                    feeds.append(urljoin(homepage_url, href.group(1)))
+            for href in re.findall(
+                r'href=["\']([^"\']*(?:/feed|rss\.xml|feed\.xml)[^"\']*)["\']',
+                html,
+                re.IGNORECASE,
+            ):
+                feeds.append(urljoin(homepage_url, href))
 
-                    found = await page.evaluate("""() => {
-                        const links = Array.from(document.querySelectorAll('link[rel="alternate"]'));
-                        return links
-                            .filter(l => l.type && (l.type.includes('rss') || l.type.includes('atom') || l.type.includes('xml')))
-                            .map(l => l.href);
-                    }""")
-
-                    found_links = await page.evaluate("""() => {
-                        const anchors = Array.from(document.querySelectorAll('a'));
-                        return anchors
-                            .filter(a => a.href && (a.href.includes('/feed') || a.href.includes('rss.xml')))
-                            .map(a => a.href);
-                    }""")
-                finally:
-                    await browser.close()
-
-                seen = set()
-                all_raw = (found or []) + (found_links or [])
-                for url in all_raw:
-                    if not url:
-                        continue
-                    resolved = urljoin(homepage_url, url)
-                    if resolved not in seen:
-                        feeds.append(resolved)
-                        seen.add(resolved)
-
+            seen: set[str] = set()
+            feeds = [f for f in feeds if not (f in seen or seen.add(f))]
         except Exception as e:
             log.error(f"Failed to find feeds on {homepage_url}: {e}")
 

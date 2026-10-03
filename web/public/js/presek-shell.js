@@ -60,6 +60,48 @@
     document.addEventListener('astro:page-load', schedulePrefetch);
   }
 
+  // PWA install prompt: reveal install buttons only when the browser offers it.
+  let deferredInstallPrompt = null;
+  function bindPwaInstall() {
+    const btns = document.querySelectorAll('[data-pwa-install]');
+    if (!btns.length) return;
+    if (deferredInstallPrompt) {
+      btns.forEach((b) => { b.hidden = false; });
+    }
+    btns.forEach((btn) => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!deferredInstallPrompt) return;
+        const panel = btn.closest('.utility-menu-panel');
+        const details = btn.closest('details');
+        if (panel && details) details.open = false;
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice
+          .then(() => { deferredInstallPrompt = null; })
+          .catch(() => {})
+          .finally(() => {
+            document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = true; });
+          });
+      });
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = false; });
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    document.querySelectorAll('[data-pwa-install]').forEach((b) => { b.hidden = true; });
+  });
+
+  bindPwaInstall();
+  document.addEventListener('astro:page-load', bindPwaInstall);
+
   const bindSearchFab = () => {
     document.querySelectorAll('[data-presek-search-fab]').forEach((fab) => {
       if (!(fab instanceof HTMLElement) || fab.dataset.bound === '1') return;
@@ -73,6 +115,35 @@
   };
   bindSearchFab();
   document.addEventListener('astro:page-load', bindSearchFab);
+
+  // CSP-safe replacements for former inline handlers. A nonce/hash script-src
+  // makes the browser block `script-src-attr` (onclick/onload/...), so these
+  // are delegated here instead of living on the elements.
+  const prefetchedLinks = new Set();
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target;
+    const link = target && target.closest ? target.closest('a[data-testid="cluster-link"]') : null;
+    if (!link || prefetchedLinks.has(link.href)) return;
+    prefetchedLinks.add(link.href);
+    fetch(link.href, { priority: 'low' }).catch(() => {});
+  }, { passive: true });
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    const el = target && target.closest ? target.closest('[data-reload]') : null;
+    if (el) {
+      e.preventDefault();
+      window.location.reload();
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    const target = e.target;
+    const el = target && target.closest ? target.closest('[data-autosubmit]') : null;
+    if (el && el.form) {
+      el.form.submit();
+    }
+  });
 
   function initHeaderScroll() {
     const header = document.getElementById('main-header');
@@ -128,21 +199,25 @@
   bindHeaderScroll();
   document.addEventListener('astro:page-load', bindHeaderScroll);
 
+  let prefetchObserver = null;
   document.addEventListener('astro:page-load', () => {
     if (!('IntersectionObserver' in window)) return;
+    // Disconnect the previous observer so detached links from the prior page
+    // are not retained across client-side navigations.
+    if (prefetchObserver) prefetchObserver.disconnect();
     const prefetched = new Set();
-    const observer = new IntersectionObserver((entries) => {
+    prefetchObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         const href = entry.target.getAttribute('href');
         if (!href || prefetched.has(href)) return;
         prefetched.add(href);
-        fetch(href, { priority: 'low' }).catch(() => {});
-        observer.unobserve(entry.target);
+        fetch(href).catch(() => {});
+        prefetchObserver.unobserve(entry.target);
       });
     }, { rootMargin: '80px 0px' });
     document.querySelectorAll('a[data-testid="cluster-link"]').forEach((link, index) => {
-      if (index < 4) observer.observe(link);
+      if (index < 4) prefetchObserver.observe(link);
     });
   });
 
@@ -170,4 +245,67 @@
   }
   initParallax();
   document.addEventListener('astro:page-load', initParallax);
+
+  // Full original text (transparency mode): expandable per article.
+  function bindFulltextToggle() {
+    if (window.__presekFulltextBound) return;
+    window.__presekFulltextBound = true;
+    document.addEventListener('click', function (ev) {
+      const target = ev.target;
+      const btn = target && target.closest ? target.closest('.fulltext-toggle') : null;
+      if (!btn) return;
+      const wrap = btn.closest('.fulltext-wrap');
+      if (!wrap) return;
+      const panel = wrap.querySelector('.fulltext-panel');
+      const body = wrap.querySelector('.fulltext-body');
+      const label = btn.querySelector('.fulltext-toggle-label');
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+
+      if (expanded) {
+        btn.setAttribute('aria-expanded', 'false');
+        if (panel) panel.hidden = true;
+        if (label) label.textContent = btn.dataset.showLabel || '';
+        return;
+      }
+      if (panel) panel.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      if (label) label.textContent = btn.dataset.hideLabel || '';
+      if (body && body.dataset.loaded === 'true') return;
+
+      const id = wrap.dataset.articleId;
+      if (!id || !body) return;
+      body.textContent = wrap.dataset.loading || '';
+      body.dataset.loaded = 'error';
+      const docLang = document.documentElement.getAttribute('lang') === 'sr' ? 'sr' : 'mk';
+      fetch('/api/article/' + encodeURIComponent(id) + '?lang=' + docLang, {
+        headers: { Accept: 'application/json' },
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          if (data && data.full_content && data.full_text_allowed !== false) {
+            body.textContent = '';
+            String(data.full_content)
+              .split(/\n{2,}/)
+              .forEach(function (raw) {
+                const text = raw.trim();
+                if (!text) return;
+                const p = document.createElement('p');
+                p.textContent = text;
+                body.appendChild(p);
+              });
+            body.dataset.loaded = 'true';
+          } else {
+            body.textContent = wrap.dataset.unavailable || '';
+          }
+        })
+        .catch(function () {
+          body.textContent = wrap.dataset.error || '';
+        });
+    });
+  }
+  bindFulltextToggle();
+  document.addEventListener('astro:page-load', bindFulltextToggle);
 })();

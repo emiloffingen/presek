@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
   pull_request:
-    branches: [main]
+    branches: [main, simplify/mk-only-minimal-ai, feat/fulltext-mk-transparency]
 
 jobs:
   backend-tests:
@@ -45,7 +45,7 @@ jobs:
           ENV: test
           DATABASE_URL: postgresql://presek:presek_test@localhost:5432/presek_test
           REDIS_URL: redis://localhost:6379/0
-        run: uv run pytest tests/ -x --timeout=60 -q
+        run: uv run pytest tests/ --timeout=60 -q
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -82,16 +82,12 @@ jobs:
       - name: Bandit scan
         run: uv run bandit -r core/ tasks/ routes/ -ll
       - name: pip-audit
-        # Ignored: no fixed release available (transitive ML/CV deps),
-        # celery ecosystem caps click below the fixed release, or
-        # build-env-only packages (pip/setuptools in the audit venv).
+        # Ignored: the celery ecosystem caps click below the fixed release
+        # (PYSEC-2026-2132), and pip itself in the audit venv (PYSEC-2026-3721).
         run: >-
           uv run pip-audit
-          --ignore-vuln PYSEC-2026-3804
-          --ignore-vuln PYSEC-2026-2447
           --ignore-vuln PYSEC-2026-2132
           --ignore-vuln PYSEC-2026-3721
-          --ignore-vuln PYSEC-2026-3447
 
   lint:
     runs-on: ubuntu-latest
@@ -106,19 +102,3 @@ jobs:
         run: uv run ruff check core/ routes/ tasks/ nlp/ utils/
       - name: Ruff format check
         run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
-
-  deploy:
-    needs: [backend-tests, frontend-tests, security-scan, lint]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ${{ secrets.DEPLOY_GIT_DIR || '$HOME/presek' }}
-            git pull origin main
-            bash deploy/ci_deploy.sh

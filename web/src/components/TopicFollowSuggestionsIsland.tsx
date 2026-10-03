@@ -25,7 +25,7 @@ export default function TopicFollowSuggestionsIsland({
   currentTopic = '',
   relatedTopics = [],
   strongSources = [],
-  lang = 'sr'
+  lang = 'mk'
 }: {
   currentTopic?: string;
   relatedTopics?: TopicSuggestion[];

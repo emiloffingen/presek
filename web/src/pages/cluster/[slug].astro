@@ -7,8 +7,7 @@ import Footer from '../../components/Footer.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import ReaderTracker from '../../components/ReaderTracker.tsx';
 import ClusterSidebarTabs from '../../components/Cluster/ClusterSidebarTabs.tsx';
-import ClusterMobileFocusIsland from '../../components/Cluster/ClusterMobileFocusIsland.tsx';
-import { ErrorBoundary } from '../../components/ui/ErrorBoundary.tsx';
+import ClusterMobileFocusIslandBoundary from '../../components/Cluster/ClusterMobileFocusIslandBoundary.tsx';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { cleanAndDecode, isMostlyCyrillic, getEditionStr, stripCitationMarkers, deShout, slugify, normalizeAndDeduplicateTags, transliterate } from '../../utils/textUtils';
 import { chooseClusterImage } from '../../utils/imageSelection';
@@ -62,6 +61,7 @@ import CredibilityAnalysis from '../../components/Cluster/CredibilityAnalysis.as
 import ClusterSynthesisSection from '../../components/Cluster/ClusterSynthesisSection.astro';
 import ClusterKeyFactsBand from '../../components/Cluster/ClusterKeyFactsBand.astro';
 import TrustBlock from '../../components/Cluster/TrustBlock.astro';
+import TrustChip from '../../components/TrustChip.astro';
 import CrossLingualStrip from '../../components/Cluster/CrossLingualStrip.astro';
 import { buildTrustChip } from '../../lib/trustSignals';
 import ClusterAnalysisSection from '../../components/Cluster/ClusterAnalysisSection.astro';
@@ -76,8 +76,8 @@ const { slug } = Astro.params;
 const API_URL = apiBaseUrl();
 const SITE_URL = siteOrigin(lang);
 
-// Extract ID from slug (handles both legacy 8-char and new 12-char dashed IDs)
-const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{3,4}|[0-9a-f]{8,12})/);
+// Extract the complete UUID before any optional title suffix.
+const idMatch = slug?.match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{8,12})/i);
 const id = idMatch ? idMatch[0] : slug?.split('-')[0];
 
 let cluster: ClusterDetail | null = null;
@@ -277,7 +277,7 @@ function normalizeBriefItem(item: string, previousItems: string[]) {
         label.includes('otvoreno') &&
         /detalji oko ovog razvoja ostaju nepotvr/i.test(body)
     ) {
-        return 'Otvoreno: nije izdvojena konkretna sporna činjenica; treba pratiti sledeće dopune izvora, ne tretirati ovu stavku kao potvrđen sukob.';
+        return 'Отворено: не е издвоен конкретен спорен факт; треба да се следат следните дополнувања на изворите, а оваа ставка да не се третира како потврден судир.';
     }
     return text;
 }
@@ -374,7 +374,7 @@ function cleanTopicLabel(value?: string) {
     const clean = cleanAndDecode(value || '').trim();
     if (!clean) return '';
     const mapped = topicLabelMap[clean.toLowerCase()];
-    if (mapped) return lang === 'sr' ? mapped.sr : mapped.mk;
+    if (mapped) return mapped.mk;
     return clean;
 }
 const storyKindLabel = (() => {
@@ -412,6 +412,13 @@ const showKeyFactsBand = shouldShowKeyFactsBand({
 	showExecutiveSummary,
 });
 const showHeroVisual = shouldShowHeroVisual(clusterLayoutInput);
+
+// API-provided dominant_color is injected into inline CSS; only allow real color
+// values so it cannot smuggle arbitrary CSS declarations.
+const safeAccentColor = (() => {
+	const candidate = typeof cluster?.dominant_color === 'string' ? cluster.dominant_color.trim() : '';
+	return /^(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\()/.test(candidate) ? candidate : '';
+})();
 const showPerspectivesBlock = shouldShowPerspectives(clusterLayoutInput);
 const showCredibilitySection = shouldShowCredibilitySection(clusterLayoutInput);
 const consensusNote = shouldShowConsensusNote(clusterLayoutInput)
@@ -499,12 +506,9 @@ const describeRelatedEvidence = (rel: any) => {
 
 // --- Momentum Kicker Logic ---
 const totalSourcesCount = cluster?.articles?.length || 0;
-const isBreakingFlag = cluster?.articles?.some((a: Article) => a.is_breaking) || false;
 
 let momentumKicker = { label: t('cluster.momentum.editorial'), color: 'text-muted-foreground' };
-if (isBreakingFlag && totalSourcesCount >= 4) {
-    momentumKicker = { label: t('cluster.momentum.breaking'), color: 'text-nyt-red' };
-} else if (conflictsCount >= 3) {
+if (conflictsCount >= 3) {
     momentumKicker = { label: t('cluster.momentum.contradictory'), color: 'cluster-tone-watch' };
 } else if (totalSourcesCount >= 6) {
     momentumKicker = { label: t('cluster.momentum.wide_interest'), color: 'cluster-tone-positive' };
@@ -589,13 +593,11 @@ const articleSchema = cluster ? {
     />
 
 	<ZenReadingContext headline={displayHeadline} lang={lang} client:idle />
-	<ErrorBoundary client:idle lang={lang}>
-		<ClusterMobileFocusIsland lang={lang} client:media="(max-width: 768px)" client:visible />
-	</ErrorBoundary>
+	<ClusterMobileFocusIslandBoundary lang={lang} client:media="(max-width: 768px)" />
 
 	<div class="site-layout py-0 cluster-page-scope">
 		<div class="scroll-progress-container">
-			<div class="scroll-progress-bar" id="reading-progress"></div>
+			<div class="scroll-progress-bar" id="reading-progress" role="progressbar" aria-label={t('cluster.reading_progress_label')} aria-valuemin={0} aria-valuemax={100}></div>
 		</div>
 
 		<div class="editorial-container max-w-[1440px] mx-auto px-2 sm:px-4 md:px-10">
@@ -610,7 +612,7 @@ const articleSchema = cluster ? {
                 <a href="/" class="text-presek-mark hover:underline">{t('cluster.error.back_home')}</a>
 			</div>
 		) : cluster && (
-			<article class="cluster-article-container" style={cluster.dominant_color ? `--cluster-accent: ${cluster.dominant_color};` : ''}>
+			<article class="cluster-article-container" style={safeAccentColor ? `--cluster-accent: ${safeAccentColor};` : ''}>
 				<ClusterEditorialHeader
 					lang={lang as 'sr' | 'mk'}
 					cluster={cluster}
@@ -640,10 +642,10 @@ const articleSchema = cluster ? {
 					<div class="hero-full mb-10 md:mb-14" id="cluster-visual">
 						<HeroVisual
 							leadVisual={leadVisual}
-							dominantColor={cluster.dominant_color || undefined}
+							dominantColor={safeAccentColor || undefined}
 							displayHeadline={displayHeadline}
 							id={id || ''}
-							category={cleanTopicLabel(cluster.articles?.[0].category)}
+							category={cleanTopicLabel(cluster.articles?.[0]?.category)}
 							sourcePreview={sourcePreview}
 							articlesCount={cluster.articles?.length || 0}
 						/>
@@ -669,6 +671,21 @@ const articleSchema = cluster ? {
 							{showKeyFactsBand && cluster.key_facts && (
 								<ClusterKeyFactsBand facts={cluster.key_facts} lang={lang as 'sr' | 'mk'} />
 							)}
+
+							<div style="margin-bottom: 0.75rem;">
+								<TrustChip
+									sourcesCount={uniqueSourcesCount}
+									pluralismScore={cluster?.pluralism_score ?? null}
+									isStale={isSynthesisRefreshStale}
+									hasVerification={hasFactcheck}
+									quietFreshness={isMissingSynthesis}
+									isPendingSynthesis={isMissingSynthesis}
+									isProvisional={isProvisionalSynthesis}
+									needsUpgrade={isProvisionalSynthesis}
+									lang={lang as 'sr' | 'mk'}
+									showExplainer={true}
+								/>
+							</div>
 
 							<TrustBlock
 								trustLabel={trustSummary.label}
@@ -770,7 +787,7 @@ const articleSchema = cluster ? {
 									<ClusterSidebarTabs
 										client:visible
 										lang={lang}
-										articles={cluster.articles.map((a: Article) => ({ source: a.source }))}
+										articles={(cluster.articles || []).map((a: Article) => ({ source: a.source }))}
 										allSourcesNames={allSourcesNames}
 										sentimentData={sentimentData}
 										showCompare={showCompareTab}
@@ -841,9 +858,10 @@ const articleSchema = cluster ? {
 			} catch (e) {}
 		};
 
+		let readingShortcutsBound = false;
 		const initReadingShortcuts = () => {
-			if (document.body.dataset.readingShortcutsBound === 'true') return;
-			document.body.dataset.readingShortcutsBound = 'true';
+			if (readingShortcutsBound) return;
+			readingShortcutsBound = true;
 			document.addEventListener('keydown', (event) => {
 				const target = event.target;
 				if (!(target instanceof HTMLElement)) return;
@@ -861,19 +879,24 @@ const articleSchema = cluster ? {
 			});
 		};
 
+		let progressScrollHandler = null;
 		const initReadingProgress = () => {
 			syncReadingModeEarly();
 			initReadingShortcuts();
 			const progress = document.getElementById('reading-progress');
 			if (!progress) return;
-			if (progress.dataset.bound === 'true') return;
-			progress.dataset.bound = 'true';
 
+			// A fresh #reading-progress is rendered per navigation; drop the prior
+			// scroll listener so handlers don't accumulate across client navigations.
+			if (progressScrollHandler) {
+				window.removeEventListener('scroll', progressScrollHandler);
+			}
 			const updateProgress = () => {
 				const max = document.documentElement.scrollHeight - window.innerHeight;
 				const pct = max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0;
 				progress.style.width = `${pct}%`;
 			};
+			progressScrollHandler = updateProgress;
 			window.addEventListener('scroll', updateProgress, { passive: true });
 			updateProgress();
 		};

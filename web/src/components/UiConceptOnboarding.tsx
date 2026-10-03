@@ -38,7 +38,7 @@ function isFeedInFocus() {
   return rect.top < window.innerHeight * 0.62 && rect.bottom > 72;
 }
 
-export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) {
+export default function UiConceptOnboarding({ lang = 'mk' }: { lang?: string }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', nav, common);
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
@@ -166,7 +166,7 @@ export default function UiConceptOnboarding({ lang = 'sr' }: { lang?: string }) 
       localStorage.setItem(STORAGE_KEY, '1');
     } catch (e) {}
     setVisible(false);
-    window.location.assign(localePathForLang('/pregled', lang as 'sr' | 'mk'));
+    window.location.assign(localePathForLang('/?analiza=1', lang as 'sr' | 'mk'));
   };
 
   useEffect(() => {

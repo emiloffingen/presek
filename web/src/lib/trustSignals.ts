@@ -1,9 +1,9 @@
 import { cluster } from '../i18n/namespaces/cluster.ts';
 
-type Lang = 'sr' | 'mk';
+type Lang = string;
 
 function trustT(lang: Lang, key: string, params?: Record<string, string | number>): string {
-  const dict = cluster[lang] as Record<string, string>;
+  const dict = (cluster[lang as keyof typeof cluster] || cluster.mk) as Record<string, string>;
   let value = dict[key] ?? key;
   if (params) {
     for (const [paramKey, paramValue] of Object.entries(params)) {
@@ -15,6 +15,17 @@ function trustT(lang: Lang, key: string, params?: Record<string, string | number
 
 export type TrustTier = 'early' | 'consensus' | 'plural' | 'verified';
 
+export type TrustBreakdownKey = 'sources' | 'pluralism' | 'freshness' | 'verification';
+
+export type TrustBreakdownItem = {
+  key: TrustBreakdownKey;
+  label: string;
+  /** Points this factor contributed to the (capped) score. */
+  points: number;
+  /** Maximum points this factor can contribute. */
+  max: number;
+};
+
 export type TrustChipData = {
   score: number;
   tier: TrustTier;
@@ -24,6 +35,8 @@ export type TrustChipData = {
   pluralismScore?: number | null;
   isStale?: boolean;
   isProvisional?: boolean;
+  /** How the score was computed, one entry per contributing factor. */
+  breakdown: TrustBreakdownItem[];
 };
 
 type TrustInput = {
@@ -90,6 +103,33 @@ export function buildTrustChip(input: TrustInput, lang: Lang): TrustChipData {
     ),
   );
 
+  const breakdown: TrustBreakdownItem[] = [
+    {
+      key: 'sources',
+      label: trustT(lang, 'trust.breakdown_sources'),
+      points: Math.min(sources, 8) * 10,
+      max: 80,
+    },
+    {
+      key: 'pluralism',
+      label: trustT(lang, 'trust.breakdown_pluralism'),
+      points: pluralismVal <= 15 ? 25 : pluralismVal >= 55 ? 12 : 18,
+      max: 25,
+    },
+    {
+      key: 'freshness',
+      label: trustT(lang, 'trust.breakdown_freshness'),
+      points: isStale || isProvisional ? 0 : 20,
+      max: 20,
+    },
+    {
+      key: 'verification',
+      label: trustT(lang, 'trust.breakdown_verification'),
+      points: hasVerification ? 10 : 0,
+      max: 10,
+    },
+  ];
+
   return {
     score,
     tier,
@@ -99,6 +139,7 @@ export function buildTrustChip(input: TrustInput, lang: Lang): TrustChipData {
     pluralismScore: pluralism,
     isStale,
     isProvisional,
+    breakdown,
   };
 }
 
@@ -131,7 +172,7 @@ export function buildPrimaryCardBadge(input: TrustInput, lang: Lang): string {
 }
 
 export function primaryCardBadgeTier(input: TrustInput): TrustTier {
-  return buildTrustChip({ ...input, quietFreshness: true }, 'sr').tier;
+  return buildTrustChip({ ...input, quietFreshness: true }, 'mk').tier;
 }
 
 /** Short footer label for compact/wire cards where TrustChip row is hidden. */

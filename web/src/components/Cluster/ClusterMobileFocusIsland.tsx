@@ -6,7 +6,7 @@ import { settings } from '../../i18n/namespaces/settings';
 
 const SESSION_KEY = 'cluster-mobile-focus-dismissed';
 
-export default function ClusterMobileFocusIsland({ lang = 'sr' }: { lang?: string }) {
+export default function ClusterMobileFocusIsland({ lang = 'mk' }: { lang?: string }) {
   const t = useClientTranslations(lang as 'sr' | 'mk', settings);
   const [visible, setVisible] = useState(false);
 
@@ -39,7 +39,7 @@ export default function ClusterMobileFocusIsland({ lang = 'sr' }: { lang?: strin
   if (!visible) return null;
 
   return (
-    <div className="cluster-mobile-focus-banner" role="status">
+    <div className="cluster-mobile-focus-banner" role="region" aria-label={t('reading.focus')}>
       <p>{t('reading.mobile_focus_banner')}</p>
       <button type="button" className="cluster-mobile-focus-exit" onClick={dismiss}>
         <X size={14} aria-hidden="true" />

@@ -12,6 +12,7 @@ import psycopg_pool
 from prometheus_client import REGISTRY, Counter
 from psycopg.rows import dict_row
 
+from core.embeddings import local_distance, local_similarity
 from core.version import APP_VERSION_LABEL
 
 
@@ -182,34 +183,53 @@ SQL_ARTICLE_SEARCH = """
             WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
             WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
             ELSE 0
-        END AS match_score
+        END AS match_score,
+        -- NOTE: ORDER BY must reference this as a bare alias. This database
+        -- does not resolve SELECT aliases nested inside ORDER BY expressions
+        -- (e.g. ORDER BY (match_score * 2 ...) fails with "column does not
+        -- exist"), so the weighted score is materialized here instead.
+        (CASE
+            WHEN lower(a.title) = query.query_text THEN 4
+            WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+            WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+            WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+            ELSE 0
+        END * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) AS total_score
     FROM articles a
     CROSS JOIN query
-    WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < 0.6)
-    ORDER BY (match_score * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) DESC
+    WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < @SEM_DIST@)
+    ORDER BY total_score DESC
     LIMIT %s
 """
 
+# Thresholds were tuned on Jina vectors; map them onto the local embedding scale.
+SQL_ARTICLE_SEARCH = SQL_ARTICLE_SEARCH.replace("@SEM_DIST@", f"{local_distance(0.6):.3f}").replace(
+    "@SEM_SIM@", f"{local_similarity(0.35):.3f}"
+)
 
-def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
+def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str = "") -> str:
     """Build dynamic hybrid search SQL with whitelisted fragment injection.
 
     Security: time_filter is validated by _validate_timespan (only predefined SQL fragments).
     sort_by is validated against VALID_SORT_BY set. Both are re-checked here.
+    country_filter must be either "" or the literal "AND country = %s" (the value
+    itself is always passed as a bound parameter, never interpolated).
     """
     if time_filter and time_filter not in VALID_TIMESPANS.values():
         time_filter = ""
     if sort_by not in VALID_SORT_BY:
         sort_by = "hybrid"
+    if country_filter not in ("", "AND country = %s"):
+        country_filter = ""
 
     order_clause = "hybrid_score DESC" if sort_by == "hybrid" else "created_at DESC"
 
-    return f"""
+    sql = f"""
         WITH fts_results AS (
             SELECT id, ts_rank_cd(search_vector, websearch_to_tsquery('simple', %s)) AS rank
             FROM articles
             WHERE search_vector @@ websearch_to_tsquery('simple', %s)
-            {time_filter}
+            {time_filter} {country_filter}
             ORDER BY rank DESC
             LIMIT 300
         ),
@@ -218,7 +238,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             FROM articles
             WHERE embedding IS NOT NULL
               AND created_at >= NOW() - INTERVAL '30 days'
-              {time_filter}
+              {time_filter} {country_filter}
             ORDER BY similarity DESC
             LIMIT 300
         ),
@@ -229,7 +249,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
             FROM articles a
             LEFT JOIN fts_results f ON a.id = f.id
             LEFT JOIN semantic_results s ON a.id = s.id
-            WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
+            WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > @SEM_SIM@)
         ),
         ranked_clusters AS (
             SELECT *,
@@ -242,6 +262,8 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str) -> str:
         ORDER BY {order_clause}
         LIMIT %s
     """  # nosec B608 - time_filter and order_clause come from validated whitelists (VALID_TIMESPANS, VALID_SORT_BY)
+    # Map the Jina-tuned 0.35 similarity floor onto the local embedding scale.
+    return sql.replace("@SEM_SIM@", f"{local_similarity(0.35):.3f}")
 
 
 try:
@@ -281,12 +303,38 @@ DB_POOL_TIMEOUT = max(5, _int_env("DB_POOL_TIMEOUT", 60))
 DB_POOL_MAX_LIFETIME = max(60, _int_env("DB_POOL_MAX_LIFETIME", 1800))
 
 
+def _use_server_side_prepared_statements() -> bool:
+    """Whether psycopg may use server-side prepared statements.
+
+    Supabase (and any PgBouncer transaction pooler) reuses server sessions
+    across client connections, so a statement prepared on one client can be
+    executed against a different backend. psycopg's cached plan then mismatches
+    the new query ("bind message supplies N parameters, but prepared statement
+    requires M"), which intermittently breaks queries. psycopg's docs say to set
+    ``prepare_threshold=None`` behind such middleware.
+
+    Default: disabled when the DSN points at a pooler port (6543) or a
+    ``pooler`` host; can be forced with PRESEK_PREPARED_STATEMENTS=1/0.
+    """
+    override = os.environ.get("PRESEK_PREPARED_STATEMENTS", "").strip().lower()
+    if override in ("1", "true", "yes", "on"):
+        return True
+    if override in ("0", "false", "no", "off"):
+        return False
+    dsn = (DATABASE_URL or "").lower()
+    return not (":6543" in dsn or "pooler" in dsn or "pgbouncer" in dsn)
+
+
 def _pool_common_kwargs() -> dict:
-    return {
+    kwargs = {
         "row_factory": dict_row,
         "connect_timeout": 5,
         "options": DB_SESSION_OPTIONS,
     }
+    if not _use_server_side_prepared_statements():
+        # None disables automatic PREPARE; queries run as simple/extended binds.
+        kwargs["prepare_threshold"] = None
+    return kwargs
 
 
 def _connection_is_usable(conn) -> bool:
@@ -415,7 +463,9 @@ class AsyncDatabaseManager:
                 async with conn.cursor() as cur:
                     await cur.execute(sql, params)
                     if fetch:
-                        return await cur.fetchall()
+                        rows = await cur.fetchall()
+                        await conn.commit()
+                        return rows
                     await conn.commit()
                     return cur.rowcount
         except Exception as e:
@@ -591,7 +641,7 @@ class DatabaseManager:
 
     def get_conn(self):
         if not self._pool:
-            return psycopg.connect(DATABASE_URL, row_factory=dict_row, options=DB_SESSION_OPTIONS)
+            return psycopg.connect(DATABASE_URL, **_pool_common_kwargs())
         return self._pool.getconn()
 
     def put_conn(self, conn):
@@ -714,24 +764,26 @@ class DatabaseManager:
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
 
-        # Security: Use parameter binding for country if provided
+        # Country is filtered via a bound parameter in both CTEs. The fragment
+        # itself is a hardcoded literal (see _build_hybrid_search_sql), so the
+        # value can never alter the query structure.
+        has_country = bool(country)
+        country_filter = "AND country = %s" if has_country else ""
         params = [query_text, query_text]
-        if country:
-            # We need to add the parameter twice because time_filter is used twice in the hybrid search SQL
-            time_filter += " AND country = %s"
+        if has_country:
             params.append(country)
 
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         params.append(vec_str)
 
-        if country:
-            # Second occurrence of time_filter in semantic_results
+        if has_country:
+            # Second occurrence of the country filter in semantic_results
             params.append(country)
 
         params.append(limit)
 
         validated_sort_by = _validate_sort_by(sort_by)
-        sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
+        sql = _build_hybrid_search_sql(time_filter, validated_sort_by, country_filter)
         return await self.async_execute(sql, tuple(params), read_only=True)
 
     async def async_search_articles(

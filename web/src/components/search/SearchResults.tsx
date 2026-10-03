@@ -1,5 +1,5 @@
 import { navigate } from 'astro:transitions/client';
-import { History, Search, TrendingUp, Zap, ArrowUpRight, X, Trash2 } from 'lucide-react';
+import { History, Search, TrendingUp, Zap, ArrowUpRight, X, Trash2, AlertTriangle } from 'lucide-react';
 import React from 'react';
 import { SearchSkeleton } from './SearchSkeleton';
 import { SearchResultItem } from './SearchResultItem';
@@ -21,6 +21,7 @@ type SearchResultsProps = {
   searchActions: SearchAction[];
   recentSearches: RecentSearch[];
   trendingItems: TrendingItem[];
+  trendingLoaded?: boolean;
   activeIndex: number;
   registerNavRef: (index: number, el: HTMLElement | null) => void;
   onSearchAll: () => void;
@@ -30,6 +31,7 @@ type SearchResultsProps = {
   onRemoveRecentSearch: (q: string) => void;
   onClearRecentSearches?: () => void;
   searchTime?: number | null;
+  error?: string | null;
   closeSearch: () => void;
   t: TFunction;
   scrollRef: React.RefObject<HTMLDivElement | null>;
@@ -44,6 +46,7 @@ export const SearchResults = React.memo(function SearchResults({
   searchActions,
   recentSearches,
   trendingItems,
+  trendingLoaded,
   activeIndex,
   registerNavRef,
   onSearchAll,
@@ -53,6 +56,7 @@ export const SearchResults = React.memo(function SearchResults({
   onRemoveRecentSearch,
   onClearRecentSearches,
   searchTime,
+  error,
   closeSearch,
   t,
   scrollRef,
@@ -88,14 +92,23 @@ export const SearchResults = React.memo(function SearchResults({
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {recentSearches.map((s, i) => (
+                {recentSearches.map((s) => (
                   <div
-                    key={i}
+                    key={s.query}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSetQuery(s.query)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSetQuery(s.query);
+                      }
+                    }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border/50 rounded-none text-[11px] sm:text-xs font-bold transition-all cursor-pointer group/pill"
                   >
                     <span>{s.query}</span>
                     <button
+                      type="button"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         onRemoveRecentSearch(s.query);
@@ -131,7 +144,7 @@ export const SearchResults = React.memo(function SearchResults({
                     </span>
                   </button>
                 ))
-              ) : (
+              ) : trendingLoaded ? null : (
                 [1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-12 bg-secondary/20 animate-pulse rounded-none" />
                 ))
@@ -147,6 +160,8 @@ export const SearchResults = React.memo(function SearchResults({
               {searchActions.map((action, i) => (
                 <button
                   key={action.id}
+                  ref={(el) => registerNavRef(i, el)}
+                  data-active-nav={i}
                   onClick={() => {
                     closeSearch();
                     navigate(action.href);
@@ -287,7 +302,21 @@ export const SearchResults = React.memo(function SearchResults({
             </section>
           )}
 
-          {!isLoading && suggestions.length === 0 && !entityResult && filteredActions.length === 0 && (
+          {!isLoading && error && (
+            <div className="py-14 sm:py-20 flex flex-col items-center text-center">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 rounded-none flex items-center justify-center mb-5 sm:mb-6">
+                <AlertTriangle size={32} className="text-amber-500/60" />
+              </div>
+              <h4 className="font-serif font-black text-xl sm:text-2xl mb-2">
+                {t('search.error_title')}
+              </h4>
+              <p className="text-muted-foreground text-[13px] sm:text-sm max-w-xs">
+                {t('search.error_desc')}
+              </p>
+            </div>
+          )}
+
+          {!isLoading && !error && suggestions.length === 0 && !entityResult && filteredActions.length === 0 && (
             <div className="py-14 sm:py-20 flex flex-col items-center text-center">
               <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 rounded-none flex items-center justify-center mb-5 sm:mb-6">
                 <Search size={32} className="text-muted-foreground/30" />

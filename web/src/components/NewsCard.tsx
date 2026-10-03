@@ -22,7 +22,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   cluster,
   isLead = false,
   variant = 'standard',
-  lang = 'sr'
+  lang = 'mk'
 }) => {
   const locale = lang === 'mk' ? 'mk' : 'sr';
   const t = useClientTranslations(locale, news, clusterNamespace, common);
@@ -33,13 +33,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   if (!main) return null;
 
   const totalSources = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles.length);
-  const showSignificanceLabel = cluster.is_breaking || totalSources >= 3;
-
-  const significanceLabel =
-    totalSources >= 6 ? t('news.breaking') :
-    totalSources >= 4 ? t('news.tracked') :
-    cluster.is_breaking ? t('news.urgent') :
-    t('news.ongoing');
 
   const selectedImage = chooseClusterImage(cluster, isLead ? 'hero' : 'card', locale);
   const thumbSrc = selectedImage.proxiedUrl;
@@ -115,7 +108,6 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   const slimCluster = {
     cluster_id: cluster.cluster_id,
-    is_breaking: cluster.is_breaking,
     topics: cluster.topics,
     tags: cluster.tags,
     homepage_score: cluster.homepage_score,
@@ -136,8 +128,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="article-meta-v2">
           <div className="kicker-group">
             <span className="kicker">{main.source}</span>
-            {cluster.is_breaking && (
-              <span className="significance-badge is-breaking">{t('news.breaking').toUpperCase()}</span>
+            {totalSources >= 2 && (
+              <span className="corroboration-chip" title={t('news.sources')}>{totalSources} {t('news.sources')}</span>
             )}
           </div>
         </div>
@@ -169,7 +161,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         )}
 
         <div className="article-footer-meta mt-auto">
-          <span className="time-stamp">{getTimeStr(main.ingested_at || main.created_at)}</span>
+          <time className="time-stamp" dateTime={main.ingested_at || main.created_at}>{getTimeStr(main.ingested_at || main.created_at)}</time>
           {(variant === 'compact' || variant === 'wire') && primaryCardBadge && (
             <>
               <span className="meta-dot">·</span>

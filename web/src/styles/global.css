@@ -14,6 +14,7 @@
 @import "./mobile-layout.css";
 @import "./next-level.css";
 @import "./presek-identity.css";
+@import "./editorial-design.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,14 +131,14 @@
 
 @theme inline {
   --font-serif: "Noto Serif", "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-sans: "Manrope", "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-sans: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
   --font-nyt-body: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-serif-display: "Noto Serif Display", "Noto Serif", Georgia, "Times New Roman", serif;
-  --font-ui: "Manrope", "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui-condensed: "Manrope", "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui-wide: "Manrope", "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-serif-display: "Noto Serif", Georgia, "Times New Roman", serif;
+  --font-ui: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-condensed: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-wide: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
   --font-serif-mk: "Noto Serif", "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-ui-mk: "Manrope", "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-mk: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
 
   /* NYT Palette - Now using reactive variables */
   --color-nyt-black: var(--nyt-black);
@@ -206,6 +207,11 @@
   iframe {
     max-width: 100%;
     height: auto;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
   }
 
   /* Performance optimizations */
@@ -388,7 +394,7 @@ html[lang="mk"] {
   --font-ui-condensed: var(--font-ui-mk);
   --font-ui-wide: var(--font-ui-mk);
   --nyt-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --nyt-font-sans: "IBM Plex Sans", "Noto Sans", sans-serif;
+  --nyt-font-sans: "IBM Plex Sans", sans-serif;
 }
 
 html[lang="sr-Latn"] :where(.summary, .editorial-intro, .for-you-page-lede, .settings-lede) {
@@ -580,6 +586,27 @@ h6,
   letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1.25;
+}
+
+.kicker-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  min-width: 0;
+}
+
+.corroboration-chip {
+  font-family: var(--font-ui-condensed);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--muted-foreground));
+  padding: 0.08rem 0.34rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
+  line-height: 1;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

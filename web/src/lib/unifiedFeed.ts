@@ -30,7 +30,6 @@ export function isStubFeedCluster(cluster: NewsCluster): boolean {
 function clusterTrendScore(cluster: NewsCluster) {
     const sourceCount = Number((cluster as any).sources_count || (cluster as any).source_count || cluster.articles?.length || 0);
     return Number(cluster.homepage_score || 0)
-        + (cluster.is_breaking ? 100 : 0)
         + Math.min(sourceCount, 8) * 5;
 }
 
@@ -39,8 +38,12 @@ export function buildUnifiedFeedItems(input: {
     developmentsCompact: NewsCluster[];
     globalClusters: NewsCluster[];
     wireClusters: NewsCluster[];
+    excludeIds?: Iterable<string>;
 }): UnifiedFeedItem[] {
     const seen = new Set<string>();
+    for (const id of input.excludeIds || []) {
+        if (id) seen.add(id);
+    }
     const items: UnifiedFeedItem[] = [];
 
     const push = (cluster: NewsCluster, bucket: FeedBucket, variant: UnifiedFeedItem['variant']) => {

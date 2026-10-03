@@ -19,7 +19,7 @@ interface OverlapMetrics {
   s2_exclusive: number;
 }
 
-export default function SourceComparisonIsland({ allSources, lang = 'sr' }: { allSources: string[], lang?: string }) {
+export default function SourceComparisonIsland({ allSources, lang = 'mk' }: { allSources: string[], lang?: string }) {
   const locale = (lang === 'mk' ? 'mk' : 'sr') as Locale;
   const t = useClientTranslations(locale, sources);
   const [s1, setS1] = useState(allSources[0] || '');

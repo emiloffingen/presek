@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ request }) => {
     const url = new URL(request.url);
     const host = request.headers.get('host') || url.hostname;
     const isMk = host.includes('presek.mk');
-    const SITE_URL = isMk ? 'https://presek.mk' : 'https://presek.live';
+    const SITE_URL = 'https://presek.mk';
     const API_URL = apiBaseUrl();
     
     const clusters: any[] = [];
@@ -93,8 +93,8 @@ export const GET: APIRoute = async ({ request }) => {
     <language>${language}</language>
     <pubDate>${now}</pubDate>
     <lastBuildDate>${now}</lastBuildDate>
-    <managingEditor>editor@presek.live</managingEditor>
-    <webMaster>webmaster@presek.live</webMaster>
+    <managingEditor>editor@presek.mk</managingEditor>
+    <webMaster>webmaster@presek.mk</webMaster>
     <atom:link href="${escapeXml(SITE_URL)}/rss.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

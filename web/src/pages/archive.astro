@@ -26,7 +26,7 @@ const topic = Astro.url.searchParams.get('topic') || '';
 const page = Math.max(0, Number.parseInt(Astro.url.searchParams.get('page') || '0', 10) || 0);
 const API_URL = apiBaseUrl();
 
-let archive: any = { clusters: [], total: 0, sources: 0, date, page, page_size: 50, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
+let archive: any = { clusters: [], total: 0, sources: 0, date, page, page_size: 15, has_more: false, total_clusters: 0, top_sources: [], top_topics: [] };
 let briefingData: { briefing?: string | null } = { briefing: null };
 let onThisDay: any = {};
 let error = null;
@@ -36,7 +36,7 @@ try {
   archiveUrl.searchParams.set('date', date);
   archiveUrl.searchParams.set('lang', lang);
   archiveUrl.searchParams.set('page', String(page));
-  archiveUrl.searchParams.set('page_size', '50');
+  archiveUrl.searchParams.set('page_size', '15');
   if (q) archiveUrl.searchParams.set('q', q);
   if (source) archiveUrl.searchParams.set('source', source);
   if (topic) archiveUrl.searchParams.set('topic', topic);
@@ -77,6 +77,29 @@ const buildFilterHref = (kind: 'source' | 'topic' | 'q', value: string) => {
   return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
 };
 
+// Build an /archive URL preserving the current filters unless overridden.
+const buildArchiveHref = (overrides: { date?: string; q?: string; source?: string; topic?: string } = {}) => {
+  const params = new URLSearchParams();
+  const d = overrides.date !== undefined ? overrides.date : date;
+  const qq = overrides.q !== undefined ? overrides.q : q;
+  const ss = overrides.source !== undefined ? overrides.source : source;
+  const tt = overrides.topic !== undefined ? overrides.topic : topic;
+  if (d) params.set('date', d);
+  if (qq) params.set('q', qq);
+  if (ss) params.set('source', ss);
+  if (tt) params.set('topic', tt);
+  return `${localePath('/archive', lang, hostHeader)}?${params.toString()}`;
+};
+
+const hasFilters = Boolean(q || source || topic);
+const nearest: { prev?: string | null; next?: string | null } = archive.nearest || {};
+const formatNearest = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const todayStr = new Date().toISOString().split('T')[0];
+const prevDateStr = new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0];
+const nextDateStr = new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0];
+
 const formattedDisplayDate = new Date(archive.date).toLocaleDateString(lang === 'mk' ? 'mk-MK' : 'sr-RS', { day: 'numeric', month: 'long', year: 'numeric' });
 
 const briefingItems: string[] = briefingData.briefing ? briefingData.briefing.split(/\s*[•·]\s*/) : [];
@@ -92,7 +115,7 @@ function formatBriefingItem(item: string) {
   <NYTHeader />
 
   <main class="site-layout broadsheet-layout page-content-top pb-[var(--page-py)] archive-page-scope">
-    <header class="editorial-masthead mb-10 border-t border-foreground pt-4">
+    <header class="editorial-masthead mb-6 md:mb-8 border-t border-foreground pt-4">
         <div class="masthead-top mb-6 flex justify-between items-center">
             <span class="masthead-kicker ui-kicker ui-kicker--accent">{t('archive.memory')}</span>
             <div class="masthead-meta-compact hidden md:flex items-center gap-[var(--grid-gap)] ui-label-min text-muted-foreground opacity-60">
@@ -154,12 +177,15 @@ function formatBriefingItem(item: string) {
             <div class="flex flex-col md:flex-row justify-between items-center gap-[var(--grid-gap)]">
                 <div class="flex items-center gap-[var(--grid-gap)] flex-wrap">
                     <form method="get" class="date-select-form">
+                        <input type="hidden" name="q" value={q} />
+                        <input type="hidden" name="source" value={source} />
+                        <input type="hidden" name="topic" value={topic} />
                         <div class="relative group">
                             <input
                                 type="date"
                                 name="date"
                                 value={date}
-                                onchange="this.form.submit()"
+                                data-autosubmit
                                 class="archive-date-input"
                             />
                             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity">
@@ -170,17 +196,22 @@ function formatBriefingItem(item: string) {
 
                     <div class="flex items-center gap-1">
                         <a
-                            href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() - 86400000).toISOString().split('T')[0]}`}
+                            href={buildArchiveHref({ date: prevDateStr })}
                             class="archive-nav-btn"
                         >
                             ← {t('archive.previous')}
                         </a>
-                        {new Date(date) < new Date(new Date().toISOString().split('T')[0]) && (
+                        {new Date(date) < new Date(todayStr) && (
                             <a
-                                  href={`${localePath('/archive', lang, hostHeader)}?date=${new Date(new Date(date).getTime() + 86400000).toISOString().split('T')[0]}`}
+                                  href={buildArchiveHref({ date: nextDateStr })}
                                   class="archive-nav-btn"
                             >
                                 {t('archive.next')} →
+                            </a>
+                        )}
+                        {date !== todayStr && (
+                            <a href={buildArchiveHref({ date: todayStr })} class="archive-nav-btn">
+                                {t('archive.today')}
                             </a>
                         )}
                     </div>
@@ -188,6 +219,8 @@ function formatBriefingItem(item: string) {
 
                 <form method="get" class="w-full md:w-80">
                     <input type="hidden" name="date" value={date} />
+                    <input type="hidden" name="source" value={source} />
+                    <input type="hidden" name="topic" value={topic} />
                     <div class="relative">
                         <input
                             type="text"
@@ -222,7 +255,7 @@ function formatBriefingItem(item: string) {
             </div>
         </summary>
         <div class="p-8 border-t border-border bg-card/80">
-            <ArchiveHeatmapIsland client:visible selectedDate={date} lang={lang} />
+            <ArchiveHeatmapIsland client:visible selectedDate={date} lang={lang} q={q} source={source} topic={topic} />
         </div>
     </details>
 
@@ -240,7 +273,46 @@ function formatBriefingItem(item: string) {
                 </div>
             ) : null}
 
-            <PresekInlinedAd class="page-inline-ad archive-inline-ad mb-10" />
+            {!error && (archive.top_topics?.length > 1 || archive.top_sources?.length > 1 || topic || source) && (
+                <nav class="archive-facets" aria-label={t('archive.context_filters')}>
+                    {archive.top_topics?.length > 0 && (
+                        <div class="archive-chip-row">
+                            <span class="archive-chip-label">{t('archive.filter_topics')}</span>
+                            <ul class="archive-chip-list">
+                                {archive.top_topics.slice(0, 10).map((item: any) => (
+                                    <li>
+                                        <a
+                                            href={buildFilterHref('topic', item.topic === topic ? '' : item.topic)}
+                                            class={`archive-chip${item.topic === topic ? ' is-active' : ''}`}
+                                            aria-current={item.topic === topic ? 'true' : undefined}
+                                        >
+                                            <span>{item.topic}</span><span class="archive-chip-count">{item.n}</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {archive.top_sources?.length > 0 && (
+                        <div class="archive-chip-row">
+                            <span class="archive-chip-label">{t('archive.filter_sources')}</span>
+                            <ul class="archive-chip-list">
+                                {archive.top_sources.slice(0, 8).map((item: any) => (
+                                    <li>
+                                        <a
+                                            href={buildFilterHref('source', item.source === source ? '' : item.source)}
+                                            class={`archive-chip${item.source === source ? ' is-active' : ''}`}
+                                            aria-current={item.source === source ? 'true' : undefined}
+                                        >
+                                            <span>{item.source}</span><span class="archive-chip-count">{item.n}</span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </nav>
+            )}
 
             <div class="archive-feed-list">
                 {error ? (
@@ -248,15 +320,31 @@ function formatBriefingItem(item: string) {
                         <p class="font-serif text-2xl italic text-muted-foreground">{error}</p>
                     </div>
                 ) : archive.clusters.length > 0 ? (
-                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 50} date={date} q={q} source={source} topic={topic} lang={lang} />
+                    <ArchiveFeedIsland client:visible initialClusters={archive.clusters} initialHasMore={archive.has_more} pageSize={archive.page_size || 15} date={date} q={q} source={source} topic={topic} lang={lang} />
                 ) : (
-                    <div class="py-32 text-center border-2 border-dashed border-border rounded-none">
+                    <div class="archive-empty py-16 md:py-24 text-center border-2 border-dashed border-border rounded-none">
                         <h2 class="font-serif text-3xl font-black italic mb-4">{t('archive.empty')}</h2>
                         <p class="font-nyt-body text-muted-foreground">{t('archive.try_other_filters')}</p>
-                        <a href={localePath('/archive', lang, hostHeader)} class="mt-8 inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
+                        {(nearest.prev || nearest.next) ? (
+                            <div class="archive-empty-nearest">
+                                <span class="ui-label-min text-muted-foreground">{t('archive.nearest_heading')}</span>
+                                <div class="archive-empty-nearest-links">
+                                    {nearest.prev && <a href={buildArchiveHref({ date: nearest.prev })} class="archive-nav-btn">← {formatNearest(nearest.prev)}</a>}
+                                    {nearest.next && <a href={buildArchiveHref({ date: nearest.next })} class="archive-nav-btn">{formatNearest(nearest.next)} →</a>}
+                                </div>
+                            </div>
+                        ) : hasFilters ? (
+                            <p class="mt-6 ui-label-min text-muted-foreground">{t('archive.nearest_none')}</p>
+                        ) : null}
+                        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+                            {hasFilters && <a href={`${localePath('/archive', lang, hostHeader)}?date=${date}`} class="inline-block px-8 py-3 border border-foreground ui-label-min hover:bg-foreground hover:text-background transition-all">{t('archive.clear')}</a>}
+                            <a href={localePath('/archive', lang, hostHeader)} class="inline-block px-8 py-3 bg-foreground text-background ui-label-min hover:bg-presek-mark transition-all">{t('archive.back_today')}</a>
+                        </div>
                     </div>
                 )}
             </div>
+
+            <PresekInlinedAd class="page-inline-ad archive-inline-ad mt-10" />
         </section>
 
         <aside class="broadsheet-rail pl-4">

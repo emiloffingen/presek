@@ -3,7 +3,6 @@ export type SiteLang = 'sr' | 'mk';
 export type ClusterSignalInput = {
   pluralismScore?: number | null;
   pulseScore?: number | null;
-  isBreaking?: boolean;
   topic?: string;
 };
 
@@ -19,10 +18,6 @@ const PULSE_HOT = 80;
 
 export function getVisibleCardSignals(input: ClusterSignalInput, maxBadges = 1): SignalBadge[] {
   const badges: SignalBadge[] = [];
-
-  if (input.isBreaking) {
-    badges.push({ key: 'breaking', labelKey: 'signal.breaking', tone: 'hot' });
-  }
 
   const pluralism = input.pluralismScore;
   if (pluralism != null && pluralism >= PLURALISM_CONFLICT) {

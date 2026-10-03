@@ -8,35 +8,18 @@ def _read(rel_path: str) -> str:
 
 
 class TestAstroFrontendIntegrity:
-    def test_core_astro_routes_exist(self):
-        for rel_path in (
-            "web/src/pages/index.astro",
-            "web/src/pages/briefing.astro",
-            "web/src/pages/archive.astro",
-            "web/src/pages/izvori.astro",
-            "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[slug].astro",
-            "web/src/pages/subjekt/[name].astro",
-        ):
-            assert (ROOT / rel_path).is_file(), f"Missing Astro route: {rel_path}"
-
     def test_layout_contains_required_seo_structures(self):
         layout = _read("web/src/layouts/Layout.astro")
         head = _read("web/src/components/layout/LayoutHead.astro")
         boot = _read("web/public/js/presek-boot.js")
-        # Check for dynamic HTML lang attribute (used for i18n)
-        assert 'lang={lang ===' in layout
+        # MK-only edition: html lang is fixed to "mk" (was dynamic per-locale).
+        assert '<html lang="mk"' in layout
+        assert "lang={lang}" in layout
         # Check for core SEO tags
         assert '<link rel="canonical"' in head
         assert '<link rel="alternate" hreflang=' in head
         # Check for theme logic usage
         assert "typeof localStorage !== 'undefined'" in boot
-
-    def test_mk_middleware_redirects_to_presek_mk(self):
-        middleware = _read("web/src/middleware.ts")
-
-        assert "pathname.startsWith('/mk')" in middleware
-        assert "https://presek.mk" in middleware
 
     def test_canonical_url_uses_logic(self):
         layout = _read("web/src/layouts/Layout.astro")
@@ -53,38 +36,6 @@ class TestAstroFrontendIntegrity:
         assert "i18n:" in config
         assert "routing:" in config
         assert "site:" in config
-
-    def test_primary_pages_fetch_api_through_supported_base_url(self):
-        # Pages can either import the shared apiBaseUrl() helper (which
-        # centralises PUBLIC_API_URL + SSR/client fallback logic) or inline
-        # the env lookup directly. Delegated view components may also own fetch logic.
-        for rel_path in (
-            "web/src/components/home/HomePage.astro",
-            "web/src/pages/briefing.astro",
-            "web/src/pages/stats.astro",
-            "web/src/pages/cluster/[slug].astro",
-            "web/src/pages/archive.astro",
-        ):
-            content = _read(rel_path)
-            uses_helper = "apiBaseUrl" in content
-            uses_inline_env = "PUBLIC_API_URL" in content
-            assert uses_helper or uses_inline_env, f"Missing apiBaseUrl()/PUBLIC_API_URL in {rel_path}"
-            if uses_inline_env:
-                assert "127.0.0.1:5001/api" in content or '"/api"' in content, f"Missing FastAPI fallback in {rel_path}"
-
-        entity_page = _read("web/src/pages/subjekt/[name].astro")
-        entity_view = _read("web/src/components/entity/EntitySubjectView.astro")
-        entity_loader = _read("web/src/lib/loadEntitySubject.ts")
-        assert "loadEntitySubject" in entity_page
-        assert "EntitySubjectView" in entity_page
-        assert "apiBaseUrl" in entity_loader or "PUBLIC_API_URL" in entity_loader
-
-        # The shared helper must still contain the canonical fallback values
-        # so that the assertion above is actually meaningful.
-        helper = _read("web/src/lib/apiBase.ts")
-        assert "PUBLIC_API_URL" in helper
-        assert "127.0.0.1:5001/api" in helper
-        assert "'/api'" in helper or '"/api"' in helper
 
     def test_status_route_renders_live_health_page(self):
         status_page = _read("web/src/pages/admin/status.astro")
@@ -115,26 +66,14 @@ class TestAstroFrontendIntegrity:
         assert "_article_freshness_time(article)" in homepage
         assert "def _cluster_title_overlap(left: str, right: str) -> float:" in clustering
 
-    def test_homepage_focus_entities_preserve_raw_slug_and_display_name(self):
-        home_route = _read("routes/home.py")
-        entity_route = _read("routes/intelligence.py")
-
-        assert 'display_name = _normalize_focus_entity_name(raw_name)' in home_route
-        assert 'normalized["display_name"] = display_name' in home_route
-        assert 'normalized["name"] = display_name' in home_route
-        assert "LOWER(name) = LOWER(%s)" in entity_route
-        assert "LOWER(tag) = LOWER(%s)" in entity_route
-
     def test_homepage_cards_render_ingestion_aware_time(self):
         homepage = _read("web/src/components/NewsCard.astro")
         interactive_card = _read("web/src/components/NewsCard.tsx")
-        live_updates = _read("web/src/components/HomeLiveUpdatesIsland.tsx")
         lead = _read("web/src/components/home/LeadHero.astro")
 
         assert "getTimeStr(main.ingested_at || main.created_at)" in homepage
         assert "getTimeStr(main.ingested_at || main.created_at)" in interactive_card
-        assert "getTimeStr(article.ingested_at || article.created_at)" in live_updates
-        assert "getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)" in lead
+        assert "getTimeStr(leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at)" in lead
 
     def test_generated_article_footnotes_are_sanitized_before_html_rendering(self):
         cluster_page = _read("web/src/pages/cluster/[slug].astro")
@@ -176,81 +115,21 @@ class TestAstroFrontendIntegrity:
         assert "Math.max(0, Math.min(100" in source_comparison
         assert "buildResearchQA" in research_qa
 
-    def test_briefing_page_shows_real_error_state_and_not_only_processing_state(self):
-        briefing = _read("web/src/pages/briefing.astro")
-        briefing_content = _read("web/src/components/briefing/BriefingContent.astro")
-        briefing_i18n = _read("web/src/i18n/namespaces/briefing.ts")
-        assert "BriefingContent" in briefing
-        assert "briefing.error_unavailable" in briefing_content or "Brifing trenutno nije dostupan." in briefing_i18n
-
-    def test_pulse_page_has_real_error_state_and_safe_category_math(self):
-        pulse = _read("web/src/pages/pulse.astro")
-        intelligence = _read("routes/intelligence.py")
-
-        assert "let ssrFailed = false;" in pulse
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
-
-    def test_for_you_page_surfaces_seed_fetch_errors_and_refetches_on_profile_change(
-        self,
-    ):
-        for_you_page = _read("web/src/pages/for-you.astro")
-        for_you_island = _read("web/src/components/ForYouPageIsland.tsx")
-        profile_route = _read("routes/profile.py")
-
-        assert "TinyAdzRailAd" not in for_you_page
-        assert "TinyAdzInlinedAd" not in for_you_page
-        assert "ErrorBoundary client:idle lang={lang}" in for_you_page
-        assert "<ForYouPageIsland client:visible lang={lang} />" in for_you_page
-        assert "const [clusterLoading, setClusterLoading]" in for_you_island
-        assert "ForYouSkeleton" in for_you_island
-        assert "fetch(`${apiBaseUrl()}/news?page_size=32&lang=${lang}`)" in for_you_island
-        assert "const [semanticError, setSemanticError] = useState<string | null>(null);" in for_you_island
-        assert "}, [profile, lang, initialClusters.length, clusterFetchError]);" in for_you_island
-        assert "const pageError = semanticError || clusterError;" in for_you_island
-        assert "COALESCE(ingested_at, created_at)" in profile_route
-        assert (
-            'f"SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY {_FRESHNESS_EXPR} DESC, created_at DESC"'
-            in profile_route
-        )
-
-    def test_secondary_intelligence_and_stats_surfaces_use_ingestion_aware_freshness(
-        self,
-    ):
-        intelligence = _read("routes/intelligence.py")
-        stats = _read("routes/stats.py")
-        system = _read("routes/system.py")
-
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in intelligence
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '48 hours'" in intelligence
-        assert "WHERE a.country = %s AND {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours' GROUP BY a.source" in intelligence
-        assert (
-            "EXISTS (SELECT 1 FROM unnest(COALESCE(m.tags, '{}')) AS tag WHERE LOWER(tag) = LOWER(%s))" in intelligence
-        )
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in stats
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in stats
-        assert "ORDER BY cluster_id, {_FRESHNESS_EXPR} ASC, created_at ASC" in stats
-        assert '_FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"' in system
-        assert "WHERE {_FRESHNESS_EXPR} >= NOW() - INTERVAL '24 hours'" in system
-        assert "SELECT category, topic, COUNT(DISTINCT cluster_id) as n" in system
-        assert "FROM articles" in system
-
     def test_homepage_maps_category_filter_to_api_category_param(self):
         homepage_data = _read("web/src/lib/homepageData.ts")
         assert "newsUrl.searchParams.set('category', category);" in homepage_data
         assert "newsUrl.searchParams.set('topic', category);" not in homepage_data
 
     def test_sync_token_is_not_sent_in_query_strings(self):
-        account_sync = _read("web/src/components/AccountSyncIsland.tsx")
-        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
+        # AccountSyncIsland/BriefingDeliveryIsland were removed in the MK-only
+        # simplify; the remaining client helper must still use a header.
         personalization = _read("web/src/lib/personalization.js")
-        debug_page = _read("web/src/pages/debug/recommendations.astro")
 
-        assert "?token=" not in account_sync
-        assert "?token=" not in delivery
-        assert "searchParams.get('token')" not in debug_page
-        assert "buildSyncTokenHeaders" in account_sync
-        assert "buildSyncTokenHeaders" in delivery
         assert "X-Sync-Token" in personalization
+        assert "?token=" not in personalization
+        # No client component should leak the sync token as a query param.
+        for name in ("AdminDashboard.tsx", "ForYouIsland.tsx"):
+            assert "?token=" not in _read(f"web/src/components/{name}")
 
     def test_public_api_rate_limits_include_profile_write_routes(self):
         common = _read("routes/common.py")
@@ -284,24 +163,13 @@ class TestAstroFrontendIntegrity:
         assert '"shared_topics": shared_topics' in news
         assert '"shared_entities": shared_entities' in news
 
-    def test_recommendations_route_imports_list_validator(self):
-        intelligence = _read("routes/intelligence.py")
-        assert "validate_list_param" in intelligence
-        assert '@router.post("/intelligence/recommendations")' in intelligence
-        recommendations_block = intelligence.split('@router.post("/intelligence/recommendations")', 1)[1].split("@router.", 1)[0]
-        assert "@custom_rate_limit" in recommendations_block
-        assert "verify_csrf_token" in recommendations_block
-
-    def test_synthesize_nodes_route_requires_csrf(self):
-        intelligence = _read("routes/intelligence.py")
-        synthesize_block = intelligence.split('@router.post("/intelligence/synthesize-nodes")', 1)[1].split("@router.", 1)[0]
-        assert "@custom_rate_limit" in synthesize_block
-        assert "verify_csrf_token" in synthesize_block
-
-    def test_intelligence_graph_sends_csrf_for_synthesis(self):
-        graph = _read("web/src/components/IntelligenceGraph.tsx")
-        assert "buildCsrfHeadersAsync" in graph
-        assert "intelligence/synthesize-nodes" in graph
+    def test_admin_synthesis_console_sends_csrf(self):
+        # The old IntelligenceGraph.tsx / intelligence/synthesize-nodes flow was
+        # removed in the MK-only simplify; the admin console now owns the
+        # synthesis surface and must still send CSRF headers on its calls.
+        dashboard = _read("web/src/components/AdminDashboard.tsx")
+        assert "buildCsrfHeadersAsync" in dashboard
+        assert "admin/synthesis-traces/recent" in dashboard
 
     def test_static_mount_disables_symlink_following(self):
         api_fast = _read("core/api_fast.py")
@@ -316,9 +184,16 @@ class TestAstroFrontendIntegrity:
         assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in limits
 
     def test_delivery_component_decodes_vapid_key_before_subscribing(self):
-        delivery = _read("web/src/components/BriefingDeliveryIsland.tsx")
-        assert "function decodeVapidPublicKey" in delivery
-        assert "applicationServerKey: decodeVapidPublicKey(pubKey)" in delivery
+        # BriefingDeliveryIsland was removed in the MK-only simplify; if any
+        # component still subscribes to push it must decode the VAPID key first.
+        candidates = sorted(ROOT.glob("web/src/components/**/*.tsx"))
+        subscribers = [
+            p for p in candidates
+            if "applicationServerKey" in p.read_text(encoding="utf-8")
+        ]
+        for path in subscribers:
+            text = path.read_text(encoding="utf-8")
+            assert "decodeVapidPublicKey(" in text, f"{path} must decode the VAPID key"
 
 
 class TestDeploymentIntegrity:
@@ -477,3 +352,56 @@ class TestRuntimeDependencyIntegrity:
         }
         assert "fastapi" in pkg_names
         assert "uvicorn" in pkg_names
+
+
+class TestClusterSummariesConstraint:
+    """cluster_summaries INSERT ... ON CONFLICT must match a real constraint.
+
+    A migration once dropped the `lang` column, which silently dropped the
+    composite primary key (cluster_id, lang). Every synthesis insert then failed
+    with "no unique or exclusion constraint matching the ON CONFLICT
+    specification" and the table stayed empty, so cluster pages showed a
+    placeholder. These tests guard the code half of that contract.
+    """
+
+    def test_all_cluster_summaries_conflicts_use_cluster_id_lang(self):
+        for rel in (
+            "tasks/summarization.py",
+            "tasks/intelligence/synthesis_persist.py",
+            "tasks/intelligence/backfill.py",
+        ):
+            src = _read(rel)
+            assert "ON CONFLICT (cluster_id)" not in src, (
+                f"{rel} uses ON CONFLICT (cluster_id); cluster_summaries is keyed "
+                "by (cluster_id, lang)"
+            )
+
+    def test_cluster_summaries_inserts_set_lang(self):
+        import re
+
+        src = _read("tasks/summarization.py")
+        # Both insert sites must assign lang so the (cluster_id, lang) PK is
+        # always satisfied.
+        assert src.count("INSERT INTO cluster_summaries") >= 2
+        inserts = re.findall(
+            r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.S
+        )
+        assert inserts, "no cluster_summaries inserts found"
+        for cols in inserts:
+            normalized = " ".join(cols.split())
+            assert normalized.startswith("cluster_id, lang"), (
+                "cluster_summaries insert must set (cluster_id, lang); got "
+                f"{normalized!r}"
+            )
+
+    def test_restore_pk_migration_exists(self):
+        migrations = [
+            p.name for p in (ROOT / "migrations" / "versions").glob("*.py")
+        ]
+        assert any("restore_cluster_summaries_pk" in name for name in migrations)
+        src = next(
+            p.read_text(encoding="utf-8")
+            for p in (ROOT / "migrations" / "versions").glob("*restore_cluster_summaries_pk.py")
+        )
+        assert '["cluster_id", "lang"]' in src
+

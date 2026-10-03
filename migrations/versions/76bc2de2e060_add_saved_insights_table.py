@@ -19,6 +19,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    bind = op.get_bind()
+    if "saved_insights" in set(sa.inspect(bind).get_table_names()):
+        return
     op.create_table(
         'saved_insights',
         sa.Column('id', sa.Integer, primary_key=True),

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESEK.mk — Homepage redesign mockup v2 (Option C: Transparency Dashboard)</title>
+<style>
+  :root{
+    --ink:#0f1216; --paper:#f6f7f9; --panel:#ffffff; --line:#e3e6ea;
+    --muted:#5d646d; --blue:#173f7a; --green:#188a52; --amber:#c98a12; --red:#c0392b;
+    --serif:"Noto Serif",Georgia,serif; --sans:"Manrope","IBM Plex Sans",Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.45}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 18px}
+  header.top{background:var(--ink);color:#fff;padding:12px 0}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{font-family:var(--serif);font-size:22px;letter-spacing:.06em}
+  .brand b{color:#e8b84b}
+  .top nav{display:flex;gap:18px;font-size:12.5px;color:#c8cdd4}
+  .top nav a{color:inherit;text-decoration:none}
+  .top .live{font-size:11px;background:#1d2a1f;color:#7fe0a0;border:1px solid #2f5a3c;padding:4px 9px;border-radius:20px;font-family:var(--mono)}
+
+  .mockbadge{background:#fff4d6;border-bottom:1px solid #e2c473;font-size:11px;padding:6px 0;text-align:center;color:#6b5714;font-family:var(--sans)}
+
+  /* dashboard strip = the hero */
+  .dash{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px 0 6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:15px 16px}
+  .card .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .card .v{font-size:30px;font-weight:800;margin:6px 0 2px;font-family:var(--serif)}
+  .card .sub{font-size:12px;color:var(--muted)}
+  .spark{height:26px;margin-top:8px;background:linear-gradient(90deg,rgba(23,63,122,.18),rgba(23,63,122,.5));border-radius:3px}
+  .badge{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:10px;font-weight:700}
+  .b-green{background:#e5f6ec;color:var(--green)} .b-amber{background:#fdf3dd;color:var(--amber)} .b-red{background:#fbe9e7;color:var(--red)}
+
+  .grid{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;padding:12px 0 30px}
+  h2.sec{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px;font-weight:700}
+
+  /* diversity board */
+  .board{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px}
+  .story{border-left:4px solid var(--blue);padding:0 0 0 14px;margin-bottom:18px}
+  .story h3{font-family:var(--serif);font-size:22px;line-height:1.2;margin:2px 0 8px}
+  .story .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .sources{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;border:1px solid var(--line);border-radius:14px;padding:3px 10px;background:#fafbfc}
+  .chip.lead{border-color:var(--blue);color:var(--blue);font-weight:700}
+  .agree{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)}
+  .agreebar{flex:1;height:8px;border-radius:4px;background:#eef1f4;overflow:hidden}
+  .agreebar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#6fcf97)}
+
+  /* right column */
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+  .list h4{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .row{display:flex;justify-content:space-between;padding:9px 14px;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .row:last-child{border-bottom:0}
+  .row .n{font-weight:700}
+  .row .t{color:var(--muted);font-family:var(--mono);font-size:12px}
+
+  .themes{display:flex;flex-wrap:wrap;gap:7px;padding:12px 14px}
+  .theme{font-size:12px;background:#eef3fb;color:var(--blue);border-radius:12px;padding:4px 11px}
+
+  .feed{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding-bottom:34px}
+  .fcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+  .fcard .cat{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-weight:700}
+  .fcard h5{font-family:var(--serif);font-size:16.5px;line-height:1.25;margin:6px 0 6px}
+  .fcard .srcs{font-size:11.5px;color:var(--muted)}
+
+  @media(max-width:900px){
+    .dash{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    .feed{grid-template-columns:1fr}
+    .top nav{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="mockbadge">MOCKUP v2 — Option C: “Transparency Dashboard” (data-forward). Compare with <b>/homepage-mockup.html</b> (Option A+B). Not live.</div>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">ПРЕ<b>СЕК</b> <span style="font-size:12px;color:#8b949e">.mk</span></div>
+    <nav>
+      <a>Издание</a><a>Македонија</a><a>Регион</a><a>Свет</a><a>Извори</a><a>Анализа</a><a>Архива</a>
+    </nav>
+    <span class="live">● ВО ЖИВО · 14 извори · ажурирано 15:18</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- HERO: the state of the media landscape -->
+  <section class="dash">
+    <div class="card">
+      <div class="k">Медиумски извори</div>
+      <div class="v">14</div>
+      <div class="sub">активни денес</div>
+      <div class="spark"></div>
+    </div>
+    <div class="card">
+      <div class="k">Објави (24ч)</div>
+      <div class="v">82</div>
+      <div class="sub">од 6 различни медиуми</div>
+      <div class="spark"></div>
+    </div>
+    <div class="card">
+      <div class="k">Плурализам</div>
+      <div class="v">0%</div>
+      <div class="sub"><span class="badge b-amber">СЕ АЖУРИРА</span></div>
+      <div class="spark"></div>
+    </div>
+    <div class="card">
+      <div class="k">Свежина</div>
+      <div class="v">141<span style="font-size:15px">м</span></div>
+      <div class="sub"><span class="badge b-red">ЗАДОЦНУВА</span></div>
+      <div class="spark"></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- LEFT: stories shown through source diversity -->
+    <main>
+      <h2 class="sec">Приказни низ изворите · денес</h2>
+      <div class="board">
+        <div class="story">
+          <h3>Реакција на организаторите на „Разговори за иднината“ по прес-конференцијата на Филипче</h3>
+          <div class="meta">3 извори · 12 мин читање · ажурирано 15:18</div>
+          <div class="sources">
+            <span class="chip lead">Telma</span>
+            <span class="chip">Plusinfo</span>
+            <span class="chip">A1on</span>
+          </div>
+          <div class="agree">
+            <span>Согласност</span>
+            <span class="agreebar"><i style="width:58%"></i></span>
+            <span>55 / Консензус</span>
+          </div>
+        </div>
+
+        <div class="story" style="border-left-color:var(--amber)">
+          <h3>Земјотрес од 3,3 степени во преспанското подрачје, почувствуван во Битола</h3>
+          <div class="meta">2 извори · 3 мин читање · 14:40</div>
+          <div class="sources">
+            <span class="chip lead">Telma</span>
+            <span class="chip">Plusinfo</span>
+          </div>
+          <div class="agree">
+            <span>Согласност</span>
+            <span class="agreebar"><i style="width:82%"></i></span>
+            <span>82 / Високо</span>
+          </div>
+        </div>
+
+        <div class="story" style="border-left-color:var(--red)">
+          <h3>Човечки леш пронајден во канал во Бардовци</h3>
+          <div class="meta">3 извори · 2 мин читање · 13:55</div>
+          <div class="sources">
+            <span class="chip lead">Plusinfo</span>
+            <span class="chip">A1on</span>
+            <span class="chip">Sitel</span>
+          </div>
+          <div class="agree">
+            <span>Согласност</span>
+            <span class="agreebar"><i style="width:44%"></i></span>
+            <span>44 / Различни акценти</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="sec">Најново</h2>
+      <div class="feed">
+        <div class="fcard"><div class="cat">Спорт</div><h5>„Пауза за освежување“ со пиво и шнапс — хит-сцена на мечот на легенди</h5><div class="srcs">Plusinfo</div></div>
+        <div class="fcard"><div class="cat">Култура</div><h5>Вечерва македонска премиера на видео-танцот „Миревица“</h5><div class="srcs">Telma</div></div>
+        <div class="fcard"><div class="cat">Време</div><h5>Променливо облачно со подолги сончеви периоди</h5><div class="srcs">Telma, 360 Stepeni</div></div>
+      </div>
+    </main>
+
+    <!-- RIGHT: monitoring rail -->
+    <aside>
+      <h2 class="sec">Извори во живо</h2>
+      <div class="list">
+        <h4>Најактивни денес</h4>
+        <div class="row"><span class="n">Plusinfo</span><span class="t">19 објави</span></div>
+        <div class="row"><span class="n">Telma</span><span class="t">16</span></div>
+        <div class="row"><span class="n">Vecer</span><span class="t">14</span></div>
+        <div class="row"><span class="n">360 Stepeni</span><span class="t">11</span></div>
+        <div class="row"><span class="n">A1on</span><span class="t">11</span></div>
+        <div class="row"><span class="n">Sitel</span><span class="t">11</span></div>
+      </div>
+
+      <h2 class="sec">Теми во фокус</h2>
+      <div class="list">
+        <div class="themes">
+          <span class="theme">Филипче</span>
+          <span class="theme">СДСМ</span>
+          <span class="theme">избори</span>
+          <span class="theme">Вучиќ</span>
+          <span class="theme">Германија</span>
+          <span class="theme">Битола</span>
+          <span class="theme">Скопје</span>
+        </div>
+      </div>
+
+      <h2 class="sec">Состојба на системот</h2>
+      <div class="list">
+        <div class="row"><span class="n">Собирање</span><span class="t"><span class="badge b-amber">141м</span></span></div>
+        <div class="row"><span class="n">Синтеза</span><span class="t"><span class="badge b-green">ок</span></span></div>
+        <div class="row"><span class="n">Анализа</span><span class="t"><span class="badge b-green">ок</span></span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

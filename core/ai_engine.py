@@ -13,7 +13,9 @@ from typing import Any, AsyncGenerator
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
 
+from core import ai_quota
 from core.config import (
+    AI_ENABLED,
     PROVIDER_FALLBACK_ORDER,
     PROVIDER_FALLBACK_ORDER_RESEARCH,
     PROVIDER_FALLBACK_ORDER_SUMMARY,
@@ -23,6 +25,51 @@ log = logging.getLogger("presek")
 
 PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS = int(os.environ.get("PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS", "300"))
 _PROVIDER_COOLDOWN_UNTIL: dict[str, float] = {}
+
+# Some providers serve reasoning models (Groq gpt-oss, Gemini 3.x thinking) that
+# spend part of the token budget on hidden reasoning. With a tiny max_tokens the
+# visible answer comes back empty even though the HTTP request succeeded, so we
+# enforce a floor per provider.
+PROVIDER_MIN_MAX_TOKENS: dict[str, int] = {
+    "groq": int(os.environ.get("GROQ_MIN_MAX_TOKENS", "600")),
+}
+
+
+def _effective_max_tokens(provider_name: str, max_tokens: int) -> int:
+    floor = PROVIDER_MIN_MAX_TOKENS.get(provider_name)
+    if floor and max_tokens and max_tokens < floor:
+        return floor
+    return max_tokens
+
+
+_LOCAL_UNAVAILABLE_WARNED = False
+
+
+def _provider_configured(provider_name: str) -> bool:
+    """True when a provider has credentials (or no key is needed).
+
+    Providers ship in PROVIDER_FALLBACK_ORDER but may have
+    no API key configured; keeping them in the cascade burns a no-op iteration.
+    Mock providers in tests expose an ``api_key`` attribute, so they stay.
+    """
+    provider = PROVIDERS.get(provider_name)
+    if provider is None:
+        return False
+    api_key = getattr(provider, "api_key", None)
+    return bool(api_key)
+
+
+def _warn_local_unavailable(exc: Exception | None) -> None:
+    """The local analyst was removed in the mk-only simplify; degrade quietly.
+
+    Without this guard every cascade that falls through to ``local`` raised an
+    ImportError, which the cascade logged as a provider failure on each call.
+    """
+    global _LOCAL_UNAVAILABLE_WARNED
+    if not _LOCAL_UNAVAILABLE_WARNED:
+        detail = f": {exc}" if exc else ""
+        log.warning("[ai/local] local analyst unavailable, local provider disabled%s", detail)
+        _LOCAL_UNAVAILABLE_WARNED = True
 
 
 def _provider_cooldown_remaining(provider_name: str) -> float:
@@ -305,8 +352,13 @@ class OpenAICompatibleProvider(AIProvider):
         except (KeyError, IndexError, TypeError) as e:
             log.warning(f"[ai/{self.provider_name}] Unexpected response format from {self.model}: {e}")
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:
+            code = e.response.status_code
+            if code == 429:
                 _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
+            elif code in (500, 502, 503, 504):
+                # Transient provider overload: short cooldown so the cascade
+                # moves on to the next provider instead of hammering this one.
+                _mark_provider_cooldown(self.provider_name, "20")
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
         except httpx.RequestError as e:
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
@@ -414,7 +466,14 @@ class LocalProvider(AIProvider):
         lang: str = "sr",
         response_schema: Any = None,
     ) -> str | None:
-        from nlp.local_analyst import analyst
+        try:
+            from nlp.local_analyst import analyst
+        except Exception as exc:
+            _warn_local_unavailable(exc)
+            return None
+        if analyst is None:
+            _warn_local_unavailable(None)
+            return None
 
         lowered_system = (system or "").lower()
 
@@ -497,22 +556,36 @@ class GeminiProvider(OpenAICompatibleProvider):
         )
 
 
+class Gemini2Provider(OpenAICompatibleProvider):
+    """Second Google account (separate key) for extra free quota."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "gemini2",
+            api_key,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            model,
+        )
+
+
+class Gemini3Provider(OpenAICompatibleProvider):
+    """Third Google account (separate key) for extra free quota."""
+
+    def __init__(self, api_key: str, model: str):
+        super().__init__(
+            "gemini3",
+            api_key,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            model,
+        )
+
+
 class GroqProvider(OpenAICompatibleProvider):
     def __init__(self, api_key: str, model: str):
         super().__init__(
             "groq",
             api_key,
             "https://api.groq.com/openai/v1/chat/completions",
-            model,
-        )
-
-
-class MistralProvider(OpenAICompatibleProvider):
-    def __init__(self, api_key: str, model: str):
-        super().__init__(
-            "mistral",
-            api_key,
-            "https://api.mistral.ai/v1/chat/completions",
             model,
         )
 
@@ -527,41 +600,31 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         )
 
 
-class CerebrasProvider(OpenAICompatibleProvider):
-    def __init__(self, api_key: str, model: str):
-        super().__init__(
-            "cerebras",
-            api_key,
-            "https://api.cerebras.ai/v1/chat/completions",
-            model,
-        )
-
-
 PROVIDERS = {
     "openrouter": OpenRouterProvider(
         api_key=os.environ.get("OPENROUTER_API_KEY", ""),
-        model=os.environ.get("OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"),
-    ),
-    "cerebras": CerebrasProvider(
-        api_key=os.environ.get("CEREBRAS_API_KEY", ""),
-        model=os.environ.get("CEREBRAS_MODEL", "gpt-oss-120b"),
-    ),
-    "mistral": MistralProvider(
-        api_key=os.environ.get("MISTRAL_API_KEY", ""),
-        model=os.environ.get("MISTRAL_MODEL", "mistral-small-latest"),
+        model=os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free"),
     ),
     "nvidia": NvidiaProvider(
         api_key=os.environ.get("NVIDIA_API_KEY", ""),
         api_url=os.environ.get("NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"),
-        model=os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"),
+        model=os.environ.get("NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b"),
     ),
     "gemini": GeminiProvider(
         api_key=os.environ.get("GEMINI_API_KEY", ""),
-        model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite"),
+    ),
+    "gemini2": Gemini2Provider(
+        api_key=os.environ.get("GEMINI2_API_KEY", ""),
+        model=os.environ.get("GEMINI2_MODEL", "gemini-flash-lite-latest"),
+    ),
+    "gemini3": Gemini3Provider(
+        api_key=os.environ.get("GEMINI3_API_KEY", ""),
+        model=os.environ.get("GEMINI3_MODEL", "gemini-3.5-flash-lite"),
     ),
     "groq": GroqProvider(
         api_key=os.environ.get("GROQ_API_KEY", ""),
-        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
     ),
     "local": LocalProvider(),
 }
@@ -592,6 +655,8 @@ def build_provider_fallback_order(
     exclude_providers: list[str] | None = None,
 ) -> list[str]:
     """Build provider cascade order with optional primary override and exclusions."""
+    if not AI_ENABLED:
+        return []
     from core.runtime_limits import synthesis_local_only
 
     if synthesis_local_only() and task_type in ("synthesis", "summarize", "translation"):
@@ -657,7 +722,7 @@ def build_provider_fallback_order(
                 )
                 excluded.add(reserved)
 
-    return [provider for provider in order if provider not in excluded]
+    return [provider for provider in order if provider not in excluded and _provider_configured(provider)]
 
 
 def _record_provider_outcome(provider_name: str, task_type: str, success: bool, duration: float) -> None:
@@ -681,10 +746,12 @@ def _invoke_provider_call(
     lang: str,
     response_schema: Any,
 ) -> str | None:
+    """Invoke a provider, retrying once when JSON mode returns malformed JSON."""
+    effective_max_tokens = _effective_max_tokens(provider_name, max_tokens)
     res = provider.call(
         prompt,
         system,
-        max_tokens,
+        effective_max_tokens,
         json_mode,
         topic=topic,
         task_type=task_type,
@@ -697,7 +764,7 @@ def _invoke_provider_call(
         res = provider.call(
             prompt + "\n\nCRITICAL: Return valid JSON only.",
             system,
-            max_tokens,
+            effective_max_tokens,
             json_mode,
             topic=topic,
             task_type=task_type,
@@ -728,6 +795,8 @@ async def _call_ai_async(
     exclude_providers: list[str] | None = None,
 ):
     """Async entrypoint with cascading failover."""
+    if not AI_ENABLED:
+        return None, None
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -750,10 +819,15 @@ async def _call_ai_async(
                 f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
             )
             continue
+        if await ai_quota.async_is_exhausted(provider_name):
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
+            log.warning(f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping")
+            continue
+        await ai_quota.async_record_usage(provider_name)
         start_time = time.time()
         try:
             if stream:
-                generator = provider.stream_call(prompt, system, max_tokens)
+                generator = provider.stream_call(prompt, system, _effective_max_tokens(provider_name, max_tokens))
                 try:
                     first_chunk = await anext(generator)
                 except StopAsyncIteration:
@@ -824,6 +898,8 @@ def _call_ai(
     exclude_providers: list[str] | None = None,
 ):
     """Synchronous AI entrypoint with cascading failover."""
+    if not AI_ENABLED:
+        return None, None
     try:
         system = sanitize_ai_system_prompt(system)
         prompt = sanitize_ai_user_prompt(prompt)
@@ -846,6 +922,11 @@ def _call_ai(
                 f"[ai/cascade] Provider {provider_name} is rate-limited, skipping for {cooldown_remaining:.0f}s"
             )
             continue
+        if ai_quota.is_exhausted(provider_name):
+            AI_CALLS.labels(provider=provider_name, task_type=task_type, status="quota").inc()
+            log.warning(f"[ai/cascade] Provider {provider_name} hit its daily quota guard, skipping")
+            continue
+        ai_quota.record_usage(provider_name)
         start_time = time.time()
         try:
             res = _invoke_provider_call(
@@ -1187,6 +1268,8 @@ def generate_cover_art(safe_id: str, svg_content: str) -> str | None:
 
 def auto_summarize_top_clusters(target_cluster_ids: list[str] = None):
     """Dispatch synthesis tasks for the top recent clusters or specific target clusters."""
+    if not AI_ENABLED:
+        return
     try:
         from core.config import (
             AUTO_SUMMARIZE_DELAY,

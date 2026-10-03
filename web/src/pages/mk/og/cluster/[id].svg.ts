@@ -71,7 +71,7 @@ export const GET: APIRoute = async ({ params }) => {
   <text x="84" y="400" font-family="Arial, sans-serif" font-size="30" fill="#cbd5e1">${description}</text>
   <text x="84" y="532" font-family="Arial, sans-serif" font-size="28" fill="#94a3b8">${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'} vo sporedba</text>
 
-  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f8fafc" text-anchor="end">PRESEK.rs</text>
+  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f8fafc" text-anchor="end">PRESEK.mk</text>
 </svg>`;
 
 		return new Response(svg, {

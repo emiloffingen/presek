@@ -323,7 +323,9 @@ def build_read_next_clusters(
     return sorted(results, key=lambda x: x["score"], reverse=True)[:limit]
 
 
-def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None):
+def build_source_reputation_rows(
+    source_rows, pulse_rows=None, speed_rows=None, history_rows=None, category_rows=None, daily_rows=None
+):
     pulse_map = {str(i.get("source")): int(i.get("count") or i.get("n") or 0) for i in (pulse_rows or [])}
     speed_map = {str(i.get("source")): int(i.get("first_count") or 0) for i in (speed_rows or [])}
     history_map = {str(i.get("source")): i for i in (history_rows or [])}
@@ -335,6 +337,17 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
         s = str(cr.get("source") or "")
         if s and len(cat_map[s]) < 3:
             cat_map[s].append(cr["category"])
+
+    # Real per-source daily volume for the last 30 days (oldest -> newest).
+    daily_map = defaultdict(lambda: defaultdict(int))
+    for dr in daily_rows or []:
+        s = str(dr.get("source") or "")
+        day = dr.get("day")
+        if not s or day is None:
+            continue
+        daily_map[s][str(day)[:10]] += int(dr.get("n") or 0)
+    _today = datetime.date.today()
+    day_keys = [(_today - datetime.timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
 
     results = []
     for row in source_rows or []:
@@ -350,6 +363,12 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
         delta = vol_7d - int(hist.get("previous_7d_volume") or 0)
         first_c = speed_map.get(name, 0)
 
+        # Locale-neutral codes so the UI can render labels in any language
+        # (the string fields below are kept for backward compatibility).
+        tier_code = "high" if weight >= 1.75 else ("verified" if weight >= 1.3 else "standard")
+        trend_code = "up" if delta >= 4 else ("down" if delta <= -4 else "stable")
+        tendency_code = "first_mover" if first_c >= 5 else "follower"
+
         results.append(
             {
                 "source": name,
@@ -360,13 +379,17 @@ def build_source_reputation_rows(source_rows, pulse_rows=None, speed_rows=None, 
                 "trust_tier": (
                     "Visoko poverenje" if weight >= 1.75 else ("Potvrden izvor" if weight >= 1.3 else "sledeci izvor")
                 ),
+                "trust_tier_code": tier_code,
                 "recent_volume": pulse_map.get(name, 0),
                 "speed_first_count": first_c,
                 "corroboration_rate": c_rate,
                 "lone_lead_rate": l_rate,
                 "lead_count_30d": l_30d,
                 "trend_label": ("Raste" if delta >= 4 else ("Slabee" if delta <= -4 else "Stabilen ritam")),
+                "trend_code": trend_code,
                 "tendency": ("Cesto prv na prikaznata" if first_c >= 5 else "Postepeno sledenje"),
+                "tendency_code": tendency_code,
+                "daily_volume": [daily_map.get(name, {}).get(k, 0) for k in day_keys],
                 "last_fetched": row.get("last_fetched"),
                 "is_active": row.get("is_active", True),
             }

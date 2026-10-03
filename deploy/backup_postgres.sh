@@ -41,6 +41,18 @@ main() {
   fi
 
   [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
+
+  # pg_dump refuses to dump a *newer* server than itself. Catch it up front so
+  # we fail loudly instead of writing a truncated "<100 bytes" file that looks
+  # like a backup. Run backups from a host whose client matches the server.
+  local server_ver server_major client_ver
+  server_ver="$(psql "$DATABASE_URL" -tAc 'show server_version_num' 2>/dev/null || true)"
+  server_major=$(( ${server_ver:-0} / 10000 ))
+  client_ver="$(pg_dump --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+  if [ -n "$server_ver" ] && [ -n "$client_ver" ] && [ "$client_ver" -lt "$server_major" ] 2>/dev/null; then
+    fail "pg_dump client (v$client_ver) is older than the server (v$server_major); run this from a matching client"
+  fi
+
   if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
     if [ "$REQUIRE_BACKUP_ENCRYPTION" = "1" ]; then
       fail "BACKUP_PASSPHRASE is not set and REQUIRE_BACKUP_ENCRYPTION=1"

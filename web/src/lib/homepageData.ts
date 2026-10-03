@@ -57,6 +57,7 @@ export type HomepageDataState = {
     wireClusters: NewsCluster[];
     wireArticles: WireArticle[];
     excludedClusterIds: string[];
+    analysisClusters: NewsCluster[];
     synthesisPicks: NewsCluster[];
     homepageLeadDisplay: HomepageLeadDisplay;
     pipeline: HomepagePipeline;
@@ -88,7 +89,6 @@ export function normalizeForYouCluster(cluster: any): NewsCluster {
     const article = cluster.articles?.[0] || {};
     return ({
         cluster_id: cluster.cluster_id,
-        is_breaking: cluster.is_breaking,
         topics: cluster.topics,
         tags: cluster.tags,
         homepage_score: cluster.homepage_score,
@@ -143,6 +143,7 @@ export function normalizeHomeApiResponse(home: any): Omit<HomepageDataState, 'er
         wireClusters,
         wireArticles,
         excludedClusterIds: Array.isArray(home?.excluded_cluster_ids) ? home.excluded_cluster_ids : [],
+        analysisClusters: Array.isArray(home?.analysis_pool) ? (home.analysis_pool as NewsCluster[]) : [],
         synthesisPicks,
         homepageLeadDisplay: home?.lead_display && typeof home.lead_display === 'object' ? home.lead_display : null,
         pipeline: home?.pipeline && typeof home.pipeline === 'object' ? home.pipeline : null,
@@ -165,6 +166,7 @@ export function emptyHomepageDataState(): HomepageDataState {
         wireClusters: [],
         wireArticles: [],
         excludedClusterIds: [],
+        analysisClusters: [],
         synthesisPicks: [],
         homepageLeadDisplay: null,
         pipeline: null,
@@ -185,12 +187,10 @@ export async function loadHomepageFallback(options: {
     fallbackNewsUrl.searchParams.set('lang', lang);
     fallbackNewsUrl.searchParams.set('sort', 'score');
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult, wireResult] = await Promise.allSettled([
+    const [newsResult, trendResult, statsResult, wireResult] = await Promise.allSettled([
         fetchJson(fallbackNewsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
         fetchJsonCached(`${apiUrl}/home/latest-wire?limit=15&lang=${lang}`),
     ]);
 
@@ -208,13 +208,9 @@ export async function loadHomepageFallback(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
-    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
+    state.topEntities = [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    state.briefing = briefingResult.status === 'fulfilled'
-        ? normalizeBriefingPayload(briefingResult.value)
-        : null;
+    state.briefing = null;
 
     const recovered = state.clusters.length > 0
         || state.wireArticles.length > 0
@@ -245,12 +241,10 @@ export async function fetchFilteredNewsPayload(options: {
     if (q) newsUrl.searchParams.set('q', q);
     if (timespan) newsUrl.searchParams.set('timespan', timespan);
 
-    const [newsResult, trendResult, entityResult, statsResult, briefingResult] = await Promise.allSettled([
+    const [newsResult, trendResult, statsResult] = await Promise.allSettled([
         fetchJson(newsUrl.toString()),
         fetchJsonCached(`${apiUrl}/trending?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/top-entities?limit=12&lang=${lang}`),
         fetchJsonCached(`${apiUrl}/stats/summary?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
     ]);
 
     if (newsResult.status === 'fulfilled') {
@@ -263,13 +257,9 @@ export async function fetchFilteredNewsPayload(options: {
     state.trending = trendResult.status === 'fulfilled' && Array.isArray(trendResult.value)
         ? trendResult.value
         : [];
-    state.topEntities = entityResult.status === 'fulfilled' && Array.isArray(entityResult.value)
-        ? entityResult.value
-        : [];
+    state.topEntities = [];
     state.stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
-    state.briefing = briefingResult.status === 'fulfilled'
-        ? normalizeBriefingPayload(briefingResult.value)
-        : null;
+    state.briefing = null;
 
     return state;
 }
@@ -282,17 +272,12 @@ export async function fetchHomepagePayload(options: {
     errorMessage: string;
 }): Promise<HomepageDataState> {
     const { apiUrl, lang, fetchJson, fetchJsonCached, errorMessage } = options;
-    const [homePayload, briefingPayload] = await Promise.allSettled([
+    const homePayload = await Promise.allSettled([
         fetchJson(`${apiUrl}/home?lang=${lang}`),
-        fetchJsonCached(`${apiUrl}/intelligence/briefing?lang=${lang}`),
-    ]);
+    ]).then(([result]) => result);
 
     if (homePayload.status === 'fulfilled' && homePayload.value?.status === 'success') {
-        const state = { ...normalizeHomeApiResponse(homePayload.value), error: null };
-        if (!state.briefing && briefingPayload.status === 'fulfilled') {
-            state.briefing = normalizeBriefingPayload(briefingPayload.value);
-        }
-        return state;
+        return { ...normalizeHomeApiResponse(homePayload.value), error: null };
     }
 
     const { state, recovered } = await loadHomepageFallback({
@@ -369,7 +354,6 @@ export function buildLeadViewModel(options: {
 
     const getLeadSignal = (cluster: NewsCluster) => {
         const count = cluster?.articles?.length || 0;
-        if (cluster?.is_breaking) return t('home.lead_breaking');
         if (count >= 6) return t('home.lead_agenda');
         if (count >= 4) return t('home.lead_spreading');
         return t('home.lead_follow');
@@ -386,7 +370,8 @@ export function buildLeadViewModel(options: {
         lang,
     );
     const leadTitle = highlightScores(isHomepage
-        ? String(homepageLeadDisplay?.title || '')
+        ? String(homepageLeadDisplay?.title
+            || (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''))
         : (leadCluster?.articles?.[0] ? cleanAndDecode(leadCluster.articles[0].title) : ''));
     const effectiveLeadSignal = isHomepage
         ? String(homepageLeadDisplay?.signal || leadSignal)
@@ -408,8 +393,47 @@ export function buildLeadViewModel(options: {
     };
 }
 
+/**
+ * Pick the homepage lead.
+ *
+ * Presek's differentiator is showing how several outlets cover the same story,
+ * so a multi-source cluster makes a far better lead than a single-source one.
+ * We therefore prefer the best-scoring cluster that has >= 2 distinct sources,
+ * falling back to the top cluster when none qualifies (or when the candidate is
+ * too far down the ranking, so we never promote a weak story just for its count).
+ */
+export function selectLeadCluster(
+    clusters: NewsCluster[] | null | undefined,
+    options: { minSources?: number; maxRankPenalty?: number } = {},
+): NewsCluster | null {
+    const list = Array.isArray(clusters) ? clusters : [];
+    if (list.length === 0) return null;
+
+    const minSources = options.minSources ?? 2;
+    const maxRankPenalty = options.maxRankPenalty ?? 3;
+
+    const sourceCountOf = (cluster: NewsCluster): number => {
+        const distinct = new Set(
+            (cluster.articles || [])
+                .map((a) => (a.source || '').trim())
+                .filter(Boolean),
+        );
+        return distinct.size || Number((cluster as any).source_count || 0) || 0;
+    };
+
+    const best = list[0];
+    if (sourceCountOf(best) >= minSources) return best;
+
+    const searchLimit = Math.min(list.length, maxRankPenalty + 1);
+    for (let i = 1; i < searchLimit; i += 1) {
+        if (sourceCountOf(list[i]) >= minSources) return list[i];
+    }
+
+    return best;
+}
+
 export function buildHomepageFlags(state: HomepageDataState, isHomepage: boolean) {
-    const leadCluster = state.clusters[0] ?? null;
+    const leadCluster = selectLeadCluster(state.clusters);
     const hasPartialFeedContent = Boolean(
         leadCluster
         || state.supportingClusters.length > 0

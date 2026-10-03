@@ -120,12 +120,38 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
+# Master runtime kill-switch for all LLM inference (local and remote).
+# Disabled by default: no provider calls are made and AI generation no-ops.
+# Set PRESEK_AI_ENABLED=1 to re-enable.
+AI_ENABLED = os.environ.get("PRESEK_AI_ENABLED", "0").strip().lower() in ("1", "true", "yes", "on")
+
+# ── Full-text transparency mode ─────────────────────────────
+# When enabled, crawl_article_task persists the extracted article body into
+# articles.full_content (per-source gated by sources.full_text_allowed).
+FULLTEXT_ENABLED = os.environ.get("FULLTEXT_ENABLED", "true").strip().lower() in ("1", "true", "yes", "on")
+FULLTEXT_MAX_CHARS = int(os.environ.get("FULLTEXT_MAX_CHARS", "20000"))
+
+# MK-only product: ingest only Macedonian sources and never translate.
+MK_ONLY = os.environ.get("MK_ONLY", "true").strip().lower() in ("1", "true", "yes", "on")
+
+# Default language for API endpoints when the caller omits `lang`.
+# The deployment is MK-only and the Serbian dataset was purged, so "sr" filters
+# (country='RS') match no rows and silently return empty responses. Keep this in
+# sync with MK_ONLY: MK deployment -> "mk".
+DEFAULT_LANG = os.environ.get("PRESEK_DEFAULT_LANG", "mk" if MK_ONLY else "sr")
+
+# Identifying crawler UA (robots.txt compliance / attribution friendliness).
+BOT_USER_AGENT = os.environ.get(
+    "BOT_USER_AGENT",
+    "PresekBot/1.0 (+https://presek.mk/bot; bot@presek.mk)",
+)
+
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000
 CLUSTER_LOOKBACK = 300  # Narrowed to reduce memory pressure
 BREAKING_SCORE_THRESHOLD = 4.5
-DB_RETAIN_DAYS = 180  # articles older than this are pruned daily
+DB_RETAIN_DAYS = 90  # articles older than this are pruned daily
 DB_RETAIN_FAILED_TASKS_DAYS = 360  # failed tasks older than this are pruned daily
 
 # ── Language Configuration ──────────────────────────────────
@@ -622,9 +648,12 @@ def resolve_primary_database_url() -> str:
 
 
 # ── AI Routing Configuration ────────────────────────────────────
-PROVIDER_FALLBACK_ORDER_RESEARCH = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]
-PROVIDER_FALLBACK_ORDER_SUMMARY = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]
-PROVIDER_FALLBACK_ORDER = ["openrouter", "cerebras", "mistral", "gemini", "nvidia", "groq", "local"]  # default
+# NOTE: mistral/mistral2 are intentionally omitted — their free tier returned
+# `x-ratelimit-limit-req-minute: 0` (no usable quota) in Sep 2026, so they only
+# wasted cascade round-trips. PROVIDERS still defines them for manual override.
+PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]
+PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]
+PROVIDER_FALLBACK_ORDER = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]  # default
 
 # Providers reserved exclusively for synthesis tasks.
 # When set, these providers are excluded from summarize/research/default cascades

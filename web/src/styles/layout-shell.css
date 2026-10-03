@@ -26,13 +26,6 @@ iframe.corner-popup {
   z-index: 10050 !important;
 }
 
-[ta-ad-container] iframe.inlined-ta-ad,
-.tinyadz-inlined iframe.inlined-ta-ad {
-  width: 100%;
-  max-width: 900px;
-  margin-inline: auto;
-}
-
 *,
 *::before,
 *::after {
@@ -83,9 +76,9 @@ p,
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-serif-display: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-nyt-body: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-sans: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui-condensed: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-sans: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-condensed: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
   line-height: 1.55;
 }
 
@@ -93,9 +86,9 @@ p,
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-serif-display: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-nyt-body: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-sans: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
-  --font-ui-condensed: "IBM Plex Sans", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-sans: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
+  --font-ui-condensed: "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;
   line-height: 1.55;
 }
 

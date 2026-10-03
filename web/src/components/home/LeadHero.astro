@@ -2,7 +2,7 @@
 import { sanitizeHtml } from '../../lib/sanitize';
 import { getDisplayTitle, highlightScores, getDesignCardContext, transliterate } from '../../utils/textUtils';
 import type { NewsCluster } from '../../types';
-import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper, ArrowRight } from 'lucide-react';
+import { Zap, Palette, Building2, TrendingUp, Award, Cpu, Newspaper } from 'lucide-react';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath } from '../../lib/localePaths';
 import MeshGradient from './MeshGradient.astro';
@@ -83,6 +83,13 @@ let finalLeadSummary = leadSummary;
 if (lang === 'sr' && leadSummaryIsCyrillic) {
     finalLeadSummary = transliterate(leadSummary);
 }
+
+// The synthesis lede often just restates the headline; showing both wastes the
+// most valuable screen real estate, so only render the lede when it adds text.
+const normalizeLede = (v: string) => String(v || '').replace(/<[^>]*>/g, '').replace(/[\s.…"“”„«»'’:;,!?-]+/g, ' ').trim().toLowerCase();
+const showLeadSummary = Boolean(finalLeadSummary)
+    && normalizeLede(finalLeadSummary) !== normalizeLede(finalLeadTitle)
+    && !normalizeLede(finalLeadSummary).startsWith(normalizeLede(finalLeadTitle));
 
 const cardContext = getDesignCardContext(leadCluster);
 const cardLabel = cardContext.labelKey ? t(cardContext.labelKey as any) : '';
@@ -201,6 +208,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
             <span class="lead-edition-label">{t('lead.narrative_kicker')}</span>
             <span class="lead-edition-note">
                 {t('lead.consensus_prefix')} {Number((leadCluster as any).sources_count || (leadCluster as any).source_count || leadCluster.articles.length)} {consensusSuffix}
+                <a href={l('/methodology')} class="lead-edition-link">{t('lead.methodology_link')}</a>
             </span>
         </div>
         <div class="lead-kicker-v2 mb-4">
@@ -209,7 +217,6 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                 <span class="lead-synthesis-badge ui-status">{t('home.feed_synthesis_badge')}</span>
             )}
             <div class="lead-kicker-meta flex items-center gap-[var(--grid-gap)]">
-                {leadCluster.is_breaking && <span class="significance-badge is-breaking" aria-label={`${t('header.breaking')}: ${t('news.breaking')}`}>{t('news.breaking').toUpperCase()}</span>}
                 {leadSignal && (
                     <span class="lead-status-badge" aria-label={`${t('lead.signal_aria')}: ${leadSignal}`}>
                         <div class="status-dot-wrap">
@@ -220,7 +227,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                     </span>
                 )}
                 {!leadFreshnessView && (
-                    <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                    <span class="time-stamp-v2" aria-label={t('header.latest')}>{getTimeStr(leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at)}</span>
                 )}
                 <StoryFreshnessBadge
                     lang={lang as 'sr' | 'mk'}
@@ -236,7 +243,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         <a href={l(`/cluster/${leadCluster.cluster_id}`)} class="no-underline group" data-testid="cluster-link">
             <h1 class:list={["headline headline-lead transition-transform duration-500 group-hover:translate-x-1", { "headline-cyrillic": leadTitleIsCyrillic }]} set:html={sanitizeHtml(finalLeadTitle)}></h1>
         </a>
-        {finalLeadSummary && (
+        {showLeadSummary && (
             <div class="lead-summary-block">
                 {compact && (
                     <p class="lead-why-kicker">{t('lead.why_it_matters')}</p>
@@ -284,7 +291,7 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
         )}
         <div class="lead-meta border-t border-border/50 pt-4 mt-4 flex justify-between items-center">
             <div class="lead-meta-primary flex items-center gap-[var(--grid-gap)] text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                <span>{getTimeStr(leadCluster.articles?.[0].ingested_at || leadCluster.articles?.[0].created_at)}</span>
+                <span>{getTimeStr(leadCluster.articles?.[0]?.ingested_at || leadCluster.articles?.[0]?.created_at)}</span>
                 {compact ? (
                     <span class={`card-primary-badge card-primary-badge--${leadPrimaryBadgeTier} card-primary-badge--compact`}>
                         {leadPrimaryBadge}
@@ -307,10 +314,6 @@ const showLeadMedia = showHeroVisual && Boolean(leadVisual?.proxiedUrl);
                     <span class="lead-value-detail">{item.detail}</span>
                 </div>
             ))}
-            <a class="lead-value-action" href={l('/for-you')}>
-                <span>{t('lead.value_action')}</span>
-                <ArrowRight size={13} aria-hidden="true" />
-            </a>
         </div>
         )}
 
