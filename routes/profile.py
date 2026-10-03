@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from core.api_helpers import normalize_server_delivery_subscription as _normalize_server_delivery_subscription
 from core.config import BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
+from core.embeddings import local_similarity
 from core.limiter import custom_rate_limit
 from utils import annotate_cluster_articles, delete_cache, is_balanced, score_cluster, score_cluster_for_homepage
 
@@ -368,11 +369,11 @@ async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: 
         )
         SELECT DISTINCT ON (cluster_id) *
         FROM pool
-        WHERE similarity > 0.55
+        WHERE similarity > %s
         ORDER BY cluster_id, similarity DESC
         LIMIT 100
     """,  # nosec B608 - static freshness fragment with bound params
-        (vec_str, country_filter, recent_ids),
+        (vec_str, country_filter, recent_ids, local_similarity(0.55)),
     )
 
     # 3. Group and annotate

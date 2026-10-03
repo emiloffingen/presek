@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from core.embeddings import average_embeddings, parse_embedding_value
+from core.embeddings import average_embeddings, jina_similarity, parse_embedding_value
 
 log = logging.getLogger("presek")
 
@@ -74,7 +74,7 @@ def _split_cluster_merge_score(left, right, lang="mk"):
     right_centroid = parse_embedding_value(right.get("centroid"))
     centroid_similarity = 0.0
     if left_centroid and right_centroid:
-        centroid_similarity = 1 - _cosine_dist(left_centroid, right_centroid)
+        centroid_similarity = jina_similarity(1 - _cosine_dist(left_centroid, right_centroid))
 
     generic_topic = left_topic.lower() in _GENERIC_CLUSTER_TOPICS
     if generic_topic:

@@ -1,7 +1,7 @@
 """Shared HTTP connection pool.
 
 Centralizes outbound httpx clients so TCP/TLS handshakes are reused across
-requests (crawler, feed fetching, Jina embeddings, images, ...).
+requests (crawler, feed fetching, images, ...).
 
 Two entry points:
 

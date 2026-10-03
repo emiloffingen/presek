@@ -27,7 +27,7 @@ import core.clustering as clustering
 from core.api_helpers import is_safe_url
 from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
-from core.embeddings import generate_embeddings_batch
+from core.embeddings import article_text, generate_embeddings_batch, jina_distance
 from core.health import get_source_statuses, record_source_fetch
 from core.language import is_macedonian
 from core.text_extraction import clean_extracted_article_text
@@ -1037,7 +1037,7 @@ async def ingest_all_sources_async():
         log.warning("[ingestion] Failed to renew ingestion lock before candidate processing")
 
     # Generate embeddings in one batch
-    texts_to_embed = [f"{c['title']} {c['desc'][:200]}" for c in candidates]
+    texts_to_embed = [article_text(c["title"], c["desc"]) for c in candidates]
     loop = asyncio.get_running_loop()
     embeddings = await loop.run_in_executor(None, generate_embeddings_batch, texts_to_embed)
 
@@ -1098,7 +1098,7 @@ async def ingest_all_sources_async():
                         # often arrive together in the same fetch cycle.
                         if bc["category"] != category or bc["topic"] != topic:
                             continue
-                        dist = cosine_dist(emb, bc["embedding"])
+                        dist = jina_distance(cosine_dist(emb, bc["embedding"]))
                         if dist >= (VECTOR_THRESHOLD * 0.78):
                             continue
                         if topic == "vesti" or not topic:

@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 import re
@@ -71,6 +72,14 @@ async def lifespan(app: FastAPI):
             await async_db._ensure_pool()
         except Exception as e:
             log.error(f"Failed to initialize async database pools on startup: {e}")
+
+    # Load the local embedding model in the background so the first search isn't slow.
+    try:
+        from core.embeddings import warm_up
+
+        asyncio.get_running_loop().run_in_executor(None, warm_up)
+    except Exception as e:
+        log.warning(f"Embedding warm-up skipped: {e}")
 
     yield
 

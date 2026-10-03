@@ -6,6 +6,7 @@ import uuid
 from collections import Counter
 from difflib import SequenceMatcher
 
+from core.embeddings import jina_similarity
 from core.language import transliterate_cyr_to_lat
 
 MAX_CLUSTER_SIZE = 40
@@ -21,7 +22,7 @@ VECTOR_THRESHOLD = 0.28
 _TITLE_INSTANT_MERGE = 0.72
 _TITLE_BEST_MERGE = 0.40
 _TITLE_ANCHORED_MERGE = 0.32
-# Semantic (embedding) recall. Jina cosine >= floor means two headlines are about
+# Semantic (embedding) recall. Jina-scale cosine >= floor means two headlines are about
 # the same event even with little lexical overlap (paraphrase / different outlets).
 # Kept conservative: a high-similarity match promotes an otherwise-weak candidate
 # over the ANCHORED gate but never bypasses the category guard already applied to
@@ -613,7 +614,7 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
             if seed_vec is None:
                 seed_vec = _parse_vector(article.get("embedding"))
                 seed_vecs[cluster_id] = seed_vec
-            sim = _cosine_of_vectors(incoming_vec, seed_vec)
+            sim = jina_similarity(_cosine_of_vectors(incoming_vec, seed_vec))
         if overlap >= _TITLE_INSTANT_MERGE:
             return cluster_id
         # Near-duplicate vectors for the same topic and a shared name are a

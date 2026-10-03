@@ -12,6 +12,7 @@ import psycopg_pool
 from prometheus_client import REGISTRY, Counter
 from psycopg.rows import dict_row
 
+from core.embeddings import local_distance, local_similarity
 from core.version import APP_VERSION_LABEL
 
 
@@ -196,10 +197,15 @@ SQL_ARTICLE_SEARCH = """
         END * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) AS total_score
     FROM articles a
     CROSS JOIN query
-    WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < 0.6)
+    WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < @SEM_DIST@)
     ORDER BY total_score DESC
     LIMIT %s
 """
+
+# Thresholds were tuned on Jina vectors; map them onto the local embedding scale.
+SQL_ARTICLE_SEARCH = SQL_ARTICLE_SEARCH.replace("@SEM_DIST@", f"{local_distance(0.6):.3f}").replace(
+    "@SEM_SIM@", f"{local_similarity(0.35):.3f}"
+)
 
 
 def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str = "") -> str:
@@ -244,7 +250,7 @@ def _build_hybrid_search_sql(time_filter: str, sort_by: str, country_filter: str
             FROM articles a
             LEFT JOIN fts_results f ON a.id = f.id
             LEFT JOIN semantic_results s ON a.id = s.id
-            WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > 0.35)
+            WHERE f.id IS NOT NULL OR (s.id IS NOT NULL AND s.similarity > @SEM_SIM@)
         ),
         ranked_clusters AS (
             SELECT *,

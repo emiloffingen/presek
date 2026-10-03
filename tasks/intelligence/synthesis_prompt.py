@@ -64,7 +64,7 @@ def _build_source_comparison_prompt_block(article_rows, lang="sr"):
 def _fetch_synthesis_history_context(cluster_id, lang="sr", article_rows=None):
     try:
         from core.config import HISTORY_SEMANTIC_THRESHOLD
-        from core.embeddings import get_cluster_embedding
+        from core.embeddings import get_cluster_embedding, local_distance
 
         current_vec = get_cluster_embedding(cluster_id)
         if not current_vec:
@@ -85,7 +85,14 @@ def _fetch_synthesis_history_context(cluster_id, lang="sr", article_rows=None):
             ORDER BY m.centroid <=> %s::vector
             LIMIT 1
         """,
-            (cluster_id, lang, cluster_id, current_vec_str, HISTORY_SEMANTIC_THRESHOLD, current_vec_str),
+            (
+                cluster_id,
+                lang,
+                cluster_id,
+                current_vec_str,
+                local_distance(HISTORY_SEMANTIC_THRESHOLD),
+                current_vec_str,
+            ),
         )
         if not related:
             return ""

@@ -1,35 +1,98 @@
-"""Jina-based embeddings for semantic search (MK branch).
+"""Local multilingual embeddings for semantic search and clustering (MK branch).
 
-Uses the Jina Embeddings API (jina-embeddings-v3) with Matryoshka truncation
-to 384 dims, matching the articles.embedding vector(384) column. Requires
-JINA_API_KEY in the environment.
+Runs intfloat/multilingual-e5-small (quantized ONNX via fastembed) in-process: free,
+no API quota, native 384 dims to match the articles.embedding vector(384) column.
 
-All entry points degrade gracefully (empty results) when the key is missing
-or the API fails, so callers fall back to plain full-text search.
+Raw e5 cosines are compressed (unrelated pairs ~0.8), so every vector is centred on
+the corpus mean and re-normalised. That puts similarities on roughly the scale the
+old Jina vectors had; ``jina_similarity`` / ``local_distance`` below map the
+remaining difference so thresholds tuned on Jina keep their meaning.
+
+All entry points degrade gracefully (empty results) when fastembed or the model is
+unavailable, so callers fall back to plain full-text search.
 """
 
+import asyncio
+import json
 import logging
 import os
+import re
 import threading
 import time
-
-from core.http_pool import pooled_async_client, pooled_client
+from pathlib import Path
 
 log = logging.getLogger("presek")
 
-JINA_URL = "https://api.jina.ai/v1/embeddings"
-JINA_MODEL = "jina-embeddings-v3"
+MODEL_NAME = "intfloat/multilingual-e5-small"
+_MODEL_HF_REPO = "Xenova/multilingual-e5-small"
+_MODEL_FILE = "onnx/model_quantized.onnx"
 EMBEDDING_DIM = 384
-_BATCH_SIZE = 100
-_TIMEOUT = 30.0
+_BATCH_SIZE = 32
+_MAX_CHARS = 1200
+_RETRY_AFTER = 300.0
+_MEAN_PATH = Path(__file__).parent / "data" / "e5_small_mean.json"
 
 # In-memory cache for single-query vectors. News queries repeat heavily
-# (trending topics), so this skips the ~0.5-1s Jina roundtrip and the token
-# spend on repeats. Process-local: safe for the single-worker API.
+# (trending topics), so this skips recomputation on repeats. Process-local.
 _QUERY_CACHE_TTL = 3600
 _QUERY_CACHE_MAX = 2000
 _query_cache: dict[str, tuple[float, list]] = {}
 _query_cache_lock = threading.Lock()
+
+_model = None
+_model_failed_at = 0.0
+_model_lock = threading.Lock()
+_mean: list | None = None
+
+# (jina_distance, local_distance) pairs, matched on how many of 4.5M sampled article
+# pairs fall under each distance. Lets thresholds tuned on Jina keep their selectivity.
+_CALIBRATION = (
+    (0.0, 0.0),
+    (0.05, 0.131),
+    (0.10, 0.213),
+    (0.15, 0.278),
+    (0.18, 0.313),
+    (0.22, 0.358),
+    (0.28, 0.427),
+    (0.35, 0.501),
+    (0.40, 0.555),
+    (0.50, 0.643),
+    (0.60, 0.715),
+    (0.70, 0.802),
+    (0.80, 0.893),
+    (1.0, 1.074),
+    (2.0, 2.0),
+)
+
+
+def _interp(x: float, src: int, dst: int) -> float:
+    pts = _CALIBRATION
+    if x <= pts[0][src]:
+        return pts[0][dst]
+    for lo, hi in zip(pts, pts[1:]):
+        if x <= hi[src]:
+            span = hi[src] - lo[src]
+            return lo[dst] + (hi[dst] - lo[dst]) * ((x - lo[src]) / span if span else 0.0)
+    return pts[-1][dst]
+
+
+def local_distance(jina_distance: float) -> float:
+    """Cosine distance on local vectors equivalent to ``jina_distance`` on Jina vectors."""
+    return _interp(float(jina_distance), 0, 1)
+
+
+def jina_distance(local_dist: float) -> float:
+    return _interp(float(local_dist), 1, 0)
+
+
+def local_similarity(jina_similarity_value: float) -> float:
+    """Local cosine similarity equivalent to a Jina-scale similarity threshold."""
+    return 1.0 - local_distance(1.0 - float(jina_similarity_value))
+
+
+def jina_similarity(local_sim: float) -> float:
+    """Express a local cosine similarity on the Jina scale existing thresholds use."""
+    return 1.0 - jina_distance(1.0 - float(local_sim))
 
 
 def _query_cache_get(text: str) -> list | None:
@@ -51,47 +114,91 @@ def _query_cache_set(text: str, vec: list) -> None:
         _query_cache[text] = (time.monotonic(), vec)
 
 
-def _api_key() -> str:
-    return os.environ.get("JINA_API_KEY", "").strip()
+def _cache_dir() -> str:
+    explicit = os.environ.get("PRESEK_EMBED_CACHE", "").strip()
+    return explicit or str(Path(__file__).resolve().parent.parent / ".cache" / "fastembed")
 
 
-def _payload(texts, task: str) -> dict:
-    return {
-        "model": JINA_MODEL,
-        "task": task,
-        "dimensions": EMBEDDING_DIM,
-        "late_chunking": False,
-        "embedding_type": "float",
-        "input": texts,
-    }
+def _load_mean() -> list:
+    global _mean
+    if _mean is None:
+        _mean = [float(x) for x in json.loads(_MEAN_PATH.read_text())]
+    return _mean
 
 
-def _parse_response(data: dict, size: int) -> list:
-    out = [None] * size
-    for item in data.get("data", []):
-        idx = item.get("index")
-        vec = item.get("embedding")
-        if isinstance(idx, int) and 0 <= idx < size and vec:
-            out[idx] = [float(x) for x in vec]
-    return out
+def _get_model():
+    """Lazy, thread-safe model load; None (retried after a pause) when unavailable."""
+    global _model, _model_failed_at
+    if _model is not None:
+        return _model
+    with _model_lock:
+        if _model is not None:
+            return _model
+        if _model_failed_at and time.monotonic() - _model_failed_at < _RETRY_AFTER:
+            return None
+        try:
+            from fastembed import TextEmbedding
+            from fastembed.common.model_description import ModelSource, PoolingType
+
+            try:
+                TextEmbedding.add_custom_model(
+                    model=MODEL_NAME,
+                    pooling=PoolingType.MEAN,
+                    normalization=True,
+                    sources=ModelSource(hf=_MODEL_HF_REPO),
+                    dim=EMBEDDING_DIM,
+                    model_file=_MODEL_FILE,
+                )
+            except ValueError:
+                pass  # already registered in this process
+            _load_mean()
+            _model = TextEmbedding(
+                MODEL_NAME,
+                cache_dir=_cache_dir(),
+                threads=int(os.environ.get("PRESEK_EMBED_THREADS", "2")),
+            )
+            log.info("[embeddings] loaded %s", MODEL_NAME)
+        except Exception as e:
+            _model_failed_at = time.monotonic()
+            log.warning("[embeddings] local model unavailable (%s); semantic search falls back to FTS", e)
+            return None
+    return _model
 
 
-def _embed_sync(texts: list, task: str) -> list:
-    """Embed one batch synchronously; index-aligned, None on per-item failure."""
-    texts = [(t or "")[:4000] for t in texts]
-    if not texts or not _api_key():
+def warm_up() -> bool:
+    """Load the model now so the first request doesn't pay the load cost."""
+    return _get_model() is not None
+
+
+def _center(vec) -> list:
+    mean = _load_mean()
+    shifted = [float(x) - m for x, m in zip(vec, mean)]
+    norm = sum(x * x for x in shifted) ** 0.5
+    if not norm:
+        return [0.0] * len(shifted)
+    return [round(x / norm, 6) for x in shifted]
+
+
+def article_text(title, description) -> str:
+    """Text embedded for an article: headline plus the start of the description."""
+    desc = re.sub(r"<[^>]+>", " ", str(description or ""))
+    desc = " ".join(desc.split())[:300]
+    return f"{str(title or '').strip()}. {desc}".strip()
+
+
+def _embed_sync(texts: list, prefix: str) -> list:
+    """Embed one batch; index-aligned, None on failure."""
+    texts = [(t or "").strip()[:_MAX_CHARS] for t in texts]
+    if not texts:
+        return []
+    model = _get_model()
+    if model is None:
         return [None] * len(texts)
     try:
-        with pooled_client(_TIMEOUT) as client:
-            resp = client.post(
-                JINA_URL,
-                json=_payload(texts, task),
-                headers={"Authorization": f"Bearer {_api_key()}"},
-            )
-            resp.raise_for_status()
-            return _parse_response(resp.json(), len(texts))
+        raw = list(model.embed([prefix + t for t in texts], batch_size=_BATCH_SIZE))
+        return [_center(v) for v in raw]
     except Exception as e:
-        log.warning("Jina embedding batch failed (%s ...): %s", task, e)
+        log.warning("[embeddings] local embedding failed: %s", e)
         return [None] * len(texts)
 
 
@@ -101,8 +208,8 @@ def generate_embeddings_batch(texts, *a, **kw):
     if not texts:
         return []
     out: list = []
-    for i in range(0, len(texts), _BATCH_SIZE):
-        out.extend(_embed_sync(texts[i : i + _BATCH_SIZE], "retrieval.passage"))
+    for i in range(0, len(texts), 100):
+        out.extend(_embed_sync(texts[i : i + 100], "passage: "))
     return out
 
 
@@ -110,12 +217,11 @@ def generate_query_embedding(q, *a, **kw):
     """Sync single-query embedding; [] when unavailable (FTS fallback)."""
     if not q:
         return []
-    text = str(q)[:4000]
+    text = str(q)[:_MAX_CHARS]
     hit = _query_cache_get(text)
     if hit is not None:
         return hit
-    vecs = _embed_sync([text], "retrieval.query")
-    vec = vecs[0] or []
+    vec = _embed_sync([text], "query: ")[0] or []
     if vec:
         _query_cache_set(text, vec)
     return vec
@@ -123,27 +229,12 @@ def generate_query_embedding(q, *a, **kw):
 
 async def get_query_embedding_async(q, *a, **kw):
     """Async single-query embedding for request handlers; [] on any failure."""
-    if not q or not _api_key():
+    if not q:
         return []
-    text = str(q)[:4000]
-    hit = _query_cache_get(text)
-    if hit is not None:
-        return hit
     try:
-        async with pooled_async_client("jina", timeout=_TIMEOUT) as client:
-            resp = await client.post(
-                JINA_URL,
-                json=_payload([text], "retrieval.query"),
-                headers={"Authorization": f"Bearer {_api_key()}"},
-            )
-            resp.raise_for_status()
-            vecs = _parse_response(resp.json(), 1)
-            vec = vecs[0] or []
-            if vec:
-                _query_cache_set(text, vec)
-            return vec
+        return await asyncio.to_thread(generate_query_embedding, q)
     except Exception as e:
-        log.warning("Jina query embedding failed: %s", e)
+        log.warning("[embeddings] query embedding failed: %s", e)
         return []
 
 
@@ -229,7 +320,7 @@ def embed_recent_articles(hours: int = 24, limit: int = 100) -> int:
     if not rows:
         return 0
 
-    texts = [f"{r['title']}. {r.get('description') or ''}" for r in rows]
+    texts = [article_text(r["title"], r.get("description")) for r in rows]
     vectors = generate_embeddings_batch(texts)
     valid_pairs = [
         ("[" + ",".join(map(str, vec)) + "]", row["id"]) for row, vec in zip(rows, vectors) if vec is not None

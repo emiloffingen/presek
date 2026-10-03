@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from core.api_errors import soft_error
 from core.config import API_MAX_PAGE, API_MAX_Q_LEN, BREAKING_SCORE_THRESHOLD, DEFAULT_LANG
 from core.database import db_manager as db
+from core.embeddings import local_similarity
 from core.input_validation import validate_cluster_id as validate_cluster_id_input
 from core.input_validation import validate_language_code
 from core.language import is_cyrillic_south_slavic, transliterate_cyr_to_lat, transliterate_lat_to_cyr
@@ -1365,7 +1366,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG
             for r in related_results:
                 similarity = float(r.get("similarity", 0))
                 # We can be slightly more lenient here since the centroid is a stable representation
-                if similarity >= 0.65:
+                if similarity >= local_similarity(0.65):
                     related_cids.append(r["cluster_id"])
 
             if related_cids:
@@ -1796,11 +1797,11 @@ async def get_historical_events(cluster_id: str):
             SELECT DISTINCT ON (cluster_id)
                    cluster_id, title, created_at, category, similarity
             FROM archive_pool
-            WHERE similarity > 0.68
+            WHERE similarity > %s
             ORDER BY cluster_id, similarity DESC, created_at DESC
             LIMIT 5
         """,
-            (vec_str, cluster_id),
+            (vec_str, cluster_id, local_similarity(0.68)),
             read_only=True,
         )
 
