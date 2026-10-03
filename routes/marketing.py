@@ -424,7 +424,7 @@ async def get_active_ads():
             SELECT id, slot_id, image_url, target_url, impressions_delivered, target_impressions
             FROM advertising_campaigns
             WHERE {_SERVING_SQL}
-        """
+        """  # nosec B608 - only module constants are interpolated; values are bound params
         rows = await db.async_execute(sql)
         # Group by slot_id for easier consumption
         ads_by_slot = {}
@@ -483,7 +483,7 @@ async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depend
             UPDATE advertising_campaigns
             SET clicks = clicks + 1
             WHERE id = %s AND {_SERVING_SQL}
-        """
+        """  # nosec B608 - only module constants are interpolated; values are bound params
         await db.async_execute(sql, (ad_id,), fetch=False)
         return {"status": "success"}
     except Exception as e:
@@ -509,13 +509,11 @@ async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = D
             UPDATE advertising_campaigns
             SET impressions_delivered = impressions_delivered + 1
             WHERE id IN (SELECT campaign_id FROM seen)
-        """
+        """  # nosec B608 - only module constants are interpolated; values are bound params
         # read_only=False: the WITH prefix would otherwise route this write to the replica.
         await db.async_execute(sql, (_visitor_hash(request), ad_id), fetch=False, read_only=False)
         if random.random() < 0.002:
-            await db.async_execute(
-                "DELETE FROM ad_impression_seen WHERE day < CURRENT_DATE - 2", fetch=False
-            )
+            await db.async_execute("DELETE FROM ad_impression_seen WHERE day < CURRENT_DATE - 2", fetch=False)
 
         # Check if campaign target was reached to auto-complete
         check_sql = "SELECT impressions_delivered, target_impressions FROM advertising_campaigns WHERE id = %s"
@@ -663,7 +661,7 @@ async def admin_list_campaigns(view: str = "review", authorized: bool = Depends(
         WHERE {where}
         ORDER BY created_at DESC
         LIMIT 200
-        """
+        """  # nosec B608 - only module constants are interpolated; values are bound params
     )
     campaigns = []
     for r in rows or []:
