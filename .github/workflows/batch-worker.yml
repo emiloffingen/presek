@@ -15,25 +15,26 @@ name: Batch worker
 #   TELEGRAM_BOT_TOKEN         optional - failure alerts.
 #   TELEGRAM_CHAT_ID           optional - failure alerts.
 #
-# Private-repo budget: ~2000 Actions minutes/month, shared with
-# offload-backfill.yml. Every 2h with a 3-minute step budget is ~360 runs x
-# ~4-5 billed minutes. Adjust cron and budget together.
+# Private-repo budget: ~2000 Actions minutes/month, shared with offload-backfill.yml.
+# 3h cadence + 6-minute budget + hybrid (BATCH_CORE=0) is ~240 runs x ~7 billed
+# minutes ~= 1700 min/mo. Adjust cron, budget and BATCH_SLOT_HOURS together.
 #
 # The schedule only fires from the default branch (main); manual runs work from
 # any branch that has this file.
 
 on:
-  # PAUSED (manual-only) until a full cycle fits the job timeout. A manual run
-  # ran ingest/deferred-crawls/embed fine, then hung in `recluster` and was
-  # cancelled at the 15m job limit (run 37114192898). Re-enable the schedule
-  # once the hang is fixed and a manual run completes within budget.
+  # PAUSED (manual-only) while the rotating groups are validated. Re-enable
+  # (uncomment schedule) once groups 0-3 all complete within budget.
   # schedule:
-  #   - cron: "17 */2 * * *"
+  #   - cron: "17 */3 * * *"      # every 3h; keep in sync with BATCH_SLOT_HOURS=3
   workflow_dispatch:
     inputs:
       budget:
         description: "Step budget in minutes"
-        default: "3"
+        default: "6"
+      group:
+        description: "Force rotation group 0-3 (optional)"
+        default: ""
       only:
         description: "Run only these steps (space-separated, optional)"
         default: ""
@@ -130,14 +131,16 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
-          BATCH_BUDGET_MINUTES: ${{ github.event.inputs.budget || '3' }}
+          BATCH_BUDGET_MINUTES: ${{ github.event.inputs.budget || '6' }}
+          BATCH_SLOT_HOURS: "3"
+          BATCH_CORE: "0"            # hybrid: phone keeps ingest/crawl/embed
+          BATCH_GROUP: ${{ github.event.inputs.group }}
           ONLY_STEPS: ${{ github.event.inputs.only }}
         run: |
-          if [ -n "$ONLY_STEPS" ]; then
-            uv run python scripts/batch_worker.py --only $ONLY_STEPS
-          else
-            uv run python scripts/batch_worker.py
-          fi
+          ARGS=""
+          [ -n "$BATCH_GROUP" ] && ARGS="$ARGS --group $BATCH_GROUP"
+          [ -n "$ONLY_STEPS" ] && ARGS="$ARGS --only $ONLY_STEPS"
+          uv run python scripts/batch_worker.py $ARGS
 
       - name: healthchecks success
         if: ${{ success() && env.HEALTHCHECK_URL != '' }}

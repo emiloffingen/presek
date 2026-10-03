@@ -1,29 +1,34 @@
 #!/usr/bin/env python3
-"""Run one Presek ingestion + synthesis cycle in-process, then exit.
+"""Run one Presek ingestion + synthesis cycle, then exit.
 
 Replaces an always-on Celery worker/beat on hosts that can only run short
 scheduled jobs (e.g. GitHub Actions cron). Celery is switched to eager mode,
-so every ``.delay()`` / ``.apply_async()`` a task fans out runs inline in this
-process instead of being queued. Redis is still used for locks and caches.
+so every ``.delay()`` / ``.apply_async()`` a task fans out runs inline in the
+child process instead of being queued. Redis is still used for locks and caches.
 
-Each step is guarded by a wall-clock budget: once ``--budget`` minutes are
-spent, remaining steps are skipped (they run again next cycle). A failing step
-is logged and the cycle continues.
+Each step runs in its own subprocess with the remaining cycle budget (or a
+per-step cap) as a hard timeout, so a single slow task is killed instead of
+hanging the whole run. Steps are split into a small CORE plus four ROTATING
+groups selected from the UTC slot, so heavy work is spread across cycles
+without a cursor: slot = hour // BATCH_SLOT_HOURS, group = slot % 4.
+
+BATCH_CORE=0 turns off the CORE steps (hybrid: a host keeps ingest/crawl/embed
+and CI only runs the heavy rotating work). --group N forces a group for manual
+runs. A step's cap overrides the remaining-budget timeout.
 
 Usage:
-    python scripts/batch_worker.py [--budget 20] [--only STEP ...] [--list]
+    python scripts/batch_worker.py [--budget 20] [--group N] [--only STEP ...] [--list]
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import logging
-import math
 import os
-import signal
+import subprocess
 import sys
 import time
-import traceback
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,64 +37,75 @@ if ROOT not in sys.path:
 
 log = logging.getLogger("batch_worker")
 
-
-class _StepTimeout(Exception):
-    """Raised when a single step consumes the remaining cycle budget."""
-
-
-def _alarm_handler(_signum, _frame):
-    raise _StepTimeout()
-
-
-# (step name, task name, kwargs) in pipeline order: ingest -> crawl -> embed ->
-# cluster -> overview -> synthesize -> quality. Queue-pruning beat tasks are
-# omitted: in eager mode nothing is ever queued.
-EVERY_RUN = [
-    ("ingest", "tasks.ingestion_task.run_ingestion", {}),
-    ("deferred-crawls", "tasks.maintenance.catch_up_deferred_crawls_task", {}),
-    ("embed", "tasks.maintenance.embed_recent_articles_task", {}),
-    ("recluster", "tasks.extractive.recluster_recent_articles_task", {"hours": 6, "limit": 120}),
-    ("repair-clusters", "tasks.extractive.repair_split_clusters_task", {"hours": 48, "limit": 120}),
-    ("extractive", "tasks.summarization.build_extractive_clusters_task", {}),
-    ("homepage-supply", "tasks.maintenance.boost_homepage_cluster_supply_task", {}),
-    ("homepage-synth", "tasks.maintenance.prioritize_homepage_syntheses_task", {}),
-    ("auto-summarize", "tasks.intelligence.auto_summarize_task", {}),
-    ("upgrade-to-ai", "tasks.summarization.upgrade_extractive_to_ai_task", {}),
-    ("catch-up-synth", "tasks.maintenance.catch_up_cluster_syntheses_task", {}),
-    ("catch-up-summaries", "tasks.maintenance.catch_up_recent_summaries_task", {}),
-    ("stuck-fast", "tasks.maintenance.upgrade_stuck_fast_syntheses_task", {}),
-    ("quality", "tasks.maintenance.refresh_synthesis_quality_task", {}),
-    ("fallback", "tasks.maintenance.refresh_fallback_syntheses_task", {}),
-    ("low-score", "tasks.maintenance.refresh_low_score_syntheses_task", {}),
-    ("self-heal", "tasks.maintenance.self_heal_low_score_syntheses_task", {}),
-    ("sentiment", "tasks.extractive.refine_knowledge_graph_sentiment_task", {}),
-    ("freshness", "tasks.maintenance.ensure_ingestion_freshness_task", {}),
+# (step, task, kwargs, cap_seconds or None)
+CORE = [
+    ("ingest", "tasks.ingestion_task.run_ingestion", {}, None),
+    ("deferred-crawls", "tasks.maintenance.catch_up_deferred_crawls_task", {}, None),
+    ("embed", "tasks.maintenance.embed_recent_articles_task", {}, None),
 ]
 
-# Steps that only run when the cycle starts in a given UTC hour.
-HOURLY = {
-    0: [
-        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+GROUPS = [
+    [  # 0: clustering
+        ("recluster", "tasks.extractive.recluster_recent_articles_task", {}, 240),
+        ("repair-clusters", "tasks.extractive.repair_split_clusters_task", {}, None),
+        ("extractive", "tasks.summarization.build_extractive_clusters_task", {}, None),
     ],
-    3: [("prune-db", "tasks.maintenance.run_prune_db", {})],
-    6: [
-        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    [  # 1: homepage + first synthesis
+        ("homepage-supply", "tasks.maintenance.boost_homepage_cluster_supply_task", {}, None),
+        ("homepage-synth", "tasks.maintenance.prioritize_homepage_syntheses_task", {}, None),
+        ("auto-summarize", "tasks.intelligence.auto_summarize_task", {}, None),
+        ("upgrade-to-ai", "tasks.summarization.upgrade_extractive_to_ai_task", {}, None),
     ],
-    12: [
-        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    [  # 2: catch-up
+        ("catch-up-synth", "tasks.maintenance.catch_up_cluster_syntheses_task", {}, None),
+        ("catch-up-summaries", "tasks.maintenance.catch_up_recent_summaries_task", {}, None),
+        ("stuck-fast", "tasks.maintenance.upgrade_stuck_fast_syntheses_task", {}, None),
     ],
-    18: [
-        ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}),
-        ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}),
+    [  # 3: quality
+        ("quality", "tasks.maintenance.refresh_synthesis_quality_task", {}, None),
+        ("fallback", "tasks.maintenance.refresh_fallback_syntheses_task", {}, None),
+        ("low-score", "tasks.maintenance.refresh_low_score_syntheses_task", {}, None),
+        ("self-heal", "tasks.maintenance.self_heal_low_score_syntheses_task", {}, None),
+        ("sentiment", "tasks.extractive.refine_knowledge_graph_sentiment_task", {}, None),
     ],
-}
+]
+
+BACKFILL = [
+    ("backfill-sr", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "sr"}, None),
+    ("backfill-mk", "tasks.extractive.schedule_backfill_cluster_summaries_task", {"lang": "mk"}, None),
+]
+
+SLOT_HOURS = int(os.environ.get("BATCH_SLOT_HOURS", "3"))  # must match the cron cadence
 
 
-def plan(hour: int) -> list[tuple[str, str, dict]]:
-    return EVERY_RUN + HOURLY.get(hour, [])
+def plan(now: datetime, group: int | None = None) -> list[tuple[str, str, dict, int | None]]:
+    if group is None:
+        group = (now.hour // SLOT_HOURS) % len(GROUPS)
+    steps = list(CORE) if os.environ.get("BATCH_CORE", "1") == "1" else []
+    steps += GROUPS[group]
+    if now.hour % 6 < SLOT_HOURS:  # first slot of each 6h window
+        steps += BACKFILL
+    if now.hour // SLOT_HOURS == 3 // SLOT_HOURS:  # slot containing 03:00 UTC
+        steps.append(("prune-db", "tasks.maintenance.run_prune_db", {}, None))
+    steps.append(("freshness", "tasks.maintenance.ensure_ingestion_freshness_task", {}, 60))
+    return steps
+
+
+def _celery_app():
+    from core.celery_app import celery_app
+
+    celery_app.conf.update(task_always_eager=True, task_eager_propagates=True)
+    celery_app.loader.import_default_modules()  # register tasks from `include=`
+    return celery_app
+
+
+def _run_single_step(step: str) -> int:
+    """Child entrypoint: run exactly one step in eager mode, then exit."""
+    task = os.environ["BATCH_STEP_TASK"]
+    kwargs = json.loads(os.environ.get("BATCH_STEP_KWARGS") or "{}")
+    _celery_app().tasks[task].apply(kwargs=kwargs, throw=True)
+    log.info("step %s done", step)
+    return 0
 
 
 def main() -> int:
@@ -100,57 +116,65 @@ def main() -> int:
         default=float(os.environ.get("BATCH_BUDGET_MINUTES", "20")),
         help="wall-clock minutes before remaining steps are skipped",
     )
+    ap.add_argument("--group", type=int, choices=range(len(GROUPS)), help="force a rotation group")
     ap.add_argument("--only", nargs="+", metavar="STEP", help="run only these step names")
     ap.add_argument("--list", action="store_true", help="list steps and verify task names, then exit")
+    ap.add_argument("--run-step", metavar="STEP", help=argparse.SUPPRESS)  # internal child mode
     args = ap.parse_args()
 
     logging.basicConfig(
         level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
 
-    from core.celery_app import celery_app
+    if args.run_step:
+        return _run_single_step(args.run_step)
 
-    celery_app.conf.update(task_always_eager=True, task_eager_propagates=True)
-    celery_app.loader.import_default_modules()  # register tasks from `include=`
-
-    steps = plan(datetime.now(timezone.utc).hour)
+    now = datetime.now(timezone.utc)
+    group = args.group if args.group is not None else (now.hour // SLOT_HOURS) % len(GROUPS)
+    steps = plan(now, args.group)
     if args.only:
         steps = [s for s in steps if s[0] in args.only]
 
-    missing = [task for _, task, _ in steps if task not in celery_app.tasks]
+    celery_app = _celery_app()
+    missing = [task for _name, task, _kwargs, _cap in steps if task not in celery_app.tasks]
     if args.list or missing:
-        for name, task, kwargs in steps:
+        print(f"group={group} slot_hours={SLOT_HOURS} core={os.environ.get('BATCH_CORE', '1')}")
+        for name, task, kwargs, cap in steps:
             mark = "MISSING" if task in missing else "ok"
-            print(f"{mark:8} {name:20} {task} {kwargs or ''}")
+            print(f"{mark:8} {name:20} cap={cap} {task} {kwargs or ''}")
         return 1 if missing else 0
 
     deadline = time.monotonic() + args.budget * 60
+    self_path = os.path.abspath(__file__)
     failed, skipped = [], []
-    for name, task, kwargs in steps:
+    for name, task, kwargs, cap in steps:
         remaining = deadline - time.monotonic()
-        if remaining <= 1:
+        if remaining <= 2:
             skipped.append(name)
             continue
-        # A step gets the remaining budget as a hard wall. Without this a single
-        # quadratic task (e.g. repair_split_clusters) can blow past the budget and
-        # hang until the job timeout; the budget was only checked between steps.
+        # The step runs as a child so a hung task is killed at the timeout
+        # instead of blocking the rest of the cycle (and the whole CI job).
+        timeout = min(remaining, cap) if cap else remaining
+        child_env = dict(os.environ, BATCH_STEP_TASK=task, BATCH_STEP_KWARGS=json.dumps(kwargs))
         t0 = time.monotonic()
-        previous = signal.signal(signal.SIGALRM, _alarm_handler)
-        signal.alarm(max(1, int(math.ceil(remaining))))
         try:
-            celery_app.tasks[task].apply(kwargs=kwargs, throw=True)
+            subprocess.run(
+                [sys.executable, self_path, "--run-step", name],
+                timeout=timeout,
+                check=True,
+                env=child_env,
+            )
             log.info("step %s ok (%.1fs)", name, time.monotonic() - t0)
-        except _StepTimeout:
+        except subprocess.TimeoutExpired:
             failed.append(f"{name}:timeout")
-            log.warning("step %s TIMEOUT after %.1fs (cycle budget exhausted)", name, time.monotonic() - t0)
-        except Exception:
+            log.warning("step %s TIMEOUT after %.1fs (cap=%s, child killed)", name, time.monotonic() - t0, cap)
+        except subprocess.CalledProcessError as exc:
             failed.append(name)
-            log.error("step %s failed (%.1fs)\n%s", name, time.monotonic() - t0, traceback.format_exc())
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, previous)
+            log.error("step %s failed (%.1fs, exit %s)", name, time.monotonic() - t0, exc.returncode)
 
-    log.info("cycle done: %d steps, failed=%s skipped(budget)=%s", len(steps), failed or "-", skipped or "-")
+    log.info(
+        "cycle done: group=%d steps=%d failed=%s skipped(budget)=%s", group, len(steps), failed or "-", skipped or "-"
+    )
     # Only fail the job when nothing succeeded; single-step failures are normal noise.
     return 1 if failed and len(failed) == len(steps) - len(skipped) else 0
 
