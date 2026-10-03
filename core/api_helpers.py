@@ -372,15 +372,11 @@ def normalize_citation_sources(raw_sources) -> list[dict]:
 def normalize_server_delivery_subscription(payload) -> dict:
     payload = payload or {}
     raw_channel = str(payload.get("channel") or "ntfy").strip().lower()
-    channel = raw_channel if raw_channel == "webpush" else "ntfy"
+    channel = "ntfy"
 
     raw_target = str(payload.get("target") or "").strip()
-
-    if channel == "ntfy":
-        target = _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
-    else:
-        # WebPush target is a JSON string of the PushSubscription object
-        target = raw_target[:2048]
+    # Web Push was removed; a legacy webpush subscription has no ntfy topic.
+    target = "" if raw_channel == "webpush" else _SAFE_TOPIC_RE.sub("-", raw_target).strip("-._")[:120]
 
     is_active = bool(payload.get("isActive")) and bool(target)
 

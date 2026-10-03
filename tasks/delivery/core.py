@@ -106,35 +106,6 @@ def _tracked_delivery_url(event_id, event_type, path):
     return f"{_PUBLIC_SITE_URL}/api/delivery/track/{urllib.parse.quote(str(event_type or 'click'), safe='')}?{query}"
 
 
-def _send_web_push_message(subscription_json_str, title, message, click_url=None):
-    from core.config import VAPID_CLAIMS, VAPID_PRIVATE_KEY
-
-    try:
-        import json
-
-        import pywebpush
-
-        sub_info = json.loads(subscription_json_str)
-        payload = json.dumps(
-            {
-                "title": str(title or "Presek")[:120],
-                "message": str(message or "")[:500],
-                "click_url": str(click_url or "")[:500],
-            }
-        )
-        pywebpush.webpush(
-            subscription_info=sub_info,
-            data=payload,
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims=VAPID_CLAIMS,
-            ttl=86400,
-        )
-        return True
-    except Exception as e:
-        log.warning(f"[tasks] web_push error: {e}")
-        return False
-
-
 def _send_ntfy_message(topic, title, message, tags="newspaper", click_url=None):
     clean_topic = str(topic or "").strip()
     import re

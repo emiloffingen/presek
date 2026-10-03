@@ -493,12 +493,10 @@ export function createDefaultServerDeliverySettings() {
 
 export function normalizeServerDeliverySettings(settings) {
   const next = settings || {};
-  const channel = normalizeValue(next.channel) === 'webpush' ? 'webpush' : 'ntfy';
-  let target = normalizeValue(next.target);
-
-  if (channel === 'ntfy') {
-    target = target.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-._]+|[-._]+$/g, '').slice(0, 120);
-  }
+  // Web Push was removed; only ntfy remains. A legacy webpush target is dropped.
+  const channel = 'ntfy';
+  let target = normalizeValue(next.channel) === 'webpush' ? '' : normalizeValue(next.target);
+  target = target.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-._]+|[-._]+$/g, '').slice(0, 120);
 
   return {
     channel,

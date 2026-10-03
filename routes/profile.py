@@ -244,15 +244,6 @@ async def save_profile_sync(request: Request, csrf_valid: bool = Depends(verify_
     return {"status": "success", "profile": merged}
 
 
-@router.get("/profile/vapid-key")
-async def get_vapid_key():
-    from core.config import VAPID_PUBLIC_KEY
-
-    if not VAPID_PUBLIC_KEY:
-        raise HTTPException(status_code=404, detail="Web Push nije konfigurisan")
-    return {"status": "success", "key": VAPID_PUBLIC_KEY}
-
-
 @router.get("/profile/delivery")
 async def get_profile_delivery(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))

@@ -181,7 +181,6 @@ tags = validate_list_param(["tag1", "tag2"], "tags", max_items=10)
 
 **Sensitive Variables:**
 - `REDIS_URL`: Redis connection string
-- `VAPID_PRIVATE_KEY`: Web Push private key
 - `SMTP_PASS`: SMTP password
 - `CLOUDFLARE_API_TOKEN`: Cloudflare API token
 - `R2_SECRET_ACCESS_KEY`: R2 secret access key

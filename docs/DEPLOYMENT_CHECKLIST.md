@@ -14,8 +14,6 @@ This document provides a comprehensive checklist for deploying Presek in product
 - [ ] `OPENAI_API_KEY` - For OpenAI (optional)
 - [ ] `NTFY_TOPIC` - For notifications (optional)
 - [ ] `NTFY_TOKEN` - For notifications (optional)
-- [ ] `VAPID_PRIVATE_KEY` - Web Push private key
-- [ ] `VAPID_PUBLIC_KEY` - Web Push public key
 - [ ] `SMTP_HOST` - Email SMTP host
 - [ ] `SMTP_PASS` - Email SMTP password
 - [ ] `CLOUDFLARE_API_TOKEN` - For Cloudflare (optional)
@@ -298,8 +296,6 @@ LOCAL_TRANSLATION_ENABLED=true
 # Notifications
 NTFY_TOPIC=presek-prod
 NTFY_TOKEN=your-ntfy-token
-VAPID_PRIVATE_KEY=your-private-key
-VAPID_PUBLIC_KEY=your-public-key
 
 # Email
 SMTP_HOST=smtp.example.com

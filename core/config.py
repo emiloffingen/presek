@@ -25,8 +25,6 @@ RECOMMENDED_ENV_KEYS = (
     "JWT_SECRET",
     "NTFY_TOPIC",
     "NTFY_TOKEN",
-    "VAPID_PRIVATE_KEY",
-    "VAPID_PUBLIC_KEY",
     "SMTP_HOST",
     "SMTP_PASS",
 )
@@ -40,7 +38,6 @@ SENSITIVE_ENV_KEYS = (
     "SMTP_PASS",
     "CLOUDFLARE_API_TOKEN",
     "R2_SECRET_ACCESS_KEY",
-    "VAPID_PRIVATE_KEY",
     "CF_AI_GATEWAY_TOKEN",
 )
 
@@ -111,9 +108,6 @@ _init_config()
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "presek.live-vesti")
 NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
-VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
-VAPID_CLAIMS = {"sub": "mailto:admin@presek.live"}
 PRESEK_ADMIN_TOKEN = os.environ.get("PRESEK_ADMIN_TOKEN", "")
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")

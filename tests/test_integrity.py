@@ -183,18 +183,6 @@ class TestAstroFrontendIntegrity:
         limits = _read("core/runtime_limits.py")
         assert "MAX_QUERY_PARAM_LENGTH = API_MAX_Q_LEN" in limits
 
-    def test_delivery_component_decodes_vapid_key_before_subscribing(self):
-        # BriefingDeliveryIsland was removed in the MK-only simplify; if any
-        # component still subscribes to push it must decode the VAPID key first.
-        candidates = sorted(ROOT.glob("web/src/components/**/*.tsx"))
-        subscribers = [
-            p for p in candidates
-            if "applicationServerKey" in p.read_text(encoding="utf-8")
-        ]
-        for path in subscribers:
-            text = path.read_text(encoding="utf-8")
-            assert "decodeVapidPublicKey(" in text, f"{path} must decode the VAPID key"
-
 
 class TestDeploymentIntegrity:
     def test_systemd_targets_fastapi_and_astro_runtime(self):

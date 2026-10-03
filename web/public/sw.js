@@ -178,47 +178,6 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-self.addEventListener('push', (event) => {
-  let payload = { title: 'Presek', message: '', click_url: '/' };
-  try {
-    if (event.data) {
-      payload = { ...payload, ...event.data.json() };
-    }
-  } catch (_) {
-    // Ignore malformed push payloads
-  }
-
-  event.waitUntil(
-    self.registration.showNotification(payload.title || 'Presek', {
-      body: payload.message || '',
-      icon: '/img/icons/presek-icon-192.png',
-      badge: '/img/icons/presek-maskable-192.png',
-      data: { url: payload.click_url || '/' },
-      tag: 'presek-briefing',
-      renotify: true,
-    })
-  );
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const targetUrl = event.notification.data?.url || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (const client of windowClients) {
-        if ('focus' in client) {
-          if ('navigate' in client) {
-            return client.navigate(targetUrl).then(() => client.focus());
-          }
-          return client.focus();
-        }
-      }
-      return clients.openWindow(targetUrl);
-    })
-  );
-});
-
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PREFETCH_URLS') {
     const urls = event.data.urls || [];
