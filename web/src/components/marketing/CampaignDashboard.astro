@@ -37,6 +37,8 @@ const contentDict = {
     activeStatus: 'Aktivna (isporučuje se)',
     completedStatus: 'Završena',
     pendingStatus: 'Čeka uplatu',
+    reviewStatus: 'Plaćeno, čeka odobrenje',
+    rejectedStatus: 'Odbijeno (refundirano)',
     unknownStatus: 'Nepoznato',
   },
   mk: {
@@ -63,6 +65,8 @@ const contentDict = {
     activeStatus: 'Активна (се испорачува)',
     completedStatus: 'Завршена',
     pendingStatus: 'Чека плаќање',
+    reviewStatus: 'Платено, чека одобрување',
+    rejectedStatus: 'Одбиено (рефундирано)',
     unknownStatus: 'Непознато',
   }
 };
@@ -101,8 +105,21 @@ const clicks = campaign ? Number(campaign.clicks) : 0;
 const ctr = impressionsDelivered > 0 ? (clicks / impressionsDelivered) * 100 : 0.0;
 const progressPercent = targetImpressions > 0 ? Math.min(100, Math.round((impressionsDelivered / targetImpressions) * 100)) : 0;
 
+// Paid campaigns serve only after an admin approves the banner and link.
+const displayStatus = campaign
+  ? campaign.review === 'awaiting_review'
+    ? 'review'
+    : campaign.review === 'rejected'
+      ? 'rejected'
+      : campaign.status
+  : '';
+
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
+    case 'review':
+      return 'bg-amber-500/10 text-amber-600 border border-amber-500/20';
+    case 'rejected':
+      return 'bg-red-500/10 text-red-600 border border-red-500/20';
     case 'paid':
       return 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
     case 'completed':
@@ -116,6 +133,10 @@ const getStatusBadgeClass = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   switch (status) {
+    case 'review':
+      return labels.reviewStatus;
+    case 'rejected':
+      return labels.rejectedStatus;
     case 'paid':
       return labels.activeStatus;
     case 'completed':
@@ -179,8 +200,8 @@ const formatDate = (dateStr: string) => {
         </div>
         <div class="flex flex-col items-end gap-1.5 font-mono text-xxs text-muted-foreground">
           <span>ID: {campaign.id}</span>
-          <span class={`px-2 py-0.5 rounded-none font-bold font-sans uppercase tracking-wider text-xxs ${getStatusBadgeClass(campaign.status)}`}>
-            {getStatusLabel(campaign.status)}
+          <span class={`px-2 py-0.5 rounded-none font-bold font-sans uppercase tracking-wider text-xxs ${getStatusBadgeClass(displayStatus)}`}>
+            {getStatusLabel(displayStatus)}
           </span>
         </div>
       </header>
@@ -280,7 +301,7 @@ const formatDate = (dateStr: string) => {
               </div>
               <div class="flex justify-between py-2.5">
                 <span class="text-muted-foreground">{labels.status}</span>
-                <span class="font-bold text-foreground uppercase tracking-wider text-xs">{campaign.status}</span>
+                <span class="font-bold text-foreground uppercase tracking-wider text-xs">{getStatusLabel(displayStatus)}</span>
               </div>
             </div>
           </div>
