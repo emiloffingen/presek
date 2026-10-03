@@ -46,7 +46,7 @@ CORE = [
 
 GROUPS = [
     [  # 0: clustering
-        ("recluster", "tasks.extractive.recluster_recent_articles_task", {}, 240),
+        ("recluster", "tasks.extractive.recluster_recent_articles_task", {"limit": 150}, 240),
         ("repair-clusters", "tasks.extractive.repair_split_clusters_task", {}, None),
         ("extractive", "tasks.summarization.build_extractive_clusters_task", {}, None),
     ],
