@@ -1,23 +1,33 @@
+import hashlib
 import io
 import json
 import logging
 import os
+import random
 import re
+import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import stripe
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from PIL import Image
 
 from core.database import db_manager as db
-from core.image_service import _UPLOAD_ROOT
 from core.limiter import custom_rate_limit
+from routes.admin import verify_admin
+from routes.common import _client_ip_for_request
 from routes.security import verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+# Short TTL in-process cache for the ad-slot lookup. The storefront SSR calls
+# this endpoint on every render; the payload changes only when campaigns change,
+# so a small TTL removes the repeated DB round-trip without staleness concerns.
+_ADS_CACHE = {"data": None, "ts": 0.0}
+_ADS_CACHE_TTL = int(os.environ.get("MARKETING_ADS_CACHE_TTL", "60"))
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
@@ -70,6 +80,22 @@ def _env_promo_discount() -> float:
 
 PROMO_DISCOUNT = _env_promo_discount()
 CPM_RATES_EUR = {slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()}
+
+
+# A campaign that has not delivered its impressions by end_date keeps serving for
+# this many extra days before it is flagged for a partial refund.
+AD_DELIVERY_GRACE_DAYS = max(0, int(os.environ.get("AD_DELIVERY_GRACE_DAYS", "14")))
+
+# Paid, approved by an admin, started, inside end_date + grace, impressions left.
+_SERVING_SQL = f"""
+    status = 'paid'
+    AND approved_at IS NOT NULL
+    AND start_date <= CURRENT_DATE
+    AND CURRENT_DATE <= end_date + {AD_DELIVERY_GRACE_DAYS}
+    AND impressions_delivered < target_impressions
+"""
+
+_IMAGE_MIME = {"PNG": "image/png", "JPEG": "image/jpeg", "GIF": "image/gif", "WEBP": "image/webp"}
 
 
 def _amount_cents(slot_id: str, target_impressions: int) -> int:
@@ -159,10 +185,11 @@ async def create_ad_checkout(
         try:
             image = Image.open(io.BytesIO(content))
             image.verify()
-            if image.format not in ("PNG", "JPEG", "GIF", "WEBP"):
-                raise HTTPException(status_code=400, detail="Invalid image content format")
+            image_format = image.format
         except Exception:
             raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+        if image_format not in _IMAGE_MIME:
+            raise HTTPException(status_code=400, detail="Invalid image content format")
 
         # Idempotency: a client-supplied token lets retried submissions return the
         # original Stripe session instead of creating a duplicate campaign/charge.
@@ -192,11 +219,8 @@ async def create_ad_checkout(
         # Reserve the campaign ID before creating the Stripe session so it can be
         # bound to Stripe metadata, but persist the file only after checkout succeeds.
         campaign_id = str(uuid.uuid4())
-        safe_filename = f"{campaign_id}{ext}"
-        # Serve through the image proxy: /static/uploads/* is only reachable from
-        # the API (never from the public Astro origin), whereas /proxy is routed
-        # to the API by the Cloudflare tunnel and accepts local /static paths.
-        image_url = f"/proxy?url=/static/uploads/ads/{safe_filename}"
+        # The banner is stored in the DB and served by any host from this URL.
+        image_url = f"/api/marketing/ads/{campaign_id}/image"
 
         idem_key = f"ad-checkout-{client_key or campaign_id}"
 
@@ -256,11 +280,6 @@ async def create_ad_checkout(
                 detail="Payment gateway is temporarily unavailable. Please try again later.",
             )
 
-        upload_dir = os.path.join(_UPLOAD_ROOT, "ads")
-        os.makedirs(upload_dir, exist_ok=True)
-        with open(os.path.join(upload_dir, safe_filename), "wb") as f:
-            f.write(content)
-
         status = "pending" if STRIPE_API_KEY else "paid"
 
         # 5. Save pending campaign to database
@@ -268,8 +287,8 @@ async def create_ad_checkout(
             INSERT INTO advertising_campaigns (
                 id, buyer_name, buyer_email, slot_id, target_impressions,
                 image_url, target_url, start_date, end_date, status,
-                stripe_session_id, idempotency_key
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                stripe_session_id, idempotency_key, image_data, image_mime
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         await db.async_execute(
             sql,
@@ -286,6 +305,8 @@ async def create_ad_checkout(
                 status,
                 session_id,
                 client_key or None,
+                content,
+                _IMAGE_MIME[image_format],
             ),
             fetch=False,
         )
@@ -360,7 +381,8 @@ async def stripe_webhook(request: Request):
             fetch=False,
         )
         if row["status"] != "paid":
-            log.info(f"[marketing] Ad campaign {campaign_id} successfully paid and activated.")
+            # Paid campaigns wait for an admin to approve the banner and link.
+            log.warning(f"[marketing] Ad campaign {campaign_id} paid; awaiting review before it serves.")
 
     elif event_type in {"checkout.session.async_payment_failed", "checkout.session.expired"}:
         session = event["data"]["object"]
@@ -403,16 +425,18 @@ async def stripe_webhook(request: Request):
 
 
 @router.get("/marketing/ads/active")
-async def get_active_ads():
+async def get_active_ads(response: Response):
+    response.headers["Cache-Control"] = f"public, max-age={_ADS_CACHE_TTL}"
+    now = time.time()
+    cached = _ADS_CACHE["data"]
+    if cached is not None and (now - _ADS_CACHE["ts"]) < _ADS_CACHE_TTL:
+        return cached
     try:
-        sql = """
+        sql = f"""
             SELECT id, slot_id, image_url, target_url, impressions_delivered, target_impressions
             FROM advertising_campaigns
-            WHERE status = 'paid'
-              AND start_date <= CURRENT_DATE
-              AND end_date >= CURRENT_DATE
-              AND impressions_delivered < target_impressions
-        """
+            WHERE {_SERVING_SQL}
+        """  # nosec B608 - only module constants are interpolated; values are bound params
         rows = await db.async_execute(sql)
         # Group by slot_id for easier consumption
         ads_by_slot = {}
@@ -427,25 +451,54 @@ async def get_active_ads():
                     "target_url": row["target_url"],
                 }
             )
-        return {"status": "success", "ads": ads_by_slot}
+        result = {"status": "success", "ads": ads_by_slot}
+        _ADS_CACHE["data"] = result
+        _ADS_CACHE["ts"] = time.time()
+        return result
     except Exception as e:
         log.exception(f"[marketing] Active ads fetch failed: {e}")
         return {"status": "error", "ads": {}}
+
+
+def _visitor_hash(request: Request) -> str:
+    """Daily-rotating, non-reversible visitor key for impression dedup."""
+    secret = os.environ.get("CSRF_TOKEN_SECRET") or os.environ.get("SECRET_KEY") or ""
+    raw = "|".join(
+        (
+            secret,
+            _client_ip_for_request(request),
+            request.headers.get("user-agent", ""),
+            datetime.now(timezone.utc).date().isoformat(),
+        )
+    )
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+
+
+@router.get("/marketing/ads/{ad_id}/image")
+@custom_rate_limit("120/minute")
+async def get_ad_image(request: Request, ad_id: str):
+    row = await db.async_execute_one(
+        "SELECT image_data, image_mime FROM advertising_campaigns WHERE id = %s AND status <> 'rejected'",
+        (ad_id,),
+    )
+    if not row or not row["image_data"]:
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(
+        content=bytes(row["image_data"]),
+        media_type=row["image_mime"] or "application/octet-stream",
+        headers={"Cache-Control": "public, max-age=86400", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @router.post("/marketing/ads/{ad_id}/click")
 @custom_rate_limit("20/minute")
 async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
-        sql = """
+        sql = f"""
             UPDATE advertising_campaigns
             SET clicks = clicks + 1
-            WHERE id = %s
-              AND status = 'paid'
-              AND start_date <= CURRENT_DATE
-              AND end_date >= CURRENT_DATE
-              AND impressions_delivered < target_impressions
-        """
+            WHERE id = %s AND {_SERVING_SQL}
+        """  # nosec B608 - only module constants are interpolated; values are bound params
         await db.async_execute(sql, (ad_id,), fetch=False)
         return {"status": "success"}
     except Exception as e:
@@ -457,16 +510,25 @@ async def track_ad_click(request: Request, ad_id: str, csrf_valid: bool = Depend
 @custom_rate_limit("60/minute")
 async def track_ad_impression(request: Request, ad_id: str, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
-        sql = """
+        # Count each visitor at most once per campaign per day: the seen-row is
+        # inserted only for a serving campaign, and the counter moves only when
+        # that insert actually added a row.
+        sql = f"""
+            WITH seen AS (
+                INSERT INTO ad_impression_seen (campaign_id, visitor_hash, day)
+                SELECT id, %s, CURRENT_DATE FROM advertising_campaigns
+                WHERE id = %s AND {_SERVING_SQL}
+                ON CONFLICT DO NOTHING
+                RETURNING campaign_id
+            )
             UPDATE advertising_campaigns
             SET impressions_delivered = impressions_delivered + 1
-            WHERE id = %s
-              AND status = 'paid'
-              AND start_date <= CURRENT_DATE
-              AND end_date >= CURRENT_DATE
-              AND impressions_delivered < target_impressions
-        """
-        await db.async_execute(sql, (ad_id,), fetch=False)
+            WHERE id IN (SELECT campaign_id FROM seen)
+        """  # nosec B608 - only module constants are interpolated; values are bound params
+        # read_only=False: the WITH prefix would otherwise route this write to the replica.
+        await db.async_execute(sql, (_visitor_hash(request), ad_id), fetch=False, read_only=False)
+        if random.random() < 0.002:
+            await db.async_execute("DELETE FROM ad_impression_seen WHERE day < CURRENT_DATE - 2", fetch=False)
 
         # Check if campaign target was reached to auto-complete
         check_sql = "SELECT impressions_delivered, target_impressions FROM advertising_campaigns WHERE id = %s"
@@ -488,7 +550,8 @@ async def get_campaign_status(request: Request, campaign_id: str):
     try:
         sql = """
             SELECT id, buyer_name, buyer_email, slot_id, target_impressions,
-                   impressions_delivered, clicks, start_date, end_date, status, image_url, target_url
+                   impressions_delivered, clicks, start_date, end_date, status, image_url, target_url,
+                   approved_at, review_note
             FROM advertising_campaigns
             WHERE id = %s
         """
@@ -508,6 +571,8 @@ async def get_campaign_status(request: Request, campaign_id: str):
                 "start_date": row["start_date"].isoformat(),
                 "end_date": row["end_date"].isoformat(),
                 "status": row["status"],
+                "review": _review_state(row),
+                "review_note": row["review_note"] if row["status"] == "rejected" else None,
                 "image_url": row["image_url"],
                 "target_url": row["target_url"],
             },
@@ -576,3 +641,122 @@ async def request_campaigns_access(
     except Exception as e:
         log.exception(f"[marketing] Request access failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _review_state(row) -> str:
+    if row["status"] == "rejected":
+        return "rejected"
+    if row["approved_at"]:
+        return "approved"
+    return "awaiting_review" if row["status"] == "paid" else "not_paid"
+
+
+# --- admin: review and delivery follow-up -------------------------------------
+
+
+@router.get("/marketing/admin/campaigns")
+async def admin_list_campaigns(view: str = "review", authorized: bool = Depends(verify_admin)):
+    """review: paid, waiting for approval. underdelivered: grace period over with
+    impressions short (refund candidates). all: everything, newest first."""
+    where = {
+        "review": "status = 'paid' AND approved_at IS NULL",
+        "underdelivered": f"""status = 'paid' AND approved_at IS NOT NULL
+            AND CURRENT_DATE > end_date + {AD_DELIVERY_GRACE_DAYS}
+            AND impressions_delivered < target_impressions""",
+        "all": "TRUE",
+    }.get(view)
+    if where is None:
+        raise HTTPException(status_code=400, detail="view must be review, underdelivered or all")
+    rows = await db.async_execute(
+        f"""
+        SELECT id, buyer_name, buyer_email, slot_id, target_impressions, impressions_delivered,
+               clicks, start_date, end_date, status, approved_at, review_note, image_url, target_url,
+               created_at
+        FROM advertising_campaigns
+        WHERE {where}
+        ORDER BY created_at DESC
+        LIMIT 200
+        """  # nosec B608 - only module constants are interpolated; values are bound params
+    )
+    campaigns = []
+    for r in rows or []:
+        paid_cents = _amount_cents(r["slot_id"], r["target_impressions"])
+        shortfall = max(0, r["target_impressions"] - r["impressions_delivered"])
+        campaigns.append(
+            {
+                "id": r["id"],
+                "buyer_name": r["buyer_name"],
+                "buyer_email": r["buyer_email"],
+                "slot_id": r["slot_id"],
+                "status": r["status"],
+                "review": _review_state(r),
+                "target_impressions": r["target_impressions"],
+                "impressions_delivered": r["impressions_delivered"],
+                "clicks": r["clicks"],
+                "start_date": r["start_date"].isoformat(),
+                "end_date": r["end_date"].isoformat(),
+                "image_url": r["image_url"],
+                "target_url": r["target_url"],
+                "paid_eur": paid_cents / 100,
+                # Pro-rata refund for impressions never delivered.
+                "refund_due_eur": round(paid_cents * shortfall / r["target_impressions"] / 100, 2),
+            }
+        )
+    return {"status": "success", "view": view, "campaigns": campaigns}
+
+
+@router.post("/marketing/admin/campaigns/{campaign_id}/approve")
+async def admin_approve_campaign(
+    campaign_id: str,
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    row = await db.async_execute_one(
+        """
+        UPDATE advertising_campaigns SET approved_at = NOW(), review_note = NULL
+        WHERE id = %s AND status = 'paid' AND approved_at IS NULL
+        RETURNING id
+        """,
+        (campaign_id,),
+    )
+    if not row:
+        raise HTTPException(status_code=409, detail="Campaign is not paid and awaiting review")
+    log.info(f"[marketing] Ad campaign {campaign_id} approved.")
+    return {"status": "success", "campaign_id": campaign_id, "review": "approved"}
+
+
+@router.post("/marketing/admin/campaigns/{campaign_id}/reject")
+async def admin_reject_campaign(
+    campaign_id: str,
+    reason: str = Form(...),
+    authorized: bool = Depends(verify_admin),
+    csrf_valid: bool = Depends(verify_csrf_token),
+):
+    """Reject a paid campaign before it serves and refund it in full."""
+    row = await db.async_execute_one(
+        """
+        SELECT stripe_payment_intent FROM advertising_campaigns
+        WHERE id = %s AND status = 'paid' AND approved_at IS NULL
+        """,
+        (campaign_id,),
+    )
+    if not row:
+        raise HTTPException(status_code=409, detail="Campaign is not paid and awaiting review")
+    refunded = False
+    if STRIPE_API_KEY and row["stripe_payment_intent"]:
+        try:
+            stripe.Refund.create(
+                payment_intent=row["stripe_payment_intent"],
+                idempotency_key=f"ad-reject-{campaign_id}",
+            )
+            refunded = True
+        except Exception as refund_err:
+            log.error(f"[marketing] Refund for rejected campaign {campaign_id} failed: {refund_err}")
+            raise HTTPException(status_code=502, detail="Refund failed; campaign left awaiting review")
+    await db.async_execute(
+        "UPDATE advertising_campaigns SET status = 'rejected', review_note = %s WHERE id = %s",
+        (reason.strip()[:500], campaign_id),
+        fetch=False,
+    )
+    log.info(f"[marketing] Ad campaign {campaign_id} rejected (refunded={refunded}).")
+    return {"status": "success", "campaign_id": campaign_id, "review": "rejected", "refunded": refunded}

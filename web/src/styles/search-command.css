@@ -6,7 +6,7 @@
               color-mix(in srgb, var(--background) 92%, transparent);
 }
 
-:global(.dark) .search-overlay-backdrop {
+.dark .search-overlay-backdrop {
   background: radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--presek-mark, var(--nyt-accent)) 8%, transparent), transparent 50%),
               radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--presek-mark, var(--nyt-accent)) 8%, transparent), transparent 50%),
               color-mix(in srgb, var(--background) 82%, transparent);

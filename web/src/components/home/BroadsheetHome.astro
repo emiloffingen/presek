@@ -1,0 +1,258 @@
+---
+/*
+ * Broadsheet homepage (2026-10 redesign, "Броудшит со фотографии + темен режим").
+ * Rendered for the unfiltered homepage only; filtered views and /pregled keep
+ * the legacy HomePage layout. Colors follow the site-wide `.dark` class, so the
+ * header toggle reuses the existing [data-theme-toggle] handler in presek-boot.js.
+ */
+import '../../styles/home-broadsheet.css';
+import NativeAdSlot from '../NativeAdSlot.astro';
+import SiteHeader from '../layout/SiteHeader.astro';
+import SiteFooter from '../layout/SiteFooter.astro';
+import type { NewsCluster } from '../../types';
+import type { HomepageViewModel } from '../../lib/homepageViewModel';
+import { chooseClusterImage } from '../../utils/imageSelection.ts';
+import { getStoryPreviewText, normalizeEntityOrTag } from '../../utils/textUtils.ts';
+import { localePath } from '../../lib/localePaths';
+import { buildSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
+
+interface Props {
+    vm: HomepageViewModel;
+    stats: any;
+    trending: any[];
+    lang: 'sr' | 'mk';
+}
+
+const { vm, stats, trending, lang } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const l = (path: string) => localePath(path, lang, hostHeader);
+
+const { leadCluster, leadVisual, leadTitle, leadSummary } = vm;
+const sections = pickBroadsheetSections(vm);
+
+const clusterHref = (cluster: { cluster_id?: string }) => l(`/cluster/${cluster.cluster_id}`);
+const clusterTitle = (cluster: NewsCluster) => cluster.synthetic_headline || cluster.articles?.[0]?.title || '';
+const sourceCount = (cluster: NewsCluster) => Number(
+    (cluster as any).source_count || (cluster as any).sources_count
+    || new Set((cluster.articles || []).map((a) => a.source).filter(Boolean)).size,
+);
+// The API ships a sample of each story's articles, so never report fewer
+// articles than distinct sources.
+const articleCount = (cluster: NewsCluster) => Math.max(cluster.articles?.length || 0, sourceCount(cluster));
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const clusterMeta = (cluster: NewsCluster) =>
+    `${plural(articleCount(cluster), 'напис', 'написи')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
+const sectionLabel = (raw: unknown) => {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    const mapped = sectionLabelMk(value);
+    if (mapped) return mapped;
+    return /[\u0400-\u04FF]/.test(value) ? value : normalizeEntityOrTag(value, lang);
+};
+const clusterSection = (cluster: NewsCluster) => {
+    const a = cluster.articles?.[0] as any;
+    return sectionLabel(a?.subcategory) || sectionLabel(a?.topic) || sectionLabel(a?.category);
+};
+const image = (cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb') => {
+    const visual = chooseClusterImage(cluster, variant, lang);
+    return { src: visual.proxiedUrl || visual.fallbackUrl, fallback: visual.fallbackUrl };
+};
+
+const trendingChips = (Array.isArray(trending) ? trending : [])
+    .filter((item) => item?.word)
+    .slice(0, 6)
+    .map((item) => ({ word: String(item.word), count: Number(item.count || 0), href: `${l('/')}?q=${encodeURIComponent(item.word)}` }));
+
+const lead = leadCluster ? {
+    href: clusterHref(leadCluster),
+    title: leadTitle || clusterTitle(leadCluster),
+    summary: leadSummary,
+    image: leadVisual?.proxiedUrl || leadVisual?.fallbackUrl || '',
+    fallback: leadVisual?.fallbackUrl || '',
+    caption: leadCluster.articles?.[0]?.image_caption || leadCluster.articles?.[0]?.source || '',
+    articles: articleCount(leadCluster),
+    sources: sourceCount(leadCluster),
+    breakdown: buildSourceBreakdown(leadCluster.articles || []),
+} : null;
+
+const quote = stats?.quote_of_the_day?.quote ? stats.quote_of_the_day : null;
+const quoteRaw = quote ? String(quote.quote).trim() : '';
+const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+\S*$/, '')}…` : quoteRaw;
+---
+
+<SiteHeader stats={stats} showTopAd={false} />
+
+<div class="bs-home bs-scope">
+    {trendingChips.length > 0 && (
+        <div class="bs-wrap bs-trending">
+            <span class="bs-label">Се зборува за</span>
+            {trendingChips.map((chip) => (
+                <a href={chip.href} class="bs-chip">{chip.word} <span class="bs-num">{chip.count}</span></a>
+            ))}
+        </div>
+    )}
+
+    <div class="bs-wrap bs-ad bs-ad-top">
+        <NativeAdSlot slotId="top_banner" />
+    </div>
+
+    <div class="bs-wrap bs-main">
+        {lead && (
+            <section class="bs-lead-row" aria-labelledby="bs-lead-h">
+                <article class="bs-lead">
+                    <figure class="bs-figure">
+                        <a href={lead.href} class="bs-photo bs-photo-16x9" tabindex="-1" aria-hidden="true">
+                            {lead.image && (
+                                <img src={lead.image} data-fallback-url={lead.fallback} alt="" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
+                            )}
+                        </a>
+                        {lead.caption && <figcaption>Фото: {lead.caption}</figcaption>}
+                    </figure>
+                    <span class="bs-badge">Најбрз развој денес</span>
+                    <h1 id="bs-lead-h" class="bs-lead-title"><a href={lead.href}>{lead.title}</a></h1>
+                    {lead.summary && <p class="bs-lead-summary">{lead.summary}</p>}
+                    {lead.breakdown.length > 0 && (
+                        <div class="bs-breakdown">
+                            <div class="bs-breakdown-head">
+                                <strong>Пресек на изворите</strong>
+                                <span><span class="bs-num">{lead.articles}</span> {lead.articles === 1 ? 'напис' : 'написи'} · <span class="bs-num">{lead.sources}</span> {lead.sources === 1 ? 'извор' : 'извори'}</span>
+                            </div>
+                            <div class="bs-bar" aria-hidden="true">
+                                {lead.breakdown.map((part, i) => <span class={`bs-bar-${i}`} style={`flex:${part.count}`}></span>)}
+                            </div>
+                            <ul class="bs-legend">
+                                {lead.breakdown.map((part, i) => (
+                                    <li><span class={`bs-swatch bs-bar-${i}`} aria-hidden="true"></span>{part.source} · {part.count}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    <div class="bs-actions">
+                        <a href={lead.href} class="bs-btn">Прочитај ја синтезата</a>
+                        {lead.articles > 1 && <a href={`${lead.href}#cluster-sources`} class="bs-btn bs-btn-outline">Сите {lead.articles} написи</a>}
+                    </div>
+                </article>
+
+                <aside class="bs-rail" aria-labelledby="bs-dev-h">
+                    {sections.developing.length > 0 && (
+                        <>
+                            <h2 id="bs-dev-h" class="bs-rule-label">Во развој</h2>
+                            {sections.developing.map((cluster) => {
+                                const img = image(cluster, 'thumb');
+                                return (
+                                    <a href={clusterHref(cluster)} class="bs-dev-item">
+                                        <span class="bs-photo bs-thumb">
+                                            {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="84" height="84" loading="lazy" decoding="async" />}
+                                        </span>
+                                        <span class="bs-dev-copy">
+                                            <span class="bs-dev-title">{clusterTitle(cluster)}</span>
+                                            <span class="bs-meta">{clusterMeta(cluster)}</span>
+                                        </span>
+                                    </a>
+                                );
+                            })}
+                        </>
+                    )}
+                    <div class="bs-ad bs-ad-side">
+                        <NativeAdSlot slotId="sidebar" />
+                    </div>
+                </aside>
+            </section>
+        )}
+
+        {sections.picks.length > 0 && (
+            <section class="bs-picks" aria-labelledby="bs-picks-h">
+                <div class="bs-section-head">
+                    <h2 id="bs-picks-h" class="bs-section-title">Синтези на денот</h2>
+                </div>
+                <div class="bs-picks-grid">
+                    {sections.picks.map((cluster) => {
+                        const img = image(cluster, 'card');
+                        return (
+                            <article class="bs-card">
+                                <a href={clusterHref(cluster)} class="bs-photo bs-photo-16x10" tabindex="-1" aria-hidden="true">
+                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="720" height="450" loading="lazy" decoding="async" />}
+                                </a>
+                                <div class="bs-card-body">
+                                    {clusterSection(cluster) && <span class="bs-kicker">{clusterSection(cluster)}</span>}
+                                    <h3 class="bs-card-title"><a href={clusterHref(cluster)}>{clusterTitle(cluster)}</a></h3>
+                                    <span class="bs-meta">{clusterMeta(cluster)}</span>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            </section>
+        )}
+
+        <div class="bs-lower">
+            <section class="bs-live" aria-labelledby="bs-live-h">
+                <h2 id="bs-live-h" class="bs-section-title bs-live-title"><span class="bs-dot" aria-hidden="true"></span>Живо сега</h2>
+                {sections.live.map((cluster, index) => {
+                    const img = image(cluster, 'thumb');
+                    const preview = getStoryPreviewText(cluster, cluster.articles?.[0], lang);
+                    return (
+                        <>
+                            <article class="bs-live-item">
+                                <a href={clusterHref(cluster)} class="bs-photo bs-live-photo" tabindex="-1" aria-hidden="true">
+                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="128" height="96" loading="lazy" decoding="async" />}
+                                </a>
+                                <div class="bs-live-copy">
+                                    <h3 class="bs-live-headline"><a href={clusterHref(cluster)}>{clusterTitle(cluster)}</a></h3>
+                                    {preview && <p class="bs-live-preview">{preview}</p>}
+                                    <span class="bs-meta">{clusterMeta(cluster)}{clusterSection(cluster) && ` · ${clusterSection(cluster)}`}</span>
+                                </div>
+                            </article>
+                            {index === 1 && (
+                                <div class="bs-ad bs-ad-mobile">
+                                    <NativeAdSlot slotId="mobile_content" />
+                                </div>
+                            )}
+                        </>
+                    );
+                })}
+            </section>
+
+            <aside class="bs-lower-rail">
+                {vm.topWireArticles.length > 0 && (
+                    <section class="bs-wire" aria-labelledby="bs-wire-h">
+                        <h2 id="bs-wire-h" class="bs-rule-label">Најново од изворите</h2>
+                        {vm.topWireArticles.map((article: any) => (
+                            <a href={clusterHref(article)} class="bs-wire-item">
+                                <span class="bs-kicker bs-kicker-muted">{article.source}{sectionLabel(article.category) ? ` · ${sectionLabel(article.category)}` : ''}</span>
+                                <span class="bs-wire-title">{article.display_title || article.title}</span>
+                            </a>
+                        ))}
+                    </section>
+                )}
+                {quote && (
+                    <figure class="bs-quote">
+                        <span class="bs-kicker bs-quote-muted">Цитат на денот</span>
+                        <blockquote>„{quoteText}“</blockquote>
+                        {quote.title && (
+                            <figcaption><a href={l(`/cluster/${quote.cluster_id}`)}>— {quote.title}</a></figcaption>
+                        )}
+                    </figure>
+                )}
+            </aside>
+        </div>
+    </div>
+
+    <section class="bs-promo" aria-labelledby="bs-support-h">
+        <div class="bs-wrap bs-promo-row">
+            <div class="bs-promo-card bs-promo-dark">
+                <h2 id="bs-support-h">Поддржете го Пресек</h2>
+                <p>Пресек е бесплатен и независен. Секој придонес помага серверите да работат и вестите да стигнуваат до вас.</p>
+                <a href={l('/support')} class="bs-btn bs-btn-accent">Поддржи</a>
+            </div>
+            <div class="bs-promo-card">
+                <h2>Рекламирајте се на Пресек</h2>
+                <p>Изберете позиција, прикачете банер и платете со картичка преку Stripe. Кампањата стартува веднаш, а резултатите ги следите во реално време.</p>
+                <a href={l('/marketing')} class="bs-btn">Закажи кампања</a>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<SiteFooter totalFeeds={stats?.total_feeds ?? null} />
