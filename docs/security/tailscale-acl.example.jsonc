@@ -1,0 +1,33 @@
+// Tailscale ACL example: restrict the Shield's management ports to the phone.
+//
+// Where: admin console -> Access controls -> Edit policy file. MERGE these
+// rules with your existing policy. Tailscale has no "deny" action: traffic is
+// allowed only if some rule accepts it, so the ONLY way to reach the Shield's
+// adb (5555) and ssh (8022) is the rule below.
+//
+// IMPORTANT: this only works if your policy does NOT contain a broad allow-all
+// rule such as { "action": "accept", "src": ["*"], "dst": ["*:*"] }. If it
+// does, replace it with scoped rules (broad mgmt ports are then default-denied).
+//
+// Tag the devices first (either via `tailscale up --advertise-tags=...` or in
+// admin console -> Machines -> Edit ACL tags):
+//   phone  -> tag:phone
+//   shield -> tag:shield
+{
+  "tagOwners": {
+    "tag:phone": ["autogroup:admin"],
+    "tag:shield": ["autogroup:admin"]
+  },
+  "acls": [
+    // Phone (control host) -> Shield management ports only.
+    { "action": "accept", "src": ["tag:phone"], "dst": ["tag:shield:5555", "tag:shield:8022"] },
+
+    // Shield -> phone: keep your existing rule if the Shield ever dials the
+    // phone (e.g. sync). Otherwise omit.
+    // { "action": "accept", "src": ["tag:shield"], "dst": ["tag:phone:*"] },
+
+    // Add back your other intended flows here (e.g. admin SSH from your laptop
+    // via { "src": ["autogroup:admin"], "dst": ["tag:*:22"] }). Anything not
+    // listed is denied, including 5555/8022 on the Shield from other nodes.
+  ]
+}
