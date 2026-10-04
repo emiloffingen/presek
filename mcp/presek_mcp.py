@@ -187,7 +187,17 @@ def tool_db_query(sql: str, limit: int = 50) -> dict:
     try:
         from core.database import db_manager  # type: ignore
 
-        rows = db_manager.execute(sql, read_only=True)
+        # The keyword filter above is only a first line of defence (a SELECT can
+        # still call side-effecting functions), so run inside a READ ONLY
+        # transaction and always roll back.
+        with db_manager.connection() as conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SET TRANSACTION READ ONLY")
+                    cur.execute(sql)
+                    rows = cur.fetchall() if cur.description else []
+            finally:
+                conn.rollback()
         return {"row_count": len(rows or []), "rows": rows or []}
     except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}

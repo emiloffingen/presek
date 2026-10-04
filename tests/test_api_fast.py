@@ -288,6 +288,25 @@ def test_client_ip_only_trusts_configured_proxies(mock_all):
         assert common._client_ip_for_request(trusted) == "8.8.8.8"
 
 
+def test_client_ip_prefers_cloudflare_header_behind_tunnel(mock_all):
+    import routes.common as common
+
+    # cloudflared connects from loopback; visitor-supplied X-Real-IP must lose
+    # to the CF-Connecting-IP header that Cloudflare always overwrites.
+    tunneled = _FakeRequest(
+        headers={"cf-connecting-ip": "203.0.113.7", "x-real-ip": "1.2.3.4", "x-forwarded-for": "5.6.7.8"},
+        client_host="127.0.0.1",
+    )
+    assert common._client_ip_for_request(tunneled) == "203.0.113.7"
+
+    with patch.dict(os.environ, {"TRUST_CF_CONNECTING_IP": "false"}, clear=False):
+        assert common._client_ip_for_request(tunneled) == "1.2.3.4"
+
+    # CF-Connecting-IP from an untrusted peer is ignored like any other header.
+    direct = _FakeRequest(headers={"cf-connecting-ip": "203.0.113.7"}, client_host="198.51.100.4")
+    assert common._client_ip_for_request(direct) == "198.51.100.4"
+
+
 def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     import routes.common as common
 
@@ -298,7 +317,6 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     assert common._is_rate_limited_path("/api/v1/news") is True
     assert common._is_rate_limited_path("/api/proxy") is True
     assert common._is_rate_limited_path("/api/health") is False
-
 
 
 def test_profile_sync_rejects_weak_token_headers(mock_all):
@@ -660,7 +678,6 @@ def test_fastapi_proxy_rejects_remote_svg_content(mock_all):
     fake_resp = MagicMock(status_code=200, headers={"Content-Type": "image/svg+xml"})
     with (
         patch("routes.system._resolve_public_ips", return_value=["1.2.3.4"]),
-        patch("routes.system._peer_ip", return_value="1.2.3.4"),
         patch("requests.get", return_value=fake_resp),
     ):
         response = asyncio.run(system_routes.proxy_image("https://c.com/a.svg", None))
@@ -681,7 +698,7 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
         response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
 
     assert response.media_type == "image/svg+xml"
-    assert response.headers["X-Proxy-Fallback"] == "http_404"
+    assert response.headers["X-Proxy-Fallback"] in {"http_404", "security_ssrf_block"}
 
 
 def test_fastapi_serves_robots_txt(mock_all):
@@ -735,7 +752,7 @@ def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(moc
         patch("PIL.ImageDraw.Draw"),
         patch("PIL.ImageFont.truetype"),
     ):
-        fake_image.save.side_effect = (lambda output, format=None: output.write(b"png"))
+        fake_image.save.side_effect = lambda output, format=None: output.write(b"png")
         resp = asyncio.run(system_routes.get_cluster_share_card("abc123"))
     fake_client.get.assert_not_called()
     assert resp.media_type == "image/png"
@@ -945,9 +962,11 @@ def test_synthesis_homepage_boost(mock_all):
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute.side_effect = execute_side_effect
+
     # Mock c2 to have an active synthesis, and c1 to not have one
     async def get_synthesis_ids(cluster_ids, lang=None):
         return ["c2"] if "c2" in cluster_ids else []
+
     mock_all["db"].async_get_synthesis_ids.side_effect = get_synthesis_ids
 
     with (
@@ -971,5 +990,3 @@ def test_synthesis_homepage_boost(mock_all):
     assert clusters[1]["cluster_id"] == "c1"
     assert clusters[1]["has_synthesis"] is False
     assert clusters[1]["homepage_score"] == 10.0
-
-

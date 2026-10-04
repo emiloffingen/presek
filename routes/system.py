@@ -58,7 +58,7 @@ except Exception as e:
 from core.health import _probe_database, _probe_redis
 from core.version import version_payload
 from nlp.image_quality import classify_image_url as _image_quality
-from utils import _peer_ip, _resolve_public_ips
+from utils import UnsafeFetchError, _resolve_public_ips, fetch_public_bytes
 
 from .common import _PROXY_MAX_BYTES, _is_allowed_proxy_content_type, cleanAndDecode
 from .security import validate_cluster_id
@@ -619,27 +619,18 @@ async def get_cluster_share_card(cluster_id: str):
                     bg_img = Image.open(local_path)
 
             if not bg_img and bg_url and bg_url.startswith("http"):
-                safe_ips = _resolve_public_ips(bg_url)
-                import httpx
-
-                async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
-                    async with client.stream("GET", bg_url) as resp:
-                        p_ip = _peer_ip(resp)
-                        ctype = str(resp.headers.get("Content-Type", ""))
-                        if (
-                            p_ip
-                            and p_ip in safe_ips
-                            and resp.status_code == 200
-                            and _is_allowed_proxy_content_type(ctype)
-                        ):
-                            content = b""
-                            async for chunk in resp.aiter_bytes(chunk_size=16384):
-                                content += chunk
-                                if len(content) > _PROXY_MAX_BYTES:
-                                    content = b""
-                                    break
-                            if content:
-                                bg_img = Image.open(BytesIO(content))
+                try:
+                    content = await fetch_public_bytes(
+                        bg_url,
+                        max_bytes=_PROXY_MAX_BYTES,
+                        timeout=3.0,
+                        content_type_ok=_is_allowed_proxy_content_type,
+                    )
+                except UnsafeFetchError as fetch_err:
+                    log.debug(f"[system] Share-card background refused: {fetch_err.reason}")
+                    content = b""
+                if content:
+                    bg_img = Image.open(BytesIO(content))
         except Exception as e:
             log.debug(f"[system] Error loading background image: {e}")
             pass
@@ -900,26 +891,17 @@ async def proxy_image(
             }
 
             try:
-                import httpx
-
-                async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                    async with client.stream("GET", request_url, headers=headers) as resp:
-                        p_ip = _peer_ip(resp)
-                        if not p_ip or p_ip not in safe_ips:
-                            return serve_fallback("security_ssrf_block")
-
-                        if resp.status_code != 200:
-                            return serve_fallback(f"http_{resp.status_code}")
-
-                        ctype = str(resp.headers.get("Content-Type", ""))
-                        if not _is_allowed_proxy_content_type(ctype):
-                            return serve_fallback("invalid_content_type")
-
-                        img_data = b""
-                        async for chunk in resp.aiter_bytes(chunk_size=16384):
-                            img_data += chunk
-                            if len(img_data) > _PROXY_MAX_BYTES:
-                                return serve_fallback("too_large")
+                img_data = await fetch_public_bytes(
+                    request_url,
+                    max_bytes=_PROXY_MAX_BYTES,
+                    headers=headers,
+                    content_type_ok=_is_allowed_proxy_content_type,
+                )
+            except UnsafeFetchError as fetch_err:
+                if fetch_err.reason.startswith("fetch_error"):
+                    log.error(f"[proxy] Fetch failed for {url}: {fetch_err.reason}")
+                    return serve_fallback("http_404")
+                return serve_fallback(fetch_err.reason)
             except Exception as e:
                 log.error(f"[proxy] Fetch failed for {url}: {e}")
                 return serve_fallback("http_404")

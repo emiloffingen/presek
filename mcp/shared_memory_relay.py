@@ -16,6 +16,7 @@ Run (on the Shield, inside the presek venv, cwd = repo root):
 
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import sys
@@ -65,7 +66,7 @@ def main() -> None:
             return [_json_bytes({"error": "not found"})]
 
         auth = environ.get("HTTP_AUTHORIZATION", "")
-        if auth != f"Bearer {TOKEN}":
+        if not hmac.compare_digest(auth.encode("utf-8"), f"Bearer {TOKEN}".encode("utf-8")):
             start_response(
                 "401 Unauthorized",
                 [("Content-Type", "application/json"), ("WWW-Authenticate", "Bearer")],
@@ -89,7 +90,9 @@ def main() -> None:
             msg = json.loads(raw.decode("utf-8"))
         except Exception as exc:
             start_response("400 Bad Request", [("Content-Type", "application/json")])
-            return [_json_bytes({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": f"parse error: {exc}"}})]
+            return [
+                _json_bytes({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": f"parse error: {exc}"}})
+            ]
 
         response = _handle(msg)
         if response is None:
@@ -99,7 +102,9 @@ def main() -> None:
         start_response("200 OK", [("Content-Type", "application/json")])
         return [_json_bytes(response)]
 
-    sys.stderr.write(f"[relay] listening on http://{HOST}:{PORT}/mcp (writes={'on' if mem.writes_enabled() else 'OFF'})\n")
+    sys.stderr.write(
+        f"[relay] listening on http://{HOST}:{PORT}/mcp (writes={'on' if mem.writes_enabled() else 'OFF'})\n"
+    )
     with make_server(HOST, PORT, app, handler_class=Handler) as httpd:
         httpd.serve_forever()
 

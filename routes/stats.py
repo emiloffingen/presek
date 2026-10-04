@@ -19,6 +19,7 @@ from core.config import (
     SOURCE_CREDIBILITY,
 )
 from core.database import db_manager as db
+from core.limiter import custom_rate_limit
 from core.health import get_source_statuses, reset_source_policy
 from utils import (
     build_editor_analytics_payload,
@@ -585,7 +586,76 @@ async def get_stats_summary(lang: Optional[str] = DEFAULT_LANG):
     return res
 
 
+def _newsletter_text(locale: str, mk: str, sr: str) -> str:
+    return mk if locale == "mk" else sr
+
+
+def _send_newsletter_confirmation(email: str, locale: str) -> bool:
+    """Email a signed double-opt-in link. Returns False when SMTP is not configured."""
+    import html as _html
+
+    from core.signed_tokens import build_newsletter_confirm_url
+
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    if not (smtp_user and smtp_pass):
+        log.warning("[subscribe] SMTP credentials not set; cannot send newsletter confirmation.")
+        return False
+
+    from tasks.utils import send_email
+
+    base_url = os.environ.get("PUBLIC_SITE_URL", "https://presek.mk")
+    link = _html.escape(build_newsletter_confirm_url(base_url, email, locale), quote=True)
+    subject = _newsletter_text(locale, "Потврдете ја пријавата за Пресек", "Potvrdite prijavu na Presek")
+    body = _newsletter_text(
+        locale,
+        f"<p>Некој (се надеваме вие) ја пријави оваа адреса за утринскиот билтен на Пресек.</p>"
+        f'<p><a href="{link}">Потврдете ја пријавата</a></p>'
+        f"<p>Ако не сте вие, игнорирајте ја оваа порака и нема да добивате пораки.</p>",
+        f"<p>Neko (nadamo se vi) prijavio je ovu adresu za jutarnji bilten Preseka.</p>"
+        f'<p><a href="{link}">Potvrdite prijavu</a></p>'
+        f"<p>Ako to niste vi, zanemarite ovu poruku i nećete dobijati poruke.</p>",
+    )
+    return bool(send_email(body, subject, smtp_user, smtp_pass, email))
+
+
+async def _register_pending_subscriber(email: str, locale: str) -> bool:
+    """Insert an inactive subscriber unless one exists; return whether it is already active.
+
+    Plain SELECT/INSERT instead of ON CONFLICT: older databases have no unique
+    constraint on the email columns, and some have no locale column at all.
+    """
+    try:
+        row = await db.async_execute_one(
+            "SELECT is_active FROM subscribers WHERE email = %s AND locale = %s LIMIT 1",
+            (email, locale),
+        )
+        if row:
+            return bool(row.get("is_active"))
+        await db.async_execute(
+            "INSERT INTO subscribers (email, locale, is_active) VALUES (%s, %s, FALSE)",
+            (email, locale),
+            fetch=False,
+        )
+        return False
+    except Exception as e:
+        if 'column "locale" does not exist' not in str(e).lower():
+            raise
+        log.warning("[subscribe] Legacy schema detected: locale column missing. Falling back.")
+
+    row = await db.async_execute_one("SELECT is_active FROM subscribers WHERE email = %s LIMIT 1", (email,))
+    if row:
+        return bool(row.get("is_active"))
+    await db.async_execute(
+        "INSERT INTO subscribers (email, is_active) VALUES (%s, FALSE)",
+        (email,),
+        fetch=False,
+    )
+    return False
+
+
 @router.post("/newsletter/subscribe")
+@custom_rate_limit("5/minute")
 async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(verify_csrf_token)):
     try:
         body = await request.json()
@@ -593,51 +663,80 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
         raise HTTPException(status_code=400, detail="Невалиден JSON")
     email = validate_email(body.get("email", ""), "email")
     locale = "mk" if str(body.get("locale") or "sr").strip().lower() == "mk" else "sr"
+    error_payload = {
+        "status": "error",
+        "message": _newsletter_text(
+            locale, "Грешка при зачувување. Обидете се подоцна.", "Greška pri čuvanju. Pokušajte kasnije."
+        ),
+    }
+    # Double opt-in: new addresses stay inactive until the emailed link is used,
+    # so nobody can enroll a third party's address.
     try:
-        # Try inserting with locale first (modern schema)
-        await db.async_execute(
-            """INSERT INTO subscribers (email, locale)
-               VALUES (%s, %s)
-               ON CONFLICT (email, locale)
-               DO UPDATE SET is_active = TRUE""",
-            (email, locale),
-            fetch=False,
-        )
+        already_active = await _register_pending_subscriber(email, locale)
     except Exception as e:
-        err_msg = str(e).lower()
-        if 'column "locale" does not exist' in err_msg:
-            log.warning(f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}")
-            try:
-                # Fallback to legacy schema (without locale)
-                await db.async_execute(
-                    "INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
-                    (email,),
-                    fetch=False,
-                )
-            except Exception as e2:
-                log.error(f"[subscribe] Final fallback failed: {e2}")
-                return {
-                    "status": "error",
-                    "message": (
-                        "Грешка при зачувување. Обидете се подоцна."
-                        if locale == "mk"
-                        else "Greška pri čuvanju. Pokušajte kasnije."
-                    ),
-                }
-        else:
-            log.warning(f"[subscribe] DB error during subscription: {e}")
-            return {
-                "status": "error",
-                "message": (
-                    "Грешка при зачувување. Обидете се подоцна."
-                    if locale == "mk"
-                    else "Greška pri čuvanju. Pokušajte kasnije."
-                ),
-            }
+        log.warning(f"[subscribe] DB error during subscription: {e}")
+        return error_payload
+
+    if not already_active:
+        sent = await asyncio.to_thread(_send_newsletter_confirmation, email, locale)
+        if not sent:
+            return error_payload
+
+    # Same answer whether or not the address was already subscribed (no enumeration).
     return {
         "status": "success",
-        "message": ("Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!"),
+        "pending_confirmation": True,
+        "message": _newsletter_text(
+            locale,
+            "Проверете го сандачето и потврдете ја пријавата.",
+            "Proverite sanduče i potvrdite prijavu.",
+        ),
     }
+
+
+@router.get("/newsletter/confirm")
+@custom_rate_limit("20/minute")
+async def confirm_newsletter(request: Request, token: str, lang: str = DEFAULT_LANG):
+    """Activate a newsletter subscription from the signed double-opt-in link."""
+    from core.signed_tokens import parse_newsletter_confirm_token
+
+    locale = "mk" if str(lang or "sr").strip().lower() == "mk" else "sr"
+    parsed = parse_newsletter_confirm_token(token)
+    if not parsed or parsed[1] != locale:
+        content = _newsletter_text(
+            locale,
+            "<h1>Невалиден или истечен линк за потврда.</h1>",
+            "<h1>Nevalidan ili istekao link za potvrdu.</h1>",
+        )
+        return HTMLResponse(content=content, status_code=400)
+
+    email, _ = parsed
+    try:
+        try:
+            await db.async_execute(
+                "UPDATE subscribers SET is_active = TRUE WHERE email = %s AND locale = %s",
+                (email, locale),
+                fetch=False,
+            )
+        except Exception as e:
+            if 'column "locale" does not exist' not in str(e).lower():
+                raise
+            await db.async_execute(
+                "UPDATE subscribers SET is_active = TRUE WHERE email = %s",
+                (email,),
+                fetch=False,
+            )
+    except Exception as e:
+        log.warning(f"[confirm] DB error: {e}")
+        content = _newsletter_text(locale, "<h1>Грешка при потврдување.</h1>", "<h1>Greška pri potvrdi.</h1>")
+        return HTMLResponse(content=content, status_code=500)
+
+    content = _newsletter_text(
+        locale,
+        "<h1>Пријавата е потврдена. Добредојдовте во Пресек!</h1>",
+        "<h1>Prijava je potvrđena. Dobro došli u Presek!</h1>",
+    )
+    return HTMLResponse(content=content)
 
 
 @router.get("/newsletter/unsubscribe")

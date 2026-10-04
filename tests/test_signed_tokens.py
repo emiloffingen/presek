@@ -54,3 +54,19 @@ class TestDeliveryTrackTokens:
         monkeypatch.delenv("SECRET_KEY", raising=False)
         with pytest.raises(RuntimeError):
             build_newsletter_unsubscribe_token("a@b.com", "sr")
+
+
+def test_newsletter_confirm_token_round_trip_and_scoping():
+    from core.signed_tokens import (
+        build_newsletter_confirm_token,
+        build_newsletter_confirm_url,
+        parse_newsletter_confirm_token,
+    )
+
+    token = build_newsletter_confirm_token(" Reader@Example.com ", "mk")
+    assert parse_newsletter_confirm_token(token) == ("reader@example.com", "mk")
+    # A confirm token is not an unsubscribe token and vice versa.
+    assert parse_newsletter_unsubscribe_token(token) is None
+    assert parse_newsletter_confirm_token(token[:-1] + ("x" if token[-1] != "x" else "y")) is None
+    url = build_newsletter_confirm_url("https://presek.mk/", "reader@example.com", "mk")
+    assert url.startswith("https://presek.mk/api/newsletter/confirm?token=") and url.endswith("&lang=mk")

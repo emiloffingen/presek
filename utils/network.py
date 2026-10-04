@@ -91,6 +91,99 @@ def _peer_ip(response) -> Optional[str]:
     return None
 
 
+class UnsafeFetchError(Exception):
+    """A remote fetch was refused or failed; ``reason`` is a short machine-readable tag."""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+_REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+
+
+def _pinned_request_parts(url: str, ip: str):
+    """Rewrite ``url`` to connect to ``ip`` while keeping Host and TLS SNI on the hostname."""
+    parsed = urllib.parse.urlsplit(url)
+    hostname = parsed.hostname or ""
+    ip_host = f"[{ip}]" if ":" in ip else ip
+    port_suffix = f":{parsed.port}" if parsed.port else ""
+    pinned_url = urllib.parse.urlunsplit((parsed.scheme, ip_host + port_suffix, parsed.path or "/", parsed.query, ""))
+    host_header = (f"[{hostname}]" if ":" in hostname else hostname) + port_suffix
+    extensions = {"sni_hostname": hostname} if parsed.scheme == "https" else {}
+    return pinned_url, host_header, extensions
+
+
+async def fetch_public_bytes(
+    url: str,
+    *,
+    max_bytes: int,
+    headers: Optional[dict] = None,
+    timeout: float = 8.0,
+    max_redirects: int = 3,
+    content_type_ok=None,
+) -> bytes:
+    """GET a public http(s) URL without ever touching private addresses.
+
+    Each hop (including redirects) is resolved up front, rejected if it maps to a
+    private/reserved address, and then connected to by IP so a second DNS answer
+    (rebinding) cannot redirect the request. Redirects are followed manually so
+    every Location is re-validated before any request is sent to it.
+    Raises ``UnsafeFetchError`` with a reason tag on any refusal or failure.
+    """
+    import asyncio
+
+    import httpx
+
+    current = url
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+        for _ in range(max_redirects + 1):
+            parsed = urllib.parse.urlsplit(current)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                raise UnsafeFetchError("invalid_scheme")
+            try:
+                safe_ips = await asyncio.to_thread(_resolve_public_ips, current)
+            except Exception:
+                raise UnsafeFetchError("security_ssrf_block")
+
+            pinned_url, host_header, extensions = _pinned_request_parts(current, safe_ips[0])
+            request_headers = dict(headers or {})
+            request_headers["Host"] = host_header
+            request = client.build_request("GET", pinned_url, headers=request_headers, extensions=extensions)
+            try:
+                response = await client.send(request, stream=True)
+            except httpx.HTTPError as exc:
+                raise UnsafeFetchError(f"fetch_error:{type(exc).__name__}")
+            try:
+                peer = _peer_ip(response)
+                if peer and not _is_public_ip(peer):
+                    raise UnsafeFetchError("security_ssrf_block")
+
+                if response.status_code in _REDIRECT_STATUSES:
+                    location = response.headers.get("location")
+                    if not location:
+                        raise UnsafeFetchError(f"http_{response.status_code}")
+                    current = urllib.parse.urljoin(current, location)
+                    continue
+
+                if response.status_code != 200:
+                    raise UnsafeFetchError(f"http_{response.status_code}")
+
+                if content_type_ok is not None and not content_type_ok(str(response.headers.get("Content-Type", ""))):
+                    raise UnsafeFetchError("invalid_content_type")
+
+                data = b""
+                async for chunk in response.aiter_bytes(chunk_size=16384):
+                    data += chunk
+                    if len(data) > max_bytes:
+                        raise UnsafeFetchError("too_large")
+                return data
+            finally:
+                await response.aclose()
+
+    raise UnsafeFetchError("too_many_redirects")
+
+
 async def get_dominant_color(url: str) -> str:
     """Extracts the dominant hex color from an image URL (Asynchronous)."""
     if not url:

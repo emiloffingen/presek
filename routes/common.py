@@ -126,12 +126,37 @@ def _is_trusted_proxy_ip(client_host: str) -> bool:
     return any(addr in network for network in _trusted_proxy_networks())
 
 
+_EDGE_FORWARDING_HEADERS = ("CF-Connecting-IP", "CF-Ray", "X-Real-IP", "X-Forwarded-For")
+
+
+def _trust_cf_connecting_ip() -> bool:
+    return os.environ.get("TRUST_CF_CONNECTING_IP", "true").strip().lower() not in {"0", "false", "no"}
+
+
+def _has_forwarding_headers(request: Request) -> bool:
+    """True when the request was relayed by an edge proxy (Cloudflare, nginx)."""
+    headers = getattr(request, "headers", None) or {}
+    for name in _EDGE_FORWARDING_HEADERS:
+        value = headers.get(name)
+        if isinstance(value, str) and value.strip():
+            return True
+    return False
+
+
 def _client_ip_for_request(request: Request) -> str:
     """Extract the best-guess client IP address from known trusted proxies only."""
     client_host = _parse_ip_literal(str(getattr(getattr(request, "client", None), "host", "") or ""))
 
     if _is_trusted_proxy_ip(client_host):
-        # Trust X-Real-IP or the first entry in X-Forwarded-For
+        # Behind the Cloudflare tunnel every request reaches us from loopback and
+        # X-Real-IP / the first X-Forwarded-For entry are visitor-controlled
+        # (Cloudflare neither sets nor strips them). CF-Connecting-IP is always
+        # overwritten by Cloudflare, so it is the only trustworthy source there.
+        if _trust_cf_connecting_ip():
+            cf_ip = _parse_ip_literal((request.headers.get("CF-Connecting-IP") or "").strip())
+            if cf_ip:
+                return cf_ip
+        # Without Cloudflare, trust X-Real-IP (set by our nginx) or the first X-Forwarded-For entry
         real_ip = _parse_ip_literal((request.headers.get("X-Real-IP") or "").split(",")[0].strip())
         if not real_ip:
             real_ip = _parse_ip_literal((request.headers.get("X-Forwarded-For") or "").split(",")[0].strip())

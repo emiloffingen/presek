@@ -44,6 +44,18 @@ else:
 CSRF_TOKEN_EXPIRY = 3600  # 1 hour
 
 
+def set_csrf_cookie(response: Response, token: str) -> None:
+    """Attach the readable double-submit CSRF cookie."""
+    response.set_cookie(
+        key="csrf_token",
+        value=token,
+        httponly=False,  # Must be accessible to JavaScript
+        secure=os.environ.get("ENV") == "production",
+        samesite="lax",
+        max_age=CSRF_TOKEN_EXPIRY,
+    )
+
+
 def generate_csrf_token() -> str:
     """Generate a CSRF token."""
     timestamp = str(int(time.time()))
@@ -82,7 +94,9 @@ async def verify_csrf_token(request: Request):
 
     header_token = request.headers.get("X-CSRF-Token")
     cookie_token = request.cookies.get("csrf_token")
-    csrf_token = header_token or cookie_token
+    # Double submit: the token must be *sent* (header or form field), not just
+    # carried along by the browser as a cookie.
+    csrf_token = header_token
 
     if not csrf_token:
         try:
@@ -91,10 +105,10 @@ async def verify_csrf_token(request: Request):
         except Exception:
             log.debug("CSRF form parse failed")
 
-    if header_token and cookie_token and header_token != cookie_token:
+    if not csrf_token or not validate_csrf_token(csrf_token):
         raise HTTPException(status_code=403, detail="Невалиден CSRF токен")
 
-    if not validate_csrf_token(csrf_token):
+    if cookie_token and not hmac.compare_digest(str(csrf_token), str(cookie_token)):
         raise HTTPException(status_code=403, detail="Невалиден CSRF токен")
 
     if os.environ.get("ENV") == "production" and not cookie_token:
@@ -170,16 +184,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Add CSRF token cookie for frontend use (only if not already set)
         existing_csrf = request.cookies.get("csrf_token")
-        if not existing_csrf:
-            csrf_token = generate_csrf_token()
-            response.set_cookie(
-                key="csrf_token",
-                value=csrf_token,
-                httponly=False,  # Must be accessible to JavaScript
-                secure=is_production,
-                samesite="lax",
-                max_age=CSRF_TOKEN_EXPIRY,
-            )
+        already_setting_csrf = any(value.startswith("csrf_token=") for value in response.headers.getlist("set-cookie"))
+        if not existing_csrf and not already_setting_csrf:
+            set_csrf_cookie(response, generate_csrf_token())
 
         # Permissions Policy
         response.headers["Permissions-Policy"] = (
