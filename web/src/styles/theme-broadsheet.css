@@ -596,3 +596,26 @@ html:root .section-title-italic {
 .not-found-list { display: flex; flex-direction: column; }
 .not-found-list a { padding: 10px 0; border-bottom: 1px solid var(--bs-border); color: var(--bs-text); text-decoration: none; }
 .not-found-list a:hover { text-decoration: underline; }
+
+/* ── Polish ─────────────────────────────────────────────── */
+::selection { background: color-mix(in srgb, var(--bs-accent) 28%, transparent); color: inherit; }
+
+/* Section nav: scroll shadows so a clipped row reads as scrollable.
+   `local` covers hide the shadows at the ends; no overflow, no shadow. */
+.bs-nav {
+    background:
+        linear-gradient(to right, var(--bs-surface) 30%, rgb(0 0 0 / 0)) left center / 32px 100% no-repeat local,
+        linear-gradient(to left, var(--bs-surface) 30%, rgb(0 0 0 / 0)) right center / 32px 100% no-repeat local,
+        linear-gradient(to right, rgb(0 0 0 / 0.14), rgb(0 0 0 / 0)) left center / 14px 100% no-repeat scroll,
+        linear-gradient(to left, rgb(0 0 0 / 0.14), rgb(0 0 0 / 0)) right center / 14px 100% no-repeat scroll;
+}
+.bs-nav a { transition: border-color 0.15s ease, color 0.15s ease; }
+.bs-btn, .bs-search button, .bs-theme-toggle, .bs-chip { transition: opacity 0.15s ease, border-color 0.15s ease, background-color 0.15s ease; }
+
+/* Headlines wrap evenly; decks avoid one-word last lines. */
+html:root :is(.masthead-title, .topic-headline, .not-found-headline, .bs-page-title) { text-wrap: balance; }
+html:root :is(.masthead-intro, .topic-intro, .not-found-intro) { text-wrap: pretty; }
+
+@media (prefers-reduced-motion: reduce) {
+    .bs-nav a, .bs-btn, .bs-search button, .bs-theme-toggle, .bs-chip { transition: none; }
+}

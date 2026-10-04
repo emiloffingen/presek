@@ -60,7 +60,9 @@
     background: var(--bs-photo);
     border-radius: 6px;
 }
-.bs-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Photos fill their frame. layout-shell.css sets `img { height: auto !important }`
+   site-wide, so this needs !important too, or wide photos leave a gap below. */
+.bs-photo > img { position: absolute; inset: 0; display: block; width: 100%; height: 100% !important; max-width: none; object-fit: cover; }
 .bs-photo-16x9 { aspect-ratio: 16 / 9; }
 .bs-photo-16x10 { aspect-ratio: 16 / 10; border-radius: 0; }
 
@@ -255,3 +257,42 @@
     .bs-live-preview { display: none; }
     .bs-promo-card { padding: 22px; }
 }
+
+/* ── Polish ─────────────────────────────────────────────── */
+/* Small caps labels: the site-wide `html[lang="mk"] h2` serif rule out-ranks the
+   plain class, so the label (an h2) came out serif. */
+html .bs-home .bs-rule-label {
+    font-family: var(--bs-sans);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3 !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.bs-home :is(.bs-lead-title, .bs-card-title, .bs-live-headline, .bs-section-title, .bs-dev-title) { text-wrap: balance; }
+.bs-home .bs-lead-summary, .bs-home .bs-live-preview { text-wrap: pretty; }
+
+/* Cards and live items: the whole block is the click target (stretched title link),
+   with a visible hover and keyboard-focus state. */
+.bs-card, .bs-live-item { position: relative; }
+.bs-card { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.bs-card:hover, .bs-card:focus-within { border-color: var(--bs-text); }
+.bs-card-title a::after, .bs-live-headline a::after { content: ""; position: absolute; inset: 0; }
+.bs-home .bs-card-title a:hover, .bs-home .bs-live-headline a:hover { text-decoration: none; }
+.bs-card:hover .bs-card-title, .bs-live-item:hover .bs-live-headline { text-decoration: underline; text-underline-offset: 3px; }
+.bs-live-item:hover { background: color-mix(in srgb, var(--bs-surface) 60%, transparent); }
+.bs-home a:focus-visible::after { outline: 2px solid var(--bs-accent); outline-offset: -2px; }
+
+/* Photos ease in instead of popping. */
+.bs-photo img { transition: opacity 0.2s ease; }
+.bs-card:hover .bs-photo img { opacity: 0.94; }
+
+/* Breakdown legend wraps tidily on narrow screens. */
+.bs-legend li { white-space: nowrap; }
+@media (max-width: 759px) {
+    .bs-chip { min-height: 40px; }
+    .bs-trending { gap: 8px; }
+    .bs-breakdown { padding: 16px; }
+}
+.bs-home :is(.bs-card-title, .bs-live-headline) a:focus-visible { outline: none; }
