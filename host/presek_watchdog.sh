@@ -182,49 +182,76 @@ SHIELD_SYNC_LOCK="$LOG_DIR/.shield_sync.lock"
 SHIELD_PROBE="u0_a106@192.168.0.60"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="/root/.ssh/termux_test"
+# Dist sync ships over adb (robust when the Shield's sshd is wedged). The
+# Shield's watchdog self-applies from /sdcard/presek_stage.
+SHIELD_ADB="${SHIELD_ADB:-192.168.0.60:5555}"
+ADB_BIN="${ADB_BIN:-/data/data/com.termux/files/usr/bin/adb}"
 
 sync_shield_if_present() {
-  # IMPORTANT: never block the supervision loop. All the work (SSH probe, ship,
-  # restart) happens in a detached subshell. A lock file prevents pile-ups.
+  # IMPORTANT: never block the supervision loop. All the work (adb push, wait
+  # for the shield to apply) happens in a detached subshell. A lock file
+  # prevents pile-ups. Shipping over adb means a wedged Shield sshd can no
+  # longer block deploys; the Shield's watchdog self-applies from /sdcard.
   [ -f "$SHIELD_SYNC_LOCK" ] && return 0
   touch "$SHIELD_SYNC_LOCK"
   setsid bash -c '
     exec 8>&-  # do not hold the watchdog lock while syncing the shield
-    LOG="$1"; MARKER="$2"; APP="$3"; PROBE="$4"; PORT="$5"; KEY="$6"; LOCK="$7"
+    LOG="$1"; MARKER="$2"; APP="$3"; LOCK="$4"; ADB="$5"; SHIELD_ADB="$6"
     SYNCING="${MARKER%/*}/.shield_syncing"
     trap "rm -f \"$LOCK\"; rm -f \"$SYNCING\"" EXIT
-    if ! timeout 5 ssh -i "$KEY" -p "$PORT" \
-          -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-          -o ConnectTimeout=4 -o BatchMode=yes "$PROBE" true 2>/dev/null; then
-      rm -f "$MARKER"   # absent: re-sync next time it appears
-      exit 0
-    fi
-    # The Shield is now the PRIMARY origin, so re-ship whenever the phone build
-    # (commit + dist mtime) changed; otherwise it would serve stale code.
     FP="$(git -C "$APP" rev-parse HEAD 2>/dev/null)-$(stat -c %Y "$APP/web/dist/server/entry.mjs" 2>/dev/null)"
     [ -f "$MARKER" ] && [ "$(cat "$MARKER" 2>/dev/null)" = "$FP" ] && exit 0
+    [ -f "$APP/web/dist/server/entry.mjs" ] || exit 0
+    TMP="$(mktemp -d)"; DIST="$TMP/web_dist.tgz"
+    tar czf "$DIST" -C "$APP/web" dist 2>/dev/null || { rm -rf "$TMP"; exit 0; }
+    printf "%s" "$FP" > "$TMP/web_dist.fp"
+    # Hold the phone connector up while the shield swaps the dist (avoids a gap).
     touch "$SYNCING"
-    echo "[$(date "+%F %T")] shield sync: build $FP -> go-live" >> "$LOG"
-    if SHIELD_HOST="$PROBE:$PORT" "$APP/deploy/presek-go-live.sh" --no-build >> "$LOG" 2>&1; then
-      echo "$FP" > "$MARKER"
-      echo "[$(date "+%F %T")] shield sync complete" >> "$LOG"
+    echo "[$(date "+%F %T")] shield sync (adb): pushing build $FP" >> "$LOG"
+    "$ADB" connect "$SHIELD_ADB" >/dev/null 2>&1
+    if "$ADB" -s "$SHIELD_ADB" push "$DIST" /sdcard/presek_stage/web_dist.tgz >/dev/null 2>&1 && \
+       "$ADB" -s "$SHIELD_ADB" push "$TMP/web_dist.fp" /sdcard/presek_stage/web_dist.fp >/dev/null 2>&1; then
+      ok=0; i=0
+      while [ "$i" -lt 10 ]; do
+        sleep 5; i=$((i + 1))
+        if [ "$("$ADB" -s "$SHIELD_ADB" shell cat /sdcard/presek_stage/web_dist.applied 2>/dev/null | tr -d "\r\n")" = "$FP" ]; then ok=1; break; fi
+      done
+      if [ "$ok" = 1 ]; then
+        echo "$FP" > "$MARKER"
+        echo "[$(date "+%F %T")] shield sync complete ($FP)" >> "$LOG"
+      else
+        echo "[$(date "+%F %T")] shield pushed but not applied yet (will retry)" >> "$LOG"
+      fi
     else
-      echo "[$(date "+%F %T")] shield sync failed (will retry)" >> "$LOG"
+      echo "[$(date "+%F %T")] shield adb push failed (will retry)" >> "$LOG"
     fi
     rm -f "$SYNCING"
-  ' _ "$LOG_DIR/shield_sync.log" "$SHIELD_MARKER" "$APP_DIR" "$SHIELD_PROBE" "$SHIELD_PORT" "$SSH_KEY" "$SHIELD_SYNC_LOCK" </dev/null >/dev/null 2>&1 &
+    rm -rf "$TMP"
+  ' _ "$LOG_DIR/shield_sync.log" "$SHIELD_MARKER" "$APP_DIR" "$SHIELD_SYNC_LOCK" "$ADB_BIN" "$SHIELD_ADB" </dev/null >/dev/null 2>&1 &
 }
 
 # --- origin role: Shield primary, phone connector standby -------------------
-# Healthy = the Shield's origin (astro + api) answers locally AND its tunnel
-# connector has ready connections. Probed over SSH; bounded by timeout.
-SHIELD_SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=4 -o BatchMode=yes"
+# Healthy = the Shield's origin (astro + api) answers AND its tunnel connector
+# has ready connections. Probed over HTTP through adb port-forwards, no SSH (the
+# Shield's sshd has wedged repeatedly), so the Shield keeps astro :3000, api
+# :5001 and cloudflared metrics :20241 on 127.0.0.1 instead of exposing them on
+# every interface. Local ports 33000/35001/30241 forward to the Shield's.
+shield_forwards_ok() {
+  local spec
+  for spec in "tcp:33000 tcp:3000" "tcp:35001 tcp:5001" "tcp:30241 tcp:20241"; do
+    # shellcheck disable=SC2086
+    timeout 6 "$ADB_BIN" -s "$SHIELD_ADB" forward $spec >/dev/null 2>&1 || {
+      timeout 8 "$ADB_BIN" connect "$SHIELD_ADB" >/dev/null 2>&1
+      # shellcheck disable=SC2086
+      timeout 6 "$ADB_BIN" -s "$SHIELD_ADB" forward $spec >/dev/null 2>&1 || return 1
+    }
+  done
+}
 shield_origin_ok() {
-  timeout 14 ssh -i "$SSH_KEY" -p "$SHIELD_PORT" $SHIELD_SSH_OPTS "$SHIELD_PROBE" '
-    curl -s -o /dev/null -m 4 http://127.0.0.1:3000/ &&
-    curl -s -o /dev/null -m 4 http://127.0.0.1:5001/api/health &&
-    curl -s -m 4 http://127.0.0.1:20241/ready 2>/dev/null | grep -q "\"readyConnections\":[1-9]"
-  ' >/dev/null 2>&1
+  shield_forwards_ok &&
+  curl -s -o /dev/null -m 4 "http://127.0.0.1:33000/" &&
+  curl -s -o /dev/null -m 4 "http://127.0.0.1:35001/api/health" &&
+  curl -s -m 4 "http://127.0.0.1:30241/ready" 2>/dev/null | grep -q '"readyConnections":[1-9]'
 }
 shield_ok_streak=0
 shield_fail_streak=0

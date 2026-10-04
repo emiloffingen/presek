@@ -357,6 +357,7 @@
 
     /* Hide surrounding navigation & secondary elements in reader mode */
     :global(body.reader-mode-active .header-sticky-wrapper),
+    :global(body.reader-mode-active .bs-site-header),
     :global(body.reader-mode-active .site-footer),
     :global(body.reader-mode-active .breadcrumb-container),
     :global(body.reader-mode-active .hero-full),
@@ -467,14 +468,11 @@
     }
 
     .executive-summary {
-        background: color-mix(in srgb, var(--card) 60%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
-        border-left: 4px solid var(--nyt-accent);
-        border-radius: var(--radius-sm, 0px);
-        padding: 2.5rem;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.75rem 2rem;
+        box-shadow: none;
     }
 
     .custom-editorial-scrollbar::-webkit-scrollbar {

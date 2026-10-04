@@ -145,7 +145,11 @@ BOT_USER_AGENT = os.environ.get(
 REFRESH_INTERVAL = 300
 FEED_LIMIT = 10
 AI_DAILY_LIMIT = 1000000
-CLUSTER_LOOKBACK = 300  # Narrowed to reduce memory pressure
+# Ingestion clustering window: titles from the last CLUSTER_WINDOW_HOURS, capped at
+# CLUSTER_LOOKBACK rows. Embeddings are not loaded per article; ingestion reads one
+# centroid per active cluster instead, which keeps memory and transfer flat.
+CLUSTER_WINDOW_HOURS = 24
+CLUSTER_LOOKBACK = 4000
 BREAKING_SCORE_THRESHOLD = 4.5
 DB_RETAIN_DAYS = 90  # articles older than this are pruned daily
 DB_RETAIN_FAILED_TASKS_DAYS = 360  # failed tasks older than this are pruned daily
