@@ -1,0 +1,134 @@
+---
+/*
+ * Site header (2026-10 broadsheet redesign): dark top bar with the edition date,
+ * live counts and theme/text-size controls; masthead with search; section nav.
+ * Used on every public page via NYTHeader.astro.
+ */
+import TextScaleIsland from '../TextScaleIsland';
+import NativeAdSlot from '../NativeAdSlot.astro';
+import { apiBaseUrl } from '../../lib/apiBase';
+import { fetchJsonCached } from '../../lib/apiCache';
+import { getLangFromUrl } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+    category?: string | null;
+    topic?: string | null;
+    entity?: string | null;
+    subcategory?: string | null;
+    q?: string | null;
+    stats?: any | null;
+    showTopAd?: boolean;
+}
+
+const { category, topic, entity, subcategory, q, stats: propStats } = Astro.props;
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const l = (path: string) => localePath(path, lang, hostHeader);
+const API_URL = apiBaseUrl();
+
+let stats = propStats;
+let navItems: Array<{ label: string; href: string; key: string; value: string }> = [];
+try {
+    const needsStats = !stats || stats.last_24h == null || stats.total_feeds == null;
+    const [navResult, statsResult] = await Promise.allSettled([
+        fetchJsonCached(`${API_URL}/navigation?lang=${lang}`, 120_000),
+        needsStats ? fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`, 60_000) : Promise.resolve(stats),
+    ]);
+    if (statsResult.status === 'fulfilled') stats = statsResult.value;
+    if (navResult.status === 'fulfilled') {
+        navItems = (navResult.value?.sections || [])
+            .filter((s: any) => s?.type === 'core' || s?.type === 'dynamic')
+            .flatMap((s: any) => s.items || [])
+            .filter((item: any) => typeof item?.href === 'string' && item.href.startsWith('/?'))
+            .slice(0, 8)
+            .map((item: any) => {
+                const params = new URLSearchParams(item.href.slice(2));
+                const [key = '', value = ''] = [...params.entries()][0] || [];
+                return { label: String(item.label || '').replace('#', ''), href: l(item.href), key, value };
+            });
+    }
+} catch (e) {
+    console.error('[SiteHeader] Fetch error:', e);
+}
+
+const filters: Record<string, string | null | undefined> = { category, topic, entity, subcategory };
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const homePath = (l('/').replace(/\/$/, '') || '/');
+const isHome = path === homePath && !q && !category && !topic && !entity && !subcategory;
+const isActive = (item: { key: string; value: string }) =>
+    Boolean(item.key && filters[item.key] && filters[item.key] === item.value);
+const isPath = (target: string) => {
+    const t = l(target).replace(/\/$/, '');
+    return path === t || path.startsWith(`${t}/`);
+};
+
+const adFreePaths = ['/marketing', '/mk/marketing'];
+const showTopAd = Astro.props.showTopAd ?? !adFreePaths.some((p) => Astro.url.pathname.endsWith(p));
+
+const fmt = new Intl.NumberFormat('mk-MK');
+const editionDate = new Intl.DateTimeFormat('mk-MK', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Skopje',
+}).format(new Date());
+const editionDateLabel = editionDate.charAt(0).toUpperCase() + editionDate.slice(1);
+---
+
+<div class="bs-scope bs-site-header" id="main-header">
+    <header class="bs-topbar">
+        <div class="bs-wrap bs-topbar-row">
+            <span class="bs-topbar-date">{editionDateLabel}</span>
+            <span class="bs-topbar-stats">
+                {stats?.last_24h != null && <span><strong class="bs-num">{fmt.format(stats.last_24h)}</strong> написи за 24 часа</span>}
+                {stats?.total_feeds != null && <span><strong class="bs-num">{stats.total_feeds}</strong> {stats.total_feeds === 1 ? 'извор' : 'извори'}</span>}
+                {stats?.total_clusters != null && <span><strong class="bs-num">{fmt.format(stats.total_clusters)}</strong> приказни</span>}
+                <span class="bs-topbar-tools" data-no-script-convert>
+                    <TextScaleIsland client:idle lang={lang} />
+                    <button
+                        type="button"
+                        class="bs-theme-toggle"
+                        data-theme-toggle
+                        aria-pressed="false"
+                        aria-label="Префрли на темен режим"
+                        data-label-dark="Префрли на темен режим"
+                        data-label-light="Префрли на светол режим"
+                    >
+                        <svg class="bs-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"></path></svg>
+                        <svg class="bs-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+                        <span class="bs-when-light">Темен режим</span>
+                        <span class="bs-when-dark">Светол режим</span>
+                    </button>
+                </span>
+            </span>
+        </div>
+    </header>
+
+    <div class="bs-masthead">
+        <div class="bs-wrap bs-masthead-row">
+            <a href={l('/')} class="bs-brand" aria-label="Пресек — почетна">
+                <span class="bs-brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span class="bs-brand-name">Пресек</span>
+            </a>
+            <form class="bs-search" action={l('/')} method="get" role="search">
+                <label for="bs-q" class="sr-only">Пребарај вести</label>
+                <input id="bs-q" name="q" type="search" placeholder="Пребарај вести, луѓе, теми…" autocomplete="off" value={q || ''} />
+                <button type="submit">Барај</button>
+            </form>
+        </div>
+        <nav class="bs-wrap bs-nav" aria-label="Рубрики">
+            <a href={l('/')} aria-current={isHome ? 'page' : undefined}>Најважно</a>
+            {navItems.map((item) => <a href={item.href} aria-current={isActive(item) ? 'page' : undefined}>{item.label}</a>)}
+            <a href={l('/archive')} class="bs-nav-muted" aria-current={isPath('/archive') ? 'page' : undefined}>Архива</a>
+            <a href={l('/izvori')} class="bs-nav-muted" aria-current={isPath('/izvori') ? 'page' : undefined}>Извори</a>
+        </nav>
+    </div>
+
+    {showTopAd && (
+        <div class="bs-wrap bs-header-ad">
+            <NativeAdSlot slotId="top_banner" />
+        </div>
+    )}
+</div>
