@@ -92,6 +92,25 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
         "решење": "решение",
         "односи": "односи",
         "већ": "веќе",
+        # Bulgarian / Russian leaks observed in generated summaries
+        "обвинения": "обвинувања",
+        "продължува": "продолжува",
+        "продължава": "продолжува",
+        "комбинацията": "комбинацијата",
+        "неблагоприятни": "неповолни",
+        "буђење": "будење",
+        "също": "исто така",
+        "който": "кој",
+        "които": "кои",
+        "това": "тоа",
+        "този": "овој",
+        "тази": "оваа",
+        "тези": "овие",
+        "ще": "ќе",
+        "бяха": "беа",
+        "български": "бугарски",
+        "българия": "бугарија",
+        "европейски": "европски",
         # Latin leaks
         "tokom": "во текот на",
         "između": "меѓу",
@@ -209,6 +228,21 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
         "š": "ш",
     }
 
+    # Letters that do not exist in the Macedonian alphabet. Mapped to the
+    # closest MK letter as a best-effort fallback for words not covered by the
+    # word-level leaks above (e.g. Bulgarian/Russian/Serbian spills).
+    foreign_letters = {
+        "й": "ј",
+        "я": "ја",
+        "ю": "ју",
+        "ы": "и",
+        "э": "е",
+        "ё": "е",
+        "ћ": "ќ",
+        "ђ": "ѓ",
+        "ъ": "а",
+    }
+
     def clean_word(word: str) -> str:
         if word.startswith("[") and word.endswith("]"):
             return word
@@ -219,6 +253,9 @@ def _clean_macedonian_spelling_and_script(text: str) -> str:
             if word[0].isupper():
                 replacement = replacement[0].upper() + replacement[1:]
             return replacement
+
+        if any(c in foreign_letters for c in word):
+            word = "".join(foreign_letters.get(c, c) for c in word)
 
         has_cyrillic = any("\u0400" <= char <= "\u04ff" for char in word)
         has_latin = any(("a" <= char.lower() <= "z") for char in word)
