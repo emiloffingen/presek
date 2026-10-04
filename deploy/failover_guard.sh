@@ -17,6 +17,8 @@ LOG="$APP_DIR/logs/failover_guard.log"
 LOCK="$APP_DIR/logs/.failover_guard.lock"
 CF_LOG="$APP_DIR/logs/cloudflared.log"
 INTERVAL="${FAILOVER_INTERVAL:-30}"
+SYNC_SCRIPT="$APP_DIR/deploy/sync_shield.sh"
+SYNC_INTERVAL="${SHIELD_SYNC_INTERVAL:-300}"
 SHIELD_SSH="${SHIELD_SSH:-u0_a106@100.77.135.12}"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="${SSH_KEY:-/root/.ssh/termux_test}"
@@ -82,13 +84,20 @@ ensure_standby_origin() {
       "cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 exec node ./dist/server/entry.mjs"
 }
 
-ok_streak=0; fail_streak=0
+ok_streak=0; fail_streak=0; last_sync=0
 log "failover guard started (interval ${INTERVAL}s, shield ${SHIELD_SSH})"
 while true; do
+  now=$(date +%s)
   ensure_standby_origin
   if shield_healthy; then
     ok_streak=$((ok_streak + 1)); fail_streak=0
     [ "$ok_streak" -ge 2 ] && stop_tunnel
+    # Ship the current build to the Shield (throttled, detached) so a return
+    # from failover cannot leave it on a stale dist.
+    if [ -x "$SYNC_SCRIPT" ] && [ $((now - last_sync)) -ge "$SYNC_INTERVAL" ]; then
+      last_sync=$now
+      setsid bash -c "exec 9>&-; exec '$SYNC_SCRIPT'" </dev/null >>"$APP_DIR/logs/shield_sync.out" 2>&1 &
+    fi
   else
     fail_streak=$((fail_streak + 1)); ok_streak=0
     [ "$fail_streak" -ge 2 ] && start_tunnel
