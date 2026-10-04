@@ -7,7 +7,7 @@ export const nav = {
     'nav.briefing': 'Брифинг',
     'nav.browse_edition': 'Издание',
     'nav.close': 'Затвори',
-    'nav.contact': 'Кореспонденција',
+    'nav.contact': 'Контакт',
     'nav.cookies': 'Колачиња',
     'nav.editorial': 'Едиторијал',
     'nav.follow_us': 'Следете нѐ',
