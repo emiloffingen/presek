@@ -406,6 +406,15 @@ const renderSynthesisHtml = (text: string) => {
         text-shadow: 1px 1px 0 var(--background), 3px 3px 0 color-mix(in srgb, var(--cluster-accent, var(--presek-mark)) 15%, transparent);
 	}
 
+	/* On phones the full-size cap leaves room for a single word per line beside it. */
+	@media (max-width: 640px) {
+		.narrative-p.drop-cap::first-letter {
+			font-size: 3.4rem;
+			line-height: 0.85;
+			padding-right: 8px;
+		}
+	}
+
     .narrative-facts-box {
         margin-top: 4rem;
         padding: 2rem;

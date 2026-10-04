@@ -619,3 +619,9 @@ html:root :is(.masthead-intro, .topic-intro, .not-found-intro) { text-wrap: pret
 @media (prefers-reduced-motion: reduce) {
     .bs-nav a, .bs-btn, .bs-search button, .bs-theme-toggle, .bs-chip { transition: none; }
 }
+
+/* NewsCard photos fill their 3:2 frame. layout-shell.css forces `img { height: auto
+   !important }`, so photos wider or narrower than the frame left a gap (or spilled over
+   the crop) on topic, entity, archive and for-you cards. */
+.image-wrap a { display: block; height: 100%; }
+.image-wrap img.article-image { height: 100% !important; object-fit: cover; }
