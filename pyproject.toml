@@ -113,6 +113,12 @@ default-groups = ["api"]
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint]
+# Pin the rule set to ruff <=0.15's defaults. ruff 0.16 turned on far more rules
+# by default (~800 findings in this repo), so an unpinned upgrade changes what
+# lint checks. Widen this list deliberately, not via a tool upgrade.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.ruff.lint.per-file-ignores]
 # These modules do sys.path.insert() or env setup before project imports — intentional pattern
 "core/*.py" = ["E402"]
