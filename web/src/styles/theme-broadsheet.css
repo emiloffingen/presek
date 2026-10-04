@@ -1,0 +1,598 @@
+/* Broadsheet theme (2026-10 redesign) — site-wide.
+ *
+ * Loaded last from Layout.astro so it wins over the older token sets in
+ * global.css and presek-identity.css (`html:root` / `html.dark` out-rank their
+ * `:root` / `.dark`). Every page reads these tokens, so restyling a page is
+ * mostly a matter of using var(--background), var(--border), … as before.
+ *
+ * Dark mode has two entry points — the explicit `.dark` class set by the theme
+ * toggle and the system preference when no class is set — so the dark block is
+ * written twice.
+ */
+
+@import "@fontsource/source-serif-4/cyrillic-600.css";
+@import "@fontsource/source-serif-4/latin-400.css";
+@import "@fontsource/source-serif-4/latin-600.css";
+@import "@fontsource/source-serif-4/latin-700.css";
+@import "@fontsource/ibm-plex-sans/cyrillic-400.css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+
+html:root {
+    /* Broadsheet palette */
+    --bs-bg: #f4f4f1;
+    --bs-surface: #ffffff;
+    --bs-border: #dcddd8;
+    --bs-input-border: #b9bbb4;
+    --bs-text: #16181d;
+    --bs-body: #2e323a;
+    --bs-muted: #4a4f59;
+    --bs-accent: #b3261e;
+    --bs-on-accent: #ffffff;
+    --bs-bar3: #8a8e96;
+    --bs-bar4: #c3c5c0;
+    --bs-photo: #dadcd7;
+    --bs-topbar: #16181d;
+    --bs-topbar-text: #c9cbd1;
+    --bs-quote-bg: #16181d;
+    --bs-quote-text: #f4f4f1;
+    --bs-quote-muted: #c9cbd1;
+    --bs-quote-border: #16181d;
+    --bs-serif: 'Source Serif 4', Georgia, serif;
+    --bs-sans: 'IBM Plex Sans', system-ui, sans-serif;
+
+    /* Site tokens mapped onto the palette */
+    --background: var(--bs-bg);
+    --foreground: var(--bs-text);
+    --card: var(--bs-surface);
+    --card-foreground: var(--bs-text);
+    --popover: var(--bs-surface);
+    --popover-foreground: var(--bs-text);
+    --primary: var(--bs-text);
+    --primary-foreground: var(--bs-bg);
+    --secondary: #ecece8;
+    --secondary-foreground: var(--bs-text);
+    --muted: #efefeb;
+    --muted-foreground: var(--bs-muted);
+    --accent: #ecece8;
+    --accent-foreground: var(--bs-text);
+    --destructive: #b3261e;
+    --border: var(--bs-border);
+    --input: var(--bs-input-border);
+    --ring: var(--bs-accent);
+    --surface-soft: #fafaf8;
+    --surface-strong: #ecece8;
+
+    --presek-mark: var(--bs-accent);
+    --product-accent: var(--bs-accent);
+    --nyt-accent: var(--bs-accent);
+    --nyt-red: var(--bs-accent);
+    --nyt-black: var(--bs-text);
+    --nyt-gray-100: #efefeb;
+    --nyt-gray-200: #e4e5e0;
+    --nyt-gray-300: var(--bs-border);
+    --nyt-gray-500: #6b707a;
+    --nyt-gray-600: var(--bs-muted);
+    --ui-chrome: var(--bs-muted);
+    --link: var(--bs-text);
+    --link-hover: var(--bs-accent);
+
+    /* Typography: Source Serif 4 for reading, IBM Plex Sans for interface */
+    --font-serif: var(--bs-serif);
+    --font-serif-display: var(--bs-serif);
+    --font-nyt-body: var(--bs-serif);
+    --font-sans: var(--bs-sans);
+    --font-ui: var(--bs-sans);
+    --font-ui-condensed: var(--bs-sans);
+    --font-ui-wide: var(--bs-sans);
+    --font-serif-mk: var(--bs-serif);
+    --font-ui-mk: var(--bs-sans);
+    --nyt-font-serif: var(--bs-serif);
+    --nyt-font-sans: var(--bs-sans);
+
+    --radius-sm: 3px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+}
+
+html.dark {
+    --bs-bg: #121317;
+    --bs-surface: #1b1d22;
+    --bs-border: #2c2f36;
+    --bs-input-border: #3a3e46;
+    --bs-text: #ecedef;
+    --bs-body: #c9ccd2;
+    --bs-muted: #a3a7b0;
+    --bs-accent: #f07167;
+    --bs-on-accent: #121317;
+    --bs-bar3: #6b707a;
+    --bs-bar4: #464a52;
+    --bs-photo: #2a2d34;
+    --bs-topbar: #0b0c0f;
+    --bs-topbar-text: #a3a7b0;
+    --bs-quote-bg: #1b1d22;
+    --bs-quote-text: #ecedef;
+    --bs-quote-muted: #a3a7b0;
+    --bs-quote-border: #2c2f36;
+
+    --secondary: #22252b;
+    --muted: #1b1d22;
+    --accent: #22252b;
+    --destructive: #f07167;
+    --surface-soft: #17191d;
+    --surface-strong: #22252b;
+    --nyt-gray-100: #17191d;
+    --nyt-gray-200: #22252b;
+    --nyt-gray-500: #8a8e96;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:root:not(.light) {
+        --bs-bg: #121317;
+        --bs-surface: #1b1d22;
+        --bs-border: #2c2f36;
+        --bs-input-border: #3a3e46;
+        --bs-text: #ecedef;
+        --bs-body: #c9ccd2;
+        --bs-muted: #a3a7b0;
+        --bs-accent: #f07167;
+        --bs-on-accent: #121317;
+        --bs-bar3: #6b707a;
+        --bs-bar4: #464a52;
+        --bs-photo: #2a2d34;
+        --bs-topbar: #0b0c0f;
+        --bs-topbar-text: #a3a7b0;
+        --bs-quote-bg: #1b1d22;
+        --bs-quote-text: #ecedef;
+        --bs-quote-muted: #a3a7b0;
+        --bs-quote-border: #2c2f36;
+
+        --secondary: #22252b;
+        --muted: #1b1d22;
+        --accent: #22252b;
+        --destructive: #f07167;
+        --surface-soft: #17191d;
+        --surface-strong: #22252b;
+        --nyt-gray-100: #17191d;
+        --nyt-gray-200: #22252b;
+        --nyt-gray-500: #8a8e96;
+    }
+}
+
+html:root body {
+    background: var(--bs-bg);
+    color: var(--bs-text);
+    font-family: var(--bs-sans);
+}
+
+/* ── Shared broadsheet scope (header, footer, homepage) ── */
+.bs-scope {
+    font-family: var(--bs-sans);
+    color: var(--bs-text);
+}
+.bs-scope a { color: inherit; text-decoration: none; }
+.bs-scope a:hover { text-decoration: underline; }
+.bs-scope a:focus-visible,
+.bs-scope button:focus-visible,
+.bs-scope input:focus-visible {
+    outline: 2px solid var(--bs-accent);
+    outline-offset: 2px;
+}
+
+.bs-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+}
+
+.bs-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.bs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--bs-text);
+    color: var(--bs-bg);
+    font: inherit;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.bs-scope .bs-btn { color: var(--bs-bg); }
+.bs-scope .bs-btn:hover { text-decoration: none; opacity: 0.9; }
+.bs-scope .bs-btn-outline { background: transparent; color: var(--bs-text); border: 1px solid var(--bs-text); }
+.bs-scope .bs-btn-accent { background: var(--bs-accent); color: var(--bs-on-accent); }
+
+/* ── Header ──────────────────────────────────────────── */
+.bs-topbar { background: var(--bs-topbar); color: var(--bs-topbar-text); }
+.bs-topbar-row {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+}
+.bs-topbar-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
+.bs-topbar-stats strong { color: #ffffff; }
+.bs-topbar-tools { display: inline-flex; align-items: center; gap: 8px; }
+.bs-topbar-tools .header-utility-button {
+    color: #ffffff;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #4a4e57;
+    border-radius: 999px;
+}
+.bs-topbar-tools .header-utility-button:hover { background: transparent; border-color: #8a8e96; }
+
+.bs-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #4a4e57;
+    border-radius: 999px;
+    background: transparent;
+    color: #ffffff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.bs-theme-toggle:hover { border-color: #8a8e96; }
+.bs-icon-sun,
+.bs-when-dark { display: none; }
+.dark .bs-icon-sun,
+.dark .bs-when-dark { display: inline; }
+.dark .bs-icon-moon,
+.dark .bs-when-light { display: none; }
+
+.bs-masthead { background: var(--bs-surface); border-bottom: 1px solid var(--bs-border); }
+.bs-masthead-row {
+    padding-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+}
+.bs-brand { display: flex; align-items: center; gap: 14px; }
+.bs-scope .bs-brand:hover { text-decoration: none; }
+.bs-brand-mark { display: flex; flex-direction: column; gap: 4px; width: 34px; }
+.bs-brand-mark span { height: 6px; background: var(--bs-text); }
+.bs-brand-mark span:nth-child(2) { background: var(--bs-accent); width: 70%; }
+.bs-brand-mark span:nth-child(3) { width: 45%; }
+.bs-brand-name {
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    font-size: 44px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.bs-search { display: flex; gap: 8px; align-items: center; flex: 0 1 360px; min-width: 240px; }
+.bs-search input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border: 1px solid var(--bs-input-border);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 15px;
+    background: var(--bs-bg);
+    color: var(--bs-text);
+}
+.bs-search input::placeholder { color: var(--bs-muted); }
+.bs-search button {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--bs-text);
+    color: var(--bs-bg);
+    font: inherit;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.bs-nav { padding-top: 16px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.bs-nav::-webkit-scrollbar { display: none; }
+.bs-nav a {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+    font-size: 15px;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+.bs-scope .bs-nav a:hover { text-decoration: none; border-bottom-color: var(--bs-border); }
+.bs-scope .bs-nav a[aria-current="page"] { font-weight: 600; border-bottom-color: var(--bs-accent); }
+.bs-nav .bs-nav-muted { color: var(--bs-muted); }
+
+.bs-header-ad { max-width: 1038px; margin-top: 24px; }
+.bs-header-ad .native-ad { margin: 0 auto; }
+
+/* NativeAdSlot restyled to the broadsheet tokens wherever it appears */
+.native-ad { border-radius: 6px; }
+.native-ad.native-ad--empty {
+    background: var(--bs-surface);
+    border: 1px dashed var(--bs-input-border);
+}
+.native-ad.native-ad--empty:hover { border-color: var(--bs-text); }
+.native-ad .native-ad__kicker,
+.native-ad .native-ad__format { color: var(--bs-muted); opacity: 1; }
+.native-ad .native-ad__title { font-family: var(--bs-serif); color: var(--bs-text); }
+.native-ad .native-ad__desc { color: var(--bs-body); }
+.native-ad .native-ad__price-now { color: var(--bs-text); }
+.native-ad .native-ad__cta {
+    background: var(--bs-text);
+    color: var(--bs-bg);
+    border-radius: 6px;
+    min-height: 44px;
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+.bs-footer { background: var(--bs-surface); border-top: 1px solid var(--bs-border); }
+.bs-footer-row {
+    padding-top: 32px;
+    padding-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    font-size: 14px;
+    color: var(--bs-muted);
+}
+.bs-footer-about { max-width: 52ch; }
+.bs-footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.bs-footer-legal { border-top: 1px solid var(--bs-border); }
+.bs-footer-legal .bs-wrap { padding-top: 16px; padding-bottom: 24px; font-size: 13px; color: var(--bs-muted); }
+
+/* ── Page shell for inner pages ──────────────────────── */
+.bs-page { padding-top: 32px; padding-bottom: 64px; }
+.bs-page-head { border-top: 3px solid var(--bs-text); padding-top: 14px; margin-bottom: 28px; }
+.bs-page-kicker {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bs-muted);
+}
+.bs-page-title {
+    margin: 6px 0 0;
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    font-size: clamp(30px, 3.4vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--bs-text);
+}
+
+/* ── Inner pages: shared building blocks restyled ─────────
+ * These classes are used across archive, sources, topic, entity, story and
+ * static pages. `html` / `html:root` prefixes out-rank the older page CSS and
+ * Astro's scoped [data-astro-cid] rules; being unlayered, they also win over
+ * Tailwind utilities (italic, font-black, …) on the same elements. */
+
+/* Content width matches the header and footer (1280px, 24px gutters). */
+html .site-layout {
+    width: 100%;
+    max-width: 1280px;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+/* Page masthead: one 3px rule on top, serif title, plain serif deck. */
+html .editorial-masthead {
+    border-top: 3px solid var(--bs-text);
+    border-bottom: 0;
+    padding-top: 14px;
+    padding-bottom: 0;
+    margin-bottom: 32px;
+}
+html .editorial-masthead .masthead-kicker,
+html .editorial-masthead .ui-label-min {
+    font-family: var(--bs-sans);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--bs-muted);
+}
+html:root .masthead-title,
+html:root .topic-headline {
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    max-width: none;
+    color: var(--bs-text);
+}
+html:root .masthead-title span,
+html:root .masthead-title em {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--bs-accent);
+}
+html:root .masthead-intro,
+html:root .editorial-masthead .masthead-main p,
+html:root .topic-intro {
+    font-family: var(--bs-serif);
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--bs-body);
+    max-width: 62ch;
+}
+html:root .topic-summary {
+    font-family: var(--bs-sans);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.5;
+    color: var(--bs-muted);
+}
+html:root .topic-kicker {
+    color: var(--bs-accent);
+    font-family: var(--bs-sans);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+/* Rules: the design uses a single 3px ink rule to open a section. */
+html .masthead-double-rule {
+    border-top: 3px solid var(--bs-text);
+    border-bottom: 0;
+    height: 0;
+}
+html .masthead-double-rule::before,
+html .masthead-double-rule::after { display: none; }
+
+/* Section headings inside pages. */
+html:root .type-section-title,
+html:root .section-title {
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+html:root .type-kicker,
+html:root .section-kicker {
+    font-family: var(--bs-sans);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+/* Reading text */
+html:root .prose-editorial {
+    font-family: var(--bs-serif);
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--bs-body);
+}
+html:root .prose-editorial h2,
+html:root .prose-editorial h3 {
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    color: var(--bs-text);
+}
+html:root .prose-editorial a { color: var(--bs-text); text-decoration: underline; text-decoration-color: var(--bs-accent); text-underline-offset: 3px; }
+
+/* Cards and panels: soft radius, hairline border, no heavy shadow. */
+html:root .shadow-editorial,
+html:root .design-card { box-shadow: none; }
+
+/* Breadcrumbs */
+html:root .breadcrumbs,
+html:root nav[aria-label="Breadcrumb"] {
+    font-family: var(--bs-sans);
+    color: var(--bs-muted);
+}
+
+@media (max-width: 759px) {
+    .bs-wrap { padding-left: 16px; padding-right: 16px; }
+    .bs-topbar-date { display: none; }
+    .bs-topbar-row { justify-content: flex-start; }
+    .bs-topbar-stats { gap: 6px 14px; width: 100%; justify-content: space-between; }
+    .bs-theme-toggle .bs-when-light,
+    .bs-theme-toggle .bs-when-dark { display: none !important; }
+    .bs-theme-toggle { padding: 0; width: 36px; justify-content: center; }
+    html .site-layout { padding-left: 16px; padding-right: 16px; }
+    html:root .masthead-intro,
+    html:root .editorial-masthead .masthead-main p,
+    html:root .topic-intro { font-size: 18px; }
+    .bs-brand-name { font-size: 36px; }
+    .bs-search { flex: 1 1 100%; min-width: 0; }
+}
+
+/* Static pages (about, methodology, legal…): section headings were italic. */
+html:root .section-title-italic {
+    font-family: var(--bs-serif);
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--bs-text);
+}
+
+/* 404 */
+.not-found-shell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 24px;
+    padding-top: 14px;
+    border-top: 3px solid var(--bs-text);
+}
+.not-found-main { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.not-found-main .page-kicker {
+    align-self: flex-start;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 3px;
+    background: var(--bs-accent);
+    color: var(--bs-on-accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+.not-found-headline {
+    margin: 0;
+    font-family: var(--bs-serif);
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    color: var(--bs-text);
+}
+.not-found-intro {
+    margin: 0;
+    font-family: var(--bs-serif);
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--bs-body);
+    max-width: 62ch;
+}
+.not-found-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.not-found-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--bs-text);
+    border-radius: 6px;
+    color: var(--bs-text);
+    font-family: var(--bs-sans);
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+}
+.not-found-link:hover { background: var(--bs-surface); }
+.not-found-link-primary { background: var(--bs-text); color: var(--bs-bg); }
+.not-found-link-primary:hover { background: var(--bs-text); opacity: 0.9; }
+.not-found-rail { flex: 1 1 300px; min-width: 0; }
+.not-found-rail-context {
+    background: var(--bs-surface);
+    border: 1px solid var(--bs-border);
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+.not-found-rail-context-summary { cursor: pointer; display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
+.not-found-rail-context-body { display: flex; flex-direction: column; gap: 16px; margin-top: 14px; }
+.not-found-rail .rail-card-title { margin: 0 0 6px; font-family: var(--bs-serif); font-size: 18px; font-weight: 700; }
+.not-found-rail .rail-copy { margin: 0; font-size: 15px; line-height: 1.5; color: var(--bs-body); }
+.not-found-list { display: flex; flex-direction: column; }
+.not-found-list a { padding: 10px 0; border-bottom: 1px solid var(--bs-border); color: var(--bs-text); text-decoration: none; }
+.not-found-list a:hover { text-decoration: underline; }
