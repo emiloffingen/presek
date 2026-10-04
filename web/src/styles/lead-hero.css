@@ -11,7 +11,7 @@
         transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-    :global(.dark) .lead-hero {
+    .dark .lead-hero {
         background-image: radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--dominant-color, var(--presek-mark)) 8%, transparent), transparent 75%);
     }
 
@@ -303,7 +303,7 @@
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    :global(.dark) .editorial-insight-panel {
+    .dark .editorial-insight-panel {
         background: linear-gradient(135deg, rgba(22, 26, 41, 0.75) 0%, rgba(15, 18, 29, 0.7) 100%);
         background-image: radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--dominant-color) 12%, transparent), transparent 65%);
         box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.3),
@@ -539,7 +539,7 @@
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-    :global(.dark) .lead-follow-strip {
+    .dark .lead-follow-strip {
         background: linear-gradient(135deg, rgba(22, 26, 41, 0.4) 0%, rgba(15, 18, 29, 0.35) 100%);
     }
 
@@ -571,7 +571,7 @@
             transition: transform 0.35s var(--ease-editorial), border-color 0.35s var(--ease-editorial), box-shadow 0.35s var(--ease-editorial);
 		}
 
-        :global(.dark) .lead-media-frame {
+        .dark .lead-media-frame {
             background: linear-gradient(135deg, rgba(22, 26, 41, 0.5) 0%, rgba(15, 18, 29, 0.45) 100%);
             box-shadow: 0 16px 50px -12px rgba(0, 0, 0, 0.5),
                         inset 0 1px 0px 0px color-mix(in srgb, var(--foreground) 4%, transparent);
@@ -740,8 +740,8 @@
         border: 1px solid color-mix(in srgb, var(--foreground) 9%, var(--border));
     }
 
-    .lead-media-frame-fallback .lead-media-placeholder-error :global(svg),
-    .lead-media-frame.media-failed .lead-media-placeholder-error :global(svg) {
+    .lead-media-frame-fallback .lead-media-placeholder-error svg,
+    .lead-media-frame.media-failed .lead-media-placeholder-error svg {
         color: color-mix(in srgb, var(--foreground) 24%, transparent);
     }
 
@@ -1210,7 +1210,7 @@
 
 			.lead-synthesis-badge,
 			.lead-kicker-meta .story-freshness-badge,
-			.lead-kicker-meta :global(.story-freshness-badge) {
+			.lead-kicker-meta .story-freshness-badge {
 				display: none !important;
 			}
 

@@ -369,7 +369,8 @@ async def create_admin_token_endpoint(
             "created_at": token_info.created_at.isoformat(),
         }
     except ValueError as e:
-        return {"status": "error", "message": str(e)}
+        log.warning(f"Invalid admin token payload: {e}")
+        return {"status": "error", "message": "Invalid admin token payload"}
     except Exception as e:
         log.error(f"Failed to create admin token: {e}")
         return {"status": "error", "message": "Failed to create admin token"}
@@ -545,4 +546,5 @@ async def update_localization_rules(
             return {"status": "success", "message": "Rules updated and hot-reloaded successfully."}
         return soft_error(message="Invalid rules payload structure or keys.")
     except Exception as e:
-        return soft_error(message=f"Failed to update rules: {str(e)}")
+        log.error(f"Failed to update rules: {e}", exc_info=True)
+        return soft_error(message="Failed to update rules")

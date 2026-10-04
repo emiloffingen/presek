@@ -62,7 +62,8 @@ class ResearchService:
         if not url:
             return ""
         parsed = urlparse(url)
-        if parsed.netloc.endswith("duckduckgo.com") and parsed.path.startswith("/l/"):
+        host = parsed.netloc.lower().split(":")[0]
+        if host in ("duckduckgo.com", "www.duckduckgo.com") and parsed.path.startswith("/l/"):
             target = parse_qs(parsed.query).get("uddg", [""])[0]
             return unquote(target) if target else url
         return url

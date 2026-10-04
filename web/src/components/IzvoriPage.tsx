@@ -479,14 +479,15 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('sources.search_placeholder')}
-              className="w-full bg-secondary/20 border-b-2 border-border py-2 pl-2 pr-10 font-serif font-bold text-base md:text-lg outline-none focus:border-presek-mark placeholder:italic placeholder:font-normal placeholder:opacity-40 transition-all"
+              aria-label={t('sources.search_placeholder')}
+              className="w-full h-11 bg-card border border-input rounded-md pl-3.5 pr-10 font-sans text-[15px] outline-none focus:border-foreground placeholder:text-muted-foreground transition-colors"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-40">
               <Search size={18} />
             </div>
           </div>
 
-          <div className="filter-group flex w-full md:w-auto p-1 bg-secondary/30 rounded-none border border-border">
+          <div className="filter-group flex w-full md:w-auto p-1 bg-card rounded-lg border border-border">
             {[
               { id: 'all', label: t('sources.all') },
               { id: 'high', label: t('sources.high_trust') },
@@ -495,9 +496,10 @@ const IzvoriPage: React.FC<{ lang?: keyof typeof ui }> = ({ lang = 'mk' }) => {
               <button
                 key={t_tier.id}
                 onClick={() => setFilterTier(t_tier.id)}
-                className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-none ui-label-min transition-all ${
+                aria-pressed={filterTier === t_tier.id}
+                className={`flex-1 md:flex-none min-h-[40px] px-3 md:px-4 py-2 rounded-md ui-label-min transition-all ${
                   filterTier === t_tier.id
-                    ? 'bg-presek-mark text-white'
+                    ? '!bg-foreground !text-background'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >

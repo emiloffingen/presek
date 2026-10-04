@@ -5,6 +5,7 @@ import logging
 import os
 import random
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -21,6 +22,12 @@ from routes.security import verify_csrf_token
 
 log = logging.getLogger("presek")
 router = APIRouter()
+
+# Short TTL in-process cache for the ad-slot lookup. The storefront SSR calls
+# this endpoint on every render; the payload changes only when campaigns change,
+# so a small TTL removes the repeated DB round-trip without staleness concerns.
+_ADS_CACHE = {"data": None, "ts": 0.0}
+_ADS_CACHE_TTL = int(os.environ.get("MARKETING_ADS_CACHE_TTL", "60"))
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
@@ -418,7 +425,12 @@ async def stripe_webhook(request: Request):
 
 
 @router.get("/marketing/ads/active")
-async def get_active_ads():
+async def get_active_ads(response: Response):
+    response.headers["Cache-Control"] = f"public, max-age={_ADS_CACHE_TTL}"
+    now = time.time()
+    cached = _ADS_CACHE["data"]
+    if cached is not None and (now - _ADS_CACHE["ts"]) < _ADS_CACHE_TTL:
+        return cached
     try:
         sql = f"""
             SELECT id, slot_id, image_url, target_url, impressions_delivered, target_impressions
@@ -439,7 +451,10 @@ async def get_active_ads():
                     "target_url": row["target_url"],
                 }
             )
-        return {"status": "success", "ads": ads_by_slot}
+        result = {"status": "success", "ads": ads_by_slot}
+        _ADS_CACHE["data"] = result
+        _ADS_CACHE["ts"] = time.time()
+        return result
     except Exception as e:
         log.exception(f"[marketing] Active ads fetch failed: {e}")
         return {"status": "error", "ads": {}}

@@ -896,7 +896,7 @@ def get_clustering_status(authorized: str = Depends(admin.verify_admin)):
         }
     except Exception as e:
         log.error(f"Failed to get clustering status: {e}")
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": "Failed to get clustering status"}
 
 
 # Include routers with /api prefix

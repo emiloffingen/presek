@@ -3,8 +3,8 @@
 
 import { shouldCacheApiPath, shouldStoreApiResponse, offlinePageForPath } from './sw-cache-policy.js';
 
-const CACHE_NAME = 'presek-v31';
-const API_CACHE_NAME = 'presek-api-v31';
+const CACHE_NAME = 'presek-v32';
+const API_CACHE_NAME = 'presek-api-v32';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
 const OFFLINE_URL = '/offline';
@@ -112,8 +112,8 @@ self.addEventListener('fetch', (e) => {
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.woff') ||
     url.pathname.endsWith('.ttf') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    url.hostname.includes('fonts.googleapis.com')
+    url.hostname === 'fonts.gstatic.com' ||
+    url.hostname === 'fonts.googleapis.com'
   ) {
     e.respondWith(
       caches.open(CACHE_NAME).then((cache) => cache.match(e.request).then((cachedResponse) => {

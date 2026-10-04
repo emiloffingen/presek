@@ -293,7 +293,8 @@ maybe_backup() {
 # transient blip), and only transitions alert (no repeat spam). This runs in
 # the supervised watchdog, unlike the old detached shield_watch_phone.sh which
 # silently died on 2026-09-26.
-NTFY_URL="${NTFY_URL:-https://ntfy.sh/presek-alerts-09c4417ba2ed}"
+NTFY_URL="${NTFY_URL:-}"
+NTFY_TOKEN="${NTFY_TOKEN:-}"
 SITE_CHECK_FILE="$LOG_DIR/.site_last_check"
 SITE_MISS_FILE="$LOG_DIR/.site_miss"
 SITE_ALERTED_FILE="$LOG_DIR/.site_alerted"
@@ -301,7 +302,12 @@ SITE_STALE_MISS_FILE="$LOG_DIR/.site_stale_miss"
 SITE_STALE_ALERTED_FILE="$LOG_DIR/.site_stale_alerted"
 SITE_CHECK_INTERVAL="${SITE_CHECK_INTERVAL:-60}"
 
-notify() { curl -s -m 10 -H "Title: $1" -H "Tags: $2" -d "$3" "$NTFY_URL" >/dev/null 2>&1; }
+notify() {
+  [ -n "$NTFY_URL" ] || return 0
+  local auth=()
+  [ -n "$NTFY_TOKEN" ] && auth=(-H "Authorization: Bearer $NTFY_TOKEN")
+  curl -s -m 10 -H "Title: $1" -H "Tags: $2" "${auth[@]}" -d "$3" "$NTFY_URL" >/dev/null 2>&1
+}
 
 check_site_health() {
   local now last code miss alerted lbody

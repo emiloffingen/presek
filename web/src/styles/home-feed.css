@@ -858,8 +858,8 @@
   }
 }
 
-:global(.briefing-inline-ad),
-:global(.archive-inline-ad) {
+.briefing-inline-ad,
+.archive-inline-ad {
   max-width: 100%;
 }
 

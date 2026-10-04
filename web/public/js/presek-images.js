@@ -18,6 +18,20 @@
     return `${proxyBase}/proxy?cat=${encodeURIComponent(cat)}&lang=${pageLang}&w=720`;
   };
 
+  // Only accept a same-origin path or an http(s) URL from the DOM; anything
+  // else (javascript:, data:, etc.) falls back to the safe placeholder.
+  const safeSrcUrl = (value) => {
+    const raw = (value || '').trim();
+    if (/^\/(?!\/)/.test(raw)) return raw;
+    try {
+      const parsed = new URL(raw, document.baseURI);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+    } catch (_err) {
+      /* not a valid URL */
+    }
+    return emergencyFallbackUrl();
+  };
+
   const getSourceInitials = (source) => {
     const cleaned = source.trim();
     if (!cleaned) return 'P';
@@ -80,7 +94,7 @@
 
     if (img.classList.contains('article-image') && !img.classList.contains('article-image-fallback')) {
       img.removeAttribute('srcset');
-      const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
+      const fallbackUrl = safeSrcUrl(img.getAttribute('data-fallback-url'));
       img.src = fallbackUrl;
       img.classList.add('is-loaded', 'article-image-fallback');
       const imageWrap = img.closest('.image-wrap');
@@ -106,7 +120,7 @@
     }
     if (img.classList.contains('lead-media-image') && !img.classList.contains('lead-media-fallback-image')) {
       img.removeAttribute('srcset');
-      const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
+      const fallbackUrl = safeSrcUrl(img.getAttribute('data-fallback-url'));
       img.src = fallbackUrl;
       img.classList.add('is-loaded', 'lead-media-fallback-image');
       const parent = img.parentElement;
@@ -124,7 +138,7 @@
     }
     if (img.classList.contains('hero-main-image') && !img.classList.contains('article-image-fallback')) {
       img.removeAttribute('srcset');
-      const fallbackUrl = img.getAttribute('data-fallback-url') || emergencyFallbackUrl();
+      const fallbackUrl = safeSrcUrl(img.getAttribute('data-fallback-url'));
       img.src = fallbackUrl;
       img.classList.add('is-loaded', 'article-image-fallback');
       const card = img.closest('.hero-visual-card');

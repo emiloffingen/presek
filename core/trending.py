@@ -480,7 +480,7 @@ def extract_words_with_flags(title: str) -> list[tuple[str, bool]]:
 
     for sentence in sentences:
         # Tokenise: keep Cyrillic + Latin runs, strip surrounding punctuation
-        tokens = re.findall(r"[a-sA-S\w''-]+", sentence, re.UNICODE)
+        tokens = re.findall(r"[\w''-]+", sentence, re.UNICODE)
         for idx, raw in enumerate(tokens):
             # Strip leading/trailing punctuation characters
             word = raw.strip("\"'\u201e\u201c\u201f\u00ab\u00bb,;:!?()-\u2013\u2014")

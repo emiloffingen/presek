@@ -38,18 +38,18 @@ const translations = {
     impressions: 'Вкупен број на импресии',
     file: 'Прикачете банер (Макс. 150KB)',
     cpm: 'CPM цена',
-    dailyAverage: 'Просечно импресии дневно',
+    dailyAverage: 'Просечен број импресии дневно',
     totalDays: 'Вкупно денови',
     totalPrice: 'Вкупна цена за плаќање',
     minCheckoutError: `Минималниот износ за плаќање е €${MIN_CHECKOUT_EUR}.`,
-    minDailyError: 'Минималниот просечен број на импресии дневно е 2,000.',
+    minDailyError: 'Минималниот просечен број на импресии дневно е 2.000.',
     dateError: 'Крајниот датум мора да биде почетниот датум или подоцна.',
     futureDateError: 'Почетниот датум не може да биде во минатото.',
     fileSizeError: 'Големината на фајлот ја надминува границата од 150KB.',
     fileTypeError: 'Невалиден тип на фајл. Дозволени се само слики (png, jpg, jpeg, gif, webp).',
     submit: 'Продолжи кон плаќање (Stripe)',
     reviewNote: 'Секоја реклама се прегледува пред објавување, обично во рок од 24 часа. Ако банерот или линкот не ги исполнуваат правилата, добивате целосен поврат на средствата.',
-    submitting: 'Се процесира...',
+    submitting: 'Се обработува...',
     success: 'Успешна резервација!',
     error: 'Настана грешка. Обидете се повторно.',
     top_banner_desc: 'Голем банер на врвот на страницата (990x80 или 990x150). Одличен за максимална видливост.',
@@ -602,7 +602,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             <div className="space-y-2 text-xxs leading-relaxed">
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-muted/40 border border-border text-muted-foreground">
                 <div className={`w-1.5 h-1.5 shrink-0 ${dailyAvg >= 2000 ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-amber-600 dark:bg-amber-400'}`} />
-                <span>{lang === 'mk' ? 'Минимум 2,000 импресии/ден' : 'Minimum 2,000 impresija/dan'}</span>
+                <span>{lang === 'mk' ? 'Минимум 2.000 импресии/ден' : 'Minimum 2,000 impresija/dan'}</span>
               </div>
               <div className="flex items-center gap-2 px-2 py-1.5 rounded-none bg-muted/40 border border-border text-muted-foreground">
                 <div className={`w-1.5 h-1.5 shrink-0 ${totalCost >= MIN_CHECKOUT_EUR ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-amber-600 dark:bg-amber-400'}`} />

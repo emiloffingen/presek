@@ -84,7 +84,8 @@ def _probe_database():
     try:
         result["size_mb"] = database.get_db_size()
     except Exception as exc:
-        result["error"] = f"db_size probe failed: {exc}"
+        log.debug(f"db_size probe failed: {exc}")
+        result["error"] = "db_size probe failed"
 
     return result
 
