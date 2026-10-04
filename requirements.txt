@@ -97,7 +97,7 @@ fastembed==0.8.1
     # via presek
 feedparser==6.0.12
     # via presek
-filelock==3.29.5
+filelock==4.0.7
     # via huggingface-hub
 flatbuffers==25.12.19
     # via onnxruntime
