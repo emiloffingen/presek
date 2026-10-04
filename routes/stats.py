@@ -594,46 +594,23 @@ async def subscribe_newsletter(request: Request, csrf_valid: bool = Depends(veri
     email = validate_email(body.get("email", ""), "email")
     locale = "mk" if str(body.get("locale") or "sr").strip().lower() == "mk" else "sr"
     try:
-        # Try inserting with locale first (modern schema)
+        # subscribers.email has a unique constraint (migration o5e6f7a8b9c0)
         await db.async_execute(
-            """INSERT INTO subscribers (email, locale)
-               VALUES (%s, %s)
-               ON CONFLICT (email, locale)
-               DO UPDATE SET is_active = TRUE""",
-            (email, locale),
+            "INSERT INTO subscribers (email, is_active) VALUES (%s, TRUE) "
+            "ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
+            (email,),
             fetch=False,
         )
     except Exception as e:
-        err_msg = str(e).lower()
-        if 'column "locale" does not exist' in err_msg:
-            log.warning(f"[subscribe] Legacy schema detected: locale column missing. Falling back. Error: {e}")
-            try:
-                # Fallback to legacy schema (without locale)
-                await db.async_execute(
-                    "INSERT INTO subscribers (email) VALUES (%s) ON CONFLICT (email) DO UPDATE SET is_active = TRUE",
-                    (email,),
-                    fetch=False,
-                )
-            except Exception as e2:
-                log.error(f"[subscribe] Final fallback failed: {e2}")
-                return {
-                    "status": "error",
-                    "message": (
-                        "Грешка при зачувување. Обидете се подоцна."
-                        if locale == "mk"
-                        else "Greška pri čuvanju. Pokušajte kasnije."
-                    ),
-                }
-        else:
-            log.warning(f"[subscribe] DB error during subscription: {e}")
-            return {
-                "status": "error",
-                "message": (
-                    "Грешка при зачувување. Обидете се подоцна."
-                    if locale == "mk"
-                    else "Greška pri čuvanju. Pokušajte kasnije."
-                ),
-            }
+        log.warning(f"[subscribe] DB error during subscription: {e}")
+        return {
+            "status": "error",
+            "message": (
+                "Грешка при зачувување. Обидете се подоцна."
+                if locale == "mk"
+                else "Greška pri čuvanju. Pokušajte kasnije."
+            ),
+        }
     return {
         "status": "success",
         "message": ("Успешно се пријавивте!" if locale == "mk" else "Uspešno ste se prijavili!"),

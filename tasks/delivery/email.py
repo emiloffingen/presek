@@ -517,9 +517,10 @@ def send_daily_digest_task():
     try:
         import core.digest as digest_module
 
-        digest_module.send_digest()
+        return digest_module.send_digest()
     except Exception as e:
         log.warning(f"[tasks] Daily digest skipped: {e}")
+        return 0
 
 
 @celery_app.task

@@ -29,6 +29,16 @@ def _load_active_delivery_rows():
     )
 
 
+def _load_newsletter_subscribers():
+    """Plain email newsletter signups (the `subscribers` table)."""
+    try:
+        rows = db.execute("SELECT email FROM subscribers WHERE is_active = TRUE AND email IS NOT NULL")
+        return [str(r.get("email") or "").strip() for r in rows if str(r.get("email") or "").strip()]
+    except Exception as e:
+        log.warning(f"[subscribers] could not load newsletter subscribers: {e}")
+        return []
+
+
 def _cluster_delivery_match(cluster, profile, *, include_topics=True, include_sources=True):
     followed_topics = {
         str(item or "").strip() for item in profile.get("followedTopics") or [] if str(item or "").strip()
