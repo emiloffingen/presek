@@ -11,8 +11,11 @@ def test_bulgarian_forms_observed_in_production_are_repaired():
 def test_serbian_and_bulgarian_words_are_repaired():
     assert clean("проблеми при буђење") == "проблеми при будење"
     assert clean("също и който") == "исто така и кој"
+    # Ambiguous ъ/ю are handled word-by-word (a blind letter map corrupts these)
+    assert clean("продължи изключително") == "продолжи исклучително"
+    assert clean("создале беспорядок") == "создале неред"
 
 
 def test_letters_outside_the_macedonian_alphabet_never_survive():
-    out = clean("я ю ы э ё й ђ ћ ъ")
-    assert not any(ch in out for ch in "яюыэёйђћъ")
+    out = clean("я ы э ё й ђ ћ")
+    assert not any(ch in out for ch in "яыэёйђћ")
