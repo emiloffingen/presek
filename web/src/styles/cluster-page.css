@@ -341,45 +341,45 @@
     }
 
     /* --- Premium reader-mode-active Global overrides --- */
-    :global(body) {
+    body {
         transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    :global(body.reader-mode-active) {
+    body.reader-mode-active {
         background-color: #FAF6EC !important; /* Elegant warm light parchment */
         color: #2C2518 !important;
     }
 
-    :global(.dark body.reader-mode-active) {
+    .dark body.reader-mode-active {
         background-color: #07090e !important; /* Immersive dark midnight */
         color: #e2e8f0 !important;
     }
 
     /* Hide surrounding navigation & secondary elements in reader mode */
-    :global(body.reader-mode-active .header-sticky-wrapper),
-    :global(body.reader-mode-active .site-footer),
-    :global(body.reader-mode-active .breadcrumb-container),
-    :global(body.reader-mode-active .hero-full),
-    :global(body.reader-mode-active .executive-summary),
-    :global(body.reader-mode-active .cluster-evidence-strip),
-    :global(body.reader-mode-active .reader-source-strip),
-    :global(body.reader-mode-active .editorial-sidebar-col),
-    :global(body.reader-mode-active .related-section),
-    :global(body.reader-mode-active .cluster-deep-tools),
-    :global(body.reader-mode-active .advanced-tools),
-    :global(body.reader-mode-active .sources-section),
-    :global(body.reader-mode-active .newsletter-island) {
+    body.reader-mode-active .header-sticky-wrapper,
+    body.reader-mode-active .site-footer,
+    body.reader-mode-active .breadcrumb-container,
+    body.reader-mode-active .hero-full,
+    body.reader-mode-active .executive-summary,
+    body.reader-mode-active .cluster-evidence-strip,
+    body.reader-mode-active .reader-source-strip,
+    body.reader-mode-active .editorial-sidebar-col,
+    body.reader-mode-active .related-section,
+    body.reader-mode-active .cluster-deep-tools,
+    body.reader-mode-active .advanced-tools,
+    body.reader-mode-active .sources-section,
+    body.reader-mode-active .newsletter-island {
         display: none !important;
     }
 
     /* Keep reading text centered with broadsheet/editorial margins and optimal line heights */
-    :global(body.reader-mode-active) .editorial-main-col {
+    body.reader-mode-active .editorial-main-col {
         max-width: 720px !important;
         margin: 0 auto !important;
         float: none !important;
     }
 
-    :global(body.reader-mode-active) .headline {
+    body.reader-mode-active .headline {
         text-align: center !important;
         font-size: clamp(2rem, 6vw, 3.8rem) !important;
         margin-top: 1.5rem !important;
@@ -387,11 +387,11 @@
         color: inherit !important;
     }
 
-    :global(body.reader-mode-active) .edition-kicker {
+    body.reader-mode-active .edition-kicker {
         justify-content: center !important;
     }
 
-    :global(body.reader-mode-active) .editorial-header-v2 {
+    body.reader-mode-active .editorial-header-v2 {
         border-top: none !important;
         border-bottom: 1px dashed color-mix(in srgb, var(--border) 40%, transparent) !important;
         padding-top: 0.5rem !important;
@@ -399,19 +399,19 @@
         margin-bottom: 3.5rem !important;
     }
 
-    :global(body.reader-mode-active) .narrative-p {
+    body.reader-mode-active .narrative-p {
         font-size: clamp(1.25rem, 4.5vw, 1.45rem) !important;
         line-height: 2.0 !important;
         color: inherit !important;
         margin-bottom: 2.5rem !important;
     }
 
-    :global(body.reader-mode-active) .inline-entity {
+    body.reader-mode-active .inline-entity {
         color: var(--nyt-accent) !important;
         text-decoration-color: var(--nyt-accent) !important;
     }
 
-    :global(body.reader-mode-active) .inline-entity:hover {
+    body.reader-mode-active .inline-entity:hover {
         background: color-mix(in srgb, var(--nyt-accent) 12%, transparent) !important;
     }
 

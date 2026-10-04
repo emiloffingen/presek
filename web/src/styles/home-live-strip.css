@@ -170,7 +170,7 @@ color: var(--nyt-red);
 font-weight: 950;
 }
 
-.home-live-head span :global(svg) {
+.home-live-head span svg {
 animation: pulse-waves 1.5s ease-in-out infinite;
 }
 

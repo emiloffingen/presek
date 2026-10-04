@@ -11,8 +11,8 @@
   padding-bottom: 0.35rem;
 }
 
-.header-sticky-wrapper.header--compact .brand-link :global(svg),
-.header-sticky-wrapper.header--compact .brand-link :global(img) {
+.header-sticky-wrapper.header--compact .brand-link svg,
+.header-sticky-wrapper.header--compact .brand-link img {
   transform: scale(0.92);
   transform-origin: left center;
 }
