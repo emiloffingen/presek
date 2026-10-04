@@ -3,8 +3,8 @@
 
 import { shouldCacheApiPath, shouldStoreApiResponse, offlinePageForPath } from './sw-cache-policy.js';
 
-const CACHE_NAME = 'presek-v31';
-const API_CACHE_NAME = 'presek-api-v31';
+const CACHE_NAME = 'presek-v32';
+const API_CACHE_NAME = 'presek-api-v32';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
 const OFFLINE_URL = '/offline';

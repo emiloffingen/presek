@@ -1,5 +1,16 @@
 # Presek Changelog
 
+## v8.3.9 (2026-10-04)
+
+### Security
+- Web dependencies: npm advisories 33 -> 0; add CodeQL code scanning and an `npm audit` CI gate
+- Token-authenticated ntfy alerting; public topic removed from tracked files
+- Restore HNSW vector indexes (articles.embedding, cluster_metadata.centroid); cache the active-ads endpoint
+
+### Infra
+- Automatic origin failover (warm phone standby), build sync over SSH, keepawake/celery/free-tier guards
+- Rotate Redis credentials; drop stale env backups
+
 ## v8.3.8 (2026-06-18)
 
 ### Pipeline ops
