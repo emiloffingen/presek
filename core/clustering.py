@@ -31,6 +31,22 @@ _SEMANTIC_SIM_FLOOR = 0.80
 _SEMANTIC_SIM_INSTANT = 0.90
 _SEMANTIC_BONUS_MAX = 0.22
 _SEMANTIC_ANCHOR = 0.86
+# Hard semantic gate (Jina scale) against the cluster centroid, applied whenever
+# both sides have embeddings. On hand-labelled production stories (Oct 2026,
+# tests/fixtures/clustering_regression.json) same-event articles sit at local
+# cosine distance <= ~0.55 (95th pct) while different stories about the same
+# person (Мицкоски, Ѓорѓиевски, …) start at ~0.58 (5th pct). On a 72h replay
+# (scripts/eval_clustering_replay.py) 0.75 left no mixed-story clusters and the
+# fewest split duplicates; 0.65 let 21 mixed clusters through.
+_SEMANTIC_GATE = 0.75
+# Cluster centroid similarity (Jina scale) that overrides a category mismatch,
+# and that merges a paraphrase on its own.
+_CROSS_CATEGORY_SIM = 0.90
+_SEMANTIC_PARAPHRASE = 0.93
+# Lexical overlap is checked against this many of the cluster's newest members.
+_LEXICAL_MEMBERS = 12
+# A cluster stops accepting articles this long after its first article.
+MAX_CLUSTER_AGE_HOURS = 36
 _STOPWORDS = {
     "а",
     "и",
@@ -488,7 +504,7 @@ def _meaningful_entity_token_overlap(left, right, *args, **kwargs) -> float:
     return len(shared) / len(total or {"_"})
 
 
-def _age_hours(value) -> float:
+def _age_hours(value, now=None) -> float:
     if not value:
         return 0.0
     if isinstance(value, str):
@@ -498,7 +514,10 @@ def _age_hours(value) -> float:
             return 999.0
     if value.tzinfo is None:
         value = value.replace(tzinfo=datetime.timezone.utc)
-    return max(0.0, (datetime.datetime.now(datetime.timezone.utc) - value).total_seconds() / 3600)
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.timezone.utc)
+    return max(0.0, (now - value).total_seconds() / 3600)
 
 
 def text_to_vector(text: str, *args, **kwargs) -> Counter:
@@ -566,27 +585,52 @@ def sr_stem(word: str) -> str:
     return value
 
 
-def generate_embeddings_batch(*args, **kwargs):
-    return []
+def _member_vector(article: dict) -> list:
+    """Parsed embedding of a window article, cached on the dict (parsed once per batch)."""
+    vec = article.get("_vec")
+    if vec is None:
+        vec = _parse_vector(article.get("embedding"))
+        article["_vec"] = vec
+    return vec
+
+
+def _centroid(vectors: list) -> list:
+    dims = len(vectors[0])
+    vectors = [v for v in vectors if len(v) == dims]
+    return [sum(column) / len(vectors) for column in zip(*vectors)]
 
 
 def find_or_create_cluster(conn, title, recent_articles, **kwargs):
-    """Match a headline to a recent compatible cluster or create a short ID."""
+    """Match a headline to a recent compatible cluster or create a short ID.
+
+    ``recent_articles`` is the newest-first ingestion window. Optional keywords:
+    ``embedding``, ``category``, ``topic``, ``source``, ``now`` (the clock, for
+    replays; defaults to the current UTC time) and ``cluster_stats``, a mapping
+    ``{cluster_id: {"centroid": vector, "started_at": datetime}}`` computed by
+    the database. Without ``cluster_stats`` the centroid is averaged from the
+    window rows' ``embedding`` and the start time is the earliest
+    ``cluster_started_at`` / ``created_at`` among them.
+
+    When the incoming article and the cluster both have embeddings, the
+    article must be semantically close to the cluster centroid before any
+    lexical signal counts (``_SEMANTIC_GATE``): a shared person or place name
+    alone no longer joins two different stories. Without embeddings the
+    lexical scoring below is the whole decision.
+    """
     title = str(title or "").strip()
     if not title:
         return uuid.uuid4().hex[:12]
 
     category = kwargs.get("category")
     topic = kwargs.get("topic")
-    source = kwargs.get("source")
+    now = kwargs.get("now")
+    cluster_stats = kwargs.get("cluster_stats") or {}
     incoming_vec = _parse_vector(kwargs.get("embedding"))
     title_entities = _extract_title_entities(title)
     candidates = {}
     for article in recent_articles or []:
         cluster_id = article.get("cluster_id")
-        if not cluster_id or _age_hours(article.get("created_at")) > 24:
-            continue
-        if article.get("category") and category and article["category"] != category:
+        if not cluster_id or _age_hours(article.get("created_at"), now) > 24:
             continue
         candidates.setdefault(cluster_id, []).append(article)
 
@@ -594,32 +638,58 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
     best_score = 0.0
     best_anchored = False
     best_semantic = 0.0
-    seed_vecs: dict = {}
     for cluster_id, articles in candidates.items():
         if len(articles) >= MAX_CLUSTER_SIZE:
             continue
-        # Star anchor: compare against the cluster's oldest in-window article
-        # (the seed) only. Matching against any of the 3 newest members let a
-        # heterogeneous bag drift — each new headline only had to resemble one
-        # off-topic member to join — so every member must match this single
-        # stable seed instead (depth 1, no transitive chaining).
-        article = articles[-1]
-        other_title = str(article.get("title") or "")
-        overlap = _cluster_title_overlap(title, other_title)
-        shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
-        same_topic = bool(topic and article.get("topic") and topic == article["topic"])
+        # A story stops accepting articles a fixed time after it started, so a
+        # long-running cluster cannot drift onto the next day's events.
+        stats = cluster_stats.get(cluster_id) or {}
+        if stats.get("started_at"):
+            cluster_age = _age_hours(stats["started_at"], now)
+        else:
+            cluster_age = max(_age_hours(a.get("cluster_started_at") or a.get("created_at"), now) for a in articles)
+        if cluster_age > MAX_CLUSTER_AGE_HOURS:
+            continue
+
+        # Outlets file the same story under different categories (Makedonija vs
+        # Amerika for a Haaland lawsuit). A category mismatch is only overruled
+        # by a very strong semantic match.
+        category_match = not category or any(not a.get("category") or a.get("category") == category for a in articles)
+
         sim = 0.0
+        has_semantic = False
         if incoming_vec:
-            seed_vec = seed_vecs.get(cluster_id)
-            if seed_vec is None:
-                seed_vec = _parse_vector(article.get("embedding"))
-                seed_vecs[cluster_id] = seed_vec
-            sim = jina_similarity(_cosine_of_vectors(incoming_vec, seed_vec))
+            centroid = stats.get("centroid") or []
+            if isinstance(centroid, str):
+                centroid = _parse_vector(centroid)
+            if len(centroid) != len(incoming_vec):
+                member_vecs = [v for v in (_member_vector(a) for a in articles) if len(v) == len(incoming_vec)]
+                centroid = _centroid(member_vecs) if member_vecs else []
+            if centroid:
+                has_semantic = True
+                sim = jina_similarity(_cosine_of_vectors(incoming_vec, centroid))
+                if sim < _SEMANTIC_GATE:
+                    continue
+        if not category_match and not (has_semantic and sim >= _CROSS_CATEGORY_SIM):
+            continue
+
+        # Lexical evidence against the best-matching member (newest first), not a
+        # single seed: a re-published headline must find its identical twin.
+        overlap, other_title = max(
+            (_cluster_title_overlap(title, str(a.get("title") or "")), str(a.get("title") or ""))
+            for a in articles[:_LEXICAL_MEMBERS]
+        )
+        shared = _entity_token_overlap(title_entities, _extract_title_entities(other_title))
+        same_topic = bool(topic and any(topic == a.get("topic") for a in articles[:_LEXICAL_MEMBERS]))
         if overlap >= _TITLE_INSTANT_MERGE:
             return cluster_id
         # Near-duplicate vectors for the same topic and a shared name are a
         # reliable same-story signal even when the wording was rewritten.
         if sim >= _SEMANTIC_SIM_INSTANT and same_topic and shared:
+            return cluster_id
+        # A paraphrase this close to the centroid is the same event whatever the
+        # wording (no labelled different-story pair comes near it).
+        if sim >= _SEMANTIC_PARAPHRASE:
             return cluster_id
         score = overlap
         if shared:
@@ -628,10 +698,8 @@ def find_or_create_cluster(conn, title, recent_articles, **kwargs):
             score += 0.05
         if same_topic:
             score += 0.06
-        if sim > _SEMANTIC_SIM_FLOOR:
+        if has_semantic and sim > _SEMANTIC_SIM_FLOOR:
             score += _SEMANTIC_BONUS_MAX * min((sim - _SEMANTIC_SIM_FLOOR) / (1.0 - _SEMANTIC_SIM_FLOOR), 1.0)
-        if source and article.get("source") == source:
-            score -= 0.04
         if score > best_score:
             best_id, best_score, best_anchored, best_semantic = cluster_id, score, bool(shared), sim
 
