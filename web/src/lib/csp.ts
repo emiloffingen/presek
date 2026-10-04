@@ -32,7 +32,7 @@ export function computeInlineHashes(html: string, { includeNonced = false } = {}
     return `'sha256-${digest}'`;
   };
 
-  for (const match of html.matchAll(/<script\b([^>]*?)>([\s\S]*?)<\/script>/gi)) {
+  for (const match of html.matchAll(/<script\b([^>]*?)>([\s\S]*?)<\/script\s*>/gi)) {
     const attrs = match[1] || '';
     const body = match[2] || '';
     if (!includeNonced && /\snonce\s*=/.test(attrs)) continue;

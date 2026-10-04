@@ -112,8 +112,8 @@ self.addEventListener('fetch', (e) => {
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.woff') ||
     url.pathname.endsWith('.ttf') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    url.hostname.includes('fonts.googleapis.com')
+    url.hostname === 'fonts.gstatic.com' ||
+    url.hostname === 'fonts.googleapis.com'
   ) {
     e.respondWith(
       caches.open(CACHE_NAME).then((cache) => cache.match(e.request).then((cachedResponse) => {

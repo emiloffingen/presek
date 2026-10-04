@@ -348,7 +348,7 @@ def sanitize_html_input(text: str, max_length: int = 1000) -> str:
 
     # Basic HTML sanitization - remove script tags and dangerous attributes
     sanitized = text
-    sanitized = re.sub(r"<script.*?>.*?</script>", "", sanitized, flags=re.IGNORECASE)
+    sanitized = re.sub(r"<script\b[^>]*>.*?</script\s*>", "", sanitized, flags=re.IGNORECASE | re.DOTALL)
     sanitized = re.sub(r"on\w+\s*=", "", sanitized, flags=re.IGNORECASE)
     sanitized = re.sub(r"javascript:", "", sanitized, flags=re.IGNORECASE)
 

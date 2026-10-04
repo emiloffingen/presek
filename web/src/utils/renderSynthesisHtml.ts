@@ -36,7 +36,7 @@ export function renderSynthesisHtml(text: string): string {
 
 	// 4. Handle Parenthetical Citations: (izvor: Ime) or (Ime) -> <span class="citation-badge">Ime</span>
 	// We target common news source patterns (capitalised, 1-3 words)
-	clean = clean.replace(/\((?:izvor:\s*)?([A-ZA-S][a-za-s0-9\s\.]{2,20})\)/g, (_match: string, name: string) => {
+	clean = clean.replace(/\((?:izvor:\s*)?([A-Z][a-z0-9\s.]{2,20})\)/g, (_match: string, name: string) => {
 		return `<span class="citation-badge">${name.trim()}</span>`;
 	});
 
