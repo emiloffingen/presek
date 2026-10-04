@@ -17,6 +17,16 @@ from core.celery_app import celery_app
 log = logging.getLogger("presek")
 
 
+def _centroids_compatible(left, right) -> bool:
+    from core.clustering import _SEMANTIC_GATE, _cosine_of_vectors, _parse_vector
+    from core.embeddings import jina_similarity
+
+    left, right = _parse_vector(left), _parse_vector(right)
+    if not left or len(left) != len(right):
+        return True
+    return jina_similarity(_cosine_of_vectors(left, right)) >= _SEMANTIC_GATE
+
+
 def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
     """Return True when a representative article pair is the same story.
 
@@ -38,6 +48,10 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
 
     other_title = str(other.get("title") or "")
     if _age_hours(other.get("created_at")) > max_age_hours:
+        return False
+    # Same semantic gate as ingestion: when both clusters have a centroid, a
+    # shared name or overlapping words never merge two different stories.
+    if not _centroids_compatible(rep.get("centroid"), other.get("centroid")):
         return False
     overlap = _cluster_title_overlap(rep_title, other_title)
     if overlap >= _TITLE_INSTANT_MERGE:
@@ -71,11 +85,13 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
     return score >= _TITLE_BEST_MERGE
 
 
-def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
+def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1, centroids=None):
     """Group article rows that describe the same story into merge sets.
 
     `articles` is an iterable of mappings with at least: id, cluster_id,
-    title, source, topic, category, created_at. Returns a list of
+    title, source, topic, category, created_at. `centroids` optionally maps
+    cluster_id to its mean embedding; pairs with both are semantically gated.
+    Returns a list of
     (canonical_cluster_id, [duplicate_cluster_id, ...], merged_article_count).
 
     Uses **bounded star merge** instead of union-find: a merge group is formed
@@ -107,6 +123,7 @@ def plan_cluster_merges(articles, *, max_age_hours=48, min_sources_for_merge=1):
             "topic": rep.get("topic"),
             "category": rep.get("category"),
             "created_at": rep.get("created_at"),
+            "centroid": (centroids or {}).get(cid),
         }
 
     ids = list(clusters.keys())
@@ -181,7 +198,24 @@ def repair_split_clusters_task(hours=48, limit=800, dry_run=False):
     if not rows:
         return {"status": "ok", "merges": 0, "repointed": 0}
 
-    plan = plan_cluster_merges(rows)
+    try:
+        centroid_rows = db.execute(
+            """
+            SELECT cluster_id, avg(embedding)::text AS centroid
+            FROM articles
+            WHERE cluster_id IS NOT NULL AND embedding IS NOT NULL
+              AND created_at >= NOW() - make_interval(hours => %s)
+            GROUP BY cluster_id
+            """,
+            (int(hours),),
+        )
+        centroids = {r["cluster_id"]: r["centroid"] for r in centroid_rows or []}
+    except Exception as exc:  # pragma: no cover - DB failure path
+        # Without centroids the repair would merge on names alone; skip the run.
+        log.warning("[cluster_ops] centroid query failed, skipping repair: %s", exc)
+        return {"status": "error", "error": str(exc)}
+
+    plan = plan_cluster_merges(rows, centroids=centroids)
     # A merge set must actually combine clusters and involve real duplicates.
     plan = [m for m in plan if m[1]]
     total_dups = sum(len(m[1]) for m in plan)

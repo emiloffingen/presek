@@ -14,6 +14,7 @@ import { getLangFromUrl, useTranslations } from '../i18n/utils';
 import { localePath, homePath } from '../lib/localePaths';
 import PresekRailAd from '../components/PresekRailAd.astro';
 import PresekInlinedAd from '../components/PresekInlinedAd.astro';
+import { sectionLabelMk } from '../lib/broadsheetHome';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -129,8 +130,8 @@ function formatBriefingItem(item: string) {
 
         <div class="masthead-main flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-8 animate-rise">
             <div class="max-w-3xl">
-                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-presek-mark italic font-light">{t('archive.edition')}</span></h1>
-                <p class="font-serif text-xl italic text-muted-foreground leading-snug max-w-2xl">
+                <h1 class="masthead-title font-serif text-4xl md:text-6xl font-black leading-[0.95] tracking-tighter mb-4">{t('nav.archive')} <span class="text-presek-mark">{t('archive.edition')}</span></h1>
+                <p class="font-serif text-xl text-muted-foreground leading-snug max-w-2xl">
                     {t('archive.masthead_desc')}
                 </p>
             </div>
@@ -286,7 +287,7 @@ function formatBriefingItem(item: string) {
                                             class={`archive-chip${item.topic === topic ? ' is-active' : ''}`}
                                             aria-current={item.topic === topic ? 'true' : undefined}
                                         >
-                                            <span>{item.topic}</span><span class="archive-chip-count">{item.n}</span>
+                                            <span>{sectionLabelMk(item.topic) || item.topic}</span><span class="archive-chip-count">{item.n}</span>
                                         </a>
                                     </li>
                                 ))}
@@ -391,7 +392,7 @@ function formatBriefingItem(item: string) {
                         <div class="flex flex-col gap-1">
                             {archive.top_topics?.slice(0, 15).map((item: any) => (
                                 <a href={buildFilterHref('topic', item.topic)} class="archive-sidebar-item group">
-                                    <span class="font-serif font-bold text-base group-hover:text-presek-mark transition-colors">{item.topic}</span>
+                                    <span class="font-serif font-bold text-base group-hover:text-presek-mark transition-colors">{sectionLabelMk(item.topic) || item.topic}</span>
                                     <span class="archive-sidebar-count">{item.n}</span>
                                 </a>
                             ))}
@@ -431,7 +432,6 @@ function formatBriefingItem(item: string) {
         .broadsheet-rail { position: sticky; top: calc(var(--header-height) + 1.5rem); align-self: start; }
     }
 
-    .masthead-title span { font-style: italic; font-weight: 300; }
 
     .archive-feed-list { position: relative; }
     .archive-feed-list::before {

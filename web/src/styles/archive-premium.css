@@ -116,22 +116,25 @@
 
 .archive-search-input {
     width: 100%;
-    background: transparent;
-    border-bottom: 2px solid var(--border);
-    padding: 0.5rem 2.5rem 0.5rem 0.5rem;
-    font-family: var(--font-serif);
-    font-weight: 700;
-    font-size: 1.1rem;
+    height: 44px;
+    background: var(--card);
+    border: 1px solid var(--input);
+    border-radius: 6px;
+    padding: 0 2.5rem 0 0.875rem;
+    font-family: var(--font-ui);
+    font-weight: 400;
+    font-size: 15px;
     outline: none;
-    transition: all 0.3s ease;
+    transition: border-color 0.2s ease;
 }
+
+.archive-search-input::placeholder { color: var(--muted-foreground); }
 
 .archive-search-input:focus-visible,
 .archive-search-input:focus {
-    border-color: var(--presek-mark);
-    box-shadow: 0 4px 12px -8px color-mix(in srgb, var(--presek-mark) 30%, transparent);
+    border-color: var(--foreground);
     outline: 2px solid var(--presek-mark);
-    outline-offset: 3px;
+    outline-offset: 2px;
 }
 
 /* 4. Pulse Dashboard Expansion */

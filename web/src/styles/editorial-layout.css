@@ -279,7 +279,7 @@
 
 /* ── Masthead ── */
 .editorial-masthead {
-  border-bottom: 4px double var(--foreground);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 2rem;
   margin-bottom: 3rem;
 }

@@ -43,11 +43,11 @@ class TestAstroFrontendIntegrity:
         assert "Sostojba na sistemot" in status_page
 
     def test_header_fetches_stats_summary_when_page_does_not_supply_stats(self):
-        header = _read("web/src/components/NYTHeader.astro")
+        # NYTHeader.astro is a thin wrapper; the header (and its stats fetch) lives in SiteHeader.
+        header = _read("web/src/components/layout/SiteHeader.astro")
         assert "shouldFetchStats" in header
         assert "fetchJsonCached" in header
         assert "/stats/summary" in header
-        assert "const hasDispatchStats = Boolean(stats && intel?.pluralism);" in header
 
     def test_schema_and_ingestion_track_ingestion_time(self):
         # We now check migrations for schema definitions

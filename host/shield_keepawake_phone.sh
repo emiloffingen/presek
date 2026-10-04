@@ -11,7 +11,7 @@ set -u
 
 HELPER="/root/shield-adb/adbvenv/bin/python"
 ADB_PY="/root/shield-adb/shield_adb.py"
-HOST="${SHIELD_ADB_HOST:-192.168.0.60}"
+HOST="${SHIELD_ADB_HOST:-100.77.135.12}"
 PORT="${SHIELD_ADB_PORT:-5555}"
 LOG="/root/presek/logs/shield_keepawake.log"
 LOCK="/root/presek/logs/shield_keepawake.lock"
