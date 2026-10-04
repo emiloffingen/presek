@@ -30,10 +30,10 @@ const API_URL = apiBaseUrl();
 let stats = propStats;
 let navItems: Array<{ label: string; href: string; key: string; value: string }> = [];
 try {
-    const needsStats = !stats || stats.last_24h == null || stats.total_feeds == null;
+    const shouldFetchStats = !stats || stats.last_24h == null || stats.total_feeds == null;
     const [navResult, statsResult] = await Promise.allSettled([
         fetchJsonCached(`${API_URL}/navigation?lang=${lang}`, 120_000),
-        needsStats ? fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`, 60_000) : Promise.resolve(stats),
+        shouldFetchStats ? fetchJsonCached(`${API_URL}/stats/summary?lang=${lang}`, 60_000) : Promise.resolve(stats),
     ]);
     if (statsResult.status === 'fulfilled') stats = statsResult.value;
     if (navResult.status === 'fulfilled') {
