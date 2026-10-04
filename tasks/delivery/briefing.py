@@ -75,4 +75,53 @@ def send_profile_breaking_alerts_task(*a, **kw):
 
 @celery_app.task(name="tasks.delivery.briefing.send_profile_briefings_task")
 def send_profile_briefings_task(*a, **kw):
-    return None
+    """Deliver the MK morning briefing to active email subscribers."""
+    import datetime
+    import os
+
+    from core.database import db_manager as db
+    from tasks.utils import log, send_email
+
+    from .core import _parse_row_datetime
+    from .morning_brief import build_morning_brief, store_daily_briefing
+    from .subscribers import _load_active_delivery_rows
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    try:
+        rows = _load_active_delivery_rows()
+    except Exception as e:
+        log.warning(f"[briefing] could not load subscribers: {e}")
+        return 0
+
+    sent = 0
+    stored = False
+    for row in rows:
+        if not row.get("morning_briefing"):
+            continue
+        if str(row.get("channel") or "ntfy").strip().lower() != "email":
+            continue
+        target = str(row.get("target") or "").strip()
+        if not target:
+            continue
+        last_sent = _parse_row_datetime(row.get("last_morning_sent_at"))
+        if last_sent:
+            if last_sent.tzinfo is None:
+                last_sent = last_sent.replace(tzinfo=datetime.timezone.utc)
+            if (now - last_sent.astimezone(datetime.timezone.utc)).total_seconds() < 20 * 3600:
+                continue
+
+        subject, html, clusters = build_morning_brief(subscriber_email=target)
+        if not clusters:
+            continue
+        if not stored:
+            store_daily_briefing(clusters, now)
+            stored = True
+        if send_email(html, subject, os.environ.get("SMTP_USER", ""), os.environ.get("SMTP_PASS", ""), target):
+            db.execute(
+                "UPDATE synced_delivery_subscriptions SET last_morning_sent_at = NOW(), updated_at = NOW() WHERE sync_token = %s",
+                (row["sync_token"],),
+                fetch=False,
+            )
+            sent += 1
+    log.info(f"[briefing] morning briefings sent: {sent}")
+    return sent

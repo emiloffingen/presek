@@ -22,7 +22,7 @@ def _load_active_delivery_rows():
     return db.execute(
         """SELECT s.sync_token, s.channel, s.target, s.morning_briefing, s.weekly_digest, s.breaking_topics,
                   s.breaking_sources, s.is_active, s.last_morning_sent_at, s.last_weekly_sent_at, s.last_breaking_sent_at,
-                  s.last_alert_cluster_ids, s.last_alert_context, s.locale, p.profile_data
+                  s.last_alert_cluster_ids, s.last_alert_context, p.profile_data
            FROM synced_delivery_subscriptions s
            JOIN synced_reader_profiles p ON p.sync_token = s.sync_token
            WHERE s.is_active = TRUE"""

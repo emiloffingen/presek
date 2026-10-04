@@ -552,7 +552,7 @@ def send_profile_weekly_digests_task():
                 continue
 
             channel = str(row.get("channel") or "ntfy").strip().lower()
-            lang = str(row.get("locale") or "sr").strip().lower()
+            lang = str(row.get("locale") or "mk").strip().lower()
 
             primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
 
