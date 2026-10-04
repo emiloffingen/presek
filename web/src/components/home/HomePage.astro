@@ -25,6 +25,7 @@ import { loadHomepageViewModel } from '../../lib/homepageViewModel';
 import { safeJsonForScript } from '../../lib/safeJson';
 import { getBriefingSnippet } from '../../lib/homepageData';
 import FilterHeader from './FilterHeader.astro';
+import BroadsheetHome from './BroadsheetHome.astro';
 import HomeRail from './HomeRail.astro';
 import EmptyState from './EmptyState.astro';
 import DailyEditionBar from './DailyEditionBar.astro';
@@ -152,6 +153,13 @@ const {
     pipeline,
 } = homepageState;
 
+// 2026-10 broadsheet redesign: unfiltered homepage only, and only when a lead
+// story loaded; ?layout=classic keeps the previous layout reachable.
+const useBroadsheet = isSimpleHomepage
+    && !error
+    && Boolean(leadCluster)
+    && Astro.url.searchParams.get('layout') !== 'classic';
+
 if (homepageFlags.shouldSetErrorStatus) {
     Astro.response.status = 500;
 }
@@ -183,6 +191,10 @@ if (analizaNavItems.length > 0) {
 		: t('layout.home_description')}
     image={!isPregled ? (leadVisual?.proxiedUrl || undefined) : undefined}
 >
+    {useBroadsheet ? (
+        <BroadsheetHome vm={homepageVm} stats={stats} trending={trending} lang={lang as 'sr' | 'mk'} />
+    ) : (
+    <>
     <NYTHeader q={q} category={category} topic={topic} entity={entity} subcategory={subcategory} stats={stats} latestTickerItems={topWireArticles} />
 
 	<div
@@ -497,9 +509,11 @@ if (analizaNavItems.length > 0) {
 	</div>
 
 	<Footer />
+    </>
+    )}
 </Layout>
 
-{isHomepage && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
+{isHomepage && !useBroadsheet && (perspectiveBandItems.length > 0 || radarBandItems.length > 0 || consensusBandItems.length > 0) && (
 	<>
 		<script type="application/json" id="presek-analysis-bands-data" set:html={safeJsonForScript({
 			perspectiveItems: perspectiveBandItems,
@@ -516,6 +530,6 @@ if (analizaNavItems.length > 0) {
 	</>
 )}
 
-{isHomepage && (
+{isHomepage && !useBroadsheet && (
 	<script is:inline src="/js/presek-home.js" defer></script>
 )}

@@ -1,0 +1,47 @@
+---
+/* Site footer (2026-10 broadsheet redesign). Used on every public page via Footer.astro. */
+import { apiBaseUrl } from '../../lib/apiBase';
+import { fetchJsonCached } from '../../lib/apiCache';
+import { getLangFromUrl } from '../../i18n/utils';
+import { localePath } from '../../lib/localePaths';
+
+interface Props {
+    totalFeeds?: number | null;
+}
+
+const hostHeader = Astro.request?.headers.get('host');
+const lang = getLangFromUrl(Astro.url, hostHeader);
+const l = (path: string) => localePath(path, lang, hostHeader);
+
+let totalFeeds = Astro.props.totalFeeds ?? null;
+if (totalFeeds == null) {
+    const stats = await fetchJsonCached(`${apiBaseUrl()}/stats/summary?lang=${lang}`, 60_000).catch(() => null);
+    totalFeeds = stats?.total_feeds ?? null;
+}
+---
+
+<footer class="bs-scope bs-footer">
+    <div class="bs-wrap bs-footer-row">
+        <span class="bs-footer-about">
+            Пресек ги собира вестите од {totalFeeds || 'повеќе'} македонски извори, ги групира во приказни и покажува кој за што пишува.
+        </span>
+        <nav aria-label="Подножје">
+            <a href={l('/about')}>За нас</a>
+            <a href={l('/methodology')}>Методологија</a>
+            <a href={l('/editorial')}>Стандарди</a>
+            <a href={l('/izvori')}>Извори</a>
+            <a href={l('/archive')}>Архива</a>
+            <a href={l('/marketing')}>Рекламирање</a>
+            <a href={l('/support')}>Поддржи</a>
+            <a href={l('/contact')}>Контакт</a>
+        </nav>
+    </div>
+    <div class="bs-footer-legal">
+        <div class="bs-wrap">
+            © {new Date().getFullYear()} PRESEK.MK ·
+            <a href={l('/privacy')}>Приватност</a> ·
+            <a href={l('/cookies')}>Колачиња</a> ·
+            <a href={l('/terms')}>Услови за користење</a>
+        </div>
+    </div>
+</footer>
