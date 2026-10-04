@@ -79,6 +79,10 @@ jobs:
         working-directory: web
         run: node --test 'src/**/*.test.mjs'
 
+      - name: Audit dependencies (fail on high+)
+        working-directory: web
+        run: npm audit --audit-level=high
+
   security-scan:
     runs-on: ubuntu-latest
     steps:
