@@ -97,8 +97,8 @@ edge cache to keep the flaky Android origins out of the hot path.
 
 ## Alerting
 
-The phone watchdog pushes **ntfy** alerts (topic `presek-alerts-09c4417ba2ed`)
-on state changes only:
+The phone watchdog pushes **ntfy** alerts (topic from `NTFY_TOPIC`, optionally
+authenticated with `NTFY_TOKEN`) on state changes only:
 
 - public site down (2 consecutive non-200 checks) / recovered;
 - content freshness stale (5 consecutive checks against the **local**

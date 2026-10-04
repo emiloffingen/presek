@@ -53,6 +53,11 @@ class BreakingNewsNotifier:
         except Exception as e:
             log.debug(f"[notifier] Redis error in _mark_as_notified: {e}")
 
+    def _headers(self):
+        """Bearer auth for a reserved/authenticated ntfy topic."""
+        token = os.environ.get("NTFY_TOKEN", "").strip()
+        return {"Authorization": f"Bearer {token}"} if token else {}
+
     def send_ntfy(self, title, message, cluster_id=None):
         try:
             data = {
@@ -64,7 +69,7 @@ class BreakingNewsNotifier:
                 "click": (f"https://presek.live/cluster/{cluster_id}" if cluster_id else "https://presek.live"),
             }
             with httpx.Client(timeout=5.0) as client:
-                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
+                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data, headers=self._headers())
                 resp.raise_for_status()
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             log.warning(f"[notifier] ntfy error: {e}")
@@ -90,7 +95,7 @@ class BreakingNewsNotifier:
         }
         try:
             with httpx.Client(timeout=5.0) as client:
-                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data)
+                resp = client.post(f"https://ntfy.sh/{self.topic}", json=data, headers=self._headers())
                 resp.raise_for_status()
             self._mark_as_notified(score_key)
             log.info(f"[notifier] Sent score update for {cluster_id}: {score}")

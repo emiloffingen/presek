@@ -21,7 +21,8 @@ ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
 LOG="${FREE_TIER_GUARD_LOG:-$APP_DIR/logs/free_tier_guard.log}"
 STATE="${FREE_TIER_GUARD_STATE:-$APP_DIR/logs/.free_tier_guard_state}"
 BACKUP_DIR="${FREE_TIER_BACKUP_DIR:-/root/presek-backups}"
-NTFY="${NTFY_TOPIC_URL:-https://ntfy.sh/presek-alerts-09c4417ba2ed}"
+NTFY="${NTFY_TOPIC_URL:-}"
+NTFY_TOKEN="${NTFY_TOKEN:-}"
 CHECK_INTERVAL="${FREE_TIER_CHECK_INTERVAL:-1800}"
 DUMP_HOUR="${FREE_TIER_DUMP_HOUR:-3}"
 KEEP_DAYS="${FREE_TIER_KEEP_DAYS:-7}"
@@ -37,7 +38,12 @@ mkdir -p "$(dirname "$LOG")" "$BACKUP_DIR"
 [ -f "$ENV_FILE" ] && { set -a; . "$ENV_FILE"; set +a; }
 
 log() { echo "[$(date '+%F %T')] $*" >> "$LOG"; }
-notify() { curl -s -m 12 -H "Title: $1" -H "Tags: $2" -d "$3" "$NTFY" >/dev/null 2>&1; }
+notify() {
+  [ -n "$NTFY" ] || return 0
+  local auth=()
+  [ -n "$NTFY_TOKEN" ] && auth=(-H "Authorization: Bearer $NTFY_TOKEN")
+  curl -s -m 12 -H "Title: $1" -H "Tags: $2" "${auth[@]}" -d "$3" "$NTFY" >/dev/null 2>&1
+}
 
 if [ -z "${DATABASE_URL:-}" ]; then log "DATABASE_URL missing; exiting"; exit 1; fi
 DUMP_URL="${DATABASE_URL/6543/5432}"
