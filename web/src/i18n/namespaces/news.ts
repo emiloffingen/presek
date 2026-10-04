@@ -4,7 +4,7 @@ export const news = {
     'news.ago': 'ПРЕД',
     'news.day': 'ДЕН',
     'news.days': 'ДЕНА',
-    'news.go_to_article': 'ОДИ ДО АРТИКЛОТ',
+    'news.go_to_article': 'ОДИ ДО СТАТИЈАТА',
     'news.high_trust': 'Висока доверба',
     'news.hour': 'ЧАС',
     'news.hours': 'ЧАСА',

@@ -70,7 +70,7 @@ export default function ClusterHistoryIsland({ clusterId, lang = 'mk' }: { clust
           ) : (
             <div className="space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">
-                    {isMK ? 'ЕВОЛУЦИЈА НА СТОРИЈАТА' : 'EVOLUCIJA PRIČE'}
+                    {isMK ? 'ЕВОЛУЦИЈА НА ПРИКАЗНАТА' : 'EVOLUCIJA PRIČE'}
                 </p>
                 {history.map((item, idx) => (
                 <div key={idx} className="border border-border/60 bg-background shadow-sm hover:border-nyt-accent/30 transition-all">
