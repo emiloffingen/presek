@@ -31,7 +31,7 @@ spawn() {
     return 0
   fi
   log "starting $name"
-  setsid bash -c "set -a; . '$APP_DIR/.env'; set +a; cd '$APP_DIR'; export PYTHONPATH='$APP_DIR'; $cmd" \
+  setsid bash -c "exec 9>&-; set -a; . '$APP_DIR/.env'; set +a; cd '$APP_DIR'; export PYTHONPATH='$APP_DIR'; $cmd" \
     </dev/null >>"$APP_DIR/logs/$name.out" 2>&1 &
 }
 
@@ -39,7 +39,7 @@ log "celery supervisor started (interval ${INTERVAL}s, concurrency ${CONCURRENCY
 while true; do
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
-    ( redis-server --daemonize yes --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
+    ( exec 9>&-; redis-server --daemonize yes --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
     sleep 1
   fi
   spawn worker 'celery -A core.celery_app worker' "$cmd_worker"
