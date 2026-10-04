@@ -1,4 +1,5 @@
 ---
+import { sectionLabelMk } from '../../lib/broadsheetHome';
 import PreferenceToggle from '../PreferenceToggle.tsx';
 import TopicFollowSuggestionsIsland from '../TopicFollowSuggestionsIsland.tsx';
 import Breadcrumbs from '../Breadcrumbs.astro';
@@ -48,13 +49,14 @@ const {
   sourceFollowSuggestions,
   labels,
 } = Astro.props;
+const topicLabel = sectionLabelMk(topic) || topic;
 ---
 
 <header class="topic-hero">
   <div class="topic-hero-copy">
-    <Breadcrumbs items={[{ label: topic }]} />
+    <Breadcrumbs items={[{ label: topicLabel }]} />
     <span class="topic-kicker">{labels.kicker}</span>
-    <h1 class="topic-headline">{topic}</h1>
+    <h1 class="topic-headline">{topicLabel}</h1>
     <div class="topic-actions">
       <PreferenceToggle client:visible kind="topic" value={topic} lang={lang} />
     </div>

@@ -108,26 +108,34 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       }
     };
 
-    // 1. Impression Tracking
+    // 1. Impression Tracking (IAB viewability: at least 50% visible for 1 continuous second)
     const activeAds = document.querySelectorAll('.native-ad--active');
-    const observerOptions = {
-      root: null,
-      threshold: 0.1 // Trigger when 10% visible
-    };
+    const VIEWABLE_RATIO = 0.5;
+    const VIEWABLE_MS = 1000;
+    const pendingViews = new Map<Element, number>();
 
     const impressionObserver = new IntersectionObserver((entries, observer) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const adContainer = entry.target;
-          const adId = adContainer.getAttribute('data-ad-id');
-          if (adId) {
+        const adContainer = entry.target;
+        const adId = adContainer.getAttribute('data-ad-id');
+        if (!adId) return;
+        if (entry.isIntersecting && entry.intersectionRatio >= VIEWABLE_RATIO) {
+          if (pendingViews.has(adContainer)) return;
+          pendingViews.set(adContainer, window.setTimeout(() => {
+            pendingViews.delete(adContainer);
             void trackAdEvent(adId, 'impression');
             // Unobserve to avoid double logging impressions on scroll
             observer.unobserve(adContainer);
+          }, VIEWABLE_MS));
+        } else {
+          const timer = pendingViews.get(adContainer);
+          if (timer !== undefined) {
+            window.clearTimeout(timer);
+            pendingViews.delete(adContainer);
           }
         }
       });
-    }, observerOptions);
+    }, { root: null, threshold: [0, VIEWABLE_RATIO] });
 
     activeAds.forEach(ad => {
       impressionObserver.observe(ad);

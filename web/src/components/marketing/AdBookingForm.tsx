@@ -48,6 +48,7 @@ const translations = {
     fileSizeError: 'Големината на фајлот ја надминува границата од 150KB.',
     fileTypeError: 'Невалиден тип на фајл. Дозволени се само слики (png, jpg, jpeg, gif, webp).',
     submit: 'Продолжи кон плаќање (Stripe)',
+    reviewNote: 'Секоја реклама се прегледува пред објавување, обично во рок од 24 часа. Ако банерот или линкот не ги исполнуваат правилата, добивате целосен поврат на средствата.',
     submitting: 'Се процесира...',
     success: 'Успешна резервација!',
     error: 'Настана грешка. Обидете се повторно.',
@@ -77,6 +78,7 @@ const translations = {
     fileSizeError: 'Veličina datoteke prelazi granicu od 150KB.',
     fileTypeError: 'Nevalidan tip datoteke. Dozvoljene su samo slike (png, jpg, jpeg, gif, webp).',
     submit: 'Nastavite na plaćanje (Stripe)',
+    reviewNote: 'Svaki oglas se pregleda pre objavljivanja, obično u roku od 24 sata. Ako baner ili link ne ispunjavaju pravila, dobijate pun povraćaj novca.',
     submitting: 'Procesiranje...',
     success: 'Uspešna rezervacija!',
     error: 'Došlo je do greške. Pokušajte ponovo.',
@@ -607,6 +609,8 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                 <span>{lang === 'mk' ? `Минимум €${MIN_CHECKOUT_EUR} плаќање` : `Minimum €${MIN_CHECKOUT_EUR} plaćanje`}</span>
               </div>
             </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">{t.reviewNote}</p>
 
             <button
               type="button"

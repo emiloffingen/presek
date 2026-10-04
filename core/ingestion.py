@@ -25,7 +25,7 @@ from prometheus_client import Counter
 
 import core.clustering as clustering
 from core.api_helpers import is_safe_url
-from core.config import CLUSTER_LOOKBACK, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
+from core.config import CLUSTER_LOOKBACK, CLUSTER_WINDOW_HOURS, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
 from core.embeddings import article_text, generate_embeddings_batch, jina_distance
 from core.health import get_source_statuses, record_source_fetch
@@ -862,6 +862,21 @@ def get_ingestion_health():
     }
 
 
+def _update_cluster_stats(cluster_stats, cluster_id, embedding, created_at):
+    """Fold a newly assigned article into its cluster's running centroid."""
+    stats = cluster_stats.setdefault(cluster_id, {"centroid": [], "vectors": 0, "started_at": created_at})
+    if not embedding:
+        return
+    n = stats["vectors"]
+    centroid = stats["centroid"]
+    if n and len(centroid) == len(embedding):
+        stats["centroid"] = [(c * n + e) / (n + 1) for c, e in zip(centroid, embedding)]
+    else:
+        stats["centroid"] = list(embedding)
+        n = 0
+    stats["vectors"] = n + 1
+
+
 def cosine_dist(a, b):
     """Calculates cosine distance between two vectors (lists of floats)."""
     dot = sum(x * y for x, y in zip(a, b))
@@ -1048,11 +1063,42 @@ async def ingest_all_sources_async():
     new_count = 0
     with db.connection() as conn:
         cur = conn.cursor()
+        # Clustering window: every article from the last CLUSTER_WINDOW_HOURS
+        # (titles only), plus one centroid per active cluster computed in the
+        # database. A fixed article count covered under four hours on busy days,
+        # so re-published headlines often no longer found their twin.
         cur.execute(
-            "SELECT title, cluster_id, created_at, category, topic, embedding::text AS embedding FROM articles ORDER BY created_at DESC LIMIT %s",
-            (CLUSTER_LOOKBACK,),
+            """
+            SELECT title, cluster_id, created_at, category, topic
+            FROM articles
+            WHERE created_at > now() - make_interval(hours => %s)
+            ORDER BY created_at DESC
+            LIMIT %s
+            """,
+            (CLUSTER_WINDOW_HOURS, CLUSTER_LOOKBACK),
         )
         recent_articles = [dict(r) for r in cur.fetchall()]
+        cur.execute(
+            """
+            WITH active AS (
+                SELECT DISTINCT cluster_id FROM articles
+                WHERE created_at > now() - make_interval(hours => %s) AND cluster_id IS NOT NULL
+            )
+            SELECT a.cluster_id, avg(a.embedding)::text AS centroid,
+                   count(a.embedding) AS vectors, min(a.created_at) AS started_at
+            FROM articles a JOIN active USING (cluster_id)
+            GROUP BY a.cluster_id
+            """,
+            (CLUSTER_WINDOW_HOURS,),
+        )
+        cluster_stats = {
+            r["cluster_id"]: {
+                "centroid": clustering._parse_vector(r["centroid"]),
+                "vectors": int(r["vectors"] or 0),
+                "started_at": r["started_at"],
+            }
+            for r in cur.fetchall()
+        }
 
         from core.clustering import (
             VECTOR_THRESHOLD,
@@ -1091,7 +1137,10 @@ async def ingest_all_sources_async():
                 emb_literal = "[" + ",".join(map(str, emb)) + "]" if emb else None
 
                 cluster_id = None
-                if emb:
+                # Same-fetch shortcut for generic domestic news only; every other
+                # article is matched by find_or_create_cluster, which also sees
+                # this batch through recent_articles / cluster_stats.
+                if emb and (topic == "vesti" or not topic):
                     for bc in batch_clusters:
                         # Batch-time merges must be stricter than persisted clustering,
                         # especially for generic domestic news where adjacent stories
@@ -1101,18 +1150,17 @@ async def ingest_all_sources_async():
                         dist = jina_distance(cosine_dist(emb, bc["embedding"]))
                         if dist >= (VECTOR_THRESHOLD * 0.78):
                             continue
-                        if topic == "vesti" or not topic:
-                            incoming_entities = _extract_title_entities(display_title, semantic=False)
-                            batch_entities = bc.get("entities", set())
-                            article_lang = "mk" if c["country"] == "MK" else "sr"
-                            meaningful_shared = _meaningful_entity_token_overlap(
-                                incoming_entities, batch_entities, lang=article_lang
-                            )
-                            phrase_overlap = _cluster_title_overlap(display_title, bc["title"])
-                            if not meaningful_shared and phrase_overlap < 0.34:
-                                continue
-                            cluster_id = bc["cid"]
-                            break
+                        incoming_entities = _extract_title_entities(display_title, semantic=False)
+                        batch_entities = bc.get("entities", set())
+                        article_lang = "mk" if c["country"] == "MK" else "sr"
+                        meaningful_shared = _meaningful_entity_token_overlap(
+                            incoming_entities, batch_entities, lang=article_lang
+                        )
+                        phrase_overlap = _cluster_title_overlap(display_title, bc["title"])
+                        if not meaningful_shared and phrase_overlap < 0.34:
+                            continue
+                        cluster_id = bc["cid"]
+                        break
 
                 if not cluster_id:
                     cluster_id = clustering.find_or_create_cluster(
@@ -1123,7 +1171,7 @@ async def ingest_all_sources_async():
                         category=category,
                         source=c["source"],
                         topic=topic,
-                        semantic_entities=False,
+                        cluster_stats=cluster_stats,
                     )
 
                 clean_desc = re.sub(r"<[^>]+>", "", c["desc"]).strip() if c["desc"] else ""
@@ -1173,11 +1221,11 @@ async def ingest_all_sources_async():
                         "created_at": created_at,
                         "category": category,
                         "topic": topic,
-                        "embedding": emb_literal,
                     },
                 )
                 if len(recent_articles) > CLUSTER_LOOKBACK:
                     recent_articles.pop()
+                _update_cluster_stats(cluster_stats, cluster_id, emb, created_at)
 
             except SoftTimeLimitExceeded:
                 # Time limit approaching — stop processing candidates and flush what we have.

@@ -2,7 +2,6 @@
 // PRESEK.MK public layout.
 
 import '../styles/global.css';
-import '../styles/theme-warm.css';
 import LayoutBodyChrome from '../components/layout/LayoutBodyChrome.astro';
 import LayoutHead from '../components/layout/LayoutHead.astro';
 
@@ -34,6 +33,7 @@ const effectiveUrl = new URL(requestUrl);
 effectiveUrl.hostname = hostHeader;
 const lang = getLangFromUrl(effectiveUrl);
 import '../styles/fonts-mk.css';
+import '../styles/theme-broadsheet.css';
 const t = useTranslations(lang);
 
 const {
