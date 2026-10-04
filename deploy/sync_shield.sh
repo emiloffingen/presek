@@ -29,7 +29,11 @@ ssh_shield() {
 
 ENTRY="$APP_DIR/web/dist/server/entry.mjs"
 [ -f "$ENTRY" ] || { log "no local dist ($ENTRY); skip"; exit 0; }
-FP="$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null)-$(stat -c %Y "$ENTRY" 2>/dev/null)"
+# Content-based fp: re-ship only when the built dist changes, not on every
+# commit (a git-HEAD key made non-web commits restart the Shield's astro).
+FP="$(cd "$APP_DIR/web" && find dist -type f -print0 2>/dev/null | sort -z | \
+      xargs -0 md5sum 2>/dev/null | md5sum | cut -d' ' -f1)"
+[ -n "$FP" ] || { log "could not fingerprint dist; skip"; exit 0; }
 if [ -f "$MARKER" ] && [ "$(cat "$MARKER" 2>/dev/null)" = "$FP" ]; then
   exit 0
 fi
