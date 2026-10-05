@@ -246,6 +246,19 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
             )
 
             if lang == "mk" and (summary or generated_article):
+                # Phase 1 faithfulness shadow: score + log only, never blocks.
+                try:
+                    from tasks.intelligence.faithfulness import log_faithfulness_shadow
+
+                    log_faithfulness_shadow(
+                        cluster_id,
+                        summary,
+                        res_data.get("key_facts", []) if cascade.get("status") == "success" else [],
+                        article_rows,
+                        provider,
+                    )
+                except Exception as e:
+                    log.debug(f"[faithfulness] shadow hook failed for {cluster_id}: {e}")
                 from core.copy_quality import copy_bundle_passes_publish_gate
 
                 copy_ok, copy_diag = copy_bundle_passes_publish_gate(

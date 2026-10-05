@@ -336,6 +336,19 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                         for _f in ("summary", "generated_article", "synthetic_headline", "synthetic_standfirst"):
                             if fallback_result.get(_f):
                                 fallback_result[_f] = _clean_mk_field(fallback_result[_f])
+                        # Phase 1 faithfulness shadow: score + log only.
+                        try:
+                            from tasks.intelligence.faithfulness import log_faithfulness_shadow
+
+                            log_faithfulness_shadow(
+                                cluster_id,
+                                fallback_result.get("summary", ""),
+                                fallback_result.get("key_facts", []),
+                                article_rows,
+                                generation_provider,
+                            )
+                        except Exception:
+                            pass
                     # Store the summary in database
                     db.execute(
                         """
