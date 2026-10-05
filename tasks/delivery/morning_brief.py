@@ -19,8 +19,18 @@ from .email import _load_weekly_digest_clusters
 SITE = str(os.environ.get("PUBLIC_SITE_URL") or "https://presek.mk").rstrip("/")
 
 _MONTHS_MK = [
-    "јануари", "февруари", "март", "април", "мај", "јуни",
-    "јули", "август", "септември", "октомври", "ноември", "декември",
+    "јануари",
+    "февруари",
+    "март",
+    "април",
+    "мај",
+    "јуни",
+    "јули",
+    "август",
+    "септември",
+    "октомври",
+    "ноември",
+    "декември",
 ]
 
 
@@ -183,7 +193,10 @@ def render_morning_brief_html(
           <div style="margin-top:8px;font:400 12px/1.4 Arial,sans-serif;color:#777;">{source} · {count} извори</div>
         </td></tr>""")
 
-    body = "".join(rows) or '<tr><td style="font:400 15px/1.5 Georgia,serif;color:#555;">Денес нема доволно нови содржини за брифинг.</td></tr>'
+    body = (
+        "".join(rows)
+        or '<tr><td style="font:400 15px/1.5 Georgia,serif;color:#555;">Денес нема доволно нови содржини за брифинг.</td></tr>'
+    )
     return f"""<!doctype html>
 <html lang="mk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#f4f1ea;">

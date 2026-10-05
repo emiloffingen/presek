@@ -314,9 +314,7 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
                 try:
                     from tasks.intelligence.faithfulness import log_faithfulness_shadow
 
-                    log_faithfulness_shadow(
-                        cid, summary, synth.get("key_facts", []), articles, provider
-                    )
+                    log_faithfulness_shadow(cid, summary, synth.get("key_facts", []), articles, provider)
                 except Exception:
                     pass
             except Exception as e:
@@ -440,9 +438,7 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
                 try:
                     from tasks.intelligence.faithfulness import log_faithfulness_shadow
 
-                    log_faithfulness_shadow(
-                        cid, summary, synth.get("key_facts", []), articles, synth.get("provider")
-                    )
+                    log_faithfulness_shadow(cid, summary, synth.get("key_facts", []), articles, synth.get("provider"))
                 except Exception:
                     pass
             except Exception as e:

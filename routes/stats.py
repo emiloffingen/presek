@@ -360,6 +360,7 @@ async def get_archive(
             if cids
             else {}
         )
+
         # Compact article projection: NewsCard only needs source identity,
         # counts and the lead's category/topic. Full bodies stay out
         # (~90KB -> ~6KB per cluster).
