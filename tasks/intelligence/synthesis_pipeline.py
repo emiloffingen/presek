@@ -153,7 +153,6 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                 generated_article = validate_person_names(generated_article)
                 synthetic_headline = validate_person_names(synthetic_headline)
                 synthetic_standfirst = validate_person_names(synthetic_standfirst)
-
                 # --- [NEW] 2026 Intelligence: Storyline & Impact ---
                 current_story_so_far = validate_person_names(res_data.get("story_so_far", ""))
                 impact_data = _ensure_dict(res_data.get("impact_analysis", {}))
@@ -172,6 +171,16 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                     article_rows,
                     lang=lang,
                 )
+                if lang == "mk":
+                    # Headlines/quotes bypass sanitize_synthesis_outputs, which
+                    # only handles summary, article and perspectives.
+                    from tasks.synthesis_sanitize import clean_mk_text_field as _clean_mk_field
+
+                    synthetic_headline = _clean_mk_field(synthetic_headline)
+                    synthetic_standfirst = _clean_mk_field(synthetic_standfirst)
+                    quote = _clean_mk_field(quote)
+                    current_story_so_far = _clean_mk_field(current_story_so_far)
+                    current_impact_reasoning = _clean_mk_field(current_impact_reasoning)
                 if fast_mode:
                     if quality_score is None:
                         quality_score = _compute_lightweight_quality_score(

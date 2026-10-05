@@ -75,6 +75,15 @@ def _clean_macedonian(text: str) -> str:
     return _clean_macedonian_spelling_and_script(text)
 
 
+def clean_mk_text_field(text: str) -> str:
+    """Clean a single MK headline/standfirst/quote field.
+
+    Headlines bypass sanitize_synthesis_outputs (which only handles summary,
+    article and perspectives), so call this for every other published string.
+    """
+    return _clean_macedonian(text or "")
+
+
 def sanitize_synthesis_outputs(summary, generated_article, perspectives, article_rows, lang="mk"):
     fallback = None
     if isinstance(summary, list):

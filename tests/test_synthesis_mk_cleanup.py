@@ -19,3 +19,26 @@ def test_serbian_and_bulgarian_words_are_repaired():
 def test_letters_outside_the_macedonian_alphabet_never_survive():
     out = clean("я ы э ё й ђ ћ")
     assert not any(ch in out for ch in "яыэёйђћ")
+
+
+def test_october_production_leaks_are_repaired():
+    assert clean("тя сподели") == "таа сподели"
+    assert clean("односите со Бугария") == "односите со Бугарија"
+    assert clean("Исходът од битките") == "Исходот од битките"
+    assert clean("главна атракция") == "главна атракција"
+    assert clean("на Сајму за автомобили") == "на Саемот за автомобили"
+    assert clean("несвакодневна пречка") == "несекојдневна пречка"
+    assert clean("Любовта е клучна") == "Љубовта е клучна"
+    assert clean("префрляйки ја топката") == "префрлајќи ја топката"
+    assert clean("Тој подчерта важноста") == "Тој подвлече важноста"
+    # Generic letter fallback still repairs Ukrainian spellings
+    assert clean("изолація") == "изолација"
+    assert clean("Дарія Шипилова") == "Дарија Шипилова"
+    assert clean("своя прва") == "своја прва"
+
+
+def test_october_round_two_production_leaks_are_repaired():
+    assert clean("Становите се скъпаа") == "Становите се скапаа"
+    assert clean("грешките ги скъсија победата") == "грешките ги скратија победата"
+    assert clean("нова вълна на тензија") == "нова бран на тензија"
+    assert clean("„ОхридНюз“ пренесува") == "„ОхридЊуз“ пренесува"

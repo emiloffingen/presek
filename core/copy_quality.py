@@ -8,6 +8,11 @@ import re
 _CYRILLIC_RE = re.compile(r"[\u0400-\u04FF]")
 _LATIN_RE = re.compile(r"[A-Za-z]")
 _WORD_RE = re.compile(r"[A-Za-z\u0400-\u04FF]{2,}")
+# Cyrillic letters that do not exist in the Macedonian alphabet
+# (Bulgarian/Russian/Ukrainian/Serbian drift). Any word containing one of
+# these fails the MK publish gate so the synthesis is retried, not published.
+_MK_FOREIGN_LETTERS_RE = re.compile(r"[йяюыэёђћіїєґъ]")
+_MK_FOREIGN_WORD_RE = re.compile(r"[A-Za-z\u0400-\u04FF]*[йяюыэёђћіїєґъ][A-Za-z\u0400-\u04FF]*")
 _EXEMPT_TOKEN = re.compile(
     r"^(?:\[\d+\]|[A-Z]{2,6}|\d+(?:[.,]\d+)?%?|vs\.?|FIFA|UEFA|NBA|NFL|GDP|IMF|EU|UN|USA|UK|NATO|EXPO)$",
     re.IGNORECASE,
@@ -110,12 +115,18 @@ def assess_mk_copy_purity(text: str) -> dict:
     total = cyrillic + latin
     latin_share = (latin / total) if total else 1.0
     leaks = sorted({word.casefold() for word in _WORD_RE.findall(clean) if word.casefold() in _SERBIAN_LATIN_LEAKS})
+    foreign_words = sorted({_m.group(0) for _m in _MK_FOREIGN_WORD_RE.finditer(clean)})
 
     min_cyrillic = int(os.environ.get("MK_COPY_MIN_CYRILLIC_LETTERS", "24"))
     max_latin_share = float(os.environ.get("MK_COPY_MAX_LATIN_SHARE", "0.28"))
     max_leaks = int(os.environ.get("MK_COPY_MAX_SERBIAN_LEAKS", "0"))
 
-    ok = cyrillic >= min_cyrillic and latin_share <= max_latin_share and len(leaks) <= max_leaks
+    ok = (
+        cyrillic >= min_cyrillic
+        and latin_share <= max_latin_share
+        and len(leaks) <= max_leaks
+        and not foreign_words
+    )
     reason = "ok"
     if cyrillic < min_cyrillic:
         reason = "low_cyrillic"
@@ -123,6 +134,8 @@ def assess_mk_copy_purity(text: str) -> dict:
         reason = "high_latin_share"
     elif leaks:
         reason = "serbian_latin_leaks"
+    elif foreign_words:
+        reason = "non_mk_letters"
 
     score = max(
         0.0,
@@ -142,6 +155,7 @@ def assess_mk_copy_purity(text: str) -> dict:
         "latin_letters": latin,
         "latin_share": round(latin_share, 3),
         "leaks": leaks[:8],
+        "foreign_words": foreign_words[:8],
     }
 
 

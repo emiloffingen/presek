@@ -143,6 +143,32 @@ LEAKS = {
     "свързува": "поврзува",
     "юбилеј": "јубилеј",
     "спасявање": "спасување",
+    # Bulgarian/Russian/Ukrainian leaks observed in production Oct 2026
+    "тя": "таа",
+    "бугария": "бугарија",
+    "исходът": "исходот",
+    "интелигенція": "интелигенција",
+    "атракция": "атракција",
+    "атракцията": "атракцијата",
+    "сајам": "саем",
+    "сајму": "саемот",
+    "свакодневен": "секојдневен",
+    "свакодневна": "секојдневна",
+    "свакодневно": "секојдневно",
+    "свакодневни": "секојдневни",
+    "несвакодневна": "несекојдневна",
+    "любов": "љубов",
+    "любовта": "љубовта",
+    "префрляйки": "префрлајќи",
+    "подчерта": "подвлече",
+    "скъпаа": "скапаа",
+    "скъсија": "скратија",
+    "вълна": "бран",
+    "вълната": "бранот",
+    "вълни": "бранови",
+    "нюз": "њуз",
+    "охриднюз": "охридњуз",
+    "ОхридНюз": "ОхридЊуз",
     # Latin leaks
     "tokom": "во текот на",
     "između": "меѓу",
@@ -283,10 +309,12 @@ _SPLIT_RE = re.compile(r'(\s+|[.,!?;:()""\'\'„“»«\[\]]+)')
 
 def _replace_word(word: str) -> str | None:
     """Return the LEAKS replacement for a word (case preserved), else None."""
-    replacement = LEAKS.get(word.lower())
+    replacement = LEAKS.get(word) or LEAKS.get(word.lower())
     if replacement is None:
         return None
-    if word[0].isupper():
+    if word[0].isupper() and replacement[0].islower() and word[1:].islower():
+        # Simple capitalized word: capitalize the replacement. Mixed-case
+        # compounds (ОхридНюз) must be mapped explicitly instead.
         replacement = replacement[0].upper() + replacement[1:]
     return replacement
 

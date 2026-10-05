@@ -328,6 +328,14 @@ def backfill_cluster_summaries_task(days=30, lang="sr", offset=0):
                     fallback_reason = "backfill_enhanced_fallback_after_cascade_exhausted"
 
                 if fallback_result["summary"] or fallback_result["generated_article"]:
+                    # Clean MK leaks: this path writes raw cascade output and
+                    # previously bypassed synthesis_sanitize entirely.
+                    if lang == "mk":
+                        from tasks.synthesis_sanitize import clean_mk_text_field as _clean_mk_field
+
+                        for _f in ("summary", "generated_article", "synthetic_headline", "synthetic_standfirst"):
+                            if fallback_result.get(_f):
+                                fallback_result[_f] = _clean_mk_field(fallback_result[_f])
                     # Store the summary in database
                     db.execute(
                         """
