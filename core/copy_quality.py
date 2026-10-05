@@ -121,12 +121,7 @@ def assess_mk_copy_purity(text: str) -> dict:
     max_latin_share = float(os.environ.get("MK_COPY_MAX_LATIN_SHARE", "0.28"))
     max_leaks = int(os.environ.get("MK_COPY_MAX_SERBIAN_LEAKS", "0"))
 
-    ok = (
-        cyrillic >= min_cyrillic
-        and latin_share <= max_latin_share
-        and len(leaks) <= max_leaks
-        and not foreign_words
-    )
+    ok = cyrillic >= min_cyrillic and latin_share <= max_latin_share and len(leaks) <= max_leaks and not foreign_words
     reason = "ok"
     if cyrillic < min_cyrillic:
         reason = "low_cyrillic"
