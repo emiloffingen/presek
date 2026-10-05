@@ -517,9 +517,14 @@ if (conflictsCount >= 3) {
 }
 
 // --- SEO & Schema ---
-// Prefer a high-res representative image or the lead article visual for social sharing.
-// Generated SVG is used only as a last resort fallback.
-const socialImageUrl = cluster?.representative_image || (leadVisual && !leadVisual.isWeak ? leadVisual.rawUrl : imageUrl);
+// Share the same-origin proxied visual this page already renders (imageUrl is
+// never a raw publisher URL). Social scrapers hotlink og:image, and publisher
+// image hosts routinely 403 them, which silently drops the preview image on
+// Facebook/X/WhatsApp. Generated SVG is used only as a last resort fallback.
+const socialImageUrl = imageUrl;
+const socialImageAbsolute = /^https?:\/\//i.test(socialImageUrl)
+	? socialImageUrl
+	: `${SITE_URL}${socialImageUrl.startsWith('/') ? '' : '/'}${socialImageUrl}`;
 const schemaArticleBody = stripCitationMarkers(
 	cluster?.generated_article || cluster?.synthesis || displayHeadline || ''
 );
@@ -530,7 +535,7 @@ const articleSchema = cluster ? {
 	"headline": displayHeadline,
 	"description": cluster.generated_article?.slice(0, 200) || cluster.synthesis?.slice(0, 200) || displayHeadline,
 	"image": [
-		cluster.representative_image || (leadVisual?.rawUrl?.startsWith('http') ? leadVisual.rawUrl : imageUrl)
+		socialImageAbsolute
 	],
 	"datePublished": cluster.articles?.[cluster.articles.length - 1]?.created_at,
 	"dateModified": cluster.synthesis_updated_at || cluster.articles?.[0]?.created_at,
