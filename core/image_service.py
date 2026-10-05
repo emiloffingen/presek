@@ -3,6 +3,7 @@ import os
 import time
 from io import BytesIO
 from typing import Optional
+from urllib.parse import urlparse
 
 import httpx
 from PIL import Image
@@ -60,8 +61,19 @@ class ImageService:
         except OSError as e:
             log.warning(f"Upload dir not writable ({_UPLOAD_ROOT}): {e}")
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/*,*/*;q=0.8",
         }
+
+    @staticmethod
+    def _headers_for(url: str, base: dict) -> dict:
+        # Many Balkan CMS/CDNs 403 hotlinked images without a Referer.
+        try:
+            parts = urlparse(url)
+            origin = f"{parts.scheme}://{parts.netloc}"
+        except Exception:
+            return base
+        return {**base, "Referer": origin + "/"}
 
     async def process_and_save(self, url: str, article_id: int) -> Optional[str]:
         """
@@ -83,7 +95,8 @@ class ImageService:
 
         try:
             _resolve_public_ips(url)  # raises for private/reserved hostnames
-            async with httpx.AsyncClient(headers=self.headers, follow_redirects=True, timeout=10.0) as client:
+            headers = self._headers_for(url, self.headers)
+            async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=10.0) as client:
                 async with client.stream("GET", url) as resp:
                     p_ip = _peer_ip(resp)
                     if not p_ip or not _peer_is_public(resp):

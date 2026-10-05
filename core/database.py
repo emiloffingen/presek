@@ -1059,6 +1059,15 @@ class DBWrapper:
         self.conn.rollback()
 
     def close(self):
+        # End any implicit read transaction so the pooled connection returns
+        # clean — otherwise psycopg.pool logs an INTRANS rollback warning on
+        # every read-only get_db() user (trending, health probes, ...).
+        # Committed write paths are IDLE here, so this is a no-op for them.
+        try:
+            if self.conn.info.transaction_status != psycopg.pq.TransactionStatus.IDLE:
+                self.conn.rollback()
+        except Exception:
+            pass
         self.manager.put_conn(self.conn)
 
     def __enter__(self):
