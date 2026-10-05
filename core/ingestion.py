@@ -968,27 +968,34 @@ async def ingest_all_sources_async():
                     continue
 
                 source_meta = next(s for s in sources if s["name"] == source_name)
+                dup_skipped = 0
+                filtered_skipped = 0
                 for e in entries:
                     title = e.get("title", "").strip()
                     link = normalize_feed_link(e.get("link", ""))
                     title_key = normalize_candidate_title(title)
 
                     if not title or not link or link in known_links or link in seen_links:
+                        dup_skipped += 1
                         continue
 
                     raw_desc = e.get("summary", "") or e.get("description", "")
                     cleaned_desc = re.sub(r"<[^>]+>", "", raw_desc).strip()
 
                     if not is_supported_display_language(title, cleaned_desc):
+                        filtered_skipped += 1
                         continue
 
                     if is_junk(title, cleaned_desc):
+                        filtered_skipped += 1
                         continue
 
                     if not title_key:
+                        filtered_skipped += 1
                         continue
 
                     if title_key in recent_by_source[source_name] or title_key in seen_titles_by_source[source_name]:
+                        dup_skipped += 1
                         continue
 
                     published_at = parse_entry_timestamp(e, fallback_now=cycle_now)
@@ -1010,6 +1017,8 @@ async def ingest_all_sources_async():
                     seen_titles_by_source[source_name].add(title_key)
                     source_stats[source_name]["accepted"] += 1
                     INGESTION_ACCEPTED.labels(source=source_name).inc()
+                source_stats[source_name]["dup_skipped"] = dup_skipped
+                source_stats[source_name]["filtered_skipped"] = filtered_skipped
             finally:
                 try:
                     redis_client.delete(lock_key)
@@ -1017,7 +1026,11 @@ async def ingest_all_sources_async():
                     log.debug(f"Redis unlock error for source {source_name}: {e}")
 
             if source_stats[source_name]["accepted"] == 0 and source_stats[source_name]["fetched"] > 0:
-                source_stats[source_name]["status"] = "warning"
+                # All duplicates = healthy idle poll (slow feed), not a problem.
+                if source_stats[source_name].get("filtered_skipped", 0) > 0:
+                    source_stats[source_name]["status"] = "warning"
+                else:
+                    source_stats[source_name]["status"] = "idle"
 
         await fill_missing_og_images(client, candidates)
 
