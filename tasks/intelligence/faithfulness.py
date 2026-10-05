@@ -15,9 +15,10 @@ import re
 
 log = logging.getLogger("presek.faithfulness")
 
-# Cosine floor below which a claim counts as unsupported. Calibrate on the
-# shadow-mode distributions before Phase 2 (target: <5% flag rate on good).
-SUPPORT_THRESHOLD = float(os.environ.get("FAITHFULNESS_SUPPORT_THRESHOLD", "0.52"))
+# Cosine floor below which a claim counts as unsupported. Calibrated Oct 2026
+# on production pairs: true paraphrased support scores ~0.40, unrelated
+# cross-cluster pairs max ~0.27 (mean ~0.02). 0.33 splits them with margin.
+SUPPORT_THRESHOLD = float(os.environ.get("FAITHFULNESS_SUPPORT_THRESHOLD", "0.33"))
 # Skip scoring for tiny clusters where there is nothing to check against.
 MIN_CHUNKS = int(os.environ.get("FAITHFULNESS_MIN_CHUNKS", "2"))
 MAX_CLAIMS = 12
