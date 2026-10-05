@@ -177,9 +177,11 @@ celery_app.conf.update(
         "upgrade-overviews-to-ai": {
             # Progressively regenerate extractive overviews with a real LLM
             # (no-op when AI is disabled). Small batches to respect rate limits.
+            # Stretched to 15 min to cut Supabase egress (Supabase free-tier
+            # pressure, Oct 2026); extractive placeholders cover the gap.
             "task": "tasks.summarization.upgrade_extractive_to_ai_task",
-            "schedule": 300.0,  # Every 5 minutes
-            "options": {"expires": 290},
+            "schedule": 900.0,  # Every 15 minutes
+            "options": {"expires": 890},
         },
         "recluster-recent-articles": {
             "task": "tasks.extractive.recluster_recent_articles_task",
