@@ -432,6 +432,21 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
             summary = synth["summary"].strip()
             if not summary:
                 continue
+            try:
+                from tasks.synthesis_sanitize import clean_mk_text_field as _clean_mk_field
+
+                summary = _clean_mk_field(summary)
+                synth["headline"] = _clean_mk_field(synth.get("headline", ""))
+                try:
+                    from tasks.intelligence.faithfulness import log_faithfulness_shadow
+
+                    log_faithfulness_shadow(
+                        cid, summary, synth.get("key_facts", []), articles, synth.get("provider")
+                    )
+                except Exception:
+                    pass
+            except Exception as e:
+                log.debug(f"[synthesis] upgrade-path cleanup skipped for {cid}: {e}")
             db_manager.execute(
                 """
                 UPDATE cluster_summaries SET
