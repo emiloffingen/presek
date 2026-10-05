@@ -61,6 +61,9 @@ MK_FEEDS = [
     ("MKD", "https://mkd.mk/feed/"),
     # Legal niche.
     ("Akademik", "https://akademik.mk/feed/"),
+    # Lifestyle/entertainment (thin Zivot/Zabava coverage).
+    ("Popara", "https://popara.mk/feed/"),
+    ("Crnobelo", "https://www.crnobelo.com/latest-rss?format=feed&type=rss"),
 ]
 
 
