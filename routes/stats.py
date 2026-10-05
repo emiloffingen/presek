@@ -248,7 +248,13 @@ async def get_archive(
                 f"%{escaped_q}%",
             ]
         else:
-            base_sql = f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE created_at >= %s AND created_at < %s AND country = %s"  # nosec B608 - static column constant with bound params
+            # Slim columns: ranking needs source/title/description/created_at/
+            # clicks, display needs category/topic/image. Full bodies stay out.
+            base_sql = (
+                "SELECT id, cluster_id, source, link, title, image_url, created_at, "
+                "description, clicks, category, topic FROM articles "
+                "WHERE created_at >= %s AND created_at < %s AND country = %s"
+            )
             params = [d_start, d_end, country]
 
         if source:
@@ -304,7 +310,6 @@ async def get_archive(
 
         clusters = defaultdict(list)
         for r in rows:
-            r["reading_time"] = calculate_reading_time(r.get("description", ""))
             clusters[r["cluster_id"]].append(r)
 
         ranked = [rank_articles_in_cluster(arts) for arts in clusters.values()]
@@ -336,6 +341,13 @@ async def get_archive(
         offset = page * page_size
         paged = ranked[offset : offset + page_size]
         cids = [c[0]["cluster_id"] for c in paged]
+        # Score once per cluster (was recomputed 3x); reading time only for
+        # the displayed lead article.
+        cluster_scores = {}
+        for c in paged:
+            s = round(score_cluster(c), 3)
+            cluster_scores[c[0]["cluster_id"]] = s
+            c[0]["reading_time"] = calculate_reading_time(c[0].get("description", ""))
         s_ids = set(await db.async_get_synthesis_ids(cids)) if cids else set()
         rep_images = (
             {
@@ -348,14 +360,29 @@ async def get_archive(
             if cids
             else {}
         )
+        # Compact article projection: NewsCard only needs source identity,
+        # counts and the lead's category/topic. Full bodies stay out
+        # (~90KB -> ~6KB per cluster).
+        def _compact_article(a):
+            return {
+                "id": a.get("id"),
+                "source": a.get("source"),
+                "link": a.get("link"),
+                "title": a.get("title"),
+                "image_url": a.get("image_url"),
+                "created_at": a.get("created_at"),
+                "category": a.get("category"),
+                "topic": a.get("topic"),
+            }
+
         payload = [
             {
                 "cluster_id": c[0]["cluster_id"],
-                "articles": c,
+                "articles": [_compact_article(a) for a in c[:8]],
                 "representative_image": rep_images.get(c[0]["cluster_id"]),
                 "reading_time": c[0].get("reading_time", 1),
-                "score": round(score_cluster(c), 3),
-                "is_breaking": score_cluster(c) >= BREAKING_SCORE_THRESHOLD,
+                "score": cluster_scores[c[0]["cluster_id"]],
+                "is_breaking": cluster_scores[c[0]["cluster_id"]] >= BREAKING_SCORE_THRESHOLD,
                 "has_synthesis": c[0]["cluster_id"] in s_ids,
                 "has_balanced": is_balanced(c),
             }
