@@ -79,7 +79,12 @@ def _normalize_uuid_str(val) -> str:
 
 
 def _initialize_database():
-    """Initialize database tables for admin token management."""
+    """Initialize database tables for admin token management.
+
+    Returns True on success, False if the schema could not be ensured. This never
+    raises: callers treat the table as an optimization and the individual token
+    operations surface their own errors.
+    """
     try:
         db.execute("""
             CREATE TABLE IF NOT EXISTS admin_tokens (
@@ -103,12 +108,16 @@ def _initialize_database():
             ON admin_tokens(revoked_at)
             """)
         log.info("Admin tokens database tables initialized")
+        return True
     except Exception as e:
         log.error(f"Failed to initialize admin tokens database: {e}")
-        raise
+        return False
 
 
-# Initialize database on import
+# Ensure the schema on import. Deliberately non-fatal: this runs at module import
+# time, and re-raising here made the whole module unimportable whenever the
+# database was unavailable, which also disabled the independent legacy static
+# admin token path in routes.common._static_admin_token_authorized.
 _initialize_database()
 
 

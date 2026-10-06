@@ -143,25 +143,41 @@ def _client_ip_for_request(request: Request) -> str:
 
 def _static_admin_token_authorized(request: Request) -> bool:
     """Check if request is authorized using the new admin token system or legacy token."""
-    # Try new admin token system first
+
+    # Verify the legacy static token independently of the DB-backed token system.
+    # core.admin_tokens raises on import when its table cannot be created, so the
+    # import must not share a try block with this check: doing so made the legacy
+    # admin token silently stop working whenever the admin_tokens table or DB was
+    # unavailable.
+    def _legacy_ok(candidate: str) -> bool:
+        if not candidate:
+            return False
+        try:
+            from core.admin_tokens import verify_legacy_admin_token
+
+            return bool(verify_legacy_admin_token(candidate))
+        except Exception as e:
+            log.warning(f"Legacy admin token verification unavailable: {e}")
+            return False
+
+    candidates = [
+        (request.headers.get("X-Admin-Token") or "").strip(),
+    ]
+    auth = str(request.headers.get("Authorization") or "").strip()
+    if auth.lower().startswith("bearer "):
+        candidates.append(auth[7:].strip())
+
+    for candidate in candidates:
+        if _legacy_ok(candidate):
+            return True
+
+    # Try the new admin token system. Kept in its own try so a failure here does
+    # not affect the legacy path above.
     try:
-        from core.admin_tokens import verify_admin_token, verify_legacy_admin_token
+        from core.admin_tokens import verify_admin_token
 
-        # Check X-Admin-Token header
-        admin_token = (request.headers.get("X-Admin-Token") or "").strip()
-        if admin_token:
-            if verify_admin_token(admin_token):
-                return True
-            if verify_legacy_admin_token(admin_token):
-                return True
-
-        # Check Authorization header
-        auth = str(request.headers.get("Authorization") or "").strip()
-        if auth.lower().startswith("bearer "):
-            bearer_token = auth[7:].strip()
-            if verify_admin_token(bearer_token):
-                return True
-            if verify_legacy_admin_token(bearer_token):
+        for candidate in candidates:
+            if candidate and verify_admin_token(candidate):
                 return True
     except Exception as e:
         log.warning(f"Admin token verification failed: {e}")

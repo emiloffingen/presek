@@ -299,7 +299,11 @@ def _int_env(name: str, default: int) -> int:
 
 
 DB_POOL_MINCONN = max(1, _int_env("DB_POOL_MINCONN", 1))
-DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 5))
+# Default sized to the homepage fan-out (~7 concurrent queries in
+# routes/home.py:get_home). Each process builds an async AND a sync pool, so
+# client connections are 2x this per process; keep the total under your
+# server's max_connections.
+DB_POOL_MAXCONN = max(DB_POOL_MINCONN, _int_env("DB_POOL_MAXCONN", 12))
 DB_POOL_TIMEOUT = max(5, _int_env("DB_POOL_TIMEOUT", 60))
 DB_POOL_MAX_LIFETIME = max(60, _int_env("DB_POOL_MAX_LIFETIME", 1800))
 
