@@ -17,6 +17,28 @@ DNS = {
 }
 
 
+@pytest.mark.parametrize(
+    "ip",
+    [
+        "100.77.135.12",  # Tailscale / CGNAT (100.64.0.0/10)
+        "100.64.0.1",
+        "::ffff:127.0.0.1",
+        "::ffff:100.77.135.12",
+        "169.254.169.254",
+        "10.0.0.1",
+        "224.0.0.1",
+        "not-an-ip",
+    ],
+)
+def test_non_public_addresses_are_rejected(ip):
+    assert network._is_public_ip(ip) is False
+
+
+@pytest.mark.parametrize("ip", ["93.184.216.34", "151.101.1.1", "2606:4700:4700::1111"])
+def test_public_addresses_are_accepted(ip):
+    assert network._is_public_ip(ip) is True
+
+
 def _fake_resolve(url):
     host = httpx.URL(url).host
     if host.replace(".", "").isdigit():

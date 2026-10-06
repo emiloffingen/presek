@@ -16,14 +16,12 @@ def _is_public_ip(ip: str) -> bool:
         addr = ipaddress.ip_address(ip)
     except ValueError:
         return False
-    return not (
-        addr.is_private
-        or addr.is_loopback
-        or addr.is_link_local
-        or addr.is_multicast
-        or addr.is_reserved
-        or addr.is_unspecified
-    )
+    # Unwrap IPv4-mapped IPv6 (::ffff:a.b.c.d) so the v4 rules apply.
+    if isinstance(addr, ipaddress.IPv6Address) and addr.ipv4_mapped:
+        addr = addr.ipv4_mapped
+    # is_global is an allowlist: it also rejects CGNAT 100.64.0.0/10
+    # (Tailscale), which is neither is_private nor is_global.
+    return addr.is_global and not addr.is_multicast
 
 
 def _resolve_public_ips(candidate_url: str) -> List[str]:
