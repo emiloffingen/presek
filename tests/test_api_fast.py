@@ -717,6 +717,19 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
     assert response.headers["X-Proxy-Fallback"] == "http_404"
 
 
+class _InMemoryRedis:
+    """Stands in for the proxy's binary Redis client so tests never write real cache keys."""
+
+    def __init__(self):
+        self.store = {}
+
+    def get(self, key):
+        return self.store.get(key)
+
+    def set(self, key, value, *args, **kwargs):
+        self.store[key] = value
+
+
 def test_fastapi_proxy_serves_local_master_without_remote_fetch(mock_all, tmp_path):
     import io
 
@@ -732,10 +745,11 @@ def test_fastapi_proxy_serves_local_master_without_remote_fetch(mock_all, tmp_pa
 
     with (
         patch("routes.system._resolve_safe_static_relative", return_value=master),
+        patch("routes.system.binary_redis_client", _InMemoryRedis()),
         patch("requests.get", side_effect=AssertionError("remote fetch must not happen")),
         patch("utils.network._resolve_public_ips", side_effect=AssertionError("remote fetch must not happen")),
     ):
-        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
+        response = asyncio.run(system_routes.proxy_image("https://example.com/local-master.jpg", None))
 
     assert response.status_code == 200
     assert response.media_type in {"image/webp", "image/png", "image/jpeg"}
