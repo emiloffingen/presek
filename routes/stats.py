@@ -650,8 +650,10 @@ def _send_newsletter_confirmation(email: str, locale: str) -> bool:
 async def _register_pending_subscriber(email: str, locale: str) -> bool:
     """Insert an inactive subscriber unless one exists; return whether it is already active.
 
-    Plain SELECT/INSERT instead of ON CONFLICT: older databases have no unique
-    constraint on the email columns, and some have no locale column at all.
+    SELECT then INSERT, because older databases have no unique constraint on the
+    email columns and some have no locale column at all. The bare ON CONFLICT DO
+    NOTHING makes a simultaneous duplicate signup a no-op where the unique
+    constraint exists (migration o5e6f7a8b9c0) and is harmless where it does not.
     """
     try:
         row = await db.async_execute_one(
@@ -661,7 +663,7 @@ async def _register_pending_subscriber(email: str, locale: str) -> bool:
         if row:
             return bool(row.get("is_active"))
         await db.async_execute(
-            "INSERT INTO subscribers (email, locale, is_active) VALUES (%s, %s, FALSE)",
+            "INSERT INTO subscribers (email, locale, is_active) VALUES (%s, %s, FALSE) ON CONFLICT DO NOTHING",
             (email, locale),
             fetch=False,
         )
@@ -675,7 +677,7 @@ async def _register_pending_subscriber(email: str, locale: str) -> bool:
     if row:
         return bool(row.get("is_active"))
     await db.async_execute(
-        "INSERT INTO subscribers (email, is_active) VALUES (%s, FALSE)",
+        "INSERT INTO subscribers (email, is_active) VALUES (%s, FALSE) ON CONFLICT DO NOTHING",
         (email,),
         fetch=False,
     )
