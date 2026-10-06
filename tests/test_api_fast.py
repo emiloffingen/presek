@@ -684,6 +684,31 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
     assert response.headers["X-Proxy-Fallback"] == "http_404"
 
 
+def test_fastapi_proxy_serves_local_master_without_remote_fetch(mock_all, tmp_path):
+    import io
+
+    from PIL import Image
+
+    import routes.system as system_routes
+
+    master = tmp_path / "art_1.png"
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), (200, 30, 30)).save(buf, "PNG")
+    master.write_bytes(buf.getvalue())
+    mock_all["db"].async_execute_one.return_value = {"local_image_path": "uploads/art_1.png"}
+
+    with (
+        patch("routes.system._resolve_safe_static_relative", return_value=master),
+        patch("requests.get", side_effect=AssertionError("remote fetch must not happen")),
+        patch("utils.network._resolve_public_ips", side_effect=AssertionError("remote fetch must not happen")),
+    ):
+        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
+
+    assert response.status_code == 200
+    assert response.media_type in {"image/webp", "image/png", "image/jpeg"}
+    assert response.headers.get("X-Proxy-Fallback") is None
+
+
 def test_fastapi_serves_robots_txt(mock_all):
     import routes.system as system_routes
 
