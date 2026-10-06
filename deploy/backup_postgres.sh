@@ -10,6 +10,15 @@ APP_ROOT="${APP_ROOT:-$DEFAULT_APP_ROOT}"
 ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/.env}"
 BACKUP_DIR="${BACKUP_DIR:-$APP_ROOT/shared/backups}"
 KEEP_DAYS="${KEEP_DAYS:-7}"
+KEEP_FULL_DAYS="${KEEP_FULL_DAYS:-28}"
+# Supabase free tier allows ~5 GB egress a month and a full pg_dump pulls the
+# whole database over the wire (~250 MB, uncompressed) every time. So: a full
+# dump at most every FULL_BACKUP_EVERY_DAYS, and in between a "light" dump that
+# keeps the schema and the small tables but skips the rows of the big tables.
+# BACKUP_MODE=full|light|auto (auto = full when the newest full dump is old).
+BACKUP_MODE="${BACKUP_MODE:-auto}"
+FULL_BACKUP_EVERY_DAYS="${FULL_BACKUP_EVERY_DAYS:-7}"
+LIGHT_EXCLUDE_TABLES="${LIGHT_EXCLUDE_TABLES:-articles cluster_metadata cluster_summaries}"
 REQUIRE_BACKUP_ENCRYPTION="${REQUIRE_BACKUP_ENCRYPTION:-0}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
@@ -62,20 +71,37 @@ main() {
 
   install -d "$BACKUP_DIR"
 
+  local mode="$BACKUP_MODE" prefix="presek" dump_args=() table
+  if [ "$mode" = "auto" ]; then
+    if [ -n "$(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'presek-2*.sql.gz*' -mtime -"$FULL_BACKUP_EVERY_DAYS" 2>/dev/null | head -1)" ]; then
+      mode="light"
+    else
+      mode="full"
+    fi
+  fi
+  if [ "$mode" = "light" ]; then
+    prefix="presek-light"
+    for table in $LIGHT_EXCLUDE_TABLES; do
+      dump_args+=("--exclude-table-data=public.${table}")
+    done
+  fi
+  info "Backup mode: $mode"
+
   if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
-    local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz.gpg"
+    local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz.gpg"
     info "Creating encrypted PostgreSQL backup at $outfile"
-    pg_dump "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
+    pg_dump "${dump_args[@]}" "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
   else
-    local outfile="$BACKUP_DIR/presek-${TIMESTAMP}.sql.gz"
+    local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz"
     info "Creating PostgreSQL backup at $outfile"
-    pg_dump "$DATABASE_URL" | gzip -9 > "$outfile"
+    pg_dump "${dump_args[@]}" "$DATABASE_URL" | gzip -9 > "$outfile"
   fi
 
   ok "Backup complete"
 
-  info "Pruning backups older than $KEEP_DAYS days"
-  find "$BACKUP_DIR" -type f \( -name 'presek-*.sql.gz' -o -name 'presek-*.sql.gz.gpg' \) -mtime +"$KEEP_DAYS" -delete
+  info "Pruning light backups older than $KEEP_DAYS days and full backups older than $KEEP_FULL_DAYS days"
+  find "$BACKUP_DIR" -type f \( -name 'presek-light-*.sql.gz' -o -name 'presek-light-*.sql.gz.gpg' \) -mtime +"$KEEP_DAYS" -delete
+  find "$BACKUP_DIR" -type f \( -name 'presek-2*.sql.gz' -o -name 'presek-2*.sql.gz.gpg' \) -mtime +"$KEEP_FULL_DAYS" -delete
   ok "Backup pruning complete"
 }
 
