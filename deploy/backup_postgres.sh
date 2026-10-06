@@ -50,12 +50,15 @@ main() {
   fi
 
   [ -n "${DATABASE_URL:-}" ] || fail "DATABASE_URL is not set"
+  # pg_dump needs a direct (session) connection. When DATABASE_URL points at a
+  # transaction pooler (Supabase :6543, a local PgBouncer), set BACKUP_DATABASE_URL.
+  DUMP_URL="${BACKUP_DATABASE_URL:-$DATABASE_URL}"
 
   # pg_dump refuses to dump a *newer* server than itself. Catch it up front so
   # we fail loudly instead of writing a truncated "<100 bytes" file that looks
   # like a backup. Run backups from a host whose client matches the server.
   local server_ver server_major client_ver
-  server_ver="$(psql "$DATABASE_URL" -tAc 'show server_version_num' 2>/dev/null || true)"
+  server_ver="$(psql "$DUMP_URL" -tAc 'show server_version_num' 2>/dev/null || true)"
   server_major=$(( ${server_ver:-0} / 10000 ))
   client_ver="$(pg_dump --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
   if [ -n "$server_ver" ] && [ -n "$client_ver" ] && [ "$client_ver" -lt "$server_major" ] 2>/dev/null; then
@@ -90,11 +93,11 @@ main() {
   if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
     local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz.gpg"
     info "Creating encrypted PostgreSQL backup at $outfile"
-    pg_dump "${dump_args[@]}" "$DATABASE_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
+    pg_dump "${dump_args[@]}" "$DUMP_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
   else
     local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz"
     info "Creating PostgreSQL backup at $outfile"
-    pg_dump "${dump_args[@]}" "$DATABASE_URL" | gzip -9 > "$outfile"
+    pg_dump "${dump_args[@]}" "$DUMP_URL" | gzip -9 > "$outfile"
   fi
 
   ok "Backup complete"
