@@ -321,7 +321,7 @@ async def create_ad_checkout(
         raise
     except Exception as e:
         log.exception(f"[marketing] Booking creation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/marketing/webhook")
@@ -632,9 +632,11 @@ async def request_campaigns_access(
         else:
             log.warning("[marketing] SMTP credentials not set. Cannot send access email.")
 
+        # Same response as the no-campaigns branch so the endpoint cannot be used
+        # to learn which addresses have bought ads.
         return {
             "status": "success",
-            "message": "Access links have been sent to your email.",
+            "message": "If campaigns exist for this email, an access link has been sent.",
         }
     except HTTPException:
         raise

@@ -48,6 +48,25 @@ class TestMetricsAccess:
         assert response.status_code == 403
         assert response.body == b'{"detail":"Forbidden"}'
 
+    @pytest.mark.anyio
+    async def test_metrics_denied_for_tunneled_loopback_requests(self):
+        # cloudflared connects from loopback but adds Cloudflare headers.
+        request = MagicMock()
+        request.client = MagicMock(host="127.0.0.1")
+        request.headers = {"CF-Connecting-IP": "127.0.0.1", "CF-Ray": "abc"}
+
+        response = await api_fast.metrics(request)
+
+        assert response.status_code == 403
+
+    @pytest.mark.parametrize("header", ["CF-Connecting-IP", "CF-Ray", "X-Real-IP", "X-Forwarded-For"])
+    def test_ops_client_rejects_relayed_loopback(self, header):
+        request = MagicMock()
+        request.client = MagicMock(host="127.0.0.1")
+        request.headers = {header: "127.0.0.1"}
+
+        assert api_fast._is_trusted_ops_client(request) is False
+
 
 class TestUploadImageFilePath:
     def test_rejects_path_traversal(self):

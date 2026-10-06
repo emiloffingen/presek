@@ -264,7 +264,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 @app.get("/api/csrf-token")
 @app.get("/api/v1/csrf-token")
 def get_csrf_token():
-    return {"status": "success", "csrf_token": generate_csrf_token()}
+    # Return the same token the cookie carries, so the double-submit check matches.
+    from routes.security import set_csrf_cookie
+
+    token = generate_csrf_token()
+    response = JSONResponse({"status": "success", "csrf_token": token})
+    set_csrf_cookie(response, token)
+    return response
 
 
 # =============================================================================
@@ -366,12 +372,14 @@ _LOCAL_OPS_CLIENTS = _LOCAL_METRICS_CLIENTS | frozenset({"testclient"})
 
 
 def _is_trusted_ops_client(request: Request) -> bool:
-    from routes.common import _client_ip_for_request
+    from routes.common import _has_forwarding_headers
 
     client_host = str(getattr(getattr(request, "client", None), "host", "") or "")
-    if client_host in _LOCAL_OPS_CLIENTS:
-        return True
-    return _client_ip_for_request(request) in _LOCAL_OPS_CLIENTS
+    if client_host not in _LOCAL_OPS_CLIENTS:
+        return False
+    # A loopback peer is only a local client when nothing relayed the request:
+    # cloudflared and nginx also connect from loopback but add forwarding headers.
+    return not _has_forwarding_headers(request)
 
 
 def _is_local_metrics_client(request: Request) -> bool:

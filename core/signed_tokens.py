@@ -10,6 +10,7 @@ import time
 from urllib.parse import quote
 
 NEWSLETTER_UNSUBSCRIBE_TTL = 90 * 24 * 3600
+NEWSLETTER_CONFIRM_TTL = 7 * 24 * 3600
 DELIVERY_TRACK_TTL = 30 * 24 * 3600
 ALLOWED_DELIVERY_EVENT_TYPES = frozenset({"click", "open", "view"})
 
@@ -74,6 +75,28 @@ def build_newsletter_unsubscribe_url(base_url: str, email: str, locale: str) -> 
     token = build_newsletter_unsubscribe_token(email, locale)
     lang = "mk" if str(locale or "sr").strip().lower() == "mk" else "sr"
     return f"{base_url.rstrip('/')}/api/newsletter/unsubscribe?token={quote(token)}&lang={lang}"
+
+
+def build_newsletter_confirm_token(email: str, locale: str) -> str:
+    clean_email = email.strip().lower()
+    clean_locale = "mk" if str(locale or "sr").strip().lower() == "mk" else "sr"
+    return _encode_signed(f"confirm|{clean_email}|{clean_locale}", NEWSLETTER_CONFIRM_TTL)
+
+
+def parse_newsletter_confirm_token(token: str) -> tuple[str, str] | None:
+    payload = _decode_signed(token)
+    if not payload or not payload.startswith("confirm|"):
+        return None
+    _, email, locale = payload.split("|", 2)
+    if locale not in {"sr", "mk"} or not email:
+        return None
+    return email, locale
+
+
+def build_newsletter_confirm_url(base_url: str, email: str, locale: str) -> str:
+    token = build_newsletter_confirm_token(email, locale)
+    lang = "mk" if str(locale or "sr").strip().lower() == "mk" else "sr"
+    return f"{base_url.rstrip('/')}/api/newsletter/confirm?token={quote(token)}&lang={lang}"
 
 
 def build_delivery_track_token(event_id: int, event_type: str, redirect: str) -> str:
