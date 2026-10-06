@@ -100,3 +100,7 @@ Ad hoc provider/key probes now live in [scripts](/home/emiloffingen/presek/scrip
 - `scripts/manual_check_ai_cascade.py`
 - `scripts/manual_check_cloudflare.py`
 - `scripts/manual_check_keys.py`
+
+## License
+
+MIT. See [LICENSE](LICENSE). Third-party dependencies keep their own licenses; news content shown on the site belongs to its original publishers (see the site's Terms of Use).
