@@ -17,7 +17,7 @@ set -uo pipefail
 APP_DIR="${PRESEK_APP_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 WEB_DIR="$APP_DIR/web"
 STAGE=/sdcard/presek_stage
-SHIELD_HOST="${SHIELD_HOST:-u0_a106@192.168.0.60}"
+SHIELD_HOST="${SHIELD_HOST:-u0_a106@192.168.0.62}"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="${SSH_KEY:-/root/.ssh/termux_test}"
 COMMON="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes"
