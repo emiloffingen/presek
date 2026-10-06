@@ -63,10 +63,17 @@ const trendingChips = (Array.isArray(trending) ? trending : [])
     .slice(0, 6)
     .map((item) => ({ word: String(item.word), count: Number(item.count || 0), href: `${l('/')}?q=${encodeURIComponent(item.word)}` }));
 
+// Summaries/previews that merely repeat the headline add nothing; hide them.
+const norm = (value: string) => String(value || '').toLowerCase().replace(/[\s\p{P}]+/gu, ' ').trim();
+const repeatsTitle = (text: string, title: string) => {
+    const a = norm(text);
+    const b = norm(title);
+    return !a || a === b || a.startsWith(b) || b.startsWith(a);
+};
 const lead = leadCluster ? {
     href: clusterHref(leadCluster),
     title: leadTitle || clusterTitle(leadCluster),
-    summary: leadSummary,
+    summary: repeatsTitle(leadSummary, leadTitle || clusterTitle(leadCluster)) ? '' : leadSummary,
     image: leadVisual?.proxiedUrl || leadVisual?.fallbackUrl || '',
     fallback: leadVisual?.fallbackUrl || '',
     caption: leadCluster.articles?.[0]?.image_caption || leadCluster.articles?.[0]?.source || '',
@@ -190,7 +197,8 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                 <h2 id="bs-live-h" class="bs-section-title bs-live-title"><span class="bs-dot" aria-hidden="true"></span>Живо сега</h2>
                 {sections.live.map((cluster, index) => {
                     const img = image(cluster, 'thumb');
-                    const preview = getStoryPreviewText(cluster, cluster.articles?.[0], lang);
+                    const rawPreview = getStoryPreviewText(cluster, cluster.articles?.[0], lang);
+                    const preview = repeatsTitle(rawPreview, clusterTitle(cluster)) ? '' : rawPreview;
                     return (
                         <>
                             <article class="bs-live-item">

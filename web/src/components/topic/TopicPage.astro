@@ -1,4 +1,5 @@
 ---
+import { sectionLabelMk } from '../../lib/broadsheetHome';
 import '../../styles/topic-page.css';
 import Layout from '../../layouts/Layout.astro';
 import NYTHeader from '../NYTHeader.astro';
@@ -80,7 +81,7 @@ const sourceFollowSuggestions = sourceRows.slice(0, 2).map(([name, count]) => ({
 	source: name,
 	reason: topicLabels.sourceFollowReason(count),
 }));
-	const topicIntroText = buildTopicIntro(topic, clusters, totalReports, lang);
+	const topicIntroText = buildTopicIntro(sectionLabelMk(topic) || topic, clusters, totalReports, lang);
 const canonicalUrl = new URL(Astro.url.pathname, pageMeta.siteUrl).href.replace(/\/+$/, '');
 const leadSummary =
 	getDisplaySummary(leadCluster?.articles?.[0] || {}) || topicLabels.defaultLeadSummary;
