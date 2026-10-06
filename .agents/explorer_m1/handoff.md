@@ -24,7 +24,7 @@ During exploration, the following files and structural configurations were obser
     - Result: `897 passed, 1 skipped, 1 warning in 20.69s` (e.g. testing `tests/test_health.py` and unit files).
   - Environment variables set in `tests/conftest.py` default to:
     ```python
-    os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_pass_2026@localhost/presek_test")
+    os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_test@localhost/presek_test")
     ```
 - **Web Frontend Structure**:
   - Main Astro page detail page: `web/src/pages/cluster/[slug].astro`.

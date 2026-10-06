@@ -123,7 +123,7 @@ ON CONFLICT (name) DO NOTHING;
 
 **Feeds Successfully Added:**
 ```bash
-PGPASSWORD=presek_pass_2026 psql -h localhost -U presek -d presek -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
+PGPASSWORD="$DB_PASSWORD" psql -h localhost -U presek -d presek -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
 # Result: 178 (was 156)
 ```
 

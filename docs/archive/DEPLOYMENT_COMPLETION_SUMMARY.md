@@ -67,7 +67,7 @@
 
 1. ✅ **Database Verification**
    ```bash
-   PGPASSWORD=presek_pass_2026 psql -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
+   PGPASSWORD="$DB_PASSWORD" psql -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
    # Result: 178 feeds
    ```
 
