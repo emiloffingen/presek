@@ -1,4 +1,5 @@
 import asyncio
+import os
 import datetime
 import json
 import logging
@@ -144,6 +145,10 @@ _ARTICLE_LIST_COLUMNS = (
     "image_caption, clicks, original_description, is_translated, is_fact_check, "
     "is_redundant, reading_time, entity_names, source_signal, is_global, coverage_balance"
 )
+
+
+# Time budget for the semantic half of search; the text-search fallback needs a fraction of it.
+_SEARCH_SEMANTIC_TIMEOUT_MS = int(os.environ.get("SEARCH_SEMANTIC_TIMEOUT_MS", "4000"))
 
 
 def _public_article_payload(article, lang=DEFAULT_LANG, include_full_content: bool = False):
@@ -442,18 +447,25 @@ async def fetch_news_data(
 
             query_vec = await get_query_embedding_async(q)
             sort_by = "recent" if sort == "recent" else "hybrid"
-            rows = (
-                await db.async_hybrid_search(
-                    q,
-                    query_vec,
-                    limit=row_limit,
-                    sort_by=sort_by,
-                    timespan=timespan,
-                    country=country,
-                )
-                if query_vec
-                else await db.async_search_articles(q, limit=row_limit, timespan=timespan, country=country)
-            )
+            rows = None
+            if query_vec:
+                # The semantic half is an enhancement. If it errors or exceeds its time
+                # budget (Postgres cancels it), fall back to plain text search instead of
+                # failing the whole page; the page itself gives up after 8 seconds.
+                try:
+                    rows = await db.async_hybrid_search(
+                        q,
+                        query_vec,
+                        limit=row_limit,
+                        sort_by=sort_by,
+                        timespan=timespan,
+                        country=country,
+                        timeout_ms=_SEARCH_SEMANTIC_TIMEOUT_MS,
+                    )
+                except Exception as e:
+                    log.warning(f"[search] hybrid search failed ({type(e).__name__}); falling back to text search: {e}")
+            if rows is None:
+                rows = await db.async_search_articles(q, limit=row_limit, timespan=timespan, country=country)
         elif subcategory:
             query = """
                 SELECT cluster_id, MAX(created_at) as last_article
