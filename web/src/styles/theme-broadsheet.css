@@ -104,6 +104,8 @@ html.dark {
     --bs-body: #c9ccd2;
     --bs-muted: #a3a7b0;
     --bs-accent: #f07167;
+    --presek-mark: var(--bs-accent);
+    --product-accent: var(--bs-accent);
     --bs-on-accent: #121317;
     --bs-bar3: #6b707a;
     --bs-bar4: #464a52;
@@ -136,6 +138,8 @@ html.dark {
         --bs-body: #c9ccd2;
         --bs-muted: #a3a7b0;
         --bs-accent: #f07167;
+        --presek-mark: var(--bs-accent);
+        --product-accent: var(--bs-accent);
         --bs-on-accent: #121317;
         --bs-bar3: #6b707a;
         --bs-bar4: #464a52;

@@ -61,7 +61,7 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       <img src={activeAd.image_url} alt={adLabel} class="native-ad__image" loading="lazy" decoding="async" />
     </a>
   </div>
-) : (
+) : slotId === 'top_banner' ? (
   <aside
     class={`native-ad native-ad--empty native-ad--${slotId} ${className}`}
     style={`min-height:${meta.minHeight}`}
@@ -88,7 +88,7 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       </a>
     </div>
   </aside>
-)}
+) : null}
 
 <script>
   import { buildCsrfHeadersAsync } from '../lib/personalization';
@@ -372,13 +372,40 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
     justify-content: flex-end;
   }
 
-  @media (max-width: 768px) {
-    .native-ad--top_banner.native-ad--empty {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.75rem;
-    }
+  /* Unsold house ad: a slim strip at every width, not a block of promo copy. */
+  .native-ad--top_banner.native-ad--empty {
+    min-height: 0 !important;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+  }
+  .native-ad--top_banner .native-ad__desc,
+  .native-ad--top_banner .native-ad__format,
+  .native-ad--top_banner .native-ad__price-was,
+  .native-ad--top_banner .native-ad__price-unit,
+  .native-ad--top_banner .native-ad__promo {
+    display: none;
+  }
+  .native-ad--top_banner .native-ad__title {
+    font-size: 0.95rem;
+    line-height: 1.25;
+    margin: 0.1rem 0 0;
+  }
+  .native-ad--top_banner .native-ad__foot {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 0 0 auto;
+  }
+  .native-ad--top_banner .native-ad__cta {
+    width: auto;
+    min-height: 2.5rem;
+    padding-inline: 0.85rem;
+    white-space: nowrap;
+  }
 
+  @media (max-width: 768px) {
     .native-ad--top_banner .native-ad__foot {
       flex-direction: row;
       align-items: center;
@@ -387,38 +414,6 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
 
     .native-ad--top_banner .native-ad__pricing {
       justify-content: flex-start;
-    }
-
-    /* Unsold house ad: a slim strip, not a full screen of promo copy. */
-    .native-ad--top_banner.native-ad--empty {
-      min-height: 0 !important;
-      flex-direction: row;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.6rem 0.85rem;
-    }
-    .native-ad--top_banner .native-ad__desc,
-    .native-ad--top_banner .native-ad__format,
-    .native-ad--top_banner .native-ad__price-was,
-    .native-ad--top_banner .native-ad__price-unit,
-    .native-ad--top_banner .native-ad__promo {
-      display: none;
-    }
-    .native-ad--top_banner .native-ad__title {
-      font-size: 0.95rem;
-      line-height: 1.25;
-      margin: 0.1rem 0 0;
-    }
-    .native-ad--top_banner .native-ad__foot {
-      flex-direction: row;
-      gap: 0.6rem;
-      flex: 0 0 auto;
-    }
-    .native-ad--top_banner .native-ad__cta {
-      width: auto;
-      min-height: 2.5rem;
-      padding-inline: 0.85rem;
-      white-space: nowrap;
     }
 
     .native-ad__cta {
