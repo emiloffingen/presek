@@ -223,3 +223,16 @@ class TestExtractWordsWithFlags:
         words = {item["word"] for item in get_trending(country="MK")}
         assert {"Crna Gora", "Evro", "Vučić"} <= words
         assert {"Makedonija", "Crna", "Gora", "Evra", "Vucic"}.isdisjoint(words)
+
+
+def test_generic_quantity_and_time_words_are_not_trending_topics():
+    from core.trending import extract_words_with_flags
+
+    words = {
+        w
+        for w, _ in extract_words_with_flags(
+            "Милиони евра за државна матура: Државна комисија и години на чекање во Охрид"
+        )
+    }
+    assert not words & {"милиони", "државна", "години"}
+    assert {"матура", "охрид"} <= words

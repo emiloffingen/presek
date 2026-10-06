@@ -348,6 +348,24 @@ STOPWORDS = {
     "po",
     "kur",
     "ose",
+    # Quantities, units and time spans: frequent in headlines, never a topic
+    "milioni",
+    "milion",
+    "milijardi",
+    "milijarda",
+    "iljadi",
+    "godini",
+    "godina",
+    "godinata",
+    "godinite",
+    "denari",
+    "dolari",
+    "procenti",
+    "procent",
+    "lugje",
+    "drzavna",
+    "drzavni",
+    "drzavno",
 }
 
 # Minimum word length and frequency to be considered trending
