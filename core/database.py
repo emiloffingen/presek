@@ -450,7 +450,7 @@ class AsyncDatabaseManager:
                     log.error(f"Failed to initialize async database read replica pool: {e}")
                     self._read_pool = None
 
-    async def execute(self, sql, params=None, fetch=True, read_only=None):
+    async def execute(self, sql, params=None, fetch=True, read_only=None, timeout_ms=None):
         await self._ensure_pool()
         try:
             if read_only is None:
@@ -466,6 +466,10 @@ class AsyncDatabaseManager:
                 log.debug(f"Routing async query to read replica pool: {sql[:100]}")
             async with pool.connection() as conn:
                 async with conn.cursor() as cur:
+                    if timeout_ms:
+                        # Transaction-local, so it never leaks into the pooled connection;
+                        # Postgres cancels the statement itself instead of leaving it running.
+                        await cur.execute("SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),))
                     await cur.execute(sql, params)
                     if fetch:
                         rows = await cur.fetchall()
@@ -729,8 +733,10 @@ class DatabaseManager:
             return 0.0
         return float(row["mb"])
 
-    async def async_execute(self, sql, params=None, fetch=True, read_only=None):
+    async def async_execute(self, sql, params=None, fetch=True, read_only=None, timeout_ms=None):
         """Asynchronous execution via native psycopg 3 async pool."""
+        if timeout_ms:
+            return await async_db.execute(sql, params, fetch, read_only, timeout_ms=timeout_ms)
         return await async_db.execute(sql, params, fetch, read_only)
 
     async def async_execute_one(self, sql, params=None, read_only=None):
@@ -765,6 +771,7 @@ class DatabaseManager:
         sort_by: str = "hybrid",
         timespan: str | None = None,
         country: str | None = None,
+        timeout_ms: int | None = None,
     ):
         # Validate inputs to prevent SQL injection
         time_filter = _validate_timespan(timespan)
@@ -789,7 +796,7 @@ class DatabaseManager:
 
         validated_sort_by = _validate_sort_by(sort_by)
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by, country_filter)
-        return await self.async_execute(sql, tuple(params), read_only=True)
+        return await self.async_execute(sql, tuple(params), read_only=True, timeout_ms=timeout_ms)
 
     async def async_search_articles(
         self,
