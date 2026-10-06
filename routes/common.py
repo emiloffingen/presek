@@ -256,7 +256,6 @@ def _safe_tracking_redirect_path(path: str) -> str:
         "/trending",
         "/archive",
         "/stati",
-        "/subjekt/",
         "/tema/",
         "/izvori",
         "/admin/status",
