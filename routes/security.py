@@ -119,7 +119,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         # HSTS: Only enable preload in production with HTTPS
         # In development, use shorter max-age without preload to avoid breaking local dev
         if os.environ.get("ENV") == "production":

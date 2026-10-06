@@ -47,7 +47,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // response; HSTS uses the full preload value only on production hosts.
   const staticSecurityHeaders: Record<string, string> = {
     'X-Content-Type-Options': 'nosniff',
-    'Referrer-Policy': 'no-referrer-when-downgrade',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy':
       'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()',
     'Strict-Transport-Security': isProductionHost
