@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
 import { apiBaseUrl } from '../lib/apiBase';
+import { buildCsrfHeadersAsync } from '../lib/personalization.js';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { common } from '../i18n/namespaces/common';
 import type { ui } from '../i18n/ui';
 import { Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
 type Variant = 'default' | 'compact' | 'settings' | 'editorial';
-
-function getCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return undefined;
-}
 
 export default function MorningEmailSignup({
   lang = 'mk',
@@ -33,11 +26,11 @@ export default function MorningEmailSignup({
 
     setStatus('loading');
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const csrfToken = getCookie('csrf_token');
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
+      // First-time visitors have no csrf_token cookie yet; the async helper fetches one.
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(await buildCsrfHeadersAsync()),
+      };
 
       const res = await fetch(`${apiBaseUrl()}/newsletter/subscribe`, {
         method: 'POST',

@@ -394,7 +394,9 @@ export async function getCsrfTokenAsync() {
     });
     if (!res.ok) return getCsrfToken();
     const payload = await res.json();
-    return payload?.csrf_token || getCsrfToken();
+    // Prefer the cookie that response just set: the backend compares the header
+    // against the cookie, and the two can differ when the API sets a fresh cookie.
+    return getCsrfToken() || payload?.csrf_token || '';
   } catch {
     return getCsrfToken();
   }

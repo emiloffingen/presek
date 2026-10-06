@@ -18,9 +18,9 @@ def _c(title, topic, score, cid="c"):
 def test_pick_caps_and_dedupes(monkeypatch):
     data = [
         _c("A", "x", 9, "1"),
-        _c("a", "y", 8, "2"),   # near-dup of A
+        _c("a", "y", 8, "2"),  # near-dup of A
         _c("B", "x", 7, "3"),
-        _c("C", "x", 6, "4"),   # third topic x -> dropped
+        _c("C", "x", 6, "4"),  # third topic x -> dropped
         _c("D", "z", 5, "5"),
         _c("E", "w", 4, "6"),
     ]
@@ -41,3 +41,14 @@ def test_render_escapes_and_links():
 
 def test_mk_date():
     assert mb._mk_date(datetime.datetime(2026, 10, 4)) == "4 октомври 2026"
+
+
+def test_truncation_never_splits_an_entity():
+    long_summary = "x" * 315 + "&&&&&&&&&&"
+    c = _c("T", "x", 1)
+    c["cluster_summary"] = long_summary
+    html = mb.render_morning_brief_html([c], datetime.datetime(2026, 5, 4), "https://u")
+    assert "&am…" not in html and "&a…" not in html and "&…" not in html
+
+    breaking = mb.render_breaking_email({"cluster_id": "1", "title": "T", "summary": "y" * 398 + "&&&"})
+    assert breaking.count("&amp;") == 2

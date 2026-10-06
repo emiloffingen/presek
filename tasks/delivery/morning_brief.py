@@ -179,9 +179,11 @@ def render_morning_brief_html(
         cid = str(cluster.get("cluster_id") or "").strip()
         url = f"{site}/mk/cluster/{cid}" if cid else site
         title = _esc(cluster.get("title"))
-        summary = _esc(str(cluster.get("cluster_summary") or cluster.get("description") or "").strip())
+        # Truncate before escaping so the cut never splits an HTML entity.
+        summary = str(cluster.get("cluster_summary") or cluster.get("description") or "").strip()
         if len(summary) > 320:
             summary = summary[:317].rstrip() + "…"
+        summary = _esc(summary)
         category = _esc(str(cluster.get("topic") or cluster.get("category") or "").strip())
         source = _esc(cluster.get("source"))
         count = int(cluster.get("source_count") or 1)
@@ -227,7 +229,7 @@ def render_breaking_email(cluster: dict, unsubscribe_url: str = "") -> str:
     cid = str(cluster.get("cluster_id") or "").strip()
     url = f"{SITE}/mk/cluster/{cid}" if cid else SITE
     title = _esc(cluster.get("title") or cluster.get("synthetic_headline"))
-    summary = _esc(str(cluster.get("summary") or cluster.get("cluster_summary") or "").strip())[:400]
+    summary = _esc(str(cluster.get("summary") or cluster.get("cluster_summary") or "").strip()[:400])
     unsub = f'<a href="{unsubscribe_url}" style="color:#888;">Одјава</a>' if unsubscribe_url else ""
     return f"""<!doctype html><html lang="mk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#f4f1ea;">
