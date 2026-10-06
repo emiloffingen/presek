@@ -252,6 +252,40 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
     assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 500
 
 
+def test_fastapi_news_search_falls_back_to_text_search_when_hybrid_fails(mock_all):
+    import routes.news as news_routes
+
+    mock_all["db"].async_hybrid_search.side_effect = RuntimeError("canceling statement due to statement timeout")
+    mock_all["db"].async_search_articles.return_value = []
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("core.embeddings.get_query_embedding_async", new=AsyncMock(return_value=[0.1] * 384)),
+    ):
+        data = asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=10))
+        data = data.content if hasattr(data, "content") else data
+
+    assert mock_all["db"].async_hybrid_search.called
+    assert mock_all["db"].async_hybrid_search.call_args.kwargs["timeout_ms"] == news_routes._SEARCH_SEMANTIC_TIMEOUT_MS
+    assert mock_all["db"].async_search_articles.called  # fell back instead of failing
+    assert data["status"] == "success"
+
+
+def test_fastapi_news_search_uses_hybrid_results_without_fallback(mock_all):
+    import routes.news as news_routes
+
+    mock_all["db"].async_hybrid_search.return_value = []
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("core.embeddings.get_query_embedding_async", new=AsyncMock(return_value=[0.1] * 384)),
+    ):
+        asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=10))
+
+    assert mock_all["db"].async_hybrid_search.called
+    assert not mock_all["db"].async_search_articles.called
+
+
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import routes.profile as profile_routes
 
@@ -298,7 +332,6 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
     assert common._is_rate_limited_path("/api/v1/news") is True
     assert common._is_rate_limited_path("/api/proxy") is True
     assert common._is_rate_limited_path("/api/health") is False
-
 
 
 def test_profile_sync_rejects_weak_token_headers(mock_all):
@@ -760,7 +793,7 @@ def test_fastapi_get_cluster_share_card_blocks_unresolved_remote_backgrounds(moc
         patch("PIL.ImageDraw.Draw"),
         patch("PIL.ImageFont.truetype"),
     ):
-        fake_image.save.side_effect = (lambda output, format=None: output.write(b"png"))
+        fake_image.save.side_effect = lambda output, format=None: output.write(b"png")
         resp = asyncio.run(system_routes.get_cluster_share_card("abc123"))
     fake_client.get.assert_not_called()
     assert resp.media_type == "image/png"
@@ -970,9 +1003,11 @@ def test_synthesis_homepage_boost(mock_all):
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute.side_effect = execute_side_effect
+
     # Mock c2 to have an active synthesis, and c1 to not have one
     async def get_synthesis_ids(cluster_ids, lang=None):
         return ["c2"] if "c2" in cluster_ids else []
+
     mock_all["db"].async_get_synthesis_ids.side_effect = get_synthesis_ids
 
     with (
@@ -996,5 +1031,3 @@ def test_synthesis_homepage_boost(mock_all):
     assert clusters[1]["cluster_id"] == "c1"
     assert clusters[1]["has_synthesis"] is False
     assert clusters[1]["homepage_score"] == 10.0
-
-
