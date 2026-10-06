@@ -50,6 +50,20 @@ MK_FEEDS = [
     # Sport.
     ("MakFudbal", "https://makfudbal.mk/feed/"),
     ("SportMedia", "https://sportmedia.mk/feed/"),
+    ("Ekipa", "https://ekipa.mk/feed/"),
+    ("Sportski", "https://sportski.mk/feed/"),
+    # Tech (Tehnologija has no other dedicated source).
+    ("USB", "https://usb.mk/feed/"),
+    # General/news (verified working Oct 2026).
+    ("Lider", "https://lider.mk/feed/"),
+    ("Alfa", "https://vesti.alfa.mk/feed/"),
+    ("Expres", "https://expres.mk/feed/"),
+    ("MKD", "https://mkd.mk/feed/"),
+    # Legal niche.
+    ("Akademik", "https://akademik.mk/feed/"),
+    # Lifestyle/entertainment (thin Zivot/Zabava coverage).
+    ("Popara", "https://popara.mk/feed/"),
+    ("Crnobelo", "https://www.crnobelo.com/latest-rss?format=feed&type=rss"),
 ]
 
 

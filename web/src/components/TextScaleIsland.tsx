@@ -63,12 +63,12 @@ export default function TextScaleIsland({ lang = 'mk' }: { lang?: string }) {
 
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-52 bg-popover text-popover-foreground border border-border shadow-lg z-[210] animate-in fade-in slide-in-from-top-2 duration-200"
+          className="text-scale-menu absolute right-0 mt-2 w-52 max-w-[calc(100vw-2rem)] bg-popover text-popover-foreground border border-border shadow-lg z-[210] animate-in fade-in slide-in-from-top-2 duration-200"
           role="menu"
           aria-orientation="vertical"
         >
           <div className="py-1 px-1 divide-y divide-border/60">
-            <div className="px-3 py-2 text-[0.62rem] font-black tracking-widest text-muted-foreground uppercase">
+            <div className="text-scale-menu-title px-3 py-2 text-[0.62rem] font-black tracking-widest text-muted-foreground uppercase">
               {t('typography.menu_title')}
             </div>
             <div className="py-1">
@@ -76,14 +76,14 @@ export default function TextScaleIsland({ lang = 'mk' }: { lang?: string }) {
                 <button
                   key={s.value}
                   onClick={() => handleScaleChange(s.value)}
-                  className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between transition-colors hover:bg-secondary ${
+                  className={`text-scale-menu-item w-full text-left px-3 py-2.5 text-xs flex items-center justify-between transition-colors hover:bg-secondary ${
                     scale === s.value ? 'font-bold text-foreground' : 'text-muted-foreground'
                   }`}
                   role="menuitem"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="font-sans text-[0.68rem] tracking-wider font-extrabold text-muted-foreground/60">{s.label}</span>
-                    <span className="font-serif text-[0.8rem]">{t(s.nameKey)}</span>
+                    <span className="text-scale-menu-pct font-sans text-[0.68rem] tracking-wider font-extrabold text-muted-foreground/60">{s.label}</span>
+                    <span className="text-scale-menu-name font-serif text-[0.8rem]">{t(s.nameKey)}</span>
                   </span>
                   {scale === s.value && <Check size={14} className="text-nyt-accent" />}
                 </button>

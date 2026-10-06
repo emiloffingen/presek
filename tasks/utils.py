@@ -11,6 +11,18 @@ from utils import delete_cache, delete_cache_prefix, redis_client  # noqa: F401
 log = get_logger("presek_celery")
 
 
+def _resolve_from_address(smtp_user: str) -> str:
+    """Sender for outgoing mail. EMAIL_FROM wins; else a real address from
+    SMTP_USER; else a domain sender (never the bare 'resend' user, which the
+    provider rejects)."""
+    explicit = os.environ.get("EMAIL_FROM", "").strip()
+    if explicit:
+        return explicit
+    if smtp_user and "@" in smtp_user:
+        return smtp_user
+    return "Presek <briefing@presek.mk>"
+
+
 def send_email(
     html: str,
     subject: str,
@@ -20,10 +32,16 @@ def send_email(
     smtp_host: str = None,
     smtp_port: int = None,
 ) -> bool:
-    """Send HTML email via SMTP."""
-    host = smtp_host or os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    """Send HTML email via SMTP. Returns False (and logs) when unconfigured."""
+    host = (smtp_host or os.environ.get("SMTP_HOST", "")).strip()
     port = int(smtp_port or os.environ.get("SMTP_PORT", 587))
-    from_addr = os.environ.get("EMAIL_FROM", smtp_user)
+    if not host or not smtp_user or not smtp_pass:
+        log.warning(
+            "SMTP not configured (SMTP_HOST/SMTP_USER/SMTP_PASS); skipping email to %s",
+            to_address,
+        )
+        return False
+    from_addr = _resolve_from_address(smtp_user)
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject

@@ -252,6 +252,40 @@ def test_fastapi_news_scales_query_fetch_limit_with_page_depth(mock_all):
     assert mock_all["db"].async_search_articles.call_args.kwargs["limit"] == 500
 
 
+def test_fastapi_news_search_falls_back_to_text_search_when_hybrid_fails(mock_all):
+    import routes.news as news_routes
+
+    mock_all["db"].async_hybrid_search.side_effect = RuntimeError("canceling statement due to statement timeout")
+    mock_all["db"].async_search_articles.return_value = []
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("core.embeddings.get_query_embedding_async", new=AsyncMock(return_value=[0.1] * 384)),
+    ):
+        data = asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=10))
+        data = data.content if hasattr(data, "content") else data
+
+    assert mock_all["db"].async_hybrid_search.called
+    assert mock_all["db"].async_hybrid_search.call_args.kwargs["timeout_ms"] == news_routes._SEARCH_SEMANTIC_TIMEOUT_MS
+    assert mock_all["db"].async_search_articles.called  # fell back instead of failing
+    assert data["status"] == "success"
+
+
+def test_fastapi_news_search_uses_hybrid_results_without_fallback(mock_all):
+    import routes.news as news_routes
+
+    mock_all["db"].async_hybrid_search.return_value = []
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("core.embeddings.get_query_embedding_async", new=AsyncMock(return_value=[0.1] * 384)),
+    ):
+        asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=10))
+
+    assert mock_all["db"].async_hybrid_search.called
+    assert not mock_all["db"].async_search_articles.called
+
+
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import routes.profile as profile_routes
 
@@ -699,6 +733,31 @@ def test_fastapi_proxy_ignores_unsafe_db_local_image_path(mock_all):
 
     assert response.media_type == "image/svg+xml"
     assert response.headers["X-Proxy-Fallback"] in {"http_404", "security_ssrf_block"}
+
+
+def test_fastapi_proxy_serves_local_master_without_remote_fetch(mock_all, tmp_path):
+    import io
+
+    from PIL import Image
+
+    import routes.system as system_routes
+
+    master = tmp_path / "art_1.png"
+    buf = io.BytesIO()
+    Image.new("RGB", (8, 8), (200, 30, 30)).save(buf, "PNG")
+    master.write_bytes(buf.getvalue())
+    mock_all["db"].async_execute_one.return_value = {"local_image_path": "uploads/art_1.png"}
+
+    with (
+        patch("routes.system._resolve_safe_static_relative", return_value=master),
+        patch("requests.get", side_effect=AssertionError("remote fetch must not happen")),
+        patch("utils.network._resolve_public_ips", side_effect=AssertionError("remote fetch must not happen")),
+    ):
+        response = asyncio.run(system_routes.proxy_image("https://example.com/image.jpg", None))
+
+    assert response.status_code == 200
+    assert response.media_type in {"image/webp", "image/png", "image/jpeg"}
+    assert response.headers.get("X-Proxy-Fallback") is None
 
 
 def test_fastapi_serves_robots_txt(mock_all):

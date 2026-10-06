@@ -44,8 +44,11 @@ USE_READ_REPLICA=true
 UVICORN_WORKERS=2
 
 # Connection pool settings
+# Budget: UVICORN_WORKERS(2) * 2 pools(async+sync) * MAXCONN. At MAXCONN=12 that
+# is 48 client connections for the API tier; add celery workers separately.
+# Must stay under the server's max_connections (Supabase free tier: 60).
 DB_POOL_MINCONN=2
-DB_POOL_MAXCONN=5
+DB_POOL_MAXCONN=12
 DB_POOL_TIMEOUT=60
 DB_POOL_MAX_LIFETIME=1800
 

@@ -308,6 +308,28 @@ html:root body {
     cursor: pointer;
 }
 
+/* Command-palette trigger inside the broadsheet masthead: same 44px rhythm as
+   the old plain input, so the header height doesn't shift. */
+.bs-search--command > * { width: 100%; }
+.bs-search--command .presek-search-trigger {
+    min-height: 44px;
+    border: 1px solid var(--bs-input-border);
+    border-radius: 6px;
+    background: var(--bs-bg);
+    box-shadow: none;
+}
+.bs-search--command .presek-search-trigger:hover {
+    background: var(--bs-bg);
+    border-color: var(--bs-text);
+    box-shadow: none;
+}
+.bs-search--command .search-trigger-icon {
+    background: transparent;
+    border-color: transparent;
+}
+.bs-search--command .search-trigger-label { font-size: 15px; font-weight: 400; }
+.bs-search--command .search-trigger-hint { display: none; }
+
 .bs-nav { padding-top: 16px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
 .bs-nav::-webkit-scrollbar { display: none; }
 .bs-nav a {

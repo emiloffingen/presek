@@ -163,7 +163,8 @@ def _ai_cluster_synthesis(articles: list[dict]) -> dict | None:
 
     prompt = (
         "Ти си новинарски уредник. На основа на следниве вести за истата тема, "
-        "напиши редакциски преглед на македонски јазик.\n\n"
+        "напиши редакциски преглед на македонски литературен јазик. "
+        "Не користи српски, бугарски или руски зборови, ниту букви вон македонската азбука.\n\n"
         f"Вести:\n{articles_text}\n"
         "Одговори САМО со валиден JSON без markdown:\n"
         '{"headline": "Краток наслов", "summary": "Резиме од 3-4 реченици", '
@@ -303,6 +304,22 @@ def build_extractive_clusters_task(self, hours: int = 48, limit: int = 60, clust
             if not summary:
                 continue
 
+            # Same quality bar as the heavy paths: clean MK leaks and score
+            # faithfulness (shadow). This writer previously bypassed all gates.
+            try:
+                from tasks.synthesis_sanitize import clean_mk_text_field as _clean_mk_field
+
+                summary = _clean_mk_field(summary)
+                synth["headline"] = _clean_mk_field(synth.get("headline", ""))
+                try:
+                    from tasks.intelligence.faithfulness import log_faithfulness_shadow
+
+                    log_faithfulness_shadow(cid, summary, synth.get("key_facts", []), articles, provider)
+                except Exception:
+                    pass
+            except Exception as e:
+                log.debug(f"[synthesis] light-path cleanup skipped for {cid}: {e}")
+
             generation_model = synth.get("model")
             quality_score = synth.get("quality_score")
             fallback_reason = synth.get("fallback_reason")
@@ -413,6 +430,19 @@ def upgrade_extractive_to_ai_task(self, limit: int = 15, max_age_days: int = 7):
             summary = synth["summary"].strip()
             if not summary:
                 continue
+            try:
+                from tasks.synthesis_sanitize import clean_mk_text_field as _clean_mk_field
+
+                summary = _clean_mk_field(summary)
+                synth["headline"] = _clean_mk_field(synth.get("headline", ""))
+                try:
+                    from tasks.intelligence.faithfulness import log_faithfulness_shadow
+
+                    log_faithfulness_shadow(cid, summary, synth.get("key_facts", []), articles, synth.get("provider"))
+                except Exception:
+                    pass
+            except Exception as e:
+                log.debug(f"[synthesis] upgrade-path cleanup skipped for {cid}: {e}")
             db_manager.execute(
                 """
                 UPDATE cluster_summaries SET

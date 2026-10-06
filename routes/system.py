@@ -875,8 +875,7 @@ async def proxy_image(
             if local_img_row:
                 local_full = _resolve_safe_static_relative(local_img_row["local_image_path"])
                 if local_full and local_full.exists() and local_full.is_file():
-                    with open(local_full, "rb") as f:
-                        img_data = f.read()
+                    img_data = await asyncio.to_thread(local_full.read_bytes)
                     log.info(f"[proxy] Using local master for {url}")
         except Exception as e:
             log.warning(f"[proxy] DB lookup failed: {e}")

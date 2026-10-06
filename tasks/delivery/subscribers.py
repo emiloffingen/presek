@@ -22,11 +22,21 @@ def _load_active_delivery_rows():
     return db.execute(
         """SELECT s.sync_token, s.channel, s.target, s.morning_briefing, s.weekly_digest, s.breaking_topics,
                   s.breaking_sources, s.is_active, s.last_morning_sent_at, s.last_weekly_sent_at, s.last_breaking_sent_at,
-                  s.last_alert_cluster_ids, s.last_alert_context, s.locale, p.profile_data
+                  s.last_alert_cluster_ids, s.last_alert_context, p.profile_data
            FROM synced_delivery_subscriptions s
            JOIN synced_reader_profiles p ON p.sync_token = s.sync_token
            WHERE s.is_active = TRUE"""
     )
+
+
+def _load_newsletter_subscribers():
+    """Plain email newsletter signups (the `subscribers` table)."""
+    try:
+        rows = db.execute("SELECT email FROM subscribers WHERE is_active = TRUE AND email IS NOT NULL")
+        return [str(r.get("email") or "").strip() for r in rows if str(r.get("email") or "").strip()]
+    except Exception as e:
+        log.warning(f"[subscribers] could not load newsletter subscribers: {e}")
+        return []
 
 
 def _cluster_delivery_match(cluster, profile, *, include_topics=True, include_sources=True):

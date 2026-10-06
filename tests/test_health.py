@@ -194,3 +194,18 @@ class TestHealthProbes:
             result = _probe_redis()
         assert result["ok"] is False
         assert "connection refused" in result["error"]
+
+
+class TestIdleStatus:
+    def test_idle_resets_low_accept_streak(self):
+        mock_redis = MagicMock()
+        with patch("core.health._get_redis", return_value=mock_redis):
+            state = update_source_policy("SlowFeed", "idle", fetched=10, accepted=0)
+        assert state["low_accept_streak"] == 0
+        assert state["auto_flagged"] is False
+        assert state["consecutive_errors"] == 0
+
+    def test_idle_scores_as_healthy(self):
+        payload = _source_quality_payload("idle", fetched=10, accepted=0)
+        assert payload["quality_score"] == 1.0
+        assert payload["degraded"] is False

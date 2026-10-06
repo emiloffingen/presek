@@ -76,7 +76,23 @@ def is_safe_url(url: str) -> bool:
     if hostname_only in BLOCKED_HOSTNAMES:
         return False
 
-    # 2. Block IP-like hostnames
+    # 2. Substring block for cloud-metadata hostnames. This must run BEFORE any
+    # DNS resolution: these hostnames are never legitimately resolvable, and
+    # calling getaddrinfo() on them first blocks on a resolver timeout (observed
+    # as a 20s+ hang on "169.254.1.1.evil.com"), so the check below never ran.
+    metadata_markers = (
+        "metadata.",
+        ".metadata",
+        "metadata.google",
+        "metadata.internal",
+        "169.254.",
+        "fd00:ec2",
+        "100.100.100.",
+    )
+    if any(marker in hostname_only for marker in metadata_markers):
+        return False
+
+    # 3. Block IP-like hostnames
     if hostname_only.replace(".", "").replace(":", "").isdigit() or all(
         c in "0123456789abcdefABCDEF:." for c in hostname_only
     ):
@@ -87,7 +103,7 @@ def is_safe_url(url: str) -> bool:
         except ValueError:
             pass
 
-    # 3. Resolve hostname and check all resolved IPs (DNS rebinding protection)
+    # 4. Resolve hostname and check all resolved IPs (DNS rebinding protection)
     try:
         addr_infos = _get_cached_addrinfo(hostname)
         if addr_infos is None:
@@ -106,19 +122,6 @@ def is_safe_url(url: str) -> bool:
                     return False
             except ValueError:
                 continue
-
-        # 4. Additional DNS-based checks for cloud metadata
-        metadata_markers = [
-            "metadata.",
-            ".metadata",
-            "metadata.google",
-            "metadata.internal",
-            "169.254.",
-            "fd00:ec2",
-            "100.100.100.",
-        ]
-        if any(marker in hostname for marker in metadata_markers):
-            return False
 
         return True
     except Exception as e:

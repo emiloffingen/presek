@@ -114,6 +114,9 @@ def _source_quality_payload(status: str, fetched: int, accepted: int, error: str
         base_score = 0.35
     elif status == "warning":
         base_score = 0.7
+    elif status == "idle":
+        # Healthy idle poll: nothing new to accept, not a quality signal.
+        acceptance_ratio = 1.0
 
     score = base_score
     if fetched > 0:
@@ -162,9 +165,15 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
     else:
         state["consecutive_errors"] = 0
 
-    low_accept = (
-        fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
-    )
+    if status == "idle":
+        # Healthy idle poll (slow feed, all items already known): reset the
+        # low-accept streak instead of feeding it.
+        state["low_accept_streak"] = 0
+        low_accept = False
+    else:
+        low_accept = (
+            fetched >= LOW_ACCEPTANCE_MIN_FETCHED and acceptance_ratio < LOW_ACCEPTANCE_THRESHOLD and status != "error"
+        )
     if low_accept:
         state["low_accept_streak"] = int(state.get("low_accept_streak", 0)) + 1
     elif fetched > 0:

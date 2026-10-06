@@ -5,6 +5,7 @@
  * Used on every public page via NYTHeader.astro.
  */
 import TextScaleIsland from '../TextScaleIsland';
+import SearchEntryIsland from '../SearchEntryIsland';
 import NativeAdSlot from '../NativeAdSlot.astro';
 import { apiBaseUrl } from '../../lib/apiBase';
 import { fetchJsonCached } from '../../lib/apiCache';
@@ -82,9 +83,9 @@ const editionDateLabel = editionDate.charAt(0).toUpperCase() + editionDate.slice
         <div class="bs-wrap bs-topbar-row">
             <span class="bs-topbar-date">{editionDateLabel}</span>
             <span class="bs-topbar-stats">
-                {stats?.last_24h != null && <span><strong class="bs-num">{fmt.format(stats.last_24h)}</strong> написи за 24 часа</span>}
+                {stats?.last_24h != null && <span><strong class="bs-num">{fmt.format(stats.last_24h)}</strong> {stats.last_24h === 1 ? 'напис за 24 часа' : 'написи за 24 часа'}</span>}
                 {stats?.total_feeds != null && <span><strong class="bs-num">{stats.total_feeds}</strong> {stats.total_feeds === 1 ? 'извор' : 'извори'}</span>}
-                {stats?.total_clusters != null && <span><strong class="bs-num">{fmt.format(stats.total_clusters)}</strong> приказни</span>}
+                {stats?.total_clusters != null && <span><strong class="bs-num">{fmt.format(stats.total_clusters)}</strong> {stats.total_clusters === 1 ? 'приказна' : 'приказни'}</span>}
                 <span class="bs-topbar-tools" data-no-script-convert>
                     <TextScaleIsland client:idle lang={lang} />
                     <button
@@ -112,11 +113,9 @@ const editionDateLabel = editionDate.charAt(0).toUpperCase() + editionDate.slice
                 <span class="bs-brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
                 <span class="bs-brand-name">Пресек</span>
             </a>
-            <form class="bs-search" action={l('/')} method="get" role="search">
-                <label for="bs-q" class="sr-only">Пребарај вести</label>
-                <input id="bs-q" name="q" type="search" placeholder="Пребарај вести, луѓе, теми…" autocomplete="off" value={q || ''} />
-                <button type="submit">Барај</button>
-            </form>
+            <div class="bs-search bs-search--command">
+                <SearchEntryIsland initialQuery={q} client:load lang={lang} />
+            </div>
         </div>
         <nav class="bs-wrap bs-nav" aria-label="Рубрики">
             <a href={l('/')} aria-current={isHome ? 'page' : undefined}>Најважно</a>

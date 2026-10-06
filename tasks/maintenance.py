@@ -225,7 +225,7 @@ def _collect_homepage_cluster_ids(limit: int = 48) -> list[str]:
 
     seen = set(targets)
     for lang in ("sr", "mk"):
-        payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
+        payload = safe_async_run(lambda lang=lang: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
         for cluster in payload.get("clusters") or []:
             cluster_id = str(cluster.get("cluster_id") or "").strip()
             if not cluster_id or cluster_id in seen:
@@ -760,7 +760,7 @@ def prioritize_homepage_syntheses_task(limit=None):
     seen = set(targets)
     if not _homepage_synthesis_only():
         for lang in ("sr", "mk"):
-            payload = safe_async_run(lambda: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
+            payload = safe_async_run(lambda lang=lang: fetch_news_data(sort="score", page_size=24, lang=lang)) or {}
             for cluster in payload.get("clusters") or []:
                 cluster_id = str(cluster.get("cluster_id") or "").strip()
                 if not cluster_id or cluster_id in seen or not _cluster_needs_synthesis(cluster):

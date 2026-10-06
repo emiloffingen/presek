@@ -517,9 +517,10 @@ def send_daily_digest_task():
     try:
         import core.digest as digest_module
 
-        digest_module.send_digest()
+        return digest_module.send_digest()
     except Exception as e:
         log.warning(f"[tasks] Daily digest skipped: {e}")
+        return 0
 
 
 @celery_app.task
@@ -552,7 +553,7 @@ def send_profile_weekly_digests_task():
                 continue
 
             channel = str(row.get("channel") or "ntfy").strip().lower()
-            lang = str(row.get("locale") or "sr").strip().lower()
+            lang = str(row.get("locale") or "mk").strip().lower()
 
             primary_cluster_id = str((clusters[0] or {}).get("cluster_id") or "").strip() or None
 

@@ -10,9 +10,14 @@ except ModuleNotFoundError:  # Optional in pre-provisioned environments.
 
 
 # Load environment variables from .env file (only in development)
-# In production, environment variables should be set directly
+# In production, environment variables should be set directly.
+# override=False: real environment variables take precedence over .env, so an
+# explicitly exported value is never silently replaced by the file. Previously
+# override=True made .env win, which broke monkeypatch-based tests (a test that
+# set ENV=development still loaded ENV=production from .env) and defeated any
+# value injected by the process environment or the service manager.
 if os.environ.get("ENV") != "production":
-    load_dotenv(override=True)
+    load_dotenv(override=False)
 
 # Configure logging for config validation
 log = logging.getLogger("presek.config")

@@ -35,6 +35,7 @@ done
 detect_shield() {
   if [ -n "${SHIELD_HOST:-}" ]; then echo "$SHIELD_HOST"; return; fi
   local candidates=(
+    "u0_a106@192.168.0.62:8022"
     "u0_a106@192.168.0.60:8022"
     "u0_a106@100.77.135.12:8022"
     "u0_a106@192.168.1.60:8022"

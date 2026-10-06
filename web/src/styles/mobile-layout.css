@@ -130,6 +130,26 @@
     font-size: max(0.75rem, 1em);
   }
 
+  /* Text-scale (zoom) menu: readable on small screens */
+  .text-scale-menu {
+    width: 13.5rem;
+  }
+  .text-scale-menu-title {
+    font-size: 0.7rem;
+    padding: 0.65rem 0.9rem;
+  }
+  .text-scale-menu-item {
+    padding: 0.8rem 0.9rem;
+    font-size: 0.85rem;
+    min-height: 2.75rem;
+  }
+  .text-scale-menu-pct {
+    font-size: 0.75rem;
+  }
+  .text-scale-menu-name {
+    font-size: 0.95rem;
+  }
+
   .home-unified-feed {
     margin-inline: -0.25rem;
   }

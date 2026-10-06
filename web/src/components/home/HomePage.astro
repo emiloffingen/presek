@@ -160,8 +160,12 @@ const useBroadsheet = isSimpleHomepage
     && Boolean(leadCluster)
     && Astro.url.searchParams.get('layout') !== 'classic';
 
-if (homepageFlags.shouldSetErrorStatus) {
-    Astro.response.status = 500;
+// A failed backend fetch renders an error state; return a 5xx so Cloudflare
+// does not cache a broken page (a 200 error page lingered for ~60s after the
+// DB outage). `error` is only set when a fetch actually failed — an empty
+// result set leaves it null.
+if (error || homepageFlags.shouldSetErrorStatus) {
+    Astro.response.status = 503;
 }
 
 const dailyModeLabel = isHomepage && variant !== 'pregled' && isSimpleHomepage

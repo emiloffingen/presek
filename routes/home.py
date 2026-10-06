@@ -28,6 +28,10 @@ _HOMEPAGE_HERO_COUNT = 4
 _HOMEPAGE_HERO_CANDIDATE_POOL = 20
 _HOMEPAGE_HERO_SYNTHESIS_BAND = 0.72
 _HOMEPAGE_HERO_SYNTHESIS_LOCK_TTL = 3600
+# Short TTL for the cached synthesis hero candidate pool. Long enough to absorb
+# the homepage's 300s response cache misses, short enough that a freshly written
+# synthesis shows up quickly.
+_SYNTH_CLUSTERS_TTL = 120
 _HOMEPAGE_FEED_START = 5
 _HOMEPAGE_DEVELOPING_LIMIT = 10
 _HOMEPAGE_WIRE_LIMIT = 11
@@ -740,7 +744,18 @@ def _is_usable_focus_entity(name):
 
 
 async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str, Any]]:
-    """Load recent clusters that have full generated synthesis for the target language."""
+    """Load recent clusters that have full generated synthesis for the target language.
+
+    This is the slowest part of a cold ``/home`` payload (three joined queries plus
+    per-cluster scoring), so the result is cached separately from the assembled
+    homepage response. The TTL is deliberately short because new syntheses land
+    frequently and the caller wants fresh hero candidates.
+    """
+    cache_key = f"home:synth_clusters:v1:{lang}:{max(1, int(limit))}"
+    cached = cached_response(cache_key)
+    if cached is not None:
+        return cached
+
     from collections import defaultdict
 
     from core.database import db_manager as db
@@ -764,38 +779,44 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     )
     cids = [r["cluster_id"] for r in rows]
     if not cids:
+        set_cache(cache_key, [], ttl=_SYNTH_CLUSTERS_TTL)
         return []
 
     from routes.news import _ARTICLE_LIST_COLUMNS
 
-    art_rows = await db.async_execute(
-        f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
-        (cids,),
-        read_only=True,
+    # These three only share ``cids`` and never reference each other's output, so
+    # run them concurrently. Against the remote Supabase pooler each round trip
+    # costs ~240ms regardless of how cheap the query is, which made running them
+    # in series the dominant cost of a cold homepage request.
+    art_rows, meta_rows, summary_rows = await asyncio.gather(
+        db.async_execute(
+            f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
+            (cids,),
+            read_only=True,
+        ),
+        db.async_execute(
+            "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+            (cids,),
+            read_only=True,
+        ),
+        db.async_execute(
+            """
+            SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
+                   analyst_entities, pulse_score, pluralism_score, narrative_diversity,
+                   generated_article, quote
+            FROM cluster_summaries
+            WHERE cluster_id = ANY(%s) AND lang = %s
+            """,
+            (cids, lang),
+            read_only=True,
+        ),
     )
 
     clusters_grouped = defaultdict(list)
     for art in art_rows:
         clusters_grouped[art["cluster_id"]].append(art)
 
-    meta_rows = await db.async_execute(
-        "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
-        (cids,),
-        read_only=True,
-    )
     meta_map = {r["cluster_id"]: r for r in meta_rows}
-
-    summary_rows = await db.async_execute(
-        """
-        SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
-               analyst_entities, pulse_score, pluralism_score, narrative_diversity,
-               generated_article, quote
-        FROM cluster_summaries
-        WHERE cluster_id = ANY(%s) AND lang = %s
-        """,
-        (cids, lang),
-        read_only=True,
-    )
     summary_map = {r["cluster_id"]: r for r in summary_rows}
 
     formatted_clusters = []
@@ -846,6 +867,7 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
         )
 
     formatted_clusters.sort(key=_homepage_cluster_score, reverse=True)
+    set_cache(cache_key, formatted_clusters, ttl=_SYNTH_CLUSTERS_TTL)
     return formatted_clusters
 
 
