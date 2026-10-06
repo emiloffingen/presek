@@ -12,7 +12,7 @@ if "DATABASE_READ_REPLICA_URL" not in os.environ:
     # Use the primary connection as the replica connection if not set
     os.environ["DATABASE_READ_REPLICA_URL"] = os.environ.get(
         "DATABASE_URL", 
-        "postgresql://presek:presek_pass_2026@localhost/presek"
+        "postgresql://presek:CHANGE_ME@localhost/presek"
     )
 
 from core.database import async_db

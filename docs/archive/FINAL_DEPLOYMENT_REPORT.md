@@ -206,7 +206,7 @@ The RSS feed enhancement project has been successfully completed. All objectives
 
 ```bash
 # Database check
-PGPASSWORD=presek_pass_2026 psql -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
+PGPASSWORD="$DB_PASSWORD" psql -c "SELECT COUNT(*) FROM feed_sources WHERE is_active = TRUE;"
 # Result: 178 feeds ✅
 
 # Service check

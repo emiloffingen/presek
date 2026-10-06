@@ -40,8 +40,8 @@ During test execution, specific environment overrides ensure isolation and preve
 As defined in `tests/conftest.py`, the following environment variables are set during python tests:
 - `SECRET_KEY`: `test-secret-key`
 - `CSRF_TOKEN_SECRET`: `test-csrf-secret`
-- `DATABASE_URL`: `postgresql://presek:presek_pass_2026@localhost/presek_test`
-- `DATABASE_READ_REPLICA_URL`: `postgresql://presek:presek_pass_2026@localhost/presek_test`
+- `DATABASE_URL`: `postgresql://presek:presek_test@localhost/presek_test`
+- `DATABASE_READ_REPLICA_URL`: `postgresql://presek:presek_test@localhost/presek_test`
 - `PRESEK_SKIP_DB_POOL_INIT`: `1` (prevents premature connection pool initialization)
 - `PRESEK_DISABLE_SEMANTIC_NER`: `1` (bypasses heavy NLP processes)
 - `PRESEK_DISABLE_KEYBERT`: `1`

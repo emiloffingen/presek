@@ -17,7 +17,7 @@ os.environ.setdefault("PRESEK_SKIP_DB_POOL_INIT", "1")
 os.environ.setdefault("PRESEK_DISABLE_SEMANTIC_NER", "1")
 os.environ.setdefault("PRESEK_DISABLE_KEYBERT", "1")
 os.environ.setdefault("PRESEK_DISABLE_SPACY", "1")
-os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_pass_2026@localhost/presek_test")
+os.environ.setdefault("DATABASE_URL", "postgresql://presek:presek_test@localhost/presek_test")
 # Mirror the effective primary URL so the replica always uses matching
 # credentials. A hardcoded password here breaks auth against the CI service
 # and stalls async read-replica pool init until the 60s pool timeout.
