@@ -658,7 +658,29 @@ def resolve_primary_database_url() -> str:
 # wasted cascade round-trips. PROVIDERS still defines them for manual override.
 PROVIDER_FALLBACK_ORDER_RESEARCH = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]
 PROVIDER_FALLBACK_ORDER_SUMMARY = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]
-PROVIDER_FALLBACK_ORDER = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]  # default
+_DEFAULT_PROVIDER_FALLBACK_ORDER = ["gemini3", "gemini2", "gemini", "groq", "nvidia", "openrouter", "local"]
+
+
+def _parse_provider_fallback_order():
+    """Default cascade order, overridable via PROVIDER_FALLBACK_ORDER env.
+
+    Comma-separated list, e.g. "gemini2,gemini,groq,openrouter,local".
+    Unknown names are ignored downstream (ai_engine filters against PROVIDERS);
+    default providers missing from the env value are appended so the cascade
+    stays complete. Empty/unset env keeps the default order.
+    """
+    raw = os.environ.get("PROVIDER_FALLBACK_ORDER", "")
+    wanted = [p.strip() for p in raw.split(",") if p.strip()]
+    if not wanted:
+        return list(_DEFAULT_PROVIDER_FALLBACK_ORDER)
+    order = list(wanted)
+    for p in _DEFAULT_PROVIDER_FALLBACK_ORDER:
+        if p not in order:
+            order.append(p)
+    return order
+
+
+PROVIDER_FALLBACK_ORDER = _parse_provider_fallback_order()  # default, env-overridable
 
 # Providers reserved exclusively for synthesis tasks.
 # When set, these providers are excluded from summarize/research/default cascades

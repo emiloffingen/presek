@@ -98,13 +98,26 @@ def record_runtime_event(event: str, **fields):
 
 
 def check_rate_limit(ip: str, path: str = "", is_authenticated: bool = False) -> bool:
-    """Sliding window rate limiter."""
+    """Sliding window rate limiter.
+
+    NOTE: loopback used to bypass limiting entirely (early ``return True``).
+    All public traffic arrives via the Cloudflare tunnel as 127.0.0.1, so any
+    request missing its CF-Connecting-IP header (tunnel hiccup, misconfig)
+    was unlimited. Loopback now shares one generous "local" bucket instead of
+    bypassing, so the failure mode degrades to shared-limit, not unlimited.
+    """
     if ip in {"127.0.0.1", "::1"}:
-        return True
+        ip = "local"
+        local_cap = 600
 
     is_ai = path.endswith("/research") or path.endswith("/analyst")
     max_reqs = 12 if is_ai else 60
     daily_lim = 100 if is_ai else None
+    if ip == "local" and not is_ai:
+        # Health checks, watchdog probes and header-less tunnel traffic share
+        # one generous bucket; expensive AI routes keep their strict cap.
+        max_reqs = local_cap
+        daily_lim = None
 
     if is_authenticated:
         max_reqs *= 2

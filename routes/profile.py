@@ -248,6 +248,15 @@ async def save_profile_sync(request: Request, csrf_valid: bool = Depends(verify_
 async def get_profile_delivery(request: Request):
     token = _validate_sync_token_value(_extract_sync_token(request))
     row = await db.async_execute_one("SELECT * FROM synced_delivery_subscriptions WHERE sync_token = %s", (token,))
+    if row:
+        # Same expiry gate as get/save_profile_sync: an expired or leaked token
+        # must not retain read access to delivery targets (email/webhook).
+        profile = await db.async_execute_one(
+            "SELECT created_at FROM synced_reader_profiles WHERE sync_token = %s",
+            (token,),
+        )
+        if profile:
+            _assert_sync_token_not_expired(profile)
     return {
         "status": "success",
         "subscription": _normalize_server_delivery_row(row),

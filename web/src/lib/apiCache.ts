@@ -45,10 +45,27 @@ export async function fetchJson(url: string, retries = 2, init?: RequestInit) {
     throw new Error(`fetchJson exhausted retries: ${url}`);
 }
 
-// Module-level cache maps that persist across requests
+// Module-level cache maps that persist across requests.
+// Bounded LRU: distinct search/filter URLs are high-cardinality and would
+// otherwise accumulate promises for the process lifetime on long-lived workers.
 const apiCache = new Map<string, Promise<any>>();
 const apiCacheExpiry = new Map<string, number>();
 const DEFAULT_TTL_MS = 60 * 1000; // 60 seconds
+const API_CACHE_MAX_ENTRIES = 500;
+// Query-param URLs (search text, filters) are effectively unique per request:
+// cache them only briefly for stampede protection, never for the full TTL.
+const HIGH_CARDINALITY_TTL_MS = 5 * 1000; // 5 seconds
+
+function apiCacheEvictIfNeeded() {
+    if (apiCache.size < API_CACHE_MAX_ENTRIES) return;
+    // Maps iterate in insertion order: refresh recency by re-inserting below,
+    // so the head is always the least-recently-used entry.
+    const oldest = apiCache.keys().next();
+    if (!oldest.done) {
+        apiCache.delete(oldest.value);
+        apiCacheExpiry.delete(oldest.value);
+    }
+}
 
 /**
  * Fetches JSON from the API, caching the promise to resolve concurrent requests
@@ -56,6 +73,8 @@ const DEFAULT_TTL_MS = 60 * 1000; // 60 seconds
  */
 export function fetchJsonCached(url: string, ttlMs = DEFAULT_TTL_MS): Promise<any> {
     const now = Date.now();
+    const highCardinality = url.includes('?');
+    const effectiveTtl = highCardinality ? Math.min(ttlMs, HIGH_CARDINALITY_TTL_MS) : ttlMs;
     const expiresAt = apiCacheExpiry.get(url);
     let promise = apiCache.get(url);
 
@@ -67,8 +86,14 @@ export function fetchJsonCached(url: string, ttlMs = DEFAULT_TTL_MS): Promise<an
             apiCacheExpiry.delete(url);
             throw err;
         });
+        apiCache.delete(url); // re-insert for LRU recency
+        apiCacheEvictIfNeeded();
         apiCache.set(url, promise);
-        apiCacheExpiry.set(url, now + ttlMs);
+        apiCacheExpiry.set(url, now + effectiveTtl);
+    } else {
+        // Cache hit: refresh LRU recency.
+        apiCache.delete(url);
+        apiCache.set(url, promise);
     }
     return promise;
 }

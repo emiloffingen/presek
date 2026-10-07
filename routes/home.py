@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Request
@@ -15,6 +14,12 @@ from nlp import normalize_focus_entity_surface
 from utils import cached_response, set_cache
 
 from .common import cleanAndDecode
+from .curation import (
+    _HARD_NEWS_CATEGORIES,
+    _HARD_NEWS_TOPICS,
+    _SOFT_EXCLUDE_TOPICS,
+    _title_looks_like_feature,
+)
 from .intelligence import get_top_entities
 from .news import fetch_news_data
 from .stats import get_stats_summary
@@ -373,13 +378,6 @@ class StatusOnlyResponse(BaseModel):
     message: Optional[str] = None
 
 
-_SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
-_HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
-_HARD_NEWS_CATEGORIES = {
-    "Srbija",
-    "Makedonija",
-    "Balkan",
-}
 _AUDIO_PRIORITY_GENERATION_LIMIT = max(0, int(os.environ.get("AUDIO_PRIORITY_GENERATION_LIMIT", "2")))
 
 
@@ -442,27 +440,6 @@ async def _generate_cluster_audio_background(cluster_id: str, content: str, lang
         log.error(f"[home] Background audio generation failed for cluster {cluster_id}: {e}")
 
 
-_HARD_NEWS_CATEGORIES = {
-    "Evropa",
-    "Germanija",
-    "Amerika",
-    "Svet",
-}
-_FEATURE_PATTERNS = [
-    re.compile(r"izdanie na", re.IGNORECASE),
-    re.compile(r"intervju so", re.IGNORECASE),
-    re.compile(r"intervju\b", re.IGNORECASE),
-    re.compile(r"proverete dali", re.IGNORECASE),
-    re.compile(r"pred da ", re.IGNORECASE),
-    re.compile(r"postojano ste umorni", re.IGNORECASE),
-    re.compile(r"ovoj mineral", re.IGNORECASE),
-    re.compile(r"horoskop", re.IGNORECASE),
-    re.compile(r"recept", re.IGNORECASE),
-    re.compile(r"foto\b", re.IGNORECASE),
-    re.compile(r"video\b", re.IGNORECASE),
-    re.compile(r"galerija", re.IGNORECASE),
-]
-
 _FOCUS_ENTITY_STOPWORDS = {
     "predsednik",
     "predsednica",
@@ -507,17 +484,6 @@ _FOCUS_ENTITY_STOPWORDS = {
 def _primary_article(cluster):
     articles = (cluster or {}).get("articles", [{}])
     return articles[0] if articles else {}
-
-
-def _title_looks_like_feature(title):
-    clean = cleanAndDecode(title)
-    if not clean:
-        return True
-    if len(clean) > 180:
-        return True
-    if "?" in clean:
-        return True
-    return any(pattern.search(clean) for pattern in _FEATURE_PATTERNS)
 
 
 def _extract_preview_summary(article):

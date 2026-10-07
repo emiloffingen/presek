@@ -71,31 +71,14 @@ class NewsResponse(BaseModel):
     entity: Optional[Any] = None
 
 
-_SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
-_HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
-_HARD_NEWS_CATEGORIES = {
-    "Srbija",
-    "Makedonija",
-    "Balkan",
-    "Evropa",
-    "Germanija",
-    "Amerika",
-    "Svet",
-}
-_FEATURE_PATTERNS = [
-    re.compile(r"izdanie na", re.IGNORECASE),
-    re.compile(r"intervju so", re.IGNORECASE),
-    re.compile(r"intervju\b", re.IGNORECASE),
-    re.compile(r"proverete dali", re.IGNORECASE),
-    re.compile(r"pred da ", re.IGNORECASE),
-    re.compile(r"postojano ste umorni", re.IGNORECASE),
-    re.compile(r"ovoj mineral", re.IGNORECASE),
-    re.compile(r"horoskop", re.IGNORECASE),
-    re.compile(r"recept", re.IGNORECASE),
-    re.compile(r"foto\b", re.IGNORECASE),
-    re.compile(r"video\b", re.IGNORECASE),
-    re.compile(r"galerija", re.IGNORECASE),
-]
+# Curation heuristics live in routes/curation.py (single owner shared with
+# routes/home.py); import the names used below.
+from .curation import (  # noqa: E402
+    _HARD_NEWS_CATEGORIES,
+    _HARD_NEWS_TOPICS,
+    _SOFT_EXCLUDE_TOPICS,
+    _title_looks_like_feature,
+)
 
 
 def _is_publicly_displayable_article(article):
@@ -223,17 +206,6 @@ def _parse_maybe_json(val):
 def _as_list(val):
     parsed = _parse_maybe_json(val)
     return parsed if isinstance(parsed, list) else []
-
-
-def _title_looks_like_feature(title):
-    clean = str(title or "").strip()
-    if not clean:
-        return True
-    if len(clean) > 180:
-        return True
-    if "?" in clean:
-        return True
-    return any(pattern.search(clean) for pattern in _FEATURE_PATTERNS)
 
 
 def _compute_editorial_signals(arts, cluster_score, homepage_score):
@@ -481,7 +453,11 @@ async def fetch_news_data(
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
-            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
+            # Fetch the full pool here; python-side grouping/filtering below can
+            # drop clusters, and paged_clusters at the end does the actual paging.
+            # (Slicing a window here AND paging below would double-page and
+            # return empty results for page >= 1.)
+            cids = [r["cluster_id"] for r in rows]
             rows = (
                 await db.async_execute(
                     f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
@@ -525,6 +501,7 @@ async def fetch_news_data(
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
+            # Full pool (see subcategory branch): downstream paged_clusters pages.
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
@@ -561,12 +538,16 @@ async def fetch_news_data(
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
+            # Full pool (see subcategory branch): downstream paged_clusters pages.
             cids = [r["cluster_id"] for r in rows]
 
             rows = (
                 await db.async_execute(
-                    "SELECT a.*, s.synthetic_headline, s.synthetic_standfirst FROM articles a LEFT JOIN cluster_summaries s ON a.cluster_id = s.cluster_id AND s.lang = %s WHERE a.cluster_id = ANY(%s) ORDER BY a.created_at DESC",
-                    (lang, cids),
+                    # Slim list columns only: payloads go through _public_article_payload
+                    # (which drops full_content anyway) and synthesis fields come from
+                    # the separate summary_map query below — no JOIN needed here.
+                    f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
+                    (cids,),
                     read_only=True,
                 )
                 if cids
@@ -588,7 +569,8 @@ async def fetch_news_data(
             params.append(page_size * (page + 1))
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
-            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
+            # Full pool (see subcategory branch): downstream paged_clusters pages.
+            cids = [r["cluster_id"] for r in rows]
             rows = (
                 await db.async_execute(
                     f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
@@ -618,7 +600,8 @@ async def fetch_news_data(
             params.append(candidate_limit)
 
             rows = await db.async_execute(query, tuple(params), read_only=True)
-            cids = [r["cluster_id"] for r in rows[page * page_size : (page + 1) * page_size]]
+            # Full pool (see subcategory branch): downstream paged_clusters pages.
+            cids = [r["cluster_id"] for r in rows]
             rows = (
                 await db.async_execute(
                     f"SELECT {_ARTICLE_LIST_COLUMNS} FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",  # nosec B608 - static column constant with bound params
@@ -1145,6 +1128,55 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
         return {"status": "error", "data": None}
 
 
+@router.get("/sitemap-clusters")
+async def get_sitemap_clusters(
+    lang: Optional[str] = DEFAULT_LANG,
+    limit: int = Query(default=1000, ge=1, le=2000),
+):
+    """Lightweight sitemap feed: synthesized clusters only (id + headline + image + timestamp).
+
+    The Astro sitemap routes used to fan out up to 10 full /news scrapes
+    (500-candidate pool + metadata/synthesis fan-out each), which could block
+    SSR for minutes and hammer the DB. This single indexed query replaces that.
+    Cached 1h; crawlers hitting /sitemap.xml never touch the heavy paths.
+    """
+    lang = validate_language_code(lang, allowed_languages=["sr", "mk"])
+    cache_key = f"api:sitemap-clusters:v1:{lang}:{limit}"
+    cached = cached_response(cache_key, ttl=3600)
+    if cached:
+        return cached
+    rows = await db.async_execute(
+        """
+        SELECT m.cluster_id,
+               s.synthetic_headline,
+               m.representative_image,
+               s.created_at AS synthesis_updated_at
+        FROM cluster_metadata m
+        JOIN cluster_summaries s ON s.cluster_id = m.cluster_id AND s.lang = %s
+        WHERE NULLIF(s.synthetic_headline, '') IS NOT NULL
+           OR NULLIF(s.synthetic_standfirst, '') IS NOT NULL
+        ORDER BY s.created_at DESC
+        LIMIT %s
+        """,
+        (lang, limit),
+        read_only=True,
+    )
+    result = {
+        "status": "success",
+        "clusters": [
+            {
+                "cluster_id": r.get("cluster_id"),
+                "title": r.get("synthetic_headline") or "",
+                "image": r.get("representative_image"),
+                "updated": r.get("synthesis_updated_at"),
+            }
+            for r in (rows or [])
+        ],
+    }
+    set_cache(cache_key, result, ttl=3600)
+    return result
+
+
 @router.get("/article/{article_id}")
 async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG):
     """Full original text for a single article, with source attribution.
@@ -1156,6 +1188,10 @@ async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG
     cache_key = f"api:article:detail:v1:{article_id}:{lang}"
     cached = cached_response(cache_key, ttl=3600)
     if cached:
+        if isinstance(cached, dict) and cached.get("__missing"):
+            # Negative cache: known-missing/purged article ID (crawler sweep).
+            # Short TTL so newly-ingested IDs recover fast.
+            raise HTTPException(status_code=404, detail="tekstot ne e najden")
         return cached
 
     try:
@@ -1169,6 +1205,7 @@ async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG
         row = None
 
     if not row or not _is_publicly_displayable_article(row):
+        set_cache(cache_key, {"__missing": True}, ttl=120)
         raise HTTPException(status_code=404, detail="tekstot ne e najden")
 
     allowed = True
