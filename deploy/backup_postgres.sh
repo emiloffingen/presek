@@ -53,6 +53,10 @@ main() {
   # pg_dump needs a direct (session) connection. When DATABASE_URL points at a
   # transaction pooler (Supabase :6543, a local PgBouncer), set BACKUP_DATABASE_URL.
   DUMP_URL="${BACKUP_DATABASE_URL:-$DATABASE_URL}"
+  # Use the newest pg_dump available: it must not be older than the server
+  # (Aiven runs PostgreSQL 18, the distro default may be 17).
+  PGDUMP=pg_dump
+  [ -x /usr/lib/postgresql/18/bin/pg_dump ] && PGDUMP=/usr/lib/postgresql/18/bin/pg_dump
 
   # pg_dump refuses to dump a *newer* server than itself. Catch it up front so
   # we fail loudly instead of writing a truncated "<100 bytes" file that looks
@@ -60,7 +64,7 @@ main() {
   local server_ver server_major client_ver
   server_ver="$(psql "$DUMP_URL" -tAc 'show server_version_num' 2>/dev/null || true)"
   server_major=$(( ${server_ver:-0} / 10000 ))
-  client_ver="$(pg_dump --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
+  client_ver="$("$PGDUMP" --version 2>/dev/null | grep -oE '[0-9]+' | head -1)"
   if [ -n "$server_ver" ] && [ -n "$client_ver" ] && [ "$client_ver" -lt "$server_major" ] 2>/dev/null; then
     fail "pg_dump client (v$client_ver) is older than the server (v$server_major); run this from a matching client"
   fi
@@ -93,11 +97,11 @@ main() {
   if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
     local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz.gpg"
     info "Creating encrypted PostgreSQL backup at $outfile"
-    pg_dump "${dump_args[@]}" "$DUMP_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
+    "$PGDUMP" "${dump_args[@]}" "$DUMP_URL" | gzip -9 | gpg --batch --yes --symmetric --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" --cipher-algo AES256 -o "$outfile"
   else
     local outfile="$BACKUP_DIR/${prefix}-${TIMESTAMP}.sql.gz"
     info "Creating PostgreSQL backup at $outfile"
-    pg_dump "${dump_args[@]}" "$DUMP_URL" | gzip -9 > "$outfile"
+    "$PGDUMP" "${dump_args[@]}" "$DUMP_URL" | gzip -9 > "$outfile"
   fi
 
   ok "Backup complete"
