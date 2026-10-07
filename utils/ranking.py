@@ -657,9 +657,7 @@ def compute_cluster_pulse_pluralism(article_rows: List[Dict[str, Any]]) -> Dict[
 
     sources = {str(r.get("source") or "").strip() for r in rows if r.get("source")}
     sources.discard("")
-    tiers = {
-        _SOURCE_TIER_MAP.get((reg.get(s, {}) or {}).get("category", "Lokalni"), "R") for s in sources
-    }
+    tiers = {_SOURCE_TIER_MAP.get((reg.get(s, {}) or {}).get("category", "Lokalni"), "R") for s in sources}
     pluralism = 10.0 + 15.0 * min(len(sources), 4) + 10.0 * max(len(tiers) - 1, 0)
 
     now = datetime.datetime.now(datetime.timezone.utc)
