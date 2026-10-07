@@ -149,7 +149,12 @@ if [ "${SKIP_PY:-0}" != "1" ]; then
       if [ "$VENV_BACKUP_FRESH" = "1" ] && (cd "$APP_DIR" && UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT="$VENV" \
             uv sync --frozen --no-dev --quiet); then
         VERIFY_FAIL=""
-        for pymod in "fastapi:FastAPI" "pydantic:BaseModel" "sqlalchemy:__version__" "celery:__version__" "psycopg:__version__"; do
+        # NOTE 2026-10-07: the Oct 7 10:36 sync silently dropped package
+        # __init__.py files (lxml/html, babel, stripe, scipy, sympy, torch,
+        # transformers) that this list did not cover; live workers kept serving
+        # from memory until the next restart exposed it as ImportErrors.
+        # Pipeline-critical imports are verified too now.
+        for pymod in "fastapi:FastAPI" "pydantic:BaseModel" "sqlalchemy:__version__" "celery:__version__" "psycopg:__version__" "trafilatura:__version__" "lxml.html:HtmlElement" "babel:Locale"; do
           pkg="${pymod%%:*}"; attr="${pymod##*:}"
           if ! "$VENV/bin/python" -c "import $pkg; $pkg.$attr" >/dev/null 2>&1; then
             VERIFY_FAIL="$VERIFY_FAIL $pkg"
