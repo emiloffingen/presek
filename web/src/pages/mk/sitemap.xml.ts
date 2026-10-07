@@ -8,32 +8,25 @@ export const GET: APIRoute = async () => {
     const SITE_URL = 'https://presek.mk';
     const clusterData: {id: string, title: string, updated: string | null}[] = [];
 
+    // Single lightweight query (backend-cached 1h) with an abort timeout —
+    // never fan out /news here, each scrape runs a 500-candidate pool and
+    // could block SSR for minutes under crawler traffic.
     try {
-        let page = 0;
-        let hasMore = true;
-        while (hasMore && page < 10) {
-            const res = await fetch(`${API_URL}/news?page_size=50&page=${page}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data && Array.isArray(data.clusters)) {
-                    const filtered = data.clusters.filter((c: any) =>
-                        c.articles && c.articles.some((a: any) => a.country === 'MK')
-                    );
-                    clusterData.push(...filtered
-                        .filter((c: any) => c.has_synthesis && (c.synthetic_headline || c.synthetic_standfirst))
-                        .map((c: any) => ({
-                            id: c.cluster_id,
-                            title: c.synthetic_headline || c.title || '',
-                            updated: c.synthesis_updated_at || c.articles?.[0]?.created_at || null
-                        })));
-                    hasMore = data.has_more;
-                } else {
-                    hasMore = false;
-                }
-            } else {
-                hasMore = false;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        const res = await fetch(`${API_URL}/sitemap-clusters?lang=mk&limit=1000`, { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.clusters)) {
+                clusterData.push(...data.clusters
+                    .filter((c: any) => c.cluster_id)
+                    .map((c: any) => ({
+                        id: c.cluster_id,
+                        title: c.title || '',
+                        updated: c.updated || null
+                    })));
             }
-            page++;
         }
     } catch (e) {
         console.error("Sitemap fetch error:", e);
@@ -65,7 +58,7 @@ ${clusterData.map(cluster => {
     return new Response(sitemap, {
         headers: {
             'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 'public, max-age=3600',
+            'Cache-Control': 'public, max-age=3600, s-maxage=14400, stale-while-revalidate=7200',
         },
     });
 };
