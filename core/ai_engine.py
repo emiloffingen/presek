@@ -325,6 +325,10 @@ class OpenAICompatibleProvider(AIProvider):
         }
         if json_mode or response_schema:
             payload["response_format"] = {"type": "json_object"}
+            # Groq (and OpenAI) reject json_object mode with a 400 unless the word
+            # "json" appears somewhere in the messages; Gemini does not enforce it.
+            if "json" not in f"{system}\n{prompt}".lower():
+                payload["messages"][0]["content"] = f"{system}\n\nRespond with a single valid JSON object."
 
         headers = {
             "Content-Type": "application/json",
