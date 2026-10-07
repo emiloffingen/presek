@@ -107,6 +107,18 @@ try {
     error = t('cluster.error.connection');
 }
 
+// Cluster content changes slowly (new articles trickle in, synthesis refreshes
+// occasionally): cache briefly in browsers, longer at the Cloudflare edge with
+// stale-while-revalidate so crawlers and readers get sub-second pages.
+if (!error && cluster) {
+    Astro.response.headers.set(
+        'Cache-Control',
+        'public, max-age=300, s-maxage=1800, stale-while-revalidate=86400'
+    );
+} else {
+    Astro.response.headers.set('Cache-Control', 'no-store');
+}
+
 const mainArticle = cluster?.articles?.[0];
 const cleanSourceDocumentText = (text: unknown) => cleanAndDecode(String(text || '')
     .replace(/<[^>]*>?/gm, ' ')

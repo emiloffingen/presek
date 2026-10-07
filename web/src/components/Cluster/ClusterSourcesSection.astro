@@ -13,6 +13,12 @@ interface Props {
 }
 
 const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
+
+// Near-duplicate reports (same title reprints across outlets) collapse into
+// one expandable group so the timeline shows distinct angles first. The lead
+// row always stays visible even if flagged redundant.
+const primaryRows = articleRows.filter((a: any, i: number) => i === 0 || !a.is_redundant);
+const redundantRows = articleRows.filter((a: any, i: number) => i !== 0 && a.is_redundant);
 ---
 
 <section class="editorial-section sources-section mb-24 border-t border-border/40 pt-12" id="cluster-sources">
@@ -68,8 +74,29 @@ const { lang, sourceDocArticle, sourceDocText, articleRows, t } = Astro.props;
 
   <div class="editorial-article-list editorial-timeline">
     <div class="timeline-v-line"></div>
-    {articleRows.map((a: any, index: number) => (
+    {primaryRows.map((a: any, index: number) => (
       <ArticleItem article={a} rowId={`source-row-${index}`} />
     ))}
   </div>
+
+  {redundantRows.length > 0 && (
+    <details class="group similar-reports mt-8 border border-border/40">
+      <summary class="flex items-center justify-between p-6 cursor-pointer hover:bg-secondary/10 transition-colors list-none">
+        <div>
+          <span class="ui-kicker text-foreground">
+            {t('cluster.similar_reports').replace('{count}', String(redundantRows.length))}
+          </span>
+          <span class="block text-sm text-muted-foreground mt-1">{t('cluster.similar_reports_hint')}</span>
+        </div>
+        <div class="text-muted-foreground group-open:rotate-180 transition-transform duration-300">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </summary>
+      <div class="px-2 pb-4">
+        {redundantRows.map((a: any, index: number) => (
+          <ArticleItem article={a} rowId={`source-row-dup-${index}`} />
+        ))}
+      </div>
+    </details>
+  )}
 </section>

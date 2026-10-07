@@ -623,3 +623,68 @@ def is_balanced(arts: List[Dict[str, Any]]) -> bool:
         return False
     reg = get_source_registry()
     return len({a["source"] for a in arts}) >= 4 or len({reg.get(a["source"], {}).get("category") for a in arts}) >= 2
+
+
+_SOURCE_TIER_MAP = {
+    "Agencijski": "M",
+    "Javni servis": "M",
+    "glavni": "M",
+    "Nezavisni": "I",
+    "Istraživački": "I",
+    "Regionalni": "R",
+    "Alternativni": "R",
+    "Lokalni": "R",
+}
+
+
+def compute_cluster_pulse_pluralism(article_rows: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Deterministic pulse/pluralism scores from cluster rows (0-100).
+
+    These replace the hardcoded 50/50 defaults persisted by the synthesis
+    pipeline. Pluralism rewards distinct sources AND tier spread (an agency +
+    an independent + a local covering the same story scores higher than three
+    same-tier reprints). Pulse rewards velocity (articles in the last 24h) and
+    recency of the newest article. Missing data degrades conservatively toward
+    the middle instead of collapsing to 0.
+    """
+    rows = [r for r in (article_rows or []) if isinstance(r, dict)]
+    if not rows:
+        return {"pulse_score": 50.0, "pluralism_score": 50.0}
+    try:
+        reg = get_source_registry()
+    except Exception:
+        reg = {}
+
+    sources = {str(r.get("source") or "").strip() for r in rows if r.get("source")}
+    sources.discard("")
+    tiers = {
+        _SOURCE_TIER_MAP.get((reg.get(s, {}) or {}).get("category", "Lokalni"), "R") for s in sources
+    }
+    pluralism = 10.0 + 15.0 * min(len(sources), 4) + 10.0 * max(len(tiers) - 1, 0)
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    newest_age_h: float | None = None
+    in_last_24h = 0
+    for r in rows:
+        dt = _coerce_datetime(r.get("ingested_at") or r.get("created_at"))
+        if dt is None:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        age_h = (now - dt).total_seconds() / 3600.0
+        if age_h < 0:
+            age_h = 0.0
+        if newest_age_h is None or age_h < newest_age_h:
+            newest_age_h = age_h
+        if age_h <= 24:
+            in_last_24h += 1
+    if newest_age_h is None:
+        pulse = 50.0
+    else:
+        recency = 15.0 if newest_age_h < 1 else (8.0 if newest_age_h < 6 else (3.0 if newest_age_h <= 24 else 0.0))
+        pulse = 10.0 + 10.0 * min(in_last_24h, 5) + recency
+
+    return {
+        "pulse_score": round(min(max(pulse, 0.0), 100.0), 1),
+        "pluralism_score": round(min(max(pluralism, 0.0), 100.0), 1),
+    }

@@ -122,6 +122,8 @@ export const cluster = {
     'cluster.section_related': 'Поврзани содржини',
     'cluster.section_sources': 'Изворен запис',
     'cluster.section_sources_kicker': 'Хронолошки преглед на медиумските извештаи',
+    'cluster.similar_reports': 'Слични извештаи ({count})',
+    'cluster.similar_reports_hint': 'Речиси идентични наслови од други редакции',
     'cluster.show_sidebar': 'Прикажи алатки',
     'cluster.sidebar_more': 'Дополнителни алатки',
     'cluster.sidebar_more_hint': 'Споредба, пулс, претплата',
