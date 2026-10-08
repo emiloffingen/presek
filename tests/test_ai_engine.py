@@ -386,6 +386,61 @@ def test_effective_max_tokens_enforces_groq_floor():
     assert _effective_max_tokens("openrouter", 100) == 100
 
 
+@pytest.mark.parametrize(
+    ("system", "prompt", "expect_hint"),
+    [
+        ("Ти си уредник.", "Сумирај ги вестите.", True),
+        ("Return JSON only.", "Сумирај.", False),
+        ("Ти си уредник.", "Output a JSON object.", False),
+    ],
+)
+def test_json_mode_adds_json_hint_only_when_word_missing(monkeypatch, system, prompt, expect_hint):
+    import httpx
+
+    from core.ai_engine import GroqProvider
+
+    sent = {}
+
+    def fake_post(self, url, json=None, headers=None, timeout=None):
+        sent.update(json)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "{}"}}]},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    provider = GroqProvider(api_key="gsk-test", model="openai/gpt-oss-120b")
+    assert provider.call(prompt, system, 800, True) == "{}"
+
+    assert sent["response_format"] == {"type": "json_object"}
+    combined = (sent["messages"][0]["content"] + sent["messages"][1]["content"]).lower()
+    assert "json" in combined
+    assert (sent["messages"][0]["content"] != system) is expect_hint
+
+
+def test_non_json_mode_leaves_messages_untouched(monkeypatch):
+    import httpx
+
+    from core.ai_engine import GroqProvider
+
+    sent = {}
+
+    def fake_post(self, url, json=None, headers=None, timeout=None):
+        sent.update(json)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": "ok"}}]},
+            request=httpx.Request("POST", url),
+        )
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    GroqProvider(api_key="gsk-test", model="m").call("hello", "sys", 800, False)
+
+    assert "response_format" not in sent
+    assert sent["messages"][0]["content"] == "sys"
+
+
 def test_local_provider_returns_none_when_analyst_missing(monkeypatch):
     """The local analyst is a stub with no `analyst`; the provider must not raise."""
     from core import ai_engine
