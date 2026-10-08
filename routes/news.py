@@ -338,6 +338,7 @@ async def get_news(
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
+    fast: bool = False,
 ):
     try:
         # The public deployment is Macedonian-only. Legacy callers may still
@@ -355,6 +356,7 @@ async def get_news(
             timespan=timespan,
             page=page,
             page_size=page_size,
+            fast=fast,
         )
     except Exception as e:
         log.error(f"News Route Error in Endpoint: {e}", exc_info=True)
@@ -373,8 +375,15 @@ async def fetch_news_data(
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
+    fast: bool = False,
 ):
+    # fast=True is for as-you-type suggestions: text search only, no query
+    # embedding or vector scan (about 2-3 s cold vs ~150 ms). Full hybrid search
+    # stays the default for result pages.
+    fast = bool(fast and q)
     cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{country}:{lang}:{sort}:{timespan}:{page}:{page_size}"
+    if fast:
+        cache_key += ":fast"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -417,7 +426,7 @@ async def fetch_news_data(
         if q:
             from core.embeddings import get_query_embedding_async
 
-            query_vec = await get_query_embedding_async(q)
+            query_vec = [] if fast else await get_query_embedding_async(q)
             sort_by = "recent" if sort == "recent" else "hybrid"
             rows = None
             if query_vec:

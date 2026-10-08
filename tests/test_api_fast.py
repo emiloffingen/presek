@@ -271,6 +271,39 @@ def test_fastapi_news_search_falls_back_to_text_search_when_hybrid_fails(mock_al
     assert data["status"] == "success"
 
 
+def test_fastapi_news_fast_search_skips_embedding_and_vector_scan(mock_all):
+    import routes.news as news_routes
+
+    embed = AsyncMock(return_value=[0.1] * 384)
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("core.embeddings.get_query_embedding_async", new=embed),
+    ):
+        data = asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=8, fast=True))
+        data = data.content if hasattr(data, "content") else data
+
+    assert not embed.called
+    assert not mock_all["db"].async_hybrid_search.called
+    assert mock_all["db"].async_search_articles.called
+    assert data["status"] == "success"
+
+
+def test_fastapi_news_fast_flag_uses_its_own_cache_key(mock_all):
+    import routes.news as news_routes
+
+    seen = []
+
+    def _cached(key, *a, **kw):
+        seen.append(key)
+        return None
+
+    with patch("routes.news.cached_response", side_effect=_cached):
+        asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=8, fast=True))
+        asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=8, fast=False))
+
+    assert seen[0].endswith(":fast") and not seen[1].endswith(":fast")
+
+
 def test_fastapi_news_search_uses_hybrid_results_without_fallback(mock_all):
     import routes.news as news_routes
 
