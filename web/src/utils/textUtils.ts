@@ -283,6 +283,9 @@ export function extractCleanSummaryText(input: any): string {
     cleaned = cleaned.replace(/^\s*[-*+]\s+/gm, '');
     cleaned = cleaned.replace(/^\s*\d+\.\s+/gm, '');
 
+    // Upstream truncation can cut an entity in half ("... &bd..."); drop the fragment.
+    cleaned = cleaned.replace(/\s+&#?[a-z0-9]{1,8}(\.{3}|…)?$/i, '$1');
+
     return stripBareUrls(cleaned.trim());
 }
 
