@@ -30,7 +30,7 @@ from core.database import db_manager as db
 from core.embeddings import article_text, generate_embeddings_batch, jina_distance
 from core.health import get_source_statuses, record_source_fetch
 from core.language import is_macedonian
-from core.text_extraction import clean_extracted_article_text
+from core.text_extraction import clean_extracted_article_text, strip_dangling_entity
 from nlp.categories import (
     detect_category,
     detect_subcategory,
@@ -980,7 +980,7 @@ async def ingest_all_sources_async():
                         continue
 
                     raw_desc = e.get("summary", "") or e.get("description", "")
-                    cleaned_desc = re.sub(r"<[^>]+>", "", raw_desc).strip()
+                    cleaned_desc = strip_dangling_entity(re.sub(r"<[^>]+>", "", raw_desc).strip())
 
                     if not is_supported_display_language(title, cleaned_desc):
                         filtered_skipped += 1
