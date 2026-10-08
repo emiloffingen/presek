@@ -252,7 +252,10 @@ def _write_redis(snapshot: dict):
     try:
         from utils import redis_client
 
-        redis_client.set(_REDIS_KEY, json.dumps(snapshot), ex=3600 * 6)
+        # 30min TTL matches the 15min writer (cron + beat): a single missed
+        # run surfaces as stale via the ops_snapshot DB fallback instead of
+        # silently serving 6h-old numbers.
+        redis_client.set(_REDIS_KEY, json.dumps(snapshot), ex=1800)
     except Exception as exc:
         log.warning(f"[synthesis-monitor] Failed to write Redis snapshot: {exc}")
 

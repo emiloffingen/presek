@@ -206,8 +206,16 @@ class CrawlerService:
         return {
             "User-Agent": random.choice(self.user_agents),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "mk,en;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,mk;q=0.8",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
             "Referer": "https://presek.mk/",
+            "Cache-Control": "max-age=0",
         }
 
     async def extract_all(self, url: str) -> Dict[str, Any]:
@@ -232,21 +240,39 @@ class CrawlerService:
 
         try:
             headers = self._get_headers()
-            _resolve_public_ips(url)
-            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
-                async with client.stream("GET", url, headers=headers) as resp:
-                    if not _peer_is_public(resp):
-                        log.warning(f"SSRF blocked: peer not public for {url}")
-                        return {
-                            "url": url,
-                            "error": "Security block: peer IP mismatch",
-                            "method": "fast",
-                        }
+            html_content, final_url = None, url
+            last_err = None
+            for attempt in range(2):
+                try:
+                    _resolve_public_ips(url)
+                    async with pooled_async_client("crawler", timeout=25.0, follow_redirects=True) as client:
+                        async with client.stream("GET", url, headers=headers) as resp:
+                            if not _peer_is_public(resp):
+                                log.warning(f"SSRF blocked: peer not public for {url}")
+                                return {
+                                    "url": url,
+                                    "error": "Security block: peer IP mismatch",
+                                    "method": "fast",
+                                }
 
-                    await resp.aread()
-                    resp.raise_for_status()
-                    html_content = resp.text
-                    final_url = str(resp.url)
+                            await resp.aread()
+                            if resp.status_code == 403:
+                                last_err = f"Client error '403 Forbidden' for url '{url}'"
+                                await asyncio.sleep(1.5 * (attempt + 1))
+                                continue
+                            resp.raise_for_status()
+                            html_content = resp.text
+                            final_url = str(resp.url)
+                            break
+                except (ValueError, PermissionError) as e:
+                    log.warning(f"SSRF blocked for {url}: {e}")
+                    return {"url": url, "error": f"Security block: {e}"}
+                except Exception as e:  # noqa: BLE001 - network retry must catch all transient errors
+                    last_err = str(e)
+                    await asyncio.sleep(1.5 * (attempt + 1))
+            if html_content is None:
+                log.warning(f"Fast crawl failed for {url}: {last_err}")
+                return {"url": url, "error": str(last_err or "fetch failed"), "method": "fast"}
         except (ValueError, PermissionError) as e:
             log.warning(f"SSRF blocked for {url}: {e}")
             return {"url": url, "error": f"Security block: {e}"}
@@ -329,7 +355,7 @@ class CrawlerService:
         feeds: list[str] = []
         try:
             _resolve_public_ips(homepage_url)
-            async with pooled_async_client("crawler", timeout=15.0, follow_redirects=True) as client:
+            async with pooled_async_client("crawler", timeout=25.0, follow_redirects=True) as client:
                 resp = await client.get(homepage_url, headers=self._get_headers())
                 resp.raise_for_status()
                 html = resp.text

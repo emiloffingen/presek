@@ -75,6 +75,20 @@ async def build_ops_snapshot() -> dict:
     queues = queue_status_payload()
     pipeline = reader_pipeline_status()
     synthesis = get_synthesis_quality_snapshot() or {}
+    if not synthesis.get("primary"):
+        # Redis miss/expired (e.g. writer gap): fall back to direct DB read
+        # so the cockpit shows "stale" with real numbers instead of "unknown".
+        try:
+            from scripts.monitor_synthesis_quality import build_report
+
+            synthesis = {
+                "status": "stale",
+                "primary": build_report(1),
+                "history": build_report(7),
+                "fallback": True,
+            }
+        except Exception as exc:  # noqa: BLE001 - DB fallback must never break ops snapshot
+            synthesis = {"status": "unknown", "error": str(exc)[:200]}
     primary = synthesis.get("primary") or {}
     history = synthesis.get("history") or {}
 

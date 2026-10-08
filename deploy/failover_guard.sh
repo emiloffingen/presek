@@ -73,7 +73,7 @@ spawn() { # name marker cmd
 ensure_standby_origin() {
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
-    ( exec 9>&-; redis-server --daemonize yes --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
+    ( exec 9>&-; redis-server --daemonize yes --bind "127.0.0.1 -::1" --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
     sleep 1
   fi
   curl -sf -m3 -o /dev/null http://127.0.0.1:5001/api/health || \
@@ -102,5 +102,5 @@ while true; do
     fail_streak=$((fail_streak + 1)); ok_streak=0
     [ "$fail_streak" -ge 2 ] && start_tunnel
   fi
-  sleep "$INTERVAL"
+  sleep "$INTERVAL" 9>&-
 done
