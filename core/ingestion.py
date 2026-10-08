@@ -1112,6 +1112,11 @@ async def ingest_all_sources_async():
             }
             for r in cur.fetchall()
         }
+        # The two reads above opened a transaction. The candidate loop below is
+        # pure CPU (slow on the phone) and never touches this connection, so end
+        # the transaction now; otherwise it sits "idle in transaction" and Aiven's
+        # 60 s idle_in_transaction_session_timeout kills it before the batch insert.
+        conn.commit()
 
         from core.clustering import (
             VECTOR_THRESHOLD,
