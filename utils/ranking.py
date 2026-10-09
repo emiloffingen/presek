@@ -17,8 +17,16 @@ _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
 
 
 def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
+    """Per-source ingestion health from Redis, cached in-process for ``ttl`` seconds.
+
+    An EMPTY result is cached too. It used to be re-fetched on every call (``data`` was
+    falsy), and this runs once per scored article: on a host whose Redis has no
+    ``presek:source_statuses`` hash (the statuses are written by the ingestion host, so the
+    Shield's Redis never has them) a single listing request made ~15,000 synchronous HGETALL
+    round trips on the event loop and froze the API for 10-20 s.
+    """
     now = time.time()
-    if _SOURCE_STATUS_CACHE["data"] and now - _SOURCE_STATUS_CACHE["time"] < ttl:
+    if _SOURCE_STATUS_CACHE["time"] and now - _SOURCE_STATUS_CACHE["time"] < ttl:
         return _SOURCE_STATUS_CACHE["data"]
     try:
         raw = redis_client.hgetall("presek:source_statuses") or {}
@@ -27,6 +35,8 @@ def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
         return parsed
     except Exception as e:
         log.debug(f"Failed to load source statuses: {e}")
+        # Do not retry on every call while Redis is unavailable; keep serving the last value.
+        _SOURCE_STATUS_CACHE["time"] = now - ttl + min(ttl, 10)
         return _SOURCE_STATUS_CACHE["data"] or {}
 
 
