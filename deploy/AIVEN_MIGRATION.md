@@ -57,7 +57,7 @@ Start PgBouncer from the watchdog so it comes back after a reboot.
 
 ## After the cutover
 
-- Rotate the Aiven password (it was shared in chat) and update both `.env` and `pgbouncer.ini`.
+- Rotate the Aiven password after the migration and update both `.env` and `pgbouncer.ini`.
 - Keep Supabase for a week as a fallback, then pause or delete the project.
 - `free_tier_guard.sh` and its `DATABASE_URL/6543 -> 5432` rewrite are Supabase-specific; its size
   check still works through the pooler. Backups use `BACKUP_DATABASE_URL`.
