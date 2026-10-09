@@ -203,7 +203,7 @@ class TestAsyncSearchArticles:
         assert captured["read_only"] is True
         # Confirm the rendered query is syntactically valid (no double WHERE/AND)
         assert "WHERE  AND" not in captured["sql"]
-        assert "WHERE country = %s AND (" in captured["sql"]
+        assert "WHERE country = %s AND a.search_vector @@ query.ts_query" in captured["sql"]
 
     async def test_async_search_articles_timespan_only_generates_valid_sql(self):
         manager = _fresh_database_manager()
@@ -218,8 +218,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, timespan="24h")
 
-        assert captured["params"] == ("test", "test", None, 10)
-        assert "created_at >= NOW() - INTERVAL '24 hours' AND (" in captured["sql"]
+        assert captured["params"] == ("test", "test", 10)
+        assert "created_at >= NOW() - INTERVAL '24 hours' AND a.search_vector @@ query.ts_query" in captured["sql"]
         assert "WHERE  AND" not in captured["sql"]
 
     async def test_async_search_articles_country_and_timespan_generates_valid_sql(self):
@@ -235,8 +235,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, timespan="7d", country="MK")
 
-        assert captured["params"] == ("test", "test", None, "MK", 10)
-        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND (" in captured["sql"]
+        assert captured["params"] == ("test", "test", "MK", 10)
+        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND a.search_vector @@ query.ts_query" in captured["sql"]
         assert "WHERE  AND" not in captured["sql"]
 
     async def test_async_search_articles_no_filters_generates_valid_sql(self):
@@ -252,8 +252,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10)
 
-        assert captured["params"] == ("test", "test", None, 10)
-        assert "WHERE  (" in captured["sql"] or "WHERE (" in captured["sql"]
+        assert captured["params"] == ("test", "test", 10)
+        assert "WHERE  a.search_vector @@ query.ts_query" in captured["sql"]
 
 
 class TestSchemaMigrations:
