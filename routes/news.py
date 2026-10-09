@@ -726,32 +726,32 @@ async def fetch_news_data(
                 global_clusters_raw = g_ranked[:6]  # Top 6 global stories
 
         all_cids = cid_list + [c[0]["cluster_id"] for c in global_clusters_raw]
-        meta_rows = (
-            await db.async_execute(
-                "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
-                (all_cids,),
-                read_only=True,
+        # Three independent lookups keyed by the same cluster ids: run them concurrently
+        # instead of paying three sequential database round trips per request.
+        if all_cids:
+            meta_rows, synthesis_id_list, summary_rows = await asyncio.gather(
+                db.async_execute(
+                    "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+                    (all_cids,),
+                    read_only=True,
+                ),
+                db.async_get_synthesis_ids(all_cids, lang=lang),
+                db.async_execute(
+                    """
+                SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
+                       analyst_entities, pulse_score, pluralism_score, narrative_diversity,
+                       created_at, generation_provider, generation_model, quality_score, fallback_reason
+                FROM cluster_summaries
+                WHERE cluster_id = ANY(%s) AND lang = %s
+                """,
+                    (all_cids, lang),
+                    read_only=True,
+                ),
             )
-            if all_cids
-            else []
-        )
+        else:
+            meta_rows, synthesis_id_list, summary_rows = [], [], []
         meta_map = {r["cluster_id"]: r for r in meta_rows}
-        synthesis_ids = set(await db.async_get_synthesis_ids(all_cids, lang=lang)) if all_cids else set()
-        summary_rows = (
-            await db.async_execute(
-                """
-            SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
-                   analyst_entities, pulse_score, pluralism_score, narrative_diversity,
-                   created_at, generation_provider, generation_model, quality_score, fallback_reason
-            FROM cluster_summaries
-            WHERE cluster_id = ANY(%s) AND lang = %s
-            """,
-                (all_cids, lang),
-                read_only=True,
-            )
-            if all_cids
-            else []
-        )
+        synthesis_ids = set(synthesis_id_list)
         summary_map = {r["cluster_id"]: r for r in summary_rows}
 
         def _format_cluster(arts):
