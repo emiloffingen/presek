@@ -24,7 +24,6 @@ import json
 import os
 import re
 import sys
-import time
 
 PROTOCOL_VERSION = "2025-06-18"
 SUPPORTED_PROTOCOL_VERSIONS = {"2025-06-18", "2025-03-26", "2024-11-05"}

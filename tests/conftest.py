@@ -5,7 +5,7 @@ import types
 from unittest.mock import MagicMock
 
 try:
-    import numpy
+    import numpy  # noqa: F401  (availability probe)
 except ImportError:
     pass
 

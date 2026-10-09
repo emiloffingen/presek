@@ -7,7 +7,7 @@ Analyzes query patterns and suggests optimizations.
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List
 
 def analyze_query_patterns() -> Dict[str, List[str]]:
     """Analyze SQL query patterns in the codebase."""
@@ -228,7 +228,7 @@ def main():
     Path("DATABASE_PERFORMANCE_REPORT.md").write_text(report)
     print("   ✅ Written DATABASE_PERFORMANCE_REPORT.md")
     
-    print(f"\n🎉 Database performance analysis complete!")
+    print("\n🎉 Database performance analysis complete!")
     print("   📋 Report: DATABASE_PERFORMANCE_REPORT.md")
     print("   📄 SQL Script: scripts/optimize_database.sql")
     print("\n💡 Recommended next steps:")

@@ -46,7 +46,7 @@ class TestDeliveryTrackTokens:
         assert parsed == (42, "click", "/briefing")
 
     def test_rejects_invalid_event_type(self):
-        token = build_delivery_track_token(1, "click", "/briefing")
+        _token = build_delivery_track_token(1, "click", "/briefing")
         # Tamper event type in payload by using wrong type at parse - invalid types filtered at build
         assert "click" in ALLOWED_DELIVERY_EVENT_TYPES
 

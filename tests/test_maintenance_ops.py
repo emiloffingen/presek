@@ -296,7 +296,7 @@ class TestPrioritizeHomepageSyntheses:
         mock_task.apply_async.assert_called_once()
 
     def test_prioritizes_home_layout_lead_before_feed(self):
-        home_cluster = {
+        _home_cluster = {
             "cluster_id": "lead-home",
             "has_synthesis": False,
             "articles": [{"id": 1}],
