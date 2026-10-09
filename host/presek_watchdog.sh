@@ -272,6 +272,8 @@ shield_forwards_ok() {  local spec
 # the Shield health check goes over SSH (sshd recovered after the reboot).
 # Kept fast so a dead Shield never stalls the 30s supervision loop.
 SHIELD_SSH_HOST="${SHIELD_SSH_HOST:-u0_a106@100.77.135.12}"
+# LAN address tried when the Tailscale path fails to connect (exit 255). Empty disables.
+SHIELD_SSH_HOST_ALT="${SHIELD_SSH_HOST_ALT-u0_a106@192.168.0.62}"
 SHIELD_SSH_PORT="${SHIELD_SSH_PORT:-8022}"
 # Multiplexed SSH: one persistent master connection, all probes ride it.
 # Without this, every probe forks a full auth (zombie sshd-auth pile up on
@@ -280,9 +282,16 @@ _SSH_SOCK_DIR="${TMPDIR:-/tmp}/presek-ssh-mux"
 _SSH_MUX="ControlMaster=auto,ControlPath=${_SSH_SOCK_DIR}/%r@%h:%p,ControlPersist=300"
 _shield_ssh() {
   mkdir -p "$_SSH_SOCK_DIR" 2>/dev/null
-  timeout 12 ssh -i "$SSH_KEY" -p "$SHIELD_SSH_PORT" \
-    -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-    -o BatchMode=yes -o ConnectTimeout=4 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 "$SHIELD_SSH_HOST" "$@" 2>/dev/null
+  local target rc=255
+  for target in "$SHIELD_SSH_HOST" "$SHIELD_SSH_HOST_ALT"; do
+    [ -n "$target" ] || continue
+    timeout 12 ssh -i "$SSH_KEY" -p "$SHIELD_SSH_PORT" \
+      -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -o BatchMode=yes -o ConnectTimeout=4 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 "$target" "$@" 2>/dev/null
+    rc=$?
+    [ "$rc" -ne 255 ] && return "$rc"
+  done
+  return "$rc"
 }
 shield_origin_ok_ssh() {
   _shield_ssh "proot-distro login debian -- curl -s -m 3 -o /dev/null http://127.0.0.1:5001/api/health"
