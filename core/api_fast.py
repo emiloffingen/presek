@@ -227,6 +227,9 @@ async def _store_page_visit(
     referrer: str,
     ua_hash: str,
 ) -> None:
+    if os.environ.get("ENV") == "test":
+        # Fire-and-forget DB writes outlive TestClient's short-lived event loop and hang its shutdown.
+        return
     try:
         await db.async_execute(
             "INSERT INTO page_visits (visitor_hash, host, path, lang, referrer, ua_hash)"
