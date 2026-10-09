@@ -123,7 +123,9 @@ def main():
                 (cid,),
             )
             for nr in new_rows:
-                print(f"  -> Lang: {nr['lang']} | Provider: {nr['generation_provider']} | Model: {nr['generation_model']}")
+                print(
+                    f"  -> Lang: {nr['lang']} | Provider: {nr['generation_provider']} | Model: {nr['generation_model']}"
+                )
         except Exception as e:
             print(f"  Error processing cluster {cid}: {e}")
 

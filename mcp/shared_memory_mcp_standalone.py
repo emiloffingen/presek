@@ -118,9 +118,7 @@ def _dsn() -> str:
             for line in open(candidate, encoding="utf-8"):
                 if line.startswith("DATABASE_URL="):
                     return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise RuntimeError(
-        "DATABASE_URL is not set. Export it or place a .env next to this server."
-    )
+    raise RuntimeError("DATABASE_URL is not set. Export it or place a .env next to this server.")
 
 
 class _DB:

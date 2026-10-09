@@ -7,11 +7,9 @@ from playwright.async_api import async_playwright
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("capture_light_dark")
 
+
 async def capture(browser, url, name, color_scheme, artifact_dir):
-    context = await browser.new_context(
-        viewport={"width": 1280, "height": 1200},
-        color_scheme=color_scheme
-    )
+    context = await browser.new_context(viewport={"width": 1280, "height": 1200}, color_scheme=color_scheme)
     page = await context.new_page()
     log.info(f"Capturing {name} ({color_scheme}) from {url}...")
     try:
@@ -26,16 +24,18 @@ async def capture(browser, url, name, color_scheme, artifact_dir):
     finally:
         await context.close()
 
+
 async def main():
     artifact_dir = "/home/emiloffingen/.gemini/antigravity-cli/brain/676f40f9-fce6-4961-8912-25f09be7d57e/screenshots"
     os.makedirs(artifact_dir, exist_ok=True)
-    
+
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         # Capture direct Astro local frontend port 3000
         await capture(browser, "http://localhost:3000", "homepage_light", "light", artifact_dir)
         await capture(browser, "http://localhost:3000", "homepage_dark", "dark", artifact_dir)
         await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

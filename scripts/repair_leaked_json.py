@@ -55,21 +55,27 @@ def _clean_leaked_json_string(text: str) -> dict:
         headline_match = re.search(r'"synthetic_headline"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if headline_match:
             try:
-                data["synthetic_headline"] = headline_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                data["synthetic_headline"] = (
+                    headline_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["synthetic_headline"] = headline_match.group(1)
 
         standfirst_match = re.search(r'"synthetic_standfirst"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if standfirst_match:
             try:
-                data["synthetic_standfirst"] = standfirst_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                data["synthetic_standfirst"] = (
+                    standfirst_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["synthetic_standfirst"] = standfirst_match.group(1)
 
         article_match = re.search(r'"generated_article"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', clean_lines)
         if article_match:
             try:
-                data["generated_article"] = article_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                data["generated_article"] = (
+                    article_match.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                )
             except Exception:
                 data["generated_article"] = article_match.group(1)
 
@@ -83,7 +89,9 @@ def _clean_leaked_json_string(text: str) -> dict:
             truncated_summary = re.search(r'"summary"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', clean_lines)
             if truncated_summary:
                 try:
-                    data["summary"] = truncated_summary.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                    data["summary"] = (
+                        truncated_summary.group(1).encode("utf-8").decode("unicode-escape", errors="ignore")
+                    )
                 except Exception:
                     data["summary"] = truncated_summary.group(1)
 
@@ -275,11 +283,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    tables = (
-        ["articles", "cluster_summaries", "cluster_summary_history"]
-        if args.table == "all"
-        else [args.table]
-    )
+    tables = ["articles", "cluster_summaries", "cluster_summary_history"] if args.table == "all" else [args.table]
 
     total = 0
     for table_name in tables:

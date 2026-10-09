@@ -7,45 +7,47 @@ Analyzes AI model usage and suggests caching improvements.
 import os
 from pathlib import Path
 
+
 def analyze_ai_model_usage():
     """Analyze AI model usage patterns."""
-    
+
     analysis = {
-        'models_used': [],
-        'loading_patterns': [],
-        'caching_opportunities': [],
-        'optimization_recommendations': []
+        "models_used": [],
+        "loading_patterns": [],
+        "caching_opportunities": [],
+        "optimization_recommendations": [],
     }
-    
+
     # Key files using AI models
     ai_files = [
-        'core/ai_engine.py',
-        'core/llm_router.py',
-        'nlp/generation.py',
-        'tasks/intelligence/synthesis.py',
-        'utils/ai_helpers.py'
+        "core/ai_engine.py",
+        "core/llm_router.py",
+        "nlp/generation.py",
+        "tasks/intelligence/synthesis.py",
+        "utils/ai_helpers.py",
     ]
-    
+
     for file in ai_files:
         if os.path.exists(file):
-            analysis['models_used'].append(file)
-            
+            analysis["models_used"].append(file)
+
             content = Path(file).read_text()
-            
+
             # Check for model loading patterns
-            if 'load_model(' in content or 'from_transformers' in content or 'pipeline(' in content:
-                analysis['loading_patterns'].append(f"{file}: Dynamic model loading")
-            
-            if 'singleton' in content.lower() or 'cache' in content.lower():
-                analysis['caching_opportunities'].append(f"{file}: Some caching implemented")
+            if "load_model(" in content or "from_transformers" in content or "pipeline(" in content:
+                analysis["loading_patterns"].append(f"{file}: Dynamic model loading")
+
+            if "singleton" in content.lower() or "cache" in content.lower():
+                analysis["caching_opportunities"].append(f"{file}: Some caching implemented")
             else:
-                analysis['optimization_recommendations'].append(f"{file}: Add model caching")
-    
+                analysis["optimization_recommendations"].append(f"{file}: Add model caching")
+
     return analysis
+
 
 def generate_ai_caching_strategy():
     """Generate AI model caching strategy."""
-    
+
     strategy = """
 # AI Model Caching Strategy for Presek
 

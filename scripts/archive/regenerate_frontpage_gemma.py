@@ -7,6 +7,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv(PROJECT_ROOT / ".env", override=False)
 except ModuleNotFoundError:
     pass
@@ -41,7 +42,7 @@ async def regenerate_frontpage():
         data = response
         if hasattr(data, "dict"):
             data = data.dict()
-        
+
         # Collect all cluster IDs from sections that have synthesis
         sections = ["synthesis_picks", "lead", "supporting", "developing", "live_now", "global_"]
         for section in sections:
@@ -70,6 +71,7 @@ async def regenerate_frontpage():
                 redis_client.delete("lock:local_llm_inference")
             except Exception as e:
                 print(f"Failed to regenerate {cid}: {e}")
+
 
 if __name__ == "__main__":
     # Ensure environment is set for the script

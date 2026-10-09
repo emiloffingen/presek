@@ -20,13 +20,16 @@ def test_title_fallback_clusters_related_headlines():
             "created_at": datetime.datetime.now(),
         }
     ]
-    assert find_or_create_cluster(
-        None,
-        "Владата соопшти мерки за економијата",
-        recent,
-        category="Економија",
-        topic="вести",
-    ) == "story-1"
+    assert (
+        find_or_create_cluster(
+            None,
+            "Владата соопшти мерки за економијата",
+            recent,
+            category="Економија",
+            topic="вести",
+        )
+        == "story-1"
+    )
 
 
 def test_title_fallback_keeps_unrelated_headlines_separate():
@@ -39,13 +42,16 @@ def test_title_fallback_keeps_unrelated_headlines_separate():
             "created_at": datetime.datetime.now(),
         }
     ]
-    assert find_or_create_cluster(
-        None,
-        "Македонија победи во европската лига во одбојка",
-        recent,
-        category="Спорт",
-        topic="спорт",
-    ) != "story-1"
+    assert (
+        find_or_create_cluster(
+            None,
+            "Македонија победи во европската лига во одбојка",
+            recent,
+            category="Спорт",
+            topic="спорт",
+        )
+        != "story-1"
+    )
 
 
 def _recent(cluster_id, title, topic="Politika"):
@@ -94,20 +100,25 @@ def test_unrelated_same_topic_headlines_stay_separate():
         _recent("quake", "ЗЕМЈОТРЕС ЈА ЗАТРЕСЕ ПРЕСПА Потресот почувствуван"),
         _recent("hospital", "Пронајден човечки леш во околина на јавната болница"),
     ]
-    assert find_or_create_cluster(
-        None,
-        "Променливо облачно време со сончеви периоди и температура",
-        recent,
-        category="Makedonija",
-        topic="vesti",
-        source="Vecer",
-    ) != "quake"
-    assert find_or_create_cluster(
-        None,
-        "Приведен 21 возач поради безобѕирно возење",
-        recent,
-        category="Makedonija",
-        topic="vesti",
-        source="Sitel",
-    ) != "hospital"
-
+    assert (
+        find_or_create_cluster(
+            None,
+            "Променливо облачно време со сончеви периоди и температура",
+            recent,
+            category="Makedonija",
+            topic="vesti",
+            source="Vecer",
+        )
+        != "quake"
+    )
+    assert (
+        find_or_create_cluster(
+            None,
+            "Приведен 21 возач поради безобѕирно возење",
+            recent,
+            category="Makedonija",
+            topic="vesti",
+            source="Sitel",
+        )
+        != "hospital"
+    )

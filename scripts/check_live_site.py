@@ -94,7 +94,7 @@ async def run():
                 mood_widget = await page.query_selector("astro-island[component-url*='NationalMoodIsland']")
                 if mood_widget:
                     text = await mood_widget.inner_text()
-                    last_text = text.replace('\n', ' ')
+                    last_text = text.replace("\n", " ")
                     text_lower = text.lower()
                     if "puls" in text_lower or "пулс" in text_lower or "mood" in text_lower:
                         log.info("National Mood Widget: Functional and Hydrated.")
@@ -105,9 +105,11 @@ async def run():
                         mood_loaded = True
                         break
                 await asyncio.sleep(1)
-            
+
             if not mood_loaded:
-                log.warning(f"National Mood Widget: Found but content seems limited or still loading. Text observed: '{last_text}'")
+                log.warning(
+                    f"National Mood Widget: Found but content seems limited or still loading. Text observed: '{last_text}'"
+                )
 
             # 3. Verify Live Ticker headlines
             ticker_headline = await page.query_selector(".live-ticker-headline")

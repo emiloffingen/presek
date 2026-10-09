@@ -65,9 +65,7 @@ def _notify(snapshot: dict):
     from tasks.delivery.core import _send_ntfy_message
 
     alerts = snapshot.get("alerts") or []
-    lines = [f"status={status}"] + [
-        f"{item.get('code')}: {item.get('message')}" for item in alerts[:6]
-    ]
+    lines = [f"status={status}"] + [f"{item.get('code')}: {item.get('message')}" for item in alerts[:6]]
     tag = "rotating_light" if status == "critical" else "warning"
     if _send_ntfy_message(NTFY_TOPIC, "Presek ops cockpit alert", "\n".join(lines), tags=f"robot,{tag}"):
         _mark_alert_sent()

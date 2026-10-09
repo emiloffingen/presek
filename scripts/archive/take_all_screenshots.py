@@ -19,13 +19,14 @@ PAGES = {
     "about": "/about",
     "methodology": "/methodology",
     "marketing": "/marketing",
-    "archive": "/archive"
+    "archive": "/archive",
 }
+
 
 async def capture_page(browser, base_url, path, name):
     url = urljoin(base_url, path)
     os.makedirs("screenshots", exist_ok=True)
-    
+
     # 1. Capture Desktop View
     log.info(f"Capturing Desktop view for {name} ({url})...")
     desktop_page = await browser.new_page(viewport={"width": 1280, "height": 1600})
@@ -53,6 +54,7 @@ async def capture_page(browser, base_url, path, name):
     finally:
         await mobile_page.close()
 
+
 async def run():
     base_url = "http://localhost:80"
     async with async_playwright() as p:
@@ -61,7 +63,7 @@ async def run():
             # Capture standard pages
             for name, path in PAGES.items():
                 await capture_page(browser, base_url, path, name)
-                
+
             # Extra: Find first cluster on homepage and capture its page
             log.info("Finding a cluster link on homepage...")
             temp_page = await browser.new_page(viewport={"width": 1280, "height": 1200})
@@ -79,11 +81,12 @@ async def run():
                 log.error(f"Failed to find or capture cluster detail page: {e}")
             finally:
                 await temp_page.close()
-                
+
         finally:
             await browser.close()
-            
+
     log.info("All screenshots saved in screenshots/ directory.")
+
 
 if __name__ == "__main__":
     logging.basicConfig(

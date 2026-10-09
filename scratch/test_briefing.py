@@ -27,7 +27,7 @@ def run_test(lang="sr"):
         return
 
     content_context = _build_daily_brief_context(clusters, lang=lang)
-    
+
     # Simple system insight
     system_insight = "\n\n[SISTEMSKA ANALIZA ZA POSLEDNJIH 24 SATA]\n- Obradjeni clanci: 100\n- Udeo svetskih vest: 20%\n- Indeks pluralizma (raznovrsni izvori): 10%\n- Najzastupljeni akteri: Nema\n- U focusu lokacije: Balkan"
     full_context = f"<briefing_context>\n{content_context}\n{system_insight}\n</briefing_context>"
@@ -55,12 +55,13 @@ def run_test(lang="sr"):
     print("\nRunning Quality Gates:")
     valid_struct = _has_valid_daily_brief_structure(brief, lang=lang)
     print(f"1. Structure Valid: {valid_struct}")
-    
+
     grounded = _is_grounded_daily_brief(brief, full_context)
     print(f"2. Grounded: {grounded}")
-    
+
     high_quality = _is_high_quality_briefing(brief)
     print(f"3. High Quality: {high_quality}")
+
 
 if __name__ == "__main__":
     run_test("sr")

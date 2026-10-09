@@ -49,32 +49,32 @@ def test_clean_rss_footer_macedonian():
 
 def test_clean_rss_footer_strips_source_header_and_share_metadata():
     text = (
-        'IZVORNI ZAPIS (nova.rs)\n'
-        ' Milica Vučković / FoNet Grbović (ŠSG): Kalkulacije o izborima su besmislene, '
-        'spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 '
-        'Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        "IZVORNI ZAPIS (nova.rs)\n"
+        " Milica Vučković / FoNet Grbović (ŠSG): Kalkulacije o izborima su besmislene, "
+        "spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 "
+        "Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras "
         'ocenio da su "kalkulacije o izborima su besmislene".'
     )
 
     assert clean_rss_footer(text) == (
-        'Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        "Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras "
         'ocenio da su "kalkulacije o izborima su besmislene".'
     )
 
 
 def test_clean_extracted_article_text_strips_nova_page_chrome():
     text = (
-        'Milica Vučković / FoNet Grbović (PSG): Kalkulacije o izborima su besmislene, '
-        'spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 '
-        'Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras '
+        "Milica Vučković / FoNet Grbović (PSG): Kalkulacije o izborima su besmislene, "
+        "spremamo se kao da su sutra autor: Beta Politika 22. maj. 2026. 21:25 0 "
+        "Podeli vest: Predsednik Pokreta slobodnih građana(PSG) Pavle Grbović je večeras "
         'ocenio da su "kalkulacije o izborima su besmislene", te dodao da se PSG sprema '
-        'kao da su sutra. Podeli vest: Oglas On je za televiziju Nova S kazao i da se '
+        "kao da su sutra. Podeli vest: Oglas On je za televiziju Nova S kazao i da se "
         'politička borba mora voditi kontinuirano. Pročitajte još: "Direktor Jovine '
         'gimnazije je onaj kog treba suspendovati" Politika 0 Američka privredna komora '
         'kritikovala pomoć od 100 evra pred izbore na Kosovu Politika 0 "Naša misija je '
         'stvaranje proevropskog fronta koji treba da nadživi svaki izborni ciklus", kazao '
-        'je Grbović. izbori pavle grbović psg Pratite nas na društvenim mrežama: Koje je '
-        'tvoje mišljenje o ovoj temi? Učestvuj u diskusiji ili pročitaj komentare'
+        "je Grbović. izbori pavle grbović psg Pratite nas na društvenim mrežama: Koje je "
+        "tvoje mišljenje o ovoj temi? Učestvuj u diskusiji ili pročitaj komentare"
     )
 
     cleaned = clean_extracted_article_text(text)
@@ -101,11 +101,15 @@ def test_clean_extracted_article_text_macedonian_cyrillic():
     assert "Бидете информирани" not in cleaned
     assert "Facebook" not in cleaned
     assert "Тагови" not in cleaned
-    assert cleaned == "3Оженет судија е фатен на дело со истакнат полицаец во судница- шокираните вработени слушале „гласни воздишки“"
+    assert (
+        cleaned
+        == "3Оженет судија е фатен на дело со истакнат полицаец во судница- шокираните вработени слушале „гласни воздишки“"
+    )
 
 
 def test_prune_boilerplate_html():
     from core.crawler import prune_boilerplate_html
+
     raw_html = """
     <html>
         <head><title>Test News Title</title></head>
@@ -189,7 +193,6 @@ def test_normalize_headline_html_tags():
 
     assert normalize_headline("<p>Tekst</p>") == "Tekst"
     assert normalize_headline("<b>Bitno</b> <i>rezime</i>") == "Bitno rezime"
-
 
 
 def test_normalize_feed_link_strips_tracking_params():
@@ -297,13 +300,13 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
     m_dict_cur.execute.return_value = m_dict_cur
     m_dict_cur.fetchall.return_value = recent_rows
     m_dict_cur.connection.encoding = "UTF8"
-    m_dict_cur.mogrify.side_effect = (lambda sql, args: b"(dummy)")
+    m_dict_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
 
     m_std_cur = MagicMock()
     m_std_cur.execute.return_value = m_std_cur
     m_std_cur.fetchall.return_value = [(123, "RS")]
     m_std_cur.connection.encoding = "UTF8"
-    m_std_cur.mogrify.side_effect = (lambda sql, args: b"(dummy)")
+    m_std_cur.mogrify.side_effect = lambda sql, args: b"(dummy)"
 
     class _Conn:
         def __init__(self):
@@ -354,9 +357,7 @@ def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
 
     conn = _Conn()
     m_db_manager = MagicMock()
-    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: (
-        recent_rows if "SELECT link" in sql else None
-    )
+    m_db_manager.execute.side_effect = lambda sql, params=None, **kwargs: recent_rows if "SELECT link" in sql else None
 
     with (
         patch.object(

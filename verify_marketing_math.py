@@ -8,9 +8,7 @@ web/src/lib/adPricing.ts. Run: python verify_marketing_math.py
 MKD_PER_EUR = 61.5
 CPM_BASE_EUR = {"top_banner": 2.44, "sidebar": 2.93, "mobile_content": 3.25}
 PROMO_DISCOUNT = 0.25
-CPM_RATES_EUR = {
-    slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()
-}
+CPM_RATES_EUR = {slot: round(rate * (1 - PROMO_DISCOUNT), 4) for slot, rate in CPM_BASE_EUR.items()}
 
 MIN_CHARGE_CENTS = 3000  # €30
 MIN_DAILY_IMPRESSIONS = 2000
@@ -48,7 +46,7 @@ for slot in CPM_RATES_EUR:
     print(f"  {slot}: €{eur:.2f} -> {amount_cents(slot, 10000)} cents")
 
 assert amount_cents("top_banner", 1000) == MIN_CHARGE_CENTS, "min charge floor"
-assert all(
-    round(CPM_RATES_EUR[s] * MKD_PER_EUR) < MARKET_MKD[s][0] for s in CPM_RATES_EUR
-), "prices should undercut the market floor"
+assert all(round(CPM_RATES_EUR[s] * MKD_PER_EUR) < MARKET_MKD[s][0] for s in CPM_RATES_EUR), (
+    "prices should undercut the market floor"
+)
 print("\nOK: min charge €30, min daily 2,000 impressions, image <= 150KB")
