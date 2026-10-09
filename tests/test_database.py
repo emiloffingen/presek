@@ -272,3 +272,11 @@ class TestSchemaMigrations:
             assert mock_upgrade.called
             assert mock_upgrade.call_args[0][1] == "head"
             assert mock_config.called
+
+
+def test_article_search_total_score_is_null_safe_for_text_only_search():
+    """Text-only search passes a NULL query vector; total_score must not become NULL."""
+    from core.database import SQL_ARTICLE_SEARCH
+
+    assert "COALESCE(1 - (a.embedding <=> query.query_vector), 0) * 5) AS total_score" in SQL_ARTICLE_SEARCH
+    assert "ORDER BY total_score DESC, a.created_at DESC" in SQL_ARTICLE_SEARCH

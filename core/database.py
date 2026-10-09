@@ -188,17 +188,19 @@ SQL_ARTICLE_SEARCH = """
         -- does not resolve SELECT aliases nested inside ORDER BY expressions
         -- (e.g. ORDER BY (match_score * 2 ...) fails with "column does not
         -- exist"), so the weighted score is materialized here instead.
+        -- The semantic term is COALESCEd: text-only search passes a NULL vector, and
+        -- without it total_score is NULL for every row and results come back unranked.
         (CASE
             WHEN lower(a.title) = query.query_text THEN 4
             WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
             WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
             WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
             ELSE 0
-        END * 2 + ts_rank_cd(a.search_vector, query.ts_query) + (1 - (a.embedding <=> query.query_vector)) * 5) AS total_score
+        END * 2 + ts_rank_cd(a.search_vector, query.ts_query) + COALESCE(1 - (a.embedding <=> query.query_vector), 0) * 5) AS total_score
     FROM articles a
     CROSS JOIN query
     WHERE {time_filter} (a.search_vector @@ query.ts_query OR (a.embedding <=> query.query_vector) < @SEM_DIST@)
-    ORDER BY total_score DESC
+    ORDER BY total_score DESC, a.created_at DESC
     LIMIT %s
 """
 
