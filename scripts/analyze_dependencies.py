@@ -7,9 +7,8 @@ Analyzes current dependencies, identifies vulnerabilities, and suggests updates.
 import subprocess
 import json
 import sys
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from pathlib import Path
-import re
 
 def run_command(cmd: str, description: str = "") -> Tuple[bool, str, str]:
     """Run a command and return success status and output."""
@@ -222,7 +221,6 @@ def main():
     
     for rec in recommendations:
         priority_emoji = "🔴" if rec["priority"] == "high" else "🟡"
-        vuln_info = ", ".join([v["id"] for v in rec["vulnerabilities"]]) if rec["vulnerabilities"] else "None"
         report_content += f"| `{rec['package']}` | `{rec['current']}` | `{rec['latest']}` | {priority_emoji} {rec['priority']} | {rec['reason']} |\n"
     
     # Add usage analysis
@@ -261,10 +259,10 @@ def main():
     Path("scripts/update_critical_deps.sh").chmod(0o755)
     print("   ✅ Written scripts/update_critical_deps.sh")
     
-    print(f"\n🎉 Analysis Complete!")
-    print(f"   📋 Report: DEPENDENCY_ANALYSIS_REPORT.md")
-    print(f"   📦 Updated requirements: requirements_updated.txt")
-    print(f"   🔧 Update script: scripts/update_critical_deps.sh")
+    print("\n🎉 Analysis Complete!")
+    print("   📋 Report: DEPENDENCY_ANALYSIS_REPORT.md")
+    print("   📦 Updated requirements: requirements_updated.txt")
+    print("   🔧 Update script: scripts/update_critical_deps.sh")
     
     if recommendations:
         high_priority = [r for r in recommendations if r["priority"] == "high"]

@@ -1096,3 +1096,137 @@ def test_synthesis_homepage_boost(mock_all):
     assert clusters[1]["cluster_id"] == "c1"
     assert clusters[1]["has_synthesis"] is False
     assert clusters[1]["homepage_score"] == 10.0
+
+
+def test_news_subcategory_page_beyond_first_is_not_double_paged(mock_all):
+    import routes.news as news
+
+    page_size = 2
+
+    def _article(i):
+        return {
+            "id": i,
+            "cluster_id": f"c{i}",
+            "source": f"Src{i}",
+            "title": f"Title {i}",
+            "description": "",
+            "topic": "Sport",
+            "category": "Sport",
+            "subcategory": "Fudbal",
+            "created_at": f"2026-04-22T{20 - i:02d}:00:00Z",
+        }
+
+    async def execute_side_effect(query, params=None, fetch=True, **kwargs):
+        if "GROUP BY cluster_id" in query:
+            # The route asks for page_size * (page + 1) rows: the whole pool up to this page.
+            assert params[-1] == page_size * 2
+            return [{"cluster_id": f"c{i}", "last_article": None} for i in range(page_size * 2)]
+        if "WHERE cluster_id = ANY" in query:
+            return [_article(i) for i in range(page_size * 2) if f"c{i}" in params[-1]]
+        return []
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+
+    with (
+        patch("routes.news.cached_response", return_value=None),
+        patch("routes.news.set_cache"),
+        patch("routes.news.score_cluster", return_value=1.0),
+        patch("routes.news.score_cluster_for_homepage", return_value=1.0),
+    ):
+        data = asyncio.run(news.get_news(subcategory="Fudbal", page=1, page_size=page_size))
+
+    assert data["status"] == "success"
+    assert len(data["clusters"]) == page_size
+
+
+def test_article_detail_missing_is_negative_cached_and_served_from_cache(mock_all):
+    import routes.news as news
+
+    mock_all["db"].async_execute_one.return_value = None
+
+    with patch("routes.news.cached_response", return_value=None), patch("routes.news.set_cache") as set_cache:
+        with pytest.raises(_FakeHTTPException) as exc:
+            asyncio.run(news.get_article_detail(999999, "mk"))
+    assert exc.value.status_code == 404
+    set_cache.assert_called_once()
+    assert set_cache.call_args.args[1] == {"__missing": True}
+    assert set_cache.call_args.kwargs["ttl"] == 120
+
+    mock_all["db"].async_execute_one.reset_mock()
+    with patch("routes.news.cached_response", return_value={"__missing": True}):
+        with pytest.raises(_FakeHTTPException) as exc:
+            asyncio.run(news.get_article_detail(999999, "mk"))
+    assert exc.value.status_code == 404
+    mock_all["db"].async_execute_one.assert_not_called()
+
+
+def test_provider_fallback_order_env_parsing(monkeypatch):
+    from core import config
+
+    default = config._DEFAULT_PROVIDER_FALLBACK_ORDER
+
+    monkeypatch.delenv("PROVIDER_FALLBACK_ORDER", raising=False)
+    assert config._parse_provider_fallback_order() == default
+
+    monkeypatch.setenv("PROVIDER_FALLBACK_ORDER", " , ")
+    assert config._parse_provider_fallback_order() == default
+
+    monkeypatch.setenv("PROVIDER_FALLBACK_ORDER", " groq , local,bogus ")
+    order = config._parse_provider_fallback_order()
+    assert order[:3] == ["groq", "local", "bogus"]
+    assert sorted(set(order)) == sorted(set(default) | {"bogus"})
+    assert len(order) == len(set(order))
+
+
+@pytest.mark.parametrize("age_days, expect_expired", [(1, False), (10_000, True)])
+def test_profile_delivery_read_enforces_token_expiry(mock_all, age_days, expect_expired):
+    from datetime import datetime, timedelta, timezone
+
+    import routes.profile as profile_routes
+
+    token = "a" * 32
+    created = datetime.now(timezone.utc) - timedelta(days=age_days)
+
+    async def execute_one_side_effect(query, params=None, **kwargs):
+        if "synced_delivery_subscriptions" in query:
+            return {"channel": "ntfy", "target": "secret-topic", "is_active": True, "updated_at": None}
+        if "synced_reader_profiles" in query:
+            return {"created_at": created}
+        return None
+
+    mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
+
+    with patch("routes.profile._extract_sync_token", return_value=token):
+        if expect_expired:
+            with pytest.raises(_FakeHTTPException) as exc:
+                asyncio.run(profile_routes.get_profile_delivery(MagicMock()))
+            assert exc.value.status_code == 401
+        else:
+            data = asyncio.run(profile_routes.get_profile_delivery(MagicMock()))
+            assert data["status"] == "success"
+            assert data["subscription"]["target"] == "secret-topic"
+
+
+def test_profile_delivery_read_unknown_token_stays_empty(mock_all):
+    import routes.profile as profile_routes
+
+    mock_all["db"].async_execute_one.side_effect = None
+    mock_all["db"].async_execute_one.return_value = None
+
+    with patch("routes.profile._extract_sync_token", return_value="b" * 32):
+        data = asyncio.run(profile_routes.get_profile_delivery(MagicMock()))
+
+    assert data["status"] == "success"
+    assert data["updated_at"] is None
+
+
+@pytest.mark.parametrize("env, expect_insert", [("test", False), ("production", True)])
+def test_store_page_visit_skips_db_write_under_test_env(monkeypatch, env, expect_insert):
+    from core import api_fast
+
+    execute = AsyncMock()
+    monkeypatch.setenv("ENV", env)
+    with patch.object(api_fast, "db", MagicMock(async_execute=execute)):
+        asyncio.run(api_fast._store_page_visit("v" * 64, "host", "/api/x", "mk", "", "u" * 64))
+
+    assert execute.called is expect_insert

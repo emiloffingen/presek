@@ -112,7 +112,7 @@ jobs:
       - name: Install deps
         run: uv sync --group dev
       - name: Ruff check
-        run: uv run ruff check core/ routes/ tasks/ nlp/ utils/
+        run: uv run ruff check core/ routes/ tasks/ nlp/ utils/ mcp/ migrations/ tests/ scripts/
       - name: Ruff format check
         run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
 

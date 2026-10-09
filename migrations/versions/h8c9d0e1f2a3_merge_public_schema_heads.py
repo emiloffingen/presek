@@ -6,7 +6,6 @@ Revises: 1f0627776d70, 02c58f04407a
 
 from typing import Sequence, Union
 
-from alembic import op
 
 
 revision: str = "h8c9d0e1f2a3"

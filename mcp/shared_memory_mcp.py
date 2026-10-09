@@ -18,7 +18,6 @@ Env:  PRESEK_SHARED_MEMORY=0 disables writes (read-only mode).
 
 from __future__ import annotations
 
-import datetime
 import json
 import os
 import sys
@@ -308,7 +307,6 @@ def task_claim(args: dict) -> dict:
     lease_minutes = _clamp(args.get("lease_minutes", 30), 1, 1440)
     db = _db()
     who = _agent(args)
-    params: list = [_ns(args), who, f"{lease_minutes} minutes"]
     sql = """
         UPDATE agent_tasks
         SET status = 'in_progress', assigned_to = %s, lease_until = NOW() + %s::interval, updated_at = NOW()
@@ -360,7 +358,7 @@ def task_update(args: dict) -> dict:
     db = _db()
     params += [_ns(args), task_id]
     rows = db.execute(
-        f"UPDATE agent_tasks SET {', '.join(sets)} WHERE namespace = %s AND id = %s RETURNING *",
+        f"UPDATE agent_tasks SET {', '.join(sets)} WHERE namespace = %s AND id = %s RETURNING *",  # nosec B608 - fixed column fragments, bound params
         tuple(params),
         read_only=False,
     )

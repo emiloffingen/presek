@@ -92,7 +92,7 @@ def main():
             if fix_unused_variables(file_path):
                 fixes_made += 1
     
-    print(f"\n🎉 Completed targeted fixes!")
+    print("\n🎉 Completed targeted fixes!")
     print(f"Total fixes applied: {fixes_made}")
     
     if fixes_made > 0:
