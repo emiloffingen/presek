@@ -183,7 +183,7 @@ class TestAsyncSearchArticles:
     async def test_async_search_articles_country_only_generates_valid_sql(self):
         """When country is provided without a timespan, SQL must not contain a
         leading 'AND' that produces 'WHERE  AND country = ...' syntax errors."""
-        from core.database import SQL_ARTICLE_SEARCH
+        from core.database import SQL_ARTICLE_TEXT_SEARCH
 
         manager = _fresh_database_manager()
         captured = {}
@@ -198,12 +198,12 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, country="RS")
 
-        assert captured["sql"] == SQL_ARTICLE_SEARCH.format(time_filter="country = %s AND")
-        assert captured["params"] == ("test", "test", None, "RS", 10)
+        assert captured["sql"] == SQL_ARTICLE_TEXT_SEARCH.format(time_filter="country = %s AND")
+        assert captured["params"] == ("test", "test", "RS", 10)
         assert captured["read_only"] is True
         # Confirm the rendered query is syntactically valid (no double WHERE/AND)
         assert "WHERE  AND" not in captured["sql"]
-        assert "WHERE country = %s AND (" in captured["sql"]
+        assert "WHERE country = %s AND a.search_vector @@ query.ts_query" in captured["sql"]
 
     async def test_async_search_articles_timespan_only_generates_valid_sql(self):
         manager = _fresh_database_manager()
@@ -218,8 +218,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, timespan="24h")
 
-        assert captured["params"] == ("test", "test", None, 10)
-        assert "created_at >= NOW() - INTERVAL '24 hours' AND (" in captured["sql"]
+        assert captured["params"] == ("test", "test", 10)
+        assert "created_at >= NOW() - INTERVAL '24 hours' AND a.search_vector @@ query.ts_query" in captured["sql"]
         assert "WHERE  AND" not in captured["sql"]
 
     async def test_async_search_articles_country_and_timespan_generates_valid_sql(self):
@@ -235,8 +235,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, timespan="7d", country="MK")
 
-        assert captured["params"] == ("test", "test", None, "MK", 10)
-        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND (" in captured["sql"]
+        assert captured["params"] == ("test", "test", "MK", 10)
+        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND a.search_vector @@ query.ts_query" in captured["sql"]
         assert "WHERE  AND" not in captured["sql"]
 
     async def test_async_search_articles_no_filters_generates_valid_sql(self):
@@ -252,8 +252,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10)
 
-        assert captured["params"] == ("test", "test", None, 10)
-        assert "WHERE  (" in captured["sql"] or "WHERE (" in captured["sql"]
+        assert captured["params"] == ("test", "test", 10)
+        assert "WHERE  a.search_vector @@ query.ts_query" in captured["sql"]
 
 
 class TestSchemaMigrations:
@@ -272,3 +272,24 @@ class TestSchemaMigrations:
             assert mock_upgrade.called
             assert mock_upgrade.call_args[0][1] == "head"
             assert mock_config.called
+
+
+def test_article_search_total_score_is_null_safe_for_text_only_search():
+    """Text-only search passes a NULL query vector; total_score must not become NULL."""
+    from core.database import SQL_ARTICLE_SEARCH
+
+    assert "COALESCE(1 - (a.embedding <=> query.query_vector), 0) * 5) AS total_score" in SQL_ARTICLE_SEARCH
+    assert "ORDER BY total_score DESC, a.created_at DESC" in SQL_ARTICLE_SEARCH
+
+
+def test_text_search_sql_is_narrow_and_ranked():
+    """Text-only search must not pull embeddings/tsvector and must always produce a score."""
+    from core.database import SQL_ARTICLE_TEXT_SEARCH
+
+    assert "a.*" not in SQL_ARTICLE_TEXT_SEARCH
+    assert "embedding" not in SQL_ARTICLE_TEXT_SEARCH
+    assert "AS rank" in SQL_ARTICLE_TEXT_SEARCH and "AS match_score" in SQL_ARTICLE_TEXT_SEARCH
+    assert "ORDER BY total_score DESC, a.created_at DESC" in SQL_ARTICLE_TEXT_SEARCH
+    # Same list columns the news route exposes for article rows.
+    for col in ("a.id", "a.cluster_id", "a.title", "a.description", "a.image_url", "a.coverage_balance"):
+        assert col in SQL_ARTICLE_TEXT_SEARCH
