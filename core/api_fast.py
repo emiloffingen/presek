@@ -250,8 +250,7 @@ class VisitorTrackingMiddleware:
             if path.startswith("/api/") and not path.startswith(_VISIT_SKIP_PREFIXES):
                 try:
                     headers = dict(
-                        (k.decode().lower(), v.decode("utf-8", "ignore"))
-                        for k, v in scope.get("headers", [])
+                        (k.decode().lower(), v.decode("utf-8", "ignore")) for k, v in scope.get("headers", [])
                     )
                     ip = (
                         headers.get("cf-connecting-ip")
