@@ -79,3 +79,33 @@ def test_on_loop_serves_stale_cache_while_refreshing():
         reg = asyncio.run(scenario())
         time.sleep(0.6)
     assert reg == {"Old": {"name": "Old"}}
+
+
+def test_empty_source_health_hash_is_cached_not_refetched_per_call():
+    """The Shield's Redis has no presek:source_statuses hash; every scored article used to
+    trigger a synchronous HGETALL (~15,000 per listing request)."""
+    from unittest.mock import MagicMock
+
+    from utils import ranking
+
+    ranking._SOURCE_STATUS_CACHE.update({"time": 0.0, "data": {}})
+    fake_redis = MagicMock()
+    fake_redis.hgetall.return_value = {}
+    with patch.object(ranking, "redis_client", fake_redis):
+        for _ in range(500):
+            assert ranking.get_source_health_map() == {}
+    assert fake_redis.hgetall.call_count == 1
+
+
+def test_source_health_failure_is_not_retried_on_every_call():
+    from unittest.mock import MagicMock
+
+    from utils import ranking
+
+    ranking._SOURCE_STATUS_CACHE.update({"time": 0.0, "data": {}})
+    fake_redis = MagicMock()
+    fake_redis.hgetall.side_effect = RuntimeError("redis down")
+    with patch.object(ranking, "redis_client", fake_redis):
+        for _ in range(200):
+            assert ranking.get_source_health_map() == {}
+    assert fake_redis.hgetall.call_count == 1

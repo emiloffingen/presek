@@ -381,6 +381,36 @@ def _pool_common_kwargs() -> dict:
     return kwargs
 
 
+def _async_pool_kwargs() -> dict:
+    """Connection kwargs for the API's async pool.
+
+    Autocommit: every API query is a single statement, and in PgBouncer's transaction mode
+    an implicit BEGIN/COMMIT cost two extra round trips to the remote database while holding
+    one of the scarce server connections (Aiven allows ~12 for both hosts), and left sessions
+    "idle in transaction" between statements. Set DB_ASYNC_AUTOCOMMIT=0 to restore the old
+    behaviour.
+    """
+    kwargs = _pool_common_kwargs()
+    if _async_autocommit_enabled():
+        kwargs["autocommit"] = True
+    return kwargs
+
+
+def _async_autocommit_enabled() -> bool:
+    return os.environ.get("DB_ASYNC_AUTOCOMMIT", "1").strip().lower() not in ("0", "false", "no", "off")
+
+
+async def _async_check_connection_local(conn) -> None:
+    """Pool checkout check that never touches the network.
+
+    psycopg_pool's default check runs an empty query, which through PgBouncer costs a round
+    trip to the remote database (and a BEGIN) on every checkout. A closed or broken client
+    connection is detected locally; a stale one is discarded by the pool on its first error.
+    """
+    if conn.closed or conn.broken:
+        raise psycopg.OperationalError("pooled connection is closed")
+
+
 def _connection_is_usable(conn) -> bool:
     try:
         return conn is not None and not conn.closed
@@ -457,9 +487,11 @@ class AsyncDatabaseManager:
                     max_size=DB_POOL_MAXCONN,
                     timeout=DB_POOL_TIMEOUT,
                     max_lifetime=DB_POOL_MAX_LIFETIME,
-                    check=psycopg_pool.AsyncConnectionPool.check_connection,
+                    check=_async_check_connection_local
+                    if _async_autocommit_enabled()
+                    else psycopg_pool.AsyncConnectionPool.check_connection,
                     open=False,
-                    kwargs=_pool_common_kwargs(),
+                    kwargs=_async_pool_kwargs(),
                 )
                 await self._pool.open()
                 log.info(
@@ -477,9 +509,11 @@ class AsyncDatabaseManager:
                         max_size=DB_POOL_MAXCONN,
                         timeout=DB_POOL_TIMEOUT,
                         max_lifetime=DB_POOL_MAX_LIFETIME,
-                        check=psycopg_pool.AsyncConnectionPool.check_connection,
+                        check=_async_check_connection_local
+                        if _async_autocommit_enabled()
+                        else psycopg_pool.AsyncConnectionPool.check_connection,
                         open=False,
-                        kwargs=_pool_common_kwargs(),
+                        kwargs=_async_pool_kwargs(),
                     )
                     await self._read_pool.open()
                     log.info(
@@ -504,6 +538,16 @@ class AsyncDatabaseManager:
             if used_replica:
                 log.debug(f"Routing async query to read replica pool: {sql[:100]}")
             async with pool.connection() as conn:
+                if timeout_ms and conn.autocommit:
+                    # statement_timeout is transaction-local (so it never leaks into the pooled
+                    # connection), which needs an explicit transaction on an autocommit connection.
+                    async with conn.transaction():
+                        async with conn.cursor() as cur:
+                            await cur.execute(
+                                "SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),)
+                            )
+                            await cur.execute(sql, params)
+                            return await cur.fetchall() if fetch else cur.rowcount
                 async with conn.cursor() as cur:
                     if timeout_ms:
                         # Transaction-local, so it never leaks into the pooled connection;

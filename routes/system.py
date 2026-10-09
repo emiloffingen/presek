@@ -105,8 +105,11 @@ from routes.security import admin_auth  # noqa: F401
 @router.get("/health")
 async def health(request: Request):
     """Public health payload with internal connection details stripped."""
-    db_status = _probe_database()
-    redis_status = _probe_redis()
+    # Blocking probes (sync DB pool, Redis): keep them off the event loop.
+    db_status, redis_status = await asyncio.gather(
+        asyncio.to_thread(_probe_database),
+        asyncio.to_thread(_probe_redis),
+    )
     db_public = dict(db_status)
     redis_public = dict(redis_status)
     db_public.pop("error", None)
@@ -267,7 +270,8 @@ async def get_trending_route(lang: Optional[str] = DEFAULT_LANG):
     from core.trending import get_trending
 
     target_country = "MK" if lang == "mk" else "RS"
-    words = get_trending(limit=20, country=target_country)
+    # get_trending uses the synchronous DB pool and scans up to 3000 titles: run it off the loop.
+    words = await asyncio.to_thread(get_trending, limit=20, country=target_country)
 
     if lang == "mk":
         from core.language import transliterate_lat_to_cyr

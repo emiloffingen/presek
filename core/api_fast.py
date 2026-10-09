@@ -530,44 +530,63 @@ _HEALTH_SNAPSHOT_TTL = float(os.environ.get("HEALTH_CACHE_TTL", "30"))
 _HEALTH_SNAPSHOT: dict = {"t": 0.0, "data": None}
 
 
+_HEALTH_REFRESH_LOCK = asyncio.Lock()
+
+
+def _compute_health_snapshot() -> dict:
+    """Blocking health probes (sync DB pool, Redis, Celery broker). Call via a worker thread."""
+    import core.health as health
+    from core.health import _freshness_payload
+
+    db_status = _probe_database()
+    redis_status = _probe_redis()
+    db_public = dict(db_status)
+    redis_public = dict(redis_status)
+    db_public.pop("error", None)
+    redis_public.pop("url", None)
+    redis_public.pop("error", None)
+    redis_public.pop("config", None)
+
+    synthesis_quality = health.get_synthesis_quality_snapshot()
+    celery_queue = health._probe_celery_queue()
+    operational_status = health.get_operational_status(
+        db_status["ok"],
+        redis_status["ok"],
+        synthesis_quality,
+        celery_queue,
+    )
+    return {
+        "status": operational_status,
+        "database": db_public,
+        "redis": redis_public,
+        "synthesis_quality": synthesis_quality,
+        "celery_queue": celery_queue,
+        "freshness": _freshness_payload(health.load_last_refresh_time()),
+    }
+
+
 @app.get("/api/health")
 @exempt_from_rate_limit
 async def health_check(request: Request):
     """Comprehensive health check for smoke tests and monitoring."""
-    import core.health as health
-    from core.health import _freshness_payload, _start_time
+    from core.health import _start_time
 
-    now = time.time()
     snap = _HEALTH_SNAPSHOT["data"]
-    if snap is None or (now - _HEALTH_SNAPSHOT["t"]) >= _HEALTH_SNAPSHOT_TTL:
-        db_status = _probe_database()
-        redis_status = _probe_redis()
-        db_public = dict(db_status)
-        redis_public = dict(redis_status)
-        db_public.pop("error", None)
-        redis_public.pop("url", None)
-        redis_public.pop("error", None)
-        redis_public.pop("config", None)
-
-        synthesis_quality = health.get_synthesis_quality_snapshot()
-        celery_queue = health._probe_celery_queue()
-        operational_status = health.get_operational_status(
-            db_status["ok"],
-            redis_status["ok"],
-            synthesis_quality,
-            celery_queue,
-        )
-        snap = {
-            "status": operational_status,
-            "database": db_public,
-            "redis": redis_public,
-            "synthesis_quality": synthesis_quality,
-            "celery_queue": celery_queue,
-            "freshness": _freshness_payload(health.load_last_refresh_time()),
-            "ai": await _ai_quota_payload(),
-        }
-        _HEALTH_SNAPSHOT["data"] = snap
-        _HEALTH_SNAPSHOT["t"] = now
+    if snap is None or (time.time() - _HEALTH_SNAPSHOT["t"]) >= _HEALTH_SNAPSHOT_TTL:
+        if snap is not None and _HEALTH_REFRESH_LOCK.locked():
+            # Another request is already refreshing; answer from the previous snapshot.
+            pass
+        else:
+            async with _HEALTH_REFRESH_LOCK:
+                snap = _HEALTH_SNAPSHOT["data"]
+                if snap is None or (time.time() - _HEALTH_SNAPSHOT["t"]) >= _HEALTH_SNAPSHOT_TTL:
+                    # The probes use the synchronous DB pool, Redis and the Celery broker.
+                    # Run on a worker thread: blocking the event loop here froze the whole API
+                    # whenever the small PgBouncer pool was busy (see PR description).
+                    snap = await asyncio.to_thread(_compute_health_snapshot)
+                    snap["ai"] = await _ai_quota_payload()
+                    _HEALTH_SNAPSHOT["data"] = snap
+                    _HEALTH_SNAPSHOT["t"] = time.time()
 
     payload = {
         "status": snap["status"],
