@@ -11,12 +11,13 @@ ENV_FILE="${ENV_FILE:-$APP_ROOT/shared/.env}"
 BACKUP_DIR="${BACKUP_DIR:-$APP_ROOT/shared/backups}"
 KEEP_DAYS="${KEEP_DAYS:-7}"
 KEEP_FULL_DAYS="${KEEP_FULL_DAYS:-28}"
-# Supabase free tier allows ~5 GB egress a month and a full pg_dump pulls the
-# whole database over the wire (~250 MB, uncompressed) every time. So: a full
-# dump at most every FULL_BACKUP_EVERY_DAYS, and in between a "light" dump that
-# keeps the schema and the small tables but skips the rows of the big tables.
-# BACKUP_MODE=full|light|auto (auto = full when the newest full dump is old).
-BACKUP_MODE="${BACKUP_MODE:-auto}"
+# BACKUP_MODE=full|light|auto (default: full - every run is a complete dump).
+# On a metered database (Supabase free tier: ~5 GB egress a month, a full pg_dump
+# pulls ~250 MB each time) set BACKUP_MODE=auto: a full dump at most every
+# FULL_BACKUP_EVERY_DAYS, and in between a "light" dump that keeps the schema and the
+# small tables but skips the rows of the big tables (a restore from a light dump
+# loses those rows, so prefer full unless egress is the constraint).
+BACKUP_MODE="${BACKUP_MODE:-full}"
 FULL_BACKUP_EVERY_DAYS="${FULL_BACKUP_EVERY_DAYS:-7}"
 LIGHT_EXCLUDE_TABLES="${LIGHT_EXCLUDE_TABLES:-articles cluster_metadata cluster_summaries}"
 REQUIRE_BACKUP_ENCRYPTION="${REQUIRE_BACKUP_ENCRYPTION:-0}"
