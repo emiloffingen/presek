@@ -204,6 +204,43 @@ SQL_ARTICLE_SEARCH = """
     LIMIT %s
 """
 
+# Text-only search (fast=1 suggestions and the hybrid fallback). SELECT a.* dragged every
+# column, including the 384-float embedding and the tsvector, to the API for up to 500 rows
+# (~1.5 MB per search); the result pages only use the list columns below.
+SQL_ARTICLE_TEXT_SEARCH = """
+    WITH query AS (
+        SELECT
+            websearch_to_tsquery('simple', %s) AS ts_query,
+            lower(%s) AS query_text
+    )
+    SELECT
+        a.id, a.cluster_id, a.source, a.link, a.title, a.original_title, a.description,
+        a.summary, a.category, a.subcategory, a.topic, a.country, a.created_at,
+        a.ingested_at, a.image_url, a.image_caption, a.clicks, a.original_description,
+        a.is_translated, a.is_fact_check, a.is_redundant, a.reading_time, a.entity_names,
+        a.source_signal, a.is_global, a.coverage_balance,
+        ts_rank_cd(a.search_vector, query.ts_query) AS rank,
+        CASE
+            WHEN lower(a.title) = query.query_text THEN 4
+            WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+            WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+            WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+            ELSE 0
+        END AS match_score,
+        (CASE
+            WHEN lower(a.title) = query.query_text THEN 4
+            WHEN lower(a.title) LIKE query.query_text || '%%' THEN 3
+            WHEN lower(a.title) LIKE '%%' || query.query_text || '%%' THEN 2
+            WHEN lower(coalesce(a.description, '')) LIKE '%%' || query.query_text || '%%' THEN 1
+            ELSE 0
+        END * 2 + ts_rank_cd(a.search_vector, query.ts_query)) AS total_score
+    FROM articles a
+    CROSS JOIN query
+    WHERE {time_filter} a.search_vector @@ query.ts_query
+    ORDER BY total_score DESC, a.created_at DESC
+    LIMIT %s
+"""
+
 # Thresholds were tuned on Jina vectors; map them onto the local embedding scale.
 SQL_ARTICLE_SEARCH = SQL_ARTICLE_SEARCH.replace("@SEM_DIST@", f"{local_distance(0.6):.3f}").replace(
     "@SEM_SIM@", f"{local_similarity(0.35):.3f}"
@@ -809,10 +846,10 @@ class DatabaseManager:
     ):
         # Validate timespan to prevent SQL injection
         time_filter = _validate_timespan(timespan)
-        params = [query, query, None]
+        params = [query, query]
 
         # Build WHERE clause fragments cleanly so they concatenate with the
-        # trailing search condition in SQL_ARTICLE_SEARCH without producing
+        # trailing search condition in SQL_ARTICLE_TEXT_SEARCH without producing
         # syntax like "WHERE  AND country = $4 (...)".
         clauses = []
         if time_filter:
@@ -825,11 +862,11 @@ class DatabaseManager:
 
         time_filter = " AND ".join(clauses)
         if time_filter:
-            # SQL_ARTICLE_SEARCH has a space before the trailing condition, so
+            # SQL_ARTICLE_TEXT_SEARCH has a space before the trailing condition, so
             # append " AND" without an extra space for clean rendered SQL.
             time_filter = time_filter + " AND"
 
-        sql = SQL_ARTICLE_SEARCH.format(time_filter=time_filter)
+        sql = SQL_ARTICLE_TEXT_SEARCH.format(time_filter=time_filter)
         return await self.async_execute(sql, tuple(params), read_only=True)
 
     async def async_get_synthesis_ids(self, cluster_ids: list[str], lang: str = None):

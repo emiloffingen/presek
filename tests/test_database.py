@@ -183,7 +183,7 @@ class TestAsyncSearchArticles:
     async def test_async_search_articles_country_only_generates_valid_sql(self):
         """When country is provided without a timespan, SQL must not contain a
         leading 'AND' that produces 'WHERE  AND country = ...' syntax errors."""
-        from core.database import SQL_ARTICLE_SEARCH
+        from core.database import SQL_ARTICLE_TEXT_SEARCH
 
         manager = _fresh_database_manager()
         captured = {}
@@ -198,8 +198,8 @@ class TestAsyncSearchArticles:
 
         await manager.async_search_articles("test", limit=10, country="RS")
 
-        assert captured["sql"] == SQL_ARTICLE_SEARCH.format(time_filter="country = %s AND")
-        assert captured["params"] == ("test", "test", None, "RS", 10)
+        assert captured["sql"] == SQL_ARTICLE_TEXT_SEARCH.format(time_filter="country = %s AND")
+        assert captured["params"] == ("test", "test", "RS", 10)
         assert captured["read_only"] is True
         # Confirm the rendered query is syntactically valid (no double WHERE/AND)
         assert "WHERE  AND" not in captured["sql"]
@@ -280,3 +280,16 @@ def test_article_search_total_score_is_null_safe_for_text_only_search():
 
     assert "COALESCE(1 - (a.embedding <=> query.query_vector), 0) * 5) AS total_score" in SQL_ARTICLE_SEARCH
     assert "ORDER BY total_score DESC, a.created_at DESC" in SQL_ARTICLE_SEARCH
+
+
+def test_text_search_sql_is_narrow_and_ranked():
+    """Text-only search must not pull embeddings/tsvector and must always produce a score."""
+    from core.database import SQL_ARTICLE_TEXT_SEARCH
+
+    assert "a.*" not in SQL_ARTICLE_TEXT_SEARCH
+    assert "embedding" not in SQL_ARTICLE_TEXT_SEARCH
+    assert "AS rank" in SQL_ARTICLE_TEXT_SEARCH and "AS match_score" in SQL_ARTICLE_TEXT_SEARCH
+    assert "ORDER BY total_score DESC, a.created_at DESC" in SQL_ARTICLE_TEXT_SEARCH
+    # Same list columns the news route exposes for article rows.
+    for col in ("a.id", "a.cluster_id", "a.title", "a.description", "a.image_url", "a.coverage_balance"):
+        assert col in SQL_ARTICLE_TEXT_SEARCH
