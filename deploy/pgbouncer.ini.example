@@ -1,0 +1,26 @@
+; PgBouncer in front of Aiven free PostgreSQL (max_connections = 15, 3 reserved).
+; Install: apt install pgbouncer. Copy to /etc/pgbouncer/pgbouncer.ini, fill in the
+; placeholders, chmod 600. PgBouncer must NOT run as root (use a non-root user). The app treats port 6543 as a transaction pooler and
+; turns off server-side prepared statements automatically (core/database.py).
+[databases]
+presek = host=AIVEN_HOST port=AIVEN_PORT dbname=defaultdb user=avnadmin password=AIVEN_PASSWORD
+
+[pgbouncer]
+listen_addr = 127.0.0.1
+listen_port = 6543
+; Local-only listener: only processes on this host can connect.
+auth_type = trust
+; trust still needs the user listed in auth_file: a line  "avnadmin" ""
+auth_file = /etc/pgbouncer/userlist.txt
+pool_mode = transaction
+; Many app connections share a few real ones. Keep default_pool_size +
+; reserve_pool_size <= 10 so Aiven keeps room for admin, pghoard and pg_dump.
+max_client_conn = 300
+default_pool_size = 8
+reserve_pool_size = 2
+reserve_pool_timeout = 3
+server_tls_sslmode = require
+server_idle_timeout = 300
+ignore_startup_parameters = extra_float_digits,options
+logfile = /var/log/pgbouncer/pgbouncer.log
+pidfile = /var/run/pgbouncer/pgbouncer.pid
