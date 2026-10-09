@@ -1,7 +1,6 @@
 ---
 import { renderSynthesisHtml as sharedRenderSynthesisHtml } from '../../utils/renderSynthesisHtml';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
-import { localePath } from '../../lib/localePaths';
 import { sanitizeHtml } from '../../lib/sanitize';
 import {
     isSynthesisMetaParagraph,
@@ -22,7 +21,6 @@ const { hasStrongLeadNarrative, generatedArticle, synthesisItems, hasCitationSou
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
-const entityPathPrefix = localePath('/subjekt/', lang, hostHeader);
 
 const cleanNarrativeParagraph = (text: string) => prepareSynthesisParagraph(
     String(text || '')
@@ -48,7 +46,6 @@ const entityTooltipI18n = {
 	loading: t('narrative.loading'),
 	contextCard: t('entity.context_card'),
 	lastSeen: t('entity.last_seen'),
-	profile: t('entity.profile'),
 	noDetails: t('narrative.no_details'),
 	unavailable: t('entity.unavailable'),
 };
@@ -155,7 +152,7 @@ const renderSynthesisHtml = (text: string) => {
 	)}
 </div>
 
-<script define:vars={{ entityPathPrefix, entityTooltipI18n }}>
+<script define:vars={{ entityTooltipI18n }}>
     import { createPopper } from '@popperjs/core';
 
     document.addEventListener('astro:page-load', () => {
@@ -205,7 +202,6 @@ const renderSynthesisHtml = (text: string) => {
                     if (json.status === 'success') {
                         const labelCard = entityTooltipI18n.contextCard;
                         const labelLastSeen = entityTooltipI18n.lastSeen;
-                        const labelProfile = entityTooltipI18n.profile;
                         const noDetailsText = entityTooltipI18n.noDetails;
 
                         const bioSummary = json.data?.bio_summary || json.data?.summary || noDetailsText;
@@ -249,12 +245,7 @@ const renderSynthesisHtml = (text: string) => {
                             seen.className = 'uppercase font-medium';
                             seen.textContent = `${labelLastSeen}: ${lastSeenDate}`;
 
-                            const profileLink = document.createElement('a');
-                            profileLink.href = `${entityPathPrefix}${encodeURIComponent(name)}`;
-                            profileLink.className = 'font-bold text-presek-mark hover:underline flex items-center gap-0.5 uppercase';
-                            profileLink.textContent = `${labelProfile} →`;
-
-                            footer.append(seen, profileLink);
+                            footer.append(seen);
                             card.append(header, title, summary, footer);
                             tooltip.appendChild(card);
                             if (popperInstance) popperInstance.update();

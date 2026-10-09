@@ -85,11 +85,9 @@ class TestAstroFrontendIntegrity:
         assert "stripCitationMarkers" in text_utils
         assert "timeZone: 'Europe/Skopje'" in text_utils
 
-    def test_macedonian_topic_and_entity_pages_keep_locale_contract(self):
+    def test_macedonian_topic_page_keeps_locale_contract(self):
         topic_page = _read("web/src/pages/mk/tema/[topic].astro")
         topic_component = _read("web/src/components/topic/TopicPage.astro")
-        entity_page = _read("web/src/pages/mk/subjekt/[name].astro")
-        entity_view = _read("web/src/components/entity/EntitySubjectView.astro")
 
         assert '<TopicPage locale="mk" />' in topic_page
         assert "locale?: 'sr' | 'mk'" in topic_component
@@ -97,11 +95,6 @@ class TestAstroFrontendIntegrity:
         assert "lang={lang}" in topic_component
         assert "Tema trenutno nije dostupna." not in topic_component
         assert "pojavljivanja" not in topic_component
-
-        assert "EntitySubjectView" in entity_page
-        assert "loadEntitySubject" in entity_page
-        assert "homePath(lang, hostHeader)" in entity_view
-        assert 'lang={lang}' in entity_view
 
     def test_editorial_interactive_widgets_avoid_placeholder_and_nan_output(self):
         source_comparison = _read("web/src/components/SourceComparisonIsland.tsx")
@@ -188,7 +181,7 @@ class TestDeploymentIntegrity:
     def test_systemd_targets_fastapi_and_astro_runtime(self):
         fastapi_service = _read("deploy/systemd/presek-fastapi-unified.service")
         astro_service = _read("deploy/systemd/presek-astro.service")
-        
+
         # Check for service runtime components
         assert "ExecStart=" in fastapi_service
         assert "ExecStart=" in astro_service
@@ -250,7 +243,7 @@ class TestDeploymentIntegrity:
 
     def test_release_flow_reloads_nginx(self):
         deploy_script = _read("deploy/deploy_release.sh")
-        assert 'sudo systemctl reload nginx' in deploy_script
+        assert "sudo systemctl reload nginx" in deploy_script
 
     def test_deploy_uses_file_locking(self):
         deploy_script = _read("deploy/deploy_release.sh")
@@ -360,8 +353,7 @@ class TestClusterSummariesConstraint:
         ):
             src = _read(rel)
             assert "ON CONFLICT (cluster_id)" not in src, (
-                f"{rel} uses ON CONFLICT (cluster_id); cluster_summaries is keyed "
-                "by (cluster_id, lang)"
+                f"{rel} uses ON CONFLICT (cluster_id); cluster_summaries is keyed by (cluster_id, lang)"
             )
 
     def test_cluster_summaries_inserts_set_lang(self):
@@ -371,25 +363,19 @@ class TestClusterSummariesConstraint:
         # Both insert sites must assign lang so the (cluster_id, lang) PK is
         # always satisfied.
         assert src.count("INSERT INTO cluster_summaries") >= 2
-        inserts = re.findall(
-            r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.S
-        )
+        inserts = re.findall(r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.S)
         assert inserts, "no cluster_summaries inserts found"
         for cols in inserts:
             normalized = " ".join(cols.split())
             assert normalized.startswith("cluster_id, lang"), (
-                "cluster_summaries insert must set (cluster_id, lang); got "
-                f"{normalized!r}"
+                f"cluster_summaries insert must set (cluster_id, lang); got {normalized!r}"
             )
 
     def test_restore_pk_migration_exists(self):
-        migrations = [
-            p.name for p in (ROOT / "migrations" / "versions").glob("*.py")
-        ]
+        migrations = [p.name for p in (ROOT / "migrations" / "versions").glob("*.py")]
         assert any("restore_cluster_summaries_pk" in name for name in migrations)
         src = next(
             p.read_text(encoding="utf-8")
             for p in (ROOT / "migrations" / "versions").glob("*restore_cluster_summaries_pk.py")
         )
         assert '["cluster_id", "lang"]' in src
-
