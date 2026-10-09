@@ -20,6 +20,9 @@ INTERVAL="${FAILOVER_INTERVAL:-30}"
 SYNC_SCRIPT="$APP_DIR/deploy/sync_shield.sh"
 SYNC_INTERVAL="${SHIELD_SYNC_INTERVAL:-300}"
 SHIELD_SSH="${SHIELD_SSH:-u0_a106@100.77.135.12}"
+# LAN address tried when the Tailscale path fails to connect (exit 255), so a Tailscale
+# outage is not mistaken for a dead Shield. Set empty to disable.
+SHIELD_SSH_ALT="${SHIELD_SSH_ALT-u0_a106@192.168.0.62}"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="${SSH_KEY:-/root/.ssh/termux_test}"
 TUNNEL_MATCH="/root/.cloudflared/config.yml run"
@@ -32,9 +35,18 @@ flock -n 9 || exit 0
 log() { echo "[$(date '+%F %T')] $*" >> "$LOG"; }
 
 ssh_shield() {
-  timeout 15 ssh -i "$SSH_KEY" -p "$SHIELD_PORT" \
-    -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-    -o BatchMode=yes -o ConnectTimeout=6 "$SHIELD_SSH" "$@"
+  local target rc=255
+  for target in "$SHIELD_SSH" "$SHIELD_SSH_ALT"; do
+    [ -n "$target" ] || continue
+    timeout 15 ssh -i "$SSH_KEY" -p "$SHIELD_PORT" \
+      -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -o BatchMode=yes -o ConnectTimeout=6 "$target" "$@"
+    rc=$?
+    # 255 = could not connect/authenticate: try the next address. Any other status
+    # is the remote command's own result and is final.
+    [ "$rc" -ne 255 ] && return "$rc"
+  done
+  return "$rc"
 }
 
 # Healthy = Shield astro + api answer AND its tunnel has ready connections.
