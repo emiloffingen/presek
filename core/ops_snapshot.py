@@ -36,6 +36,12 @@ stale AS (
 )
 SELECT
     (SELECT COUNT(*) FROM stale) AS stale_count,
+    (
+        -- cluster_summaries.created_at is naive in the session time zone (Europe/Skopje),
+        -- so compare it with NOW() directly rather than with UTC.
+        SELECT EXTRACT(EPOCH FROM (NOW() - MAX(created_at))) / 60.0
+        FROM cluster_summaries
+    ) AS newest_synthesis_age_min,
     COALESCE(
         (
             SELECT json_agg(cluster_id ORDER BY latest_article_at DESC)
@@ -49,6 +55,13 @@ SELECT
         '[]'::json
     ) AS sample_ids
 """
+
+
+# Homepage synthesis is refreshed by a periodic script (every ~2 h), and only for
+# clusters on the homepage, so a long tail of older clusters is "stale" by design.
+# Only alert on that backlog when no synthesis at all has landed recently.
+STALE_CLUSTER_ALERT_MIN = 8
+SYNTHESIS_REFRESH_OVERDUE_MINUTES = 240
 
 
 def _load_last_refresh_time() -> str | None:
@@ -105,6 +118,8 @@ async def build_ops_snapshot() -> dict:
 
     stale_row = await db.async_execute_one(_STALE_CLUSTER_SQL) or {}
     stale_count = int(stale_row.get("stale_count") or 0)
+    newest_age = stale_row.get("newest_synthesis_age_min")
+    newest_synthesis_age_min = float(newest_age) if newest_age is not None else None
     sample_ids = stale_row.get("sample_ids") or []
     if isinstance(sample_ids, str):
         sample_ids = json.loads(sample_ids)
@@ -171,12 +186,18 @@ async def build_ops_snapshot() -> dict:
             )
         )
 
-    if stale_count >= 8:
+    refresher_overdue = newest_synthesis_age_min is None or newest_synthesis_age_min > SYNTHESIS_REFRESH_OVERDUE_MINUTES
+    if stale_count >= STALE_CLUSTER_ALERT_MIN and refresher_overdue:
+        age_note = (
+            "no synthesis on record"
+            if newest_synthesis_age_min is None
+            else f"newest synthesis is {int(newest_synthesis_age_min)} min old"
+        )
         alerts.append(
             _alert(
                 "warn",
                 "stale_clusters",
-                f"{stale_count} active clusters need synthesis refresh.",
+                f"{stale_count} active clusters need synthesis refresh ({age_note}).",
                 str(stale_count),
             )
         )
@@ -261,6 +282,9 @@ async def build_ops_snapshot() -> dict:
         "pipeline": pipeline,
         "stale_clusters": {
             "count": stale_count,
+            "newest_synthesis_age_min": None
+            if newest_synthesis_age_min is None
+            else round(newest_synthesis_age_min, 1),
             "sample_cluster_ids": list(sample_ids)[:8],
         },
     }
