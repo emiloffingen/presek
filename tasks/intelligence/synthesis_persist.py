@@ -81,6 +81,19 @@ def persist_lang_synthesis(
         record_synthesis_db_persisted,
     )
 
+    # Deterministic pulse/pluralism from the cluster rows (replaces the hardcoded
+    # 50/50 defaults). Computed once per cluster and shared across languages.
+    if not shared_metrics.get("_scores_computed"):
+        try:
+            from utils.ranking import compute_cluster_pulse_pluralism
+
+            _scores = compute_cluster_pulse_pluralism(article_rows)
+            shared_metrics["pulse_score"] = _scores["pulse_score"]
+            shared_metrics["pluralism_score"] = _scores["pluralism_score"]
+        except Exception:
+            pass
+        shared_metrics["_scores_computed"] = True
+
     pulse_score = shared_metrics["pulse_score"]
     pluralism_score = shared_metrics["pluralism_score"]
     pluralism_data = shared_metrics["pluralism_data"] or {

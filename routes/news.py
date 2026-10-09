@@ -71,31 +71,14 @@ class NewsResponse(BaseModel):
     entity: Optional[Any] = None
 
 
-_SOFT_EXCLUDE_TOPICS = {"Zivot", "Zabava", "Zdravje"}
-_HARD_NEWS_TOPICS = {"Politika", "Ekonomija", "Kriminal", "Sport", "Tehnologija"}
-_HARD_NEWS_CATEGORIES = {
-    "Srbija",
-    "Makedonija",
-    "Balkan",
-    "Evropa",
-    "Germanija",
-    "Amerika",
-    "Svet",
-}
-_FEATURE_PATTERNS = [
-    re.compile(r"izdanie na", re.IGNORECASE),
-    re.compile(r"intervju so", re.IGNORECASE),
-    re.compile(r"intervju\b", re.IGNORECASE),
-    re.compile(r"proverete dali", re.IGNORECASE),
-    re.compile(r"pred da ", re.IGNORECASE),
-    re.compile(r"postojano ste umorni", re.IGNORECASE),
-    re.compile(r"ovoj mineral", re.IGNORECASE),
-    re.compile(r"horoskop", re.IGNORECASE),
-    re.compile(r"recept", re.IGNORECASE),
-    re.compile(r"foto\b", re.IGNORECASE),
-    re.compile(r"video\b", re.IGNORECASE),
-    re.compile(r"galerija", re.IGNORECASE),
-]
+# Curation heuristics live in routes/curation.py (single owner shared with
+# routes/home.py); import the names used below.
+from .curation import (  # noqa: E402
+    _HARD_NEWS_CATEGORIES,
+    _HARD_NEWS_TOPICS,
+    _SOFT_EXCLUDE_TOPICS,
+    _title_looks_like_feature,
+)
 
 
 def _is_publicly_displayable_article(article):
@@ -223,17 +206,6 @@ def _parse_maybe_json(val):
 def _as_list(val):
     parsed = _parse_maybe_json(val)
     return parsed if isinstance(parsed, list) else []
-
-
-def _title_looks_like_feature(title):
-    clean = str(title or "").strip()
-    if not clean:
-        return True
-    if len(clean) > 180:
-        return True
-    if "?" in clean:
-        return True
-    return any(pattern.search(clean) for pattern in _FEATURE_PATTERNS)
 
 
 def _compute_editorial_signals(arts, cluster_score, homepage_score):
@@ -366,6 +338,7 @@ async def get_news(
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
+    fast: bool = False,
 ):
     try:
         # The public deployment is Macedonian-only. Legacy callers may still
@@ -383,6 +356,7 @@ async def get_news(
             timespan=timespan,
             page=page,
             page_size=page_size,
+            fast=fast,
         )
     except Exception as e:
         log.error(f"News Route Error in Endpoint: {e}", exc_info=True)
@@ -401,8 +375,15 @@ async def fetch_news_data(
     timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
+    fast: bool = False,
 ):
+    # fast=True is for as-you-type suggestions: text search only, no query
+    # embedding or vector scan (about 2-3 s cold vs ~150 ms). Full hybrid search
+    # stays the default for result pages.
+    fast = bool(fast and q)
     cache_key = f"api:news:v2:{q}:{category}:{topic}:{entity}:{subcategory}:{country}:{lang}:{sort}:{timespan}:{page}:{page_size}"
+    if fast:
+        cache_key += ":fast"
     cached = cached_response(cache_key)
     if cached:
         return cached
@@ -445,7 +426,7 @@ async def fetch_news_data(
         if q:
             from core.embeddings import get_query_embedding_async
 
-            query_vec = await get_query_embedding_async(q)
+            query_vec = [] if fast else await get_query_embedding_async(q)
             sort_by = "recent" if sort == "recent" else "hybrid"
             rows = None
             if query_vec:
@@ -745,32 +726,32 @@ async def fetch_news_data(
                 global_clusters_raw = g_ranked[:6]  # Top 6 global stories
 
         all_cids = cid_list + [c[0]["cluster_id"] for c in global_clusters_raw]
-        meta_rows = (
-            await db.async_execute(
-                "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
-                (all_cids,),
-                read_only=True,
+        # Three independent lookups keyed by the same cluster ids: run them concurrently
+        # instead of paying three sequential database round trips per request.
+        if all_cids:
+            meta_rows, synthesis_id_list, summary_rows = await asyncio.gather(
+                db.async_execute(
+                    "SELECT cluster_id, representative_image, dominant_color FROM cluster_metadata WHERE cluster_id = ANY(%s)",
+                    (all_cids,),
+                    read_only=True,
+                ),
+                db.async_get_synthesis_ids(all_cids, lang=lang),
+                db.async_execute(
+                    """
+                SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
+                       analyst_entities, pulse_score, pluralism_score, narrative_diversity,
+                       created_at, generation_provider, generation_model, quality_score, fallback_reason
+                FROM cluster_summaries
+                WHERE cluster_id = ANY(%s) AND lang = %s
+                """,
+                    (all_cids, lang),
+                    read_only=True,
+                ),
             )
-            if all_cids
-            else []
-        )
+        else:
+            meta_rows, synthesis_id_list, summary_rows = [], [], []
         meta_map = {r["cluster_id"]: r for r in meta_rows}
-        synthesis_ids = set(await db.async_get_synthesis_ids(all_cids, lang=lang)) if all_cids else set()
-        summary_rows = (
-            await db.async_execute(
-                """
-            SELECT cluster_id, synthetic_headline, synthetic_standfirst, key_facts,
-                   analyst_entities, pulse_score, pluralism_score, narrative_diversity,
-                   created_at, generation_provider, generation_model, quality_score, fallback_reason
-            FROM cluster_summaries
-            WHERE cluster_id = ANY(%s) AND lang = %s
-            """,
-                (all_cids, lang),
-                read_only=True,
-            )
-            if all_cids
-            else []
-        )
+        synthesis_ids = set(synthesis_id_list)
         summary_map = {r["cluster_id"]: r for r in summary_rows}
 
         def _format_cluster(arts):
@@ -1154,6 +1135,55 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
     except Exception as e:
         log.debug("[entity-graph] lookup failed for %s: %s", name, e)
         return {"status": "error", "data": None}
+
+
+@router.get("/sitemap-clusters")
+async def get_sitemap_clusters(
+    lang: Optional[str] = DEFAULT_LANG,
+    limit: int = Query(default=1000, ge=1, le=2000),
+):
+    """Lightweight sitemap feed: synthesized clusters only (id + headline + image + timestamp).
+
+    The Astro sitemap routes used to fan out up to 10 full /news scrapes
+    (500-candidate pool + metadata/synthesis fan-out each), which could block
+    SSR for minutes and hammer the DB. This single indexed query replaces that.
+    Cached 1h; crawlers hitting /sitemap.xml never touch the heavy paths.
+    """
+    lang = validate_language_code(lang, allowed_languages=["sr", "mk"])
+    cache_key = f"api:sitemap-clusters:v1:{lang}:{limit}"
+    cached = cached_response(cache_key, ttl=3600)
+    if cached:
+        return cached
+    rows = await db.async_execute(
+        """
+        SELECT m.cluster_id,
+               s.synthetic_headline,
+               m.representative_image,
+               s.created_at AS synthesis_updated_at
+        FROM cluster_metadata m
+        JOIN cluster_summaries s ON s.cluster_id = m.cluster_id AND s.lang = %s
+        WHERE NULLIF(s.synthetic_headline, '') IS NOT NULL
+           OR NULLIF(s.synthetic_standfirst, '') IS NOT NULL
+        ORDER BY s.created_at DESC
+        LIMIT %s
+        """,
+        (lang, limit),
+        read_only=True,
+    )
+    result = {
+        "status": "success",
+        "clusters": [
+            {
+                "cluster_id": r.get("cluster_id"),
+                "title": r.get("synthetic_headline") or "",
+                "image": r.get("representative_image"),
+                "updated": r.get("synthesis_updated_at"),
+            }
+            for r in (rows or [])
+        ],
+    }
+    set_cache(cache_key, result, ttl=3600)
+    return result
 
 
 @router.get("/article/{article_id}")

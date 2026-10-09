@@ -3,6 +3,17 @@ from __future__ import annotations
 import html
 import re
 
+# A feed that clips its own excerpts (Kanal 5: 100 chars + "...") can cut an
+# escaped entity in half, leaving "... &bdq..." in the stored description.
+_DANGLING_ENTITY_RE = re.compile(r"\s+&#?[A-Za-z0-9]{1,8}(\.{3}|\u2026)?$")
+
+
+def strip_dangling_entity(text: str) -> str:
+    """Drop a half-cut HTML entity at the end of text, keeping a trailing ellipsis."""
+    if not text:
+        return ""
+    return _DANGLING_ENTITY_RE.sub(lambda m: m.group(1) or "", text)
+
 
 def clean_extracted_article_text(text: str) -> str:
     """Remove common feed/page chrome that text extractors mix into article bodies."""

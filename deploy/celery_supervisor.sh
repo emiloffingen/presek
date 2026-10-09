@@ -35,14 +35,28 @@ spawn() {
     </dev/null >>"$APP_DIR/logs/$name.out" 2>&1 &
 }
 
+PGB_INI=/etc/pgbouncer/pgbouncer.ini
+
+# DATABASE_URL points at the local pgbouncer; a hard kill leaves its pidfile
+# behind and the next start then refuses to run.
+ensure_pgbouncer() {
+  [ -f "$PGB_INI" ] && command -v pgbouncer >/dev/null 2>&1 || return 0
+  pgrep -x pgbouncer >/dev/null 2>&1 && return 0
+  log "pgbouncer down -> starting"
+  rm -f "$(sed -n 's/^pidfile *= *//p' "$PGB_INI" | head -1)"
+  ( exec 9>&-; setsid su postgres -s /bin/bash -c "pgbouncer -d $PGB_INI --daemon" </dev/null >/dev/null 2>&1 & )
+  sleep 2
+}
+
 log "celery supervisor started (interval ${INTERVAL}s, concurrency ${CONCURRENCY})"
 while true; do
+  ensure_pgbouncer
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
-    ( exec 9>&-; redis-server --daemonize yes --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
+    ( exec 9>&-; redis-server --daemonize yes --bind "127.0.0.1 -::1" --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )
     sleep 1
   fi
   spawn worker 'celery -A core.celery_app worker' "$cmd_worker"
   spawn beat   'celery -A core.celery_app beat'   "$cmd_beat"
-  sleep "$INTERVAL"
+  sleep "$INTERVAL" 9>&-
 done

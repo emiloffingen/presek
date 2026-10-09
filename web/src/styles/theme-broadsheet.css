@@ -532,7 +532,9 @@ html:root nav[aria-label="Breadcrumb"] {
     .bs-wrap { padding-left: 16px; padding-right: 16px; }
     .bs-topbar-date { display: none; }
     .bs-topbar-row { justify-content: flex-start; }
-    .bs-topbar-stats { gap: 6px 14px; width: 100%; justify-content: space-between; }
+    .bs-topbar-stats { gap: 6px 14px; width: 100%; flex-wrap: nowrap; }
+    .bs-topbar-stat-opt { display: none; }
+    .bs-topbar-stats .bs-topbar-tools { margin-left: auto; }
     .bs-theme-toggle .bs-when-light,
     .bs-theme-toggle .bs-when-dark { display: none !important; }
     .bs-theme-toggle { padding: 0; width: 36px; justify-content: center; }

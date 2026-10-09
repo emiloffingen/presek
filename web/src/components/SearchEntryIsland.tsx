@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { search } from '../i18n/namespaces/search';
 import { common } from '../i18n/namespaces/common';
 import type { Locale } from '../lib/localePaths';
-import SearchIsland from './SearchIsland';
+
+// The overlay (results, preview, voice search, filters) is only needed once the
+// user opens search, so keep it out of the chunk every page loads.
+const loadSearchIsland = () => import('./SearchIsland');
+const SearchIsland = lazy(loadSearchIsland);
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
+
+function prefetchSearch() {
+  void loadSearchIsland();
 }
 
 function SearchTriggerButton({ onClick, lang }: { onClick: () => void; lang: Locale }) {
@@ -19,6 +27,8 @@ function SearchTriggerButton({ onClick, lang }: { onClick: () => void; lang: Loc
     <button
       type="button"
       onClick={onClick}
+      onPointerEnter={prefetchSearch}
+      onFocus={prefetchSearch}
       data-testid="search-trigger"
       className="presek-search-trigger group"
       aria-label={t('search.open_search')}
@@ -86,10 +96,17 @@ function SearchEntryIslandContent({
       }
     };
 
+    // Warm the overlay chunk once the page is idle so the first open is instant.
+    const idle = (window as any).requestIdleCallback as undefined | ((cb: () => void, o?: { timeout: number }) => number);
+    const idleHandle = idle ? idle(prefetchSearch, { timeout: 4000 }) : window.setTimeout(prefetchSearch, 2500);
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('presek:open-search', handleOpenEvent);
     document.addEventListener('click', handleFabClick);
     return () => {
+      const cancelIdle = (window as any).cancelIdleCallback as undefined | ((h: number) => void);
+      if (idle && cancelIdle) cancelIdle(idleHandle);
+      else window.clearTimeout(idleHandle);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('presek:open-search', handleOpenEvent);
       document.removeEventListener('click', handleFabClick);
@@ -101,13 +118,15 @@ function SearchEntryIslandContent({
   }
 
   return (
-    <SearchIsland
-      initialQuery={initialQuery}
-      lang={lang}
-      startOpen
-      hideTrigger
-      onClose={close}
-    />
+    <Suspense fallback={<SearchTriggerButton onClick={open} lang={lang} />}>
+      <SearchIsland
+        initialQuery={initialQuery}
+        lang={lang}
+        startOpen
+        hideTrigger
+        onClose={close}
+      />
+    </Suspense>
   );
 }
 

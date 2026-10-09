@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { User, TrendingUp, Loader2 } from 'lucide-react';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { entity } from '../i18n/namespaces/entity';
-import { localePathForLang } from '../lib/localePaths';
 
 interface EntityContextCardProps {
   name: string;
@@ -53,7 +52,6 @@ export default function EntityContextCard({ name, lang = 'mk' }: EntityContextCa
 
                 <div className="flex items-center justify-between pt-3 border-t border-border">
                     <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest">{t('entity.last_seen')} {new Date(data.last_seen).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'mk-MK')}</span>
-                    <a href={localePathForLang(`/subjekt/${encodeURIComponent(name)}`, lang)} className="text-[9px] font-black uppercase text-presek-mark border-b border-presek-mark">{t('entity.profile')}</a>
                 </div>
             </div>
             {/* Pointer notch */}

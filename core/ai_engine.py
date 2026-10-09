@@ -320,11 +320,20 @@ class OpenAICompatibleProvider(AIProvider):
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
             ],
-            "max_tokens": max_tokens,
-            "temperature": 0.2,
+            "temperature": 1.0 if self.provider_name == "groq" else 0.2,
         }
+        if self.provider_name == "groq":
+            # Groq deprecated max_tokens in favour of max_completion_tokens;
+            # gpt-oss reasoning models also need the full budget visible.
+            payload["max_completion_tokens"] = _effective_max_tokens(self.provider_name, max_tokens)
+        else:
+            payload["max_tokens"] = max_tokens
         if json_mode or response_schema:
             payload["response_format"] = {"type": "json_object"}
+            # Groq (and OpenAI) reject json_object mode with a 400 unless the word
+            # "json" appears somewhere in the messages; Gemini does not enforce it.
+            if "json" not in f"{system}\n{prompt}".lower():
+                payload["messages"][0]["content"] = f"{system}\n\nRespond with a single valid JSON object."
 
         headers = {
             "Content-Type": "application/json",
@@ -353,13 +362,24 @@ class OpenAICompatibleProvider(AIProvider):
             log.warning(f"[ai/{self.provider_name}] Unexpected response format from {self.model}: {e}")
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
+            try:
+                body = e.response.text[:500]
+            except Exception:  # noqa: BLE001 - best-effort error body for logs
+                body = ""
             if code == 429:
                 _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
+            elif code == 400 and self.provider_name == "groq":
+                # Broken params hot-loop without cooldown: pause briefly so the
+                # cascade can try the next provider instead of hammering 400s.
+                _mark_provider_cooldown(self.provider_name, "60")
             elif code in (500, 502, 503, 504):
                 # Transient provider overload: short cooldown so the cascade
                 # moves on to the next provider instead of hammering this one.
                 _mark_provider_cooldown(self.provider_name, "20")
-            log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
+            log.warning(
+                f"[ai/{self.provider_name}] Call failed for model {self.model}: {e} "
+                f"body={body} model={self.model} tokens={payload.get('max_completion_tokens', payload.get('max_tokens'))}"
+            )
         except httpx.RequestError as e:
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
         return None

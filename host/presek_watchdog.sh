@@ -11,9 +11,12 @@ ENV_FILE="$APP_DIR/.env"
 LOG_DIR="$APP_DIR/logs"
 WATCHDOG_LOG="$LOG_DIR/watchdog.log"
 PIDFILE="$LOG_DIR/presek_watchdog.pid"
-# Password is not stored here: set PRESEK_REDIS_PASS, else it is read from the
-# app .env (REDIS_URL). Never hardcode it in a tracked file.
-REDIS_PASS="${PRESEK_REDIS_PASS:-$(sed -n 's#^REDIS_URL=redis://:\([^@]*\)@.*#\1#p' "$ENV_FILE" 2>/dev/null | head -1)}"
+REDIS_PASS="${PRESEK_REDIS_PASS:-}"  # never hardcode; derived from the app .env below
+# The app authenticates with the password from .env REDIS_URL (rotated
+# 2026-10-04). Derive it so the server we start always matches what the
+# clients send; otherwise workers crash-loop with "invalid username-password".
+_ENV_REDIS_PASS="$(grep -E '^REDIS_URL=' "$ENV_FILE" 2>/dev/null | sed -n 's#.*://:\([^@]*\)@.*#\1#p' | tail -n 1)"
+[ -n "$_ENV_REDIS_PASS" ] && REDIS_PASS="$_ENV_REDIS_PASS"
 INTERVAL="${WATCHDOG_INTERVAL:-30}"
 DEPLOY_SCRIPT="/root/scripts/presek_deploy.sh"
 SHIELD_KEEPER_SCRIPT="/root/scripts/shield_keepawake_phone.sh"
@@ -78,10 +81,24 @@ http_ok() {
 ensure_redis() {
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
-    ( exec 8>&-; redis-server --daemonize yes --dir /root \
+    ( exec 8>&-; redis-server --daemonize yes --bind "127.0.0.1 -::1" --dir /root \
       --requirepass "$REDIS_PASS" --logfile "$LOG_DIR/redis.log" )
     sleep 1
   fi
+}
+
+ensure_pgbouncer() {
+  # Aiven PgBouncer on 127.0.0.1:6543. Must be (re)started by this watchdog:
+  # processes spawned from transient proot sessions are reaped when that
+  # session exits, so a manually started pgbouncer dies quickly. Spawned
+  # here (persistent session) it survives.
+  if pgrep -f "pgbouncer -d /etc/pgbouncer/pgbouncer.ini" >/dev/null 2>&1; then
+    return 0
+  fi
+  log "pgbouncer down -> starting"
+  rm -f /var/run/pgbouncer/pgbouncer.pid
+  ( exec 8>&-; setsid su postgres -s /bin/bash -c "pgbouncer -d /etc/pgbouncer/pgbouncer.ini --daemon" </dev/null >/dev/null 2>&1 & )
+  sleep 2
 }
 
 ensure_session() { :; }   # tmux is not used; spawning is via setsid
@@ -165,7 +182,12 @@ restart_tunnel() {
 UVICORN_WORKERS="${UVICORN_WORKERS:-2}"
 cmd_fastapi="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/uvicorn core.api_fast:app --host 127.0.0.1 --port 5001 --workers $UVICORN_WORKERS >> $LOG_DIR/fastapi.log 2>&1"
 cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 exec node ./dist/server/entry.mjs >> $LOG_DIR/astro.log 2>&1"
-cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-2} --logfile=$LOG_DIR/worker.log"
+# The worker must name every queue it serves. Without --queues, Celery consumes
+# only task_default_queue ("celery"), so tasks routed to the other queues (for
+# example tasks.maintenance.* -> "maintenance") were enqueued and never executed.
+# Keep this list in sync with celery_app.conf.task_queues in core/celery_app.py.
+CELERY_QUEUES="${CELERY_QUEUES:-celery,ingestion,ingestion-crawl,fast-track,synthesis,intel-heavy,delivery,maintenance}"
+cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-2} --queues=$CELERY_QUEUES --logfile=$LOG_DIR/worker.log"
 cmd_beat="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$LOG_DIR/beat.log"
 cmd_tunnel="exec cloudflared tunnel --config /root/.cloudflared/config.yml run >> $LOG_DIR/cloudflared.log 2>&1"
 
@@ -179,12 +201,12 @@ log "watchdog started (pid $$, interval ${INTERVAL}s)"
 # the go-live once per presence: a marker records the last successful sync.
 SHIELD_MARKER="$LOG_DIR/.shield_synced"
 SHIELD_SYNC_LOCK="$LOG_DIR/.shield_sync.lock"
-SHIELD_PROBE="u0_a106@192.168.0.60"
+SHIELD_PROBE="u0_a106@192.168.0.62"
 SHIELD_PORT="${SHIELD_PORT:-8022}"
 SSH_KEY="/root/.ssh/termux_test"
 # Dist sync ships over adb (robust when the Shield's sshd is wedged). The
 # Shield's watchdog self-applies from /sdcard/presek_stage.
-SHIELD_ADB="${SHIELD_ADB:-192.168.0.60:5555}"
+SHIELD_ADB="${SHIELD_ADB:-192.168.0.62:5555}"
 ADB_BIN="${ADB_BIN:-/data/data/com.termux/files/usr/bin/adb}"
 
 sync_shield_if_present() {
@@ -236,8 +258,7 @@ sync_shield_if_present() {
 # Shield's sshd has wedged repeatedly), so the Shield keeps astro :3000, api
 # :5001 and cloudflared metrics :20241 on 127.0.0.1 instead of exposing them on
 # every interface. Local ports 33000/35001/30241 forward to the Shield's.
-shield_forwards_ok() {
-  local spec
+shield_forwards_ok() {  local spec
   for spec in "tcp:33000 tcp:3000" "tcp:35001 tcp:5001" "tcp:30241 tcp:20241"; do
     # shellcheck disable=SC2086
     timeout 6 "$ADB_BIN" -s "$SHIELD_ADB" forward $spec >/dev/null 2>&1 || {
@@ -247,7 +268,43 @@ shield_forwards_ok() {
     }
   done
 }
+# SSH origin probe (Tailscale). ADB port-forwards cannot run inside proot, so
+# the Shield health check goes over SSH (sshd recovered after the reboot).
+# Kept fast so a dead Shield never stalls the 30s supervision loop.
+SHIELD_SSH_HOST="${SHIELD_SSH_HOST:-u0_a106@100.77.135.12}"
+# LAN address tried when the Tailscale path fails to connect (exit 255). Empty disables.
+SHIELD_SSH_HOST_ALT="${SHIELD_SSH_HOST_ALT-u0_a106@192.168.0.62}"
+SHIELD_SSH_PORT="${SHIELD_SSH_PORT:-8022}"
+# Multiplexed SSH: one persistent master connection, all probes ride it.
+# Without this, every probe forks a full auth (zombie sshd-auth pile up on
+# the Shield until its sshd wedges and banner-times-out).
+_SSH_SOCK_DIR="${TMPDIR:-/tmp}/presek-ssh-mux"
+_SSH_MUX="ControlMaster=auto,ControlPath=${_SSH_SOCK_DIR}/%r@%h:%p,ControlPersist=300"
+_shield_ssh() {
+  mkdir -p "$_SSH_SOCK_DIR" 2>/dev/null
+  local target rc=255
+  for target in "$SHIELD_SSH_HOST" "$SHIELD_SSH_HOST_ALT"; do
+    [ -n "$target" ] || continue
+    timeout 12 ssh -i "$SSH_KEY" -p "$SHIELD_SSH_PORT" \
+      -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -o BatchMode=yes -o ConnectTimeout=4 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 "$target" "$@" 2>/dev/null
+    rc=$?
+    [ "$rc" -ne 255 ] && return "$rc"
+  done
+  return "$rc"
+}
+shield_origin_ok_ssh() {
+  _shield_ssh "proot-distro login debian -- curl -s -m 3 -o /dev/null http://127.0.0.1:5001/api/health"
+}
+# Shield workers presence: the phone stands its workers down only when the
+# Shield actually runs its own (API-up alone is not enough — the Shield has
+# run API-only for days while the phone did all ingestion/synthesis).
+shield_workers_ok_ssh() {
+  # NOTE: bracket pattern avoids matching the probe's own remote command line.
+  _shield_ssh "pgrep -f 'celery -A core.celery_ap[p] worker' >/dev/null 2>&1"
+}
 shield_origin_ok() {
+  shield_origin_ok_ssh && return 0
   shield_forwards_ok &&
   curl -s -o /dev/null -m 4 "http://127.0.0.1:33000/" &&
   curl -s -o /dev/null -m 4 "http://127.0.0.1:35001/api/health" &&
@@ -293,8 +350,7 @@ maybe_backup() {
 # transient blip), and only transitions alert (no repeat spam). This runs in
 # the supervised watchdog, unlike the old detached shield_watch_phone.sh which
 # silently died on 2026-09-26.
-NTFY_URL="${NTFY_URL:-}"
-NTFY_TOKEN="${NTFY_TOKEN:-}"
+NTFY_URL="${NTFY_URL:-https://ntfy.sh/presek-alerts-09c4417ba2ed}"
 SITE_CHECK_FILE="$LOG_DIR/.site_last_check"
 SITE_MISS_FILE="$LOG_DIR/.site_miss"
 SITE_ALERTED_FILE="$LOG_DIR/.site_alerted"
@@ -302,12 +358,7 @@ SITE_STALE_MISS_FILE="$LOG_DIR/.site_stale_miss"
 SITE_STALE_ALERTED_FILE="$LOG_DIR/.site_stale_alerted"
 SITE_CHECK_INTERVAL="${SITE_CHECK_INTERVAL:-60}"
 
-notify() {
-  [ -n "$NTFY_URL" ] || return 0
-  local auth=()
-  [ -n "$NTFY_TOKEN" ] && auth=(-H "Authorization: Bearer $NTFY_TOKEN")
-  curl -s -m 10 -H "Title: $1" -H "Tags: $2" "${auth[@]}" -d "$3" "$NTFY_URL" >/dev/null 2>&1
-}
+notify() { curl -s -m 10 -H "Title: $1" -H "Tags: $2" -d "$3" "$NTFY_URL" >/dev/null 2>&1; }
 
 check_site_health() {
   local now last code miss alerted lbody
@@ -370,7 +421,13 @@ last_shieldkeep=0
 last_homepage_synth="$(cat "$HOMEPAGE_SYNTH_STAMP" 2>/dev/null || echo 0)"
 ASTRO_FP_FILE="$LOG_DIR/.phone_dist_fp"
 HEAD_FP_FILE="$LOG_DIR/.phone_head_fp"
+# Shield SSH probes are throttled (every 4th loop ≈ 2 min): each probe opens a
+# fresh SSH + proot session, and rapid probing piles up zombie sshd-sessions
+# until the Shield's sshd wedges (banner timeouts). Streak logic is unchanged,
+# just evaluated less often.
+_loop_n=0
 while true; do
+  _loop_n=$((_loop_n + 1))
   # Git auto-deploy poll. Non-blocking: the deploy script self-locks, so a slow
   # build never stalls service supervision.
   now="$(date +%s)"
@@ -380,6 +437,7 @@ while true; do
   fi
 
   ensure_redis
+  ensure_pgbouncer
   ensure_session
   rotate_logs
   maybe_backup
@@ -391,8 +449,20 @@ while true; do
 
   http_ok "http://127.0.0.1:5001/api/health" || spawn_window fastapi "$cmd_fastapi"
   http_ok "http://127.0.0.1:3000/" || spawn_window astro "$cmd_astro"
-  pgrep -f 'celery -A core.celery_app worker' >/dev/null 2>&1 || spawn_window worker "$cmd_worker"
-  pgrep -f 'celery -A core.celery_app beat'   >/dev/null 2>&1 || spawn_window beat "$cmd_beat"
+  # Standby workers: while the Shield is confirmed healthy AND runs its own
+  # workers, the phone's worker/beat stay down to save AI quota and
+  # Supabase pool connections. Any single failed shield check re-enables
+  # them immediately (failover); standing down needs 2 consecutive OKs.
+  if [ "$SHIELD_PRIMARY" = "1" ] && [ "$shield_ok_streak" -ge 2 ] && shield_workers_ok_ssh; then
+    if pgrep -f 'celery -A core.celery_app worker' >/dev/null 2>&1; then
+      log "shield healthy -> phone workers standby (stopping worker/beat)"
+      pkill -f 'celery -A core.celery_ap[p] worker' 2>/dev/null
+      pkill -f 'celery -A core.celery_ap[p] beat' 2>/dev/null
+    fi
+  else
+    pgrep -f 'celery -A core.celery_app worker' >/dev/null 2>&1 || spawn_window worker "$cmd_worker"
+    pgrep -f 'celery -A core.celery_app beat'   >/dev/null 2>&1 || spawn_window beat "$cmd_beat"
+  fi
 
   # Keep the standby stack on the current build. Astro serves the build it
   # started with, so replacing dist without a restart would 404 the new asset
@@ -414,7 +484,9 @@ while true; do
     fi
   fi
 
-  if [ "$SHIELD_PRIMARY" = "1" ]; then
+  # Shield health evaluation runs every 2nd loop (≈1 min): each evaluation
+  # opens fresh SSH sessions and the Shield's sshd wedges under rapid probing.
+  if [ "$SHIELD_PRIMARY" = "1" ] && [ $((_loop_n % 2)) -eq 0 ]; then
     # Shield primary, phone connector standby. Take over on 2 consecutive
     # shield failures; stand down after 2 consecutive healthy checks.
     if [ -f "$LOG_DIR/.shield_syncing" ]; then
@@ -435,7 +507,7 @@ while true; do
         restart_tunnel
       fi
     fi
-  else
+  elif [ "$SHIELD_PRIMARY" != "1" ]; then
     if ! tunnel_healthy; then
       log "tunnel unhealthy/stale -> recycling cloudflared"
       restart_tunnel

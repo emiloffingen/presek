@@ -696,6 +696,15 @@ function getTimeStr(dateStr: string) {
         }
 	}
 
+	/* Image-less or failed-image cards: a short banner instead of a full photo-height frame. */
+	@media (min-width: 641px) {
+		.nyt-article:not(.lead-story) .image-wrap.image-wrap-fallback,
+		.nyt-article:not(.lead-story) .image-wrap[data-image-state="fallback"],
+		.nyt-article:not(.lead-story) .image-wrap[data-image-state="failed"] {
+			aspect-ratio: 7 / 2;
+		}
+	}
+
 	@media (max-width: 640px) {
         .nyt-article.feed-card-stub {
             opacity: 0.78;

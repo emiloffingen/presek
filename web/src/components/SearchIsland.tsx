@@ -436,7 +436,8 @@ export default function SearchIsland({
       setIsLoading(true);
       setError(null);
       try {
-        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=12&lang=${lang}`;
+        // fast=1: text-only search for as-you-type (~150 ms vs 2-3 s for the hybrid vector search).
+        const url = `/api/news?q=${encodeURIComponent(trimmed)}&page_size=8&fast=1&lang=${lang}`;
         // Direct (non-promise-cached) fetch: each keystroke is a unique URL and the
         // per-query sync cache above already covers repeats. Abortable so typing
         // cancels superseded backend searches instead of queueing them.
