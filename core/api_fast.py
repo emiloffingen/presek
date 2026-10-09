@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import hashlib
 import os
 import re
 import time
@@ -199,6 +200,89 @@ class APIVersionMiddleware:
 
 
 app.add_middleware(APIVersionMiddleware)
+
+
+_VISIT_SKIP_PREFIXES = (
+    "/api/health",
+    "/api/docs",
+    "/api/redoc",
+    "/api/openapi.json",
+    "/api/metrics",
+    "/api/marketing/ads/active",
+    "/api/stats/visitors",
+)
+
+
+def _hash_visitor(ip: str, ua: str, day: str) -> str:
+    salt = os.environ.get("SECRET_KEY", APP_VERSION)
+    raw = f"{ip}|{ua}|{day}|{salt}"
+    return hashlib.sha256(raw.encode("utf-8", "ignore")).hexdigest()[:64]
+
+
+async def _store_page_visit(
+    visitor_hash: str,
+    host: str,
+    path: str,
+    lang: str,
+    referrer: str,
+    ua_hash: str,
+) -> None:
+    try:
+        await db.async_execute(
+            "INSERT INTO page_visits (visitor_hash, host, path, lang, referrer, ua_hash)"
+            " VALUES (%s, %s, %s, %s, %s, %s)",
+            (visitor_hash, host, path, lang, referrer, ua_hash),
+            fetch=False,
+        )
+    except Exception as e:
+        log.warning(f"page_visit insert skipped: {e}")
+
+
+class VisitorTrackingMiddleware:
+    """Privacy-friendly local visitor logging (hashed visitor, no raw IP)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("method") == "GET":
+            path = scope.get("path", "")
+            if path.startswith("/api/") and not path.startswith(_VISIT_SKIP_PREFIXES):
+                try:
+                    headers = dict(
+                        (k.decode().lower(), v.decode("utf-8", "ignore"))
+                        for k, v in scope.get("headers", [])
+                    )
+                    ip = (
+                        headers.get("cf-connecting-ip")
+                        or (headers.get("x-forwarded-for", "").split(",")[0].strip())
+                        or (scope.get("client", [None])[0] or "")
+                    )
+                    ua = headers.get("user-agent", "")[:512]
+                    if "bot" not in ua.lower() and "healthcheck" not in ua.lower():
+                        day = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+                        query = scope.get("query_string", b"").decode("utf-8", "ignore")
+                        lang = ""
+                        for part in query.split("&"):
+                            if part.startswith("lang="):
+                                lang = part[5:10]
+                                break
+                        asyncio.get_running_loop().create_task(
+                            _store_page_visit(
+                                _hash_visitor(ip, ua, day),
+                                (headers.get("host", "") or "")[:128],
+                                path[:512],
+                                lang,
+                                (headers.get("referer", "") or "")[:512],
+                                hashlib.sha256(ua.encode("utf-8", "ignore")).hexdigest()[:64],
+                            )
+                        )
+                except Exception:
+                    pass
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(VisitorTrackingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -608,6 +692,79 @@ if hasattr(app, "head"):
 @app.get("/api/version")
 async def version_info():
     return get_full_version_info()
+
+
+@app.get("/api/stats/visitors")
+async def visitor_stats(days: int = 7):
+    """Local visitor counts from page_visits (aggregate only, no PII)."""
+    days = max(1, min(days, 30))
+    try:
+        rows = await db.async_execute(
+            "SELECT date_trunc('day', visited_at)::date AS day,"
+            " count(*) AS pageviews,"
+            " count(DISTINCT visitor_hash) AS visitors"
+            " FROM page_visits"
+            " WHERE visited_at >= now() - (%s || ' days')::interval"
+            " GROUP BY 1 ORDER BY 1 DESC",
+            (str(days),),
+            read_only=True,
+        )
+        return {
+            "status": "success",
+            "days": days,
+            "data": [
+                {
+                    "day": str(r["day"]),
+                    "visitors": int(r["visitors"]),
+                    "pageviews": int(r["pageviews"]),
+                }
+                for r in (rows or [])
+            ],
+        }
+    except Exception as e:
+        log.warning(f"visitor_stats failed (table may not exist yet): {e}")
+        return {"status": "success", "days": days, "data": []}
+
+
+@app.post("/api/stats/beacon")
+@exempt_from_rate_limit
+async def visitor_beacon(request: Request):
+    """Browser beacon: one row per real pageview (hashed visitor, no raw IP)."""
+    try:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+        path = str(body.get("path", "") or "")[:512] or "/"
+        lang = str(body.get("lang", "") or "")[:10]
+        referrer = str(body.get("referrer", "") or "")[:512]
+        headers = request.headers
+        ip = (
+            headers.get("cf-connecting-ip")
+            or (headers.get("x-forwarded-for", "").split(",")[0].strip())
+            or (request.client.host if request.client else "")
+        )
+        ua = (headers.get("user-agent", "") or "")[:512]
+        if "bot" in ua.lower():
+            return {"status": "success", "skipped": True}
+        day = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        host = (headers.get("host", "") or "")[:128]
+        asyncio.get_running_loop().create_task(
+            _store_page_visit(
+                _hash_visitor(ip, ua, day),
+                host,
+                path,
+                lang,
+                referrer,
+                hashlib.sha256(ua.encode("utf-8", "ignore")).hexdigest()[:64],
+            )
+        )
+        return {"status": "success"}
+    except Exception as e:
+        log.warning(f"visitor_beacon failed: {e}")
+        return {"status": "success"}
 
 
 if "presek_db_pool_connections_num" in REGISTRY._names_to_collectors:
