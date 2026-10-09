@@ -186,9 +186,7 @@ async def build_ops_snapshot() -> dict:
             )
         )
 
-    refresher_overdue = (
-        newest_synthesis_age_min is None or newest_synthesis_age_min > SYNTHESIS_REFRESH_OVERDUE_MINUTES
-    )
+    refresher_overdue = newest_synthesis_age_min is None or newest_synthesis_age_min > SYNTHESIS_REFRESH_OVERDUE_MINUTES
     if stale_count >= STALE_CLUSTER_ALERT_MIN and refresher_overdue:
         age_note = (
             "no synthesis on record"
@@ -284,7 +282,9 @@ async def build_ops_snapshot() -> dict:
         "pipeline": pipeline,
         "stale_clusters": {
             "count": stale_count,
-            "newest_synthesis_age_min": None if newest_synthesis_age_min is None else round(newest_synthesis_age_min, 1),
+            "newest_synthesis_age_min": None
+            if newest_synthesis_age_min is None
+            else round(newest_synthesis_age_min, 1),
             "sample_cluster_ids": list(sample_ids)[:8],
         },
     }
