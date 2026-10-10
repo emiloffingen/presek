@@ -32,7 +32,12 @@ def test_extract_claims_prefers_key_facts():
 
 
 def test_chunk_articles_windows_sentences():
-    rows = [{"title": "Наслов", "full_content": "Прва реченица за настанот. Втора реченица со детали. Трета реченица за контекст. Четврта реченица за крај."}]
+    rows = [
+        {
+            "title": "Наслов",
+            "full_content": "Прва реченица за настанот. Втора реченица со детали. Трета реченица за контекст. Четврта реченица за крај.",
+        }
+    ]
     chunks = fh.chunk_articles(rows)
     assert chunks[0] == "Наслов"
     assert len(chunks) >= 2
@@ -40,7 +45,9 @@ def test_chunk_articles_windows_sentences():
 
 def test_score_identical_claim_fully_supported(monkeypatch):
     _stub_embeddings(monkeypatch, None)
-    rows = [{"title": "Скопје", "full_content": "Владата ја усвои новата мерка за субвенции во земјоделството денеска."}]
+    rows = [
+        {"title": "Скопје", "full_content": "Владата ја усвои новата мерка за субвенции во земјоделството денеска."}
+    ]
     score, unsupported = fh.score_faithfulness(
         "Владата ја усвои новата мерка за субвенции во земјоделството денеска.",
         [],
@@ -53,7 +60,9 @@ def test_score_identical_claim_fully_supported(monkeypatch):
 
 def test_score_unrelated_claim_flagged(monkeypatch):
     _stub_embeddings(monkeypatch, None)
-    rows = [{"title": "Временска прогноза", "full_content": "Утре ќе биде сончево со температура до 25 степени целзиусови."}]
+    rows = [
+        {"title": "Временска прогноза", "full_content": "Утре ќе биде сончево со температура до 25 степени целзиусови."}
+    ]
     score, unsupported = fh.score_faithfulness(
         "Претседателот поднесе оставка поради корупциски скандал со тендери.",
         [],

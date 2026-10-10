@@ -28,7 +28,9 @@ def _parse_args():
     parser.add_argument("--cluster-id", action="append", help="Restrict to specific cluster IDs.")
     parser.add_argument("--provider", help="Force a primary provider (e.g. gemini3); router default otherwise.")
     parser.add_argument("--fast", action="store_true", help="Use fast mode (shorter output).")
-    parser.add_argument("--no-force-llm", action="store_true", help="Allow deterministic fallback instead of forcing an LLM.")
+    parser.add_argument(
+        "--no-force-llm", action="store_true", help="Allow deterministic fallback instead of forcing an LLM."
+    )
     parser.add_argument("--dry-run", action="store_true", help="List targets without regenerating.")
     return parser.parse_args()
 

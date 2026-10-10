@@ -1,29 +1,31 @@
 """
 Simple security tests that don't require external dependencies.
 """
+
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
+
 
 def test_csrf_token_generation_and_validation():
     """Test CSRF token generation and validation."""
     from routes.security import generate_csrf_token, validate_csrf_token
-    
+
     print("Testing CSRF token generation and validation...")
-    
+
     # Test valid token
     token = generate_csrf_token()
     assert token is not None, "Token generation failed"
     assert ":" in token, "Token should contain colon separator"
-    
+
     # Valid token should validate
     assert validate_csrf_token(token) is True, "Valid token should pass validation"
-    
+
     # Invalid tokens should fail
     assert validate_csrf_token("invalid") is False, "Invalid token should fail"
     assert validate_csrf_token("") is False, "Empty token should fail"
     assert validate_csrf_token("no_colon_here") is False, "Token without colon should fail"
-    
+
     print("✓ CSRF token tests passed")
 
 
@@ -57,9 +59,9 @@ def test_input_validation_functions():
         validate_list_param,
         validate_string_param,
     )
-    
+
     print("Testing input validation functions...")
-    
+
     valid_cluster_id = validate_cluster_id("abc123")
     assert valid_cluster_id == "abc123", "Valid cluster ID should pass"
 
@@ -82,7 +84,7 @@ async def test_security_headers_middleware():
     from starlette.responses import JSONResponse
 
     from routes.security import SecurityHeadersMiddleware
-    
+
     print("Testing security headers middleware...")
 
     middleware = SecurityHeadersMiddleware(lambda scope, receive, send: None)
@@ -99,25 +101,25 @@ async def test_security_headers_middleware():
         return JSONResponse({"message": "test"})
 
     response = await middleware.dispatch(request, call_next)
-    
+
     # Check critical security headers
     assert "X-Content-Type-Options" in response.headers, "X-Content-Type-Options header missing"
     assert response.headers["X-Content-Type-Options"] == "nosniff", "X-Content-Type-Options should be nosniff"
-    
+
     assert "X-Frame-Options" in response.headers, "X-Frame-Options header missing"
     assert response.headers["X-Frame-Options"] == "DENY", "X-Frame-Options should be DENY"
-    
+
     assert "Strict-Transport-Security" in response.headers, "Strict-Transport-Security header missing"
-    
+
     assert "Content-Security-Policy" in response.headers, "Content-Security-Policy header missing"
     csp = response.headers["Content-Security-Policy"]
     assert "default-src 'self'" in csp, "CSP should include default-src 'self'"
     assert "script-src" in csp, "CSP should include script-src"
     assert "style-src" in csp, "CSP should include style-src"
-    
+
     assert "Referrer-Policy" in response.headers, "Referrer-Policy header missing"
     assert "Permissions-Policy" in response.headers, "Permissions-Policy header missing"
-    
+
     print("✓ Security headers middleware tests passed")
 
 
@@ -127,23 +129,25 @@ def main():
     print("PRESEK SECURITY TESTS")
     print("=" * 60)
     print()
-    
+
     try:
         test_csrf_token_generation_and_validation()
         test_jwt_token_creation_and_decoding()
         test_input_validation_functions()
         import asyncio
+
         asyncio.run(test_security_headers_middleware())
-        
+
         print()
         print("=" * 60)
         print("ALL SECURITY TESTS PASSED ✅")
         print("=" * 60)
         return True
-        
+
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

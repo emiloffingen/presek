@@ -25,16 +25,19 @@ def split_mixed_cluster(cluster_id: str, *, dry_run: bool = False) -> dict:
     if not articles:
         return {"cluster_id": cluster_id, "status": "not_found", "updates": []}
 
-    recent_articles = db.execute(
-        """
+    recent_articles = (
+        db.execute(
+            """
         SELECT title, cluster_id, created_at, category, topic, source
         FROM articles
         WHERE cluster_id != %s
         ORDER BY created_at DESC
         LIMIT %s
         """,
-        (cluster_id, CLUSTER_LOOKBACK),
-    ) or []
+            (cluster_id, CLUSTER_LOOKBACK),
+        )
+        or []
+    )
 
     updates: list[dict] = []
     touched_clusters = {cluster_id}

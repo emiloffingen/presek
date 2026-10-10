@@ -101,11 +101,7 @@ def main() -> int:
                 return 0
 
             placeholders = ", ".join(["%s"] * len(columns))
-            updates = ", ".join(
-                f"{col} = EXCLUDED.{col}"
-                for col in columns
-                if col not in ("cluster_id", "lang")
-            )
+            updates = ", ".join(f"{col} = EXCLUDED.{col}" for col in columns if col not in ("cluster_id", "lang"))
             sql = f"""
                 INSERT INTO cluster_summaries ({", ".join(columns)})
                 VALUES ({placeholders})

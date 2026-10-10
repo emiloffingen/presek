@@ -34,7 +34,7 @@ def test_simple_briefing():
     # Check if briefing was stored
     print("\n2. Checking database for generated briefing...")
     briefing = db.execute_one(
-        "SELECT lang, LENGTH(content) as length FROM daily_briefings " "WHERE date = CURRENT_DATE AND lang = 'sr'"
+        "SELECT lang, LENGTH(content) as length FROM daily_briefings WHERE date = CURRENT_DATE AND lang = 'sr'"
     )
 
     if briefing:

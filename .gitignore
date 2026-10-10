@@ -150,3 +150,7 @@ docs/tablet-mcp-setup.txt
 shared/
 shared/backups/
 shared/logs/
+
+# Generated/one-off artifacts
+fix_vulnerabilities.sh
+scratch/*.tgz

@@ -191,8 +191,6 @@ class TestDetectTopic:
         assert detect_topic(title, description=description) == "Sport"
 
 
-
-
 # ── normalize_headline ────────────────────────────────────────────
 
 
@@ -225,7 +223,6 @@ class TestNormalizeHeadline:
         assert normalize_headline("VAŽNO: Hitna sednica") == "Hitna sednica"
         assert normalize_headline("NEĆETE VEROVATI - šta se desilo") == "Šta se desilo"
 
-
     def test_strip_sources_suffix(self):
         assert normalize_headline("Naslov - 360 stepeni") == "Naslov"
         assert normalize_headline("vest | Sitel") == "Vest"
@@ -249,27 +246,26 @@ class TestNormalizeHeadline:
         # Range En-dashes
         assert normalize_headline("Od 10-15 časova") == "Od 10–15 časova"
         assert normalize_headline("Vo periodot 2024 - 2026 godina") == "Vo periodot 2024–2026 godina"
-        
+
         # Spaced En-dashes for clauses
         assert normalize_headline("Vlada - spremni sme za pregovori") == "Vlada – spremni sme za pregovori"
         assert normalize_headline("Vesti -- novi informacii") == "Vesti – novi informacii"
-        
+
         # Ellipses conversion
         assert normalize_headline("Kraj na dramata...") == "Kraj na dramata…"
         assert normalize_headline("Dali e vozmožno....") == "Dali e vozmožno…"
-        
+
         # Punctuation spacing (no space before, space after)
         assert normalize_headline("Ova e najvažno , veli toj .") == "Ova e najvažno, veli toj."
         assert normalize_headline("Dali e ova kraj?Da.") == "Dali e ova kraj? Da."
-        
+
         # Multiplication sign
         assert normalize_headline("Stan od 3x4 metri") == "Stan od 3 × 4 metri"
         assert normalize_headline("Rezultat 5 * 6") == "Rezultat 5 × 6"
-        
+
         # Quote compatibility and protection of apostrophes
         assert normalize_headline("D'Onofrio don't go") == "D'Onofrio don't go"
         assert normalize_headline('Veli: "Ova e „najvažno“"') == "„Ova e „najvažno““"
-
 
     def test_restores_known_person_and_political_bloc_casing(self):
         title = (
@@ -277,7 +273,7 @@ class TestNormalizeHeadline:
         )
         # 'Manasievski:' is stripped because it matches the prefix regex
         assert normalize_headline(title) == (
-            "SDSM stana servis za interesite na Srpskata opozicija, " "Basanovic i Zaev im krojat politikite"
+            "SDSM stana servis za interesite na Srpskata opozicija, Basanovic i Zaev im krojat politikite"
         )
 
     def test_restores_known_country_casing(self):

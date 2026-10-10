@@ -48,7 +48,10 @@ def test_normalize_perspectives_filters_leaked_json_keys():
         "verification_report': {",
         "agreements': [",
         {"angle": "verification_report", "content": "some text"},
-        {"angle": "valid", "content": "this has agreements in the middle of standard text but we filter it to be safe."}
+        {
+            "angle": "valid",
+            "content": "this has agreements in the middle of standard text but we filter it to be safe.",
+        },
     ]
     result = normalize_perspectives(raw)
     assert len(result) == 1

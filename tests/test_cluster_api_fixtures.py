@@ -35,5 +35,3 @@ def test_cluster_trust_summary_fixture_matches_builder():
     for key in ("score", "tier", "label", "detail", "sources_count", "pluralism_score"):
         assert key in rebuilt
     assert rebuilt["tier"] == trust["tier"]
-
-

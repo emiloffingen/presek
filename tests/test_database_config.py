@@ -12,7 +12,8 @@ def test_prepared_statements_disabled_for_pooler_dsn(monkeypatch):
 
     monkeypatch.delenv("PRESEK_PREPARED_STATEMENTS", raising=False)
     monkeypatch.setattr(
-        db, "DATABASE_URL",
+        db,
+        "DATABASE_URL",
         "postgresql://u:p@aws-0-eu-north-1.pooler.supabase.com:6543/postgres",
     )
     assert db._use_server_side_prepared_statements() is False
@@ -31,7 +32,8 @@ def test_prepared_statements_env_override(monkeypatch):
     import core.database as db
 
     monkeypatch.setattr(
-        db, "DATABASE_URL",
+        db,
+        "DATABASE_URL",
         "postgresql://u:p@aws-0-eu-north-1.pooler.supabase.com:6543/postgres",
     )
     monkeypatch.setenv("PRESEK_PREPARED_STATEMENTS", "1")

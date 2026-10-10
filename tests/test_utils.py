@@ -704,7 +704,7 @@ def test_event_stream_yields_published_events():
                     "type": "message",
                     "pattern": None,
                     "channel": b"updates",
-                    "data": '{"type": "new_article", "title": "Test Title"}'
+                    "data": '{"type": "new_article", "title": "Test Title"}',
                 }
             return None
 
@@ -730,4 +730,3 @@ def test_event_stream_yields_published_events():
     assert "data: {" in first
     assert "Test Title" in first
     assert pubsub.closed is True
-

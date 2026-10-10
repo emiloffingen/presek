@@ -99,9 +99,7 @@ def test_generate_cluster_audio_passes_plain_text(monkeypatch, tmp_path):
 
     monkeypatch.setattr(audio, "_synthesize_async", fake_synth_async)
 
-    url = audio.AudioService.generate_cluster_audio(
-        "cluster123", "Прва реченица. Втора реченица со 30% раст.", "mk"
-    )
+    url = audio.AudioService.generate_cluster_audio("cluster123", "Прва реченица. Втора реченица со 30% раст.", "mk")
 
     assert url and url.endswith(".mp3")
     assert "<" not in seen["text"] and ">" not in seen["text"]

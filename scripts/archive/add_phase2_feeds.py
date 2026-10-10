@@ -134,15 +134,15 @@ PHASE2_FEEDS = [
         "category": "Kultura",
         "language": "mk",
         "credibility": 0.85,
-    }
+    },
 ]
+
 
 def verify_feed_url(url, name):
     """Perform a live HTTP request to verify if the RSS feed is reachable."""
     print(f"Verifying reachability for '{name}'...")
     req = urllib.request.Request(
-        url, 
-        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekCrawler/3.0'}
+        url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PresekCrawler/3.0"}
     )
     try:
         with urllib.request.urlopen(req, timeout=8) as response:
@@ -167,12 +167,13 @@ def verify_feed_url(url, name):
         print(f"  ❌ '{name}' failed with exception: {e}")
         return False
 
+
 def seed_feeds():
     print(f"Starting Phase 2 category seeding of {len(PHASE2_FEEDS)} sources...")
-    
+
     added_sources = 0
     added_feeds = 0
-    
+
     for f in PHASE2_FEEDS:
         name = f["name"]
         url = f["url"]
@@ -180,13 +181,13 @@ def seed_feeds():
         category = f["category"]
         language = f["language"]
         credibility = f["credibility"]
-        
+
         # Verify the feed live before inserting
         is_valid = verify_feed_url(url, name)
         if not is_valid:
             print(f"  ⚠️ Skipping '{name}' due to verification failure.")
             continue
-            
+
         # 1. Seed 'sources' table
         source_exists = db.execute_one("SELECT name FROM sources WHERE name = %s", (name,))
         if not source_exists:
@@ -196,7 +197,7 @@ def seed_feeds():
                 VALUES (%s, %s, %s, %s, %s, %s, TRUE)
                 """,
                 (name, url, country, category, language, credibility),
-                fetch=False
+                fetch=False,
             )
             print(f"  + Seeded source metadata: {name} (Country: {country}, Cat: {category})")
             added_sources += 1
@@ -208,10 +209,10 @@ def seed_feeds():
                 WHERE name = %s
                 """,
                 (url, country, category, language, credibility, name),
-                fetch=False
+                fetch=False,
             )
             print(f"  . Updated source metadata: {name}")
-            
+
         # 2. Seed 'feed_sources' table
         feed_exists = db.execute_one("SELECT name FROM feed_sources WHERE name = %s", (name,))
         if not feed_exists:
@@ -221,7 +222,7 @@ def seed_feeds():
                 VALUES (%s, %s, %s, TRUE)
                 """,
                 (name, url, category),
-                fetch=False
+                fetch=False,
             )
             print(f"  + Seeded feed source: {name} ({url})")
             added_feeds += 1
@@ -233,11 +234,12 @@ def seed_feeds():
                 WHERE name = %s
                 """,
                 (url, category, name),
-                fetch=False
+                fetch=False,
             )
             print(f"  . Updated feed source: {name}")
 
     print(f"\nSeeding complete! Successfully added {added_sources} sources and {added_feeds} active feeds.")
+
 
 if __name__ == "__main__":
     seed_feeds()

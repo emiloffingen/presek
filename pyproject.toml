@@ -121,6 +121,7 @@ line-length = 120
 "tasks/*.py" = ["E402"]
 "migrations/*.py" = ["E402"]
 "scripts/*.py" = ["E402"]
+"scratch/*.py" = ["E402"]
 # tasks/intelligence stubs re-export shared constants via `from ... import *`
 "tasks/intelligence/_queue.py" = ["F403", "F405"]
 "tasks/intelligence/backfill.py" = ["F403", "F405"]
