@@ -79,6 +79,10 @@ jobs:
         working-directory: web
         run: node --test 'src/**/*.test.mjs'
 
+      - name: Build and enforce bundle budget
+        working-directory: web
+        run: npm run analyze:ci
+
       - name: Audit dependencies (fail on high+)
         working-directory: web
         run: npm audit --audit-level=high
