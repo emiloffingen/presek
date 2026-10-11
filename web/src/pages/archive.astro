@@ -376,7 +376,7 @@ function formatBriefingItem(item: string) {
                             <div class="otd-content group">
                                 {onThisDay.image && (
                                     <div class="mb-4 overflow-hidden rounded-none">
-                                        <img src={onThisDay.image} alt="" class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
+                                        <img src={onThisDay.image} alt={onThisDay.title} class="w-full aspect-video object-cover transition-transform group-hover:scale-105 duration-700" />
                                     </div>
                                 )}
                                 <a href={localePath(`/cluster/${onThisDay.cluster_id}`, lang, hostHeader)} class="block group">

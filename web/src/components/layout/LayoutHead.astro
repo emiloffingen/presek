@@ -77,6 +77,7 @@ const ClientRouterAny = ClientRouter as any;
 <link rel="canonical" href={canonicalUrl} />
 <link rel="alternate" hreflang="mk-MK" href={canonicalUrl} />
 <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+<link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href="/rss.xml" />
 
 {image && !image.includes('presek_emblem') && (
   <link rel="preload" as="image" href={imageUrl} fetchpriority="high" />
