@@ -1148,22 +1148,27 @@ def prune_db():
 
     interval = f"{int(DB_RETAIN_DAYS)} days"
     failed_interval = f"{int(DB_RETAIN_FAILED_TASKS_DAYS)} days"
+    # NOTE: Postgres does not accept a bare parameter as an INTERVAL operand
+    # (INTERVAL $1 is a syntax error), so cast the parameter instead.
+    # Statements run one per execute(): the driver rejects multi-statement
+    # strings carrying parameters.
     # Delete old articles
     db_manager.execute(
-        "DELETE FROM articles WHERE created_at < NOW() - INTERVAL %s",
+        "DELETE FROM articles WHERE created_at < NOW() - %s::interval",
         (interval,),
         fetch=False,
     )
 
     # Clean up orphaned metadata/summaries efficiently using NOT EXISTS
+    for orphan_cleanup in (
+        "DELETE FROM cluster_summaries cs WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cs.cluster_id)",
+        "DELETE FROM cluster_metadata cm WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cm.cluster_id)",
+        "DELETE FROM cluster_entities ce WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = ce.cluster_id)",
+        "DELETE FROM reactions r WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = r.cluster_id)",
+    ):
+        db_manager.execute(orphan_cleanup, fetch=False)
     db_manager.execute(
-        """
-        DELETE FROM cluster_summaries cs WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cs.cluster_id);
-        DELETE FROM cluster_metadata cm WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = cm.cluster_id);
-        DELETE FROM cluster_entities ce WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = ce.cluster_id);
-        DELETE FROM reactions r WHERE NOT EXISTS (SELECT 1 FROM articles a WHERE a.cluster_id = r.cluster_id);
-        DELETE FROM failed_tasks WHERE created_at < NOW() - INTERVAL %s;
-    """,
+        "DELETE FROM failed_tasks WHERE created_at < NOW() - %s::interval",
         (failed_interval,),
         fetch=False,
     )
