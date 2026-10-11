@@ -41,7 +41,7 @@ const sourceCount = (cluster: NewsCluster) => Number(
 const articleCount = (cluster: NewsCluster) => Math.max(cluster.articles?.length || 0, sourceCount(cluster));
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const clusterMeta = (cluster: NewsCluster) =>
-    `${plural(articleCount(cluster), 'напис', 'написи')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
+    `${plural(articleCount(cluster), 'вест', 'вести')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
 const sectionLabel = (raw: unknown) => {
     const value = String(raw || '').trim();
     if (!value) return '';
@@ -122,7 +122,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         <div class="bs-breakdown">
                             <div class="bs-breakdown-head">
                                 <strong>Пресек на изворите</strong>
-                                <span><span class="bs-num">{lead.articles}</span> {lead.articles === 1 ? 'напис' : 'написи'} · <span class="bs-num">{lead.sources}</span> {lead.sources === 1 ? 'извор' : 'извори'}</span>
+                                <span><span class="bs-num">{lead.articles}</span> {lead.articles === 1 ? 'вест' : 'вести'} · <span class="bs-num">{lead.sources}</span> {lead.sources === 1 ? 'извор' : 'извори'}</span>
                             </div>
                             <div class="bs-bar" aria-hidden="true">
                                 {lead.breakdown.map((part, i) => <span class={`bs-bar-${i}`} style={`flex:${part.count}`}></span>)}
@@ -136,7 +136,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                     )}
                     <div class="bs-actions">
                         <a href={lead.href} class="bs-btn">Прочитај ја синтезата</a>
-                        {lead.articles > 1 && <a href={`${lead.href}#cluster-sources`} class="bs-btn bs-btn-outline">Сите {lead.articles} написи</a>}
+                        {lead.articles > 1 && <a href={`${lead.href}#cluster-sources`} class="bs-btn bs-btn-outline">Сите {lead.articles} вести</a>}
                     </div>
                 </article>
 
