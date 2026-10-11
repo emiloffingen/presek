@@ -32,6 +32,7 @@ _PROVIDER_COOLDOWN_UNTIL: dict[str, float] = {}
 # enforce a floor per provider.
 PROVIDER_MIN_MAX_TOKENS: dict[str, int] = {
     "groq": int(os.environ.get("GROQ_MIN_MAX_TOKENS", "600")),
+    "gemini3": int(os.environ.get("GEMINI3_MIN_MAX_TOKENS", "600")),
 }
 
 
@@ -76,11 +77,38 @@ def _provider_cooldown_remaining(provider_name: str) -> float:
     return max(0.0, _PROVIDER_COOLDOWN_UNTIL.get(provider_name, 0.0) - time.time())
 
 
-def _mark_provider_cooldown(provider_name: str, retry_after: str | None = None):
+def _parse_retry_delay(text: str | None, default: int = 300) -> int:
+    """Extract 'try again in Xs' / Retry-After from provider error text.
+
+    Groq returns e.g. 'Please try again in 8.7s' in the 429 body without a
+    Retry-After header. Using the server hint (+ small buffer) stops the
+    hot-loop that hammered TPM limits every few seconds.
+    """
+    if not text:
+        return default
     try:
-        cooldown_seconds = int(retry_after) if retry_after else PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS
-    except (TypeError, ValueError):
-        cooldown_seconds = PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS
+        m = re.search(r"try again in\s+([0-9]+(?:\.[0-9]+)?)\s*s", text, re.IGNORECASE)
+        if m:
+            return max(1, int(float(m.group(1)) + 5))
+        m = re.search(r"retry-?after[:\s]+([0-9]+)", text, re.IGNORECASE)
+        if m:
+            return max(1, int(m.group(1)))
+    except Exception:  # noqa: BLE001 - best-effort parse, fall back to default
+        pass
+    return default
+
+
+def _mark_provider_cooldown(provider_name: str, retry_after: str | int | float | None = None):
+    # Groq TPM bans need a longer floor: a 5s hint just re-triggers 429.
+    floor = 120 if provider_name == "groq" else 1
+    if isinstance(retry_after, (int, float)):
+        cooldown_seconds = int(retry_after)
+    else:
+        try:
+            cooldown_seconds = int(retry_after) if retry_after else PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS
+        except (TypeError, ValueError):
+            cooldown_seconds = _parse_retry_delay(str(retry_after), PROVIDER_RATE_LIMIT_COOLDOWN_SECONDS)
+    cooldown_seconds = max(floor, cooldown_seconds)
     _PROVIDER_COOLDOWN_UNTIL[provider_name] = time.time() + max(1, cooldown_seconds)
 
 
@@ -327,7 +355,7 @@ class OpenAICompatibleProvider(AIProvider):
             # gpt-oss reasoning models also need the full budget visible.
             payload["max_completion_tokens"] = _effective_max_tokens(self.provider_name, max_tokens)
         else:
-            payload["max_tokens"] = max_tokens
+            payload["max_tokens"] = _effective_max_tokens(self.provider_name, max_tokens)
         if json_mode or response_schema:
             payload["response_format"] = {"type": "json_object"}
             # Groq (and OpenAI) reject json_object mode with a 400 unless the word
@@ -367,7 +395,8 @@ class OpenAICompatibleProvider(AIProvider):
             except Exception:  # noqa: BLE001 - best-effort error body for logs
                 body = ""
             if code == 429:
-                _mark_provider_cooldown(self.provider_name, e.response.headers.get("Retry-After"))
+                hint = e.response.headers.get("Retry-After") or _parse_retry_delay(body, 300)
+                _mark_provider_cooldown(self.provider_name, hint)
             elif code == 400 and self.provider_name == "groq":
                 # Broken params hot-loop without cooldown: pause briefly so the
                 # cascade can try the next provider instead of hammering 400s.
@@ -640,7 +669,7 @@ PROVIDERS = {
     ),
     "gemini3": Gemini3Provider(
         api_key=os.environ.get("GEMINI3_API_KEY", ""),
-        model=os.environ.get("GEMINI3_MODEL", "gemini-3.5-flash-lite"),
+        model=os.environ.get("GEMINI3_MODEL", "gemini-3.6-flash"),
     ),
     "groq": GroqProvider(
         api_key=os.environ.get("GROQ_API_KEY", ""),
@@ -895,9 +924,10 @@ async def _call_ai_async(
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
             if "429" in str(e):
-                _mark_provider_cooldown(provider_name)
-                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off...")
-                await asyncio.sleep(2)
+                delay = _parse_retry_delay(str(e)[:2000])
+                _mark_provider_cooldown(provider_name, delay)
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off {delay}s...")
+                await asyncio.sleep(min(delay, 30))
 
             continue
 
@@ -977,9 +1007,10 @@ def _call_ai(
             log.error(f"[ai/cascade] Provider {provider_name} failed: {e}")
 
             if "429" in str(e):
-                _mark_provider_cooldown(provider_name)
-                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off...")
-                time.sleep(2)
+                delay = _parse_retry_delay(str(e)[:2000])
+                _mark_provider_cooldown(provider_name, delay)
+                log.info(f"[ai/cascade] Rate limit hit for {provider_name}, backing off {delay}s...")
+                time.sleep(min(delay, 30))
 
             continue
 

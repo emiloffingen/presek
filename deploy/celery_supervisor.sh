@@ -52,8 +52,25 @@ ensure_pgbouncer() {
 }
 
 log "celery supervisor started (interval ${INTERVAL}s, concurrency ${CONCURRENCY})"
+rotate_if_big() {
+  # Size-based rotation: copytruncate equivalent without logrotate/cron.
+  # Keeps last ~2000 lines so a runaway warning loop (e.g. Groq 429) can't
+  # fill the disk between deploys. 20MB threshold, .1 backup kept.
+  local f="$1" max_bytes=20971520
+  [ -f "$f" ] || return 0
+  local size
+  size=$(wc -c < "$f" 2>/dev/null) || return 0
+  if [ "$size" -gt "$max_bytes" ]; then
+    log "rotating $f (${size} bytes)"
+    tail -n 2000 "$f" > "$f.tmp" 2>/dev/null && cat "$f.tmp" > "$f" && rm -f "$f.tmp"
+  fi
+}
 while true; do
   ensure_pgbouncer
+  rotate_if_big "$APP_DIR/logs/fastapi.out"
+  rotate_if_big "$APP_DIR/logs/worker.log"
+  rotate_if_big "$APP_DIR/logs/cloudflared.log"
+  rotate_if_big "$APP_DIR/logs/fastapi.log"
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
     ( exec 9>&-; redis-server --daemonize yes --bind "127.0.0.1 -::1" --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )

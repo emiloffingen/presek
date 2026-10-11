@@ -491,34 +491,49 @@ class AsyncDatabaseManager:
 
     async def execute(self, sql, params=None, fetch=True, read_only=None, timeout_ms=None):
         await self._ensure_pool()
-        try:
-            if read_only is None:
-                cleaned_sql = sql.strip().upper()
-                read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
+        last_exc = None
+        for attempt in range(2):
+            try:
+                if read_only is None:
+                    cleaned_sql = sql.strip().upper()
+                    read_only = any(cleaned_sql.startswith(prefix) for prefix in ("SELECT", "WITH", "SHOW", "EXPLAIN"))
 
-            read_pool = getattr(self, "_read_pool", None)
-            selected_read_pool = await _select_read_pool_async(read_only, read_pool)
-            pool = selected_read_pool if selected_read_pool is not None else self._pool
-            used_replica = pool is read_pool and read_pool is not None
-            _record_db_query(read_only=read_only, used_replica=used_replica)
-            if used_replica:
-                log.debug(f"Routing async query to read replica pool: {sql[:100]}")
-            async with pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    if timeout_ms:
-                        # Transaction-local, so it never leaks into the pooled connection;
-                        # Postgres cancels the statement itself instead of leaving it running.
-                        await cur.execute("SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),))
-                    await cur.execute(sql, params)
-                    if fetch:
-                        rows = await cur.fetchall()
+                read_pool = getattr(self, "_read_pool", None)
+                selected_read_pool = await _select_read_pool_async(read_only, read_pool)
+                pool = selected_read_pool if selected_read_pool is not None else self._pool
+                used_replica = pool is read_pool and read_pool is not None
+                _record_db_query(read_only=read_only, used_replica=used_replica)
+                if used_replica:
+                    log.debug(f"Routing async query to read replica pool: {sql[:100]}")
+                async with pool.connection() as conn:
+                    async with conn.cursor() as cur:
+                        if timeout_ms:
+                            # Transaction-local, so it never leaks into the pooled connection;
+                            # Postgres cancels the statement itself instead of leaving it running.
+                            await cur.execute("SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),))
+                        await cur.execute(sql, params)
+                        if fetch:
+                            rows = await cur.fetchall()
+                            await conn.commit()
+                            return rows
                         await conn.commit()
-                        return rows
-                    await conn.commit()
-                    return cur.rowcount
-        except Exception as e:
-            log.error(f"Presek {APP_VERSION_LABEL} Async DB Error: {e}")
-            raise
+                        return cur.rowcount
+            except Exception as e:
+                last_exc = e
+                msg = str(e)
+                transient = (
+                    "couldn't get a connection" in msg
+                    or "server closed the connection" in msg
+                    or "consuming input failed" in msg
+                    or "connection" in msg.lower() and "timeout" in msg.lower()
+                )
+                if transient and attempt == 0:
+                    log.warning(f"Presek {APP_VERSION_LABEL} Async DB transient, retrying: {e}")
+                    await asyncio.sleep(1)
+                    continue
+                log.error(f"Presek {APP_VERSION_LABEL} Async DB Error: {e}")
+                raise
+        raise last_exc
 
     async def execute_one(self, sql, params=None, read_only=None):
         results = await self.execute(sql, params, read_only=read_only)
