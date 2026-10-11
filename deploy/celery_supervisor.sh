@@ -14,6 +14,9 @@ LOG="$APP_DIR/logs/celery_supervisor.log"
 LOCK="$APP_DIR/logs/.celery_supervisor.lock"
 INTERVAL="${CELERY_SUPERVISOR_INTERVAL:-60}"
 CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
+# Must stay in sync with core/celery_app.py task_queues (and presek_watchdog.sh
+# CELERY_QUEUES). Explicit so a respawned worker can never silently drop a queue.
+QUEUES="${CELERY_QUEUES:-celery,ingestion,ingestion-crawl,fast-track,synthesis,intel-heavy,delivery,maintenance}"
 REDIS_PASS="$(sed -n 's%^REDIS_URL=redis://:\([^@]*\)@.*%\1%p' "$APP_DIR/.env" 2>/dev/null | head -1)"
 mkdir -p "$(dirname "$LOG")"
 
@@ -22,7 +25,7 @@ flock -n 9 || exit 0
 
 log() { echo "[$(date '+%F %T')] $*" >> "$LOG"; }
 
-cmd_worker="exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=$CONCURRENCY --logfile=$APP_DIR/logs/worker.log"
+cmd_worker="exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=$CONCURRENCY --queues=$QUEUES --logfile=$APP_DIR/logs/worker.log"
 cmd_beat="exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$APP_DIR/logs/beat.log"
 
 spawn() {
