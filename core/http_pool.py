@@ -23,7 +23,7 @@ import atexit
 import os
 import threading
 from contextlib import asynccontextmanager, contextmanager
-from typing import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import httpx
 

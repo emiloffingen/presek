@@ -48,19 +48,19 @@ class AdminToken:
     scope: str
     expires_at: datetime.datetime
     created_at: datetime.datetime
-    revoked_at: Optional[datetime.datetime] = None
-    last_used_at: Optional[datetime.datetime] = None
+    revoked_at: datetime.datetime | None = None
+    last_used_at: datetime.datetime | None = None
 
     @property
     def is_active(self) -> bool:
         """Check if token is active (not revoked and not expired)."""
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         return not self.revoked_at and self.expires_at > now
 
     @property
     def is_expired(self) -> bool:
         """Check if token has expired."""
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         return self.expires_at <= now
 
 
@@ -136,9 +136,9 @@ def _generate_token_id() -> str:
 def create_admin_token(
     subject: str = "admin",
     scope: str = "full-access",
-    expiry_hours: Optional[int] = None,
-    additional_claims: Optional[Dict] = None,
-) -> Tuple[str, AdminToken]:
+    expiry_hours: int | None = None,
+    additional_claims: dict | None = None,
+) -> tuple[str, AdminToken]:
     """
     Create a new admin token with the specified parameters.
 
@@ -160,7 +160,7 @@ def create_admin_token(
         raise ValueError("Token expiry must be at least 1 hour")
 
     # Generate token
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     expires_at = now + datetime.timedelta(hours=expiry_hours)
 
     token_id = _generate_token_id()
@@ -222,7 +222,7 @@ def create_admin_token(
     return token, admin_token
 
 
-def verify_admin_token(token: str) -> Optional[AdminToken]:
+def verify_admin_token(token: str) -> AdminToken | None:
     """
     Verify an admin token and return its metadata if valid.
 
@@ -283,7 +283,7 @@ def verify_admin_token(token: str) -> Optional[AdminToken]:
                 SET last_used_at = %s
                 WHERE token_id = %s
                 """,
-                (datetime.datetime.now(datetime.timezone.utc), token_id),
+                (datetime.datetime.now(datetime.UTC), token_id),
             )
         except Exception as e:
             log.warning(f"Failed to update last_used_at for token {token_id}: {e}")
@@ -319,7 +319,7 @@ def revoke_admin_token(token_id: str) -> bool:
             WHERE token_id = %s AND revoked_at IS NULL
             RETURNING token_id
             """,
-            (datetime.datetime.now(datetime.timezone.utc), token_id),
+            (datetime.datetime.now(datetime.UTC), token_id),
         )
 
         if result:
@@ -350,7 +350,7 @@ def revoke_all_tokens_for_subject(subject: str) -> int:
             WHERE subject = %s AND revoked_at IS NULL
             RETURNING token_id
             """,
-            (datetime.datetime.now(datetime.timezone.utc), subject),
+            (datetime.datetime.now(datetime.UTC), subject),
         )
 
         revoked_count = len(result) if result else 0
@@ -361,7 +361,7 @@ def revoke_all_tokens_for_subject(subject: str) -> int:
         return 0
 
 
-def list_active_admin_tokens() -> List[AdminToken]:
+def list_active_admin_tokens() -> list[AdminToken]:
     """
     List all active (non-revoked, non-expired) admin tokens.
 
@@ -369,7 +369,7 @@ def list_active_admin_tokens() -> List[AdminToken]:
         List of active AdminToken objects
     """
     try:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         rows = db.execute(
             """
             SELECT token_id, token_hash, subject, scope, 
@@ -402,7 +402,7 @@ def cleanup_expired_tokens() -> int:
         Number of tokens cleaned up
     """
     try:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         result = db.execute(
             """
             DELETE FROM admin_tokens 

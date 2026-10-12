@@ -48,7 +48,7 @@ class QueueMonitor:
         self.queue_history = []
         self.max_history = 100
 
-    def get_queue_stats(self) -> List[QueueStats]:
+    def get_queue_stats(self) -> list[QueueStats]:
         """Get current queue statistics."""
         try:
             inspector = celery_app.control.inspect()
@@ -124,7 +124,7 @@ class QueueMonitor:
         stats = self.get_queue_stats()
         return sum(queue.total for queue in stats)
 
-    def check_queue_health(self) -> Dict[str, Any]:
+    def check_queue_health(self) -> dict[str, Any]:
         """Check overall queue health."""
         stats = self.get_queue_stats()
         total_depth = self.get_total_queue_depth()
@@ -163,7 +163,7 @@ class QueueMonitor:
         health = self.check_queue_health()
         return health["status"] in ["warning", "critical"]
 
-    def get_scaling_recommendation(self) -> Dict[str, Any]:
+    def get_scaling_recommendation(self) -> dict[str, Any]:
         """Get worker scaling recommendation."""
         health = self.check_queue_health()
 
@@ -243,12 +243,12 @@ def get_queue_monitor() -> QueueMonitor:
     return _queue_monitor
 
 
-def get_current_queue_stats() -> List[QueueStats]:
+def get_current_queue_stats() -> list[QueueStats]:
     """Get current queue statistics."""
     return _queue_monitor.get_queue_stats()
 
 
-def check_queue_health() -> Dict[str, Any]:
+def check_queue_health() -> dict[str, Any]:
     """Check queue health."""
     return _queue_monitor.check_queue_health()
 
@@ -258,7 +258,7 @@ def get_total_queue_depth() -> int:
     return _queue_monitor.get_total_queue_depth()
 
 
-def get_scaling_recommendation() -> Dict[str, Any]:
+def get_scaling_recommendation() -> dict[str, Any]:
     """Get worker scaling recommendation."""
     return _queue_monitor.get_scaling_recommendation()
 
@@ -295,7 +295,7 @@ class QueuePerformanceMonitor:
         if len(self.task_history) > self.max_history:
             self.task_history = self.task_history[-self.max_history :]
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         if not self.task_history:
             return {
@@ -330,13 +330,13 @@ def record_task_execution(task_name: str, queue: str, execution_time: float):
     _queue_perf_monitor.record_task_execution(task_name, queue, execution_time)
 
 
-def get_queue_performance_stats() -> Dict[str, Any]:
+def get_queue_performance_stats() -> dict[str, Any]:
     """Get queue performance statistics."""
     return _queue_perf_monitor.get_performance_stats()
 
 
 # Queue health endpoint
-def get_queue_health() -> Dict[str, Any]:
+def get_queue_health() -> dict[str, Any]:
     """Get comprehensive queue health information."""
     queue_health = check_queue_health()
     perf_stats = get_queue_performance_stats()
@@ -391,7 +391,7 @@ init_queue_monitoring()
 
 
 # Queue monitoring utilities for admin interface
-def get_queue_monitoring_summary() -> Dict[str, Any]:
+def get_queue_monitoring_summary() -> dict[str, Any]:
     """Get a summary of queue monitoring status."""
     health = check_queue_health()
 
@@ -406,7 +406,7 @@ def get_queue_monitoring_summary() -> Dict[str, Any]:
 
 
 # Alerting system for queue monitoring
-def check_queue_alerts() -> List[Dict[str, Any]]:
+def check_queue_alerts() -> list[dict[str, Any]]:
     """Check for queue alerts that need attention."""
     alerts = []
     health = check_queue_health()

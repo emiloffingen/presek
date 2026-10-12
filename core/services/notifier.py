@@ -12,7 +12,7 @@ log = logging.getLogger("presek")
 
 class SystemNotifier:
     @staticmethod
-    def send_alert(alert_type: str, message: str, context: Optional[dict] = None):
+    def send_alert(alert_type: str, message: str, context: dict | None = None):
         """Send a notification through configured channels."""
         # Log the error initially as a baseline alert
         full_msg = f"[ALERT][{alert_type}] {message} | Context: {context or {}}"

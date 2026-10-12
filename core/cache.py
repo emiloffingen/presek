@@ -3,7 +3,8 @@ Redis Cache Utility for Presek
 """
 
 import json
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 import redis
 from fastapi import Request
@@ -15,7 +16,7 @@ class RedisCache:
     def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
         self.redis = redis.Redis(host=host, port=port, db=db, decode_responses=True)
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str | None:
         """Get value from cache"""
         return self.redis.get(key)
 

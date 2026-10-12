@@ -164,7 +164,7 @@ def _normalize_alert_context(context):
 
 def _next_alert_context(existing_context, candidate):
     context = _normalize_alert_context(existing_context)
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    now = datetime.datetime.now(datetime.UTC).isoformat()
     for key in candidate["throttle_keys"]:
         context[key] = now
     return context

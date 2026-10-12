@@ -672,7 +672,7 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     return None
 
 
-async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dict[str, Any]]) -> int:
+async def fill_missing_og_images(client: httpx.AsyncClient, candidates: list[dict[str, Any]]) -> int:
     """Backfill missing article images using og:image with bounded concurrency."""
     no_image = []
     skipped_domains = 0
@@ -701,7 +701,7 @@ async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dic
     log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
     semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
 
-    async def _fetch(candidate: Dict[str, Any]) -> str | None:
+    async def _fetch(candidate: dict[str, Any]) -> str | None:
         async with semaphore:
             return await fetch_og_image(client, candidate["link"])
 
@@ -716,7 +716,7 @@ async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dic
     return filled
 
 
-async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
+async def fetch_feed_async(client: httpx.AsyncClient, source: dict[str, Any]) -> tuple[str, list[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed with retry logic."""
     name = source["name"]
     url = source["url"]

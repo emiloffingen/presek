@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -48,10 +48,10 @@ router = APIRouter()
 
 class QuoteOfTheDay(BaseModel):
     quote: str
-    summary: Optional[str] = None
-    generated_article: Optional[str] = None
-    cluster_id: Optional[str] = None
-    title: Optional[str] = None
+    summary: str | None = None
+    generated_article: str | None = None
+    cluster_id: str | None = None
+    title: str | None = None
 
 
 class StatsSummaryResponse(BaseModel):
@@ -60,8 +60,8 @@ class StatsSummaryResponse(BaseModel):
     last_1h: int
     total_feeds: int
     total_clusters: int
-    quote_of_the_day: Optional[QuoteOfTheDay] = None
-    intelligence: Dict[str, Any]
+    quote_of_the_day: QuoteOfTheDay | None = None
+    intelligence: dict[str, Any]
 
 
 _FRESHNESS_EXPR = "COALESCE(ingested_at, created_at)"
@@ -527,7 +527,7 @@ async def get_stats_route():
 
 
 @router.get("/stats/summary", response_model=StatsSummaryResponse)
-async def get_stats_summary(lang: Optional[str] = DEFAULT_LANG):
+async def get_stats_summary(lang: str | None = DEFAULT_LANG):
     cache_key = f"api:stats:summary:v4:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -588,10 +588,10 @@ async def get_stats_summary(lang: Optional[str] = DEFAULT_LANG):
     try:
         hgetall = redis_client.hgetall
         if hgetall.__class__.__module__.startswith("unittest.mock"):
-            bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            bucket = datetime.now(UTC).strftime("%Y-%m-%d")
             runtime_events = hgetall(f"presek:runtime_events:{bucket}") or {}
         elif os.environ.get("REDIS_URL") and not os.environ.get("CODEX_SANDBOX_NETWORK_DISABLED"):
-            bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            bucket = datetime.now(UTC).strftime("%Y-%m-%d")
             runtime_events = await asyncio.to_thread(hgetall, f"presek:runtime_events:{bucket}") or {}
     except Exception as e:
         log.warning(f"[stats] runtime event read failed: {e}")
@@ -1077,7 +1077,7 @@ async def control_source_route(name: str, request: Request, csrf_valid: bool = D
 
 
 @router.get("/stats/sentiment-trends")
-async def get_sentiment_trends(lang: Optional[str] = DEFAULT_LANG):
+async def get_sentiment_trends(lang: str | None = DEFAULT_LANG):
     """Returns average sentiment and tone analysis for the last 7 days, filtered by language."""
     cache_key = f"api:stats:sentiment:trends:v2:{lang}"
     cached = cached_response(cache_key, ttl=1800)
@@ -1134,7 +1134,7 @@ async def get_sentiment_trends(lang: Optional[str] = DEFAULT_LANG):
 
 
 @router.get("/stats/mood")
-async def get_current_mood(lang: Optional[str] = DEFAULT_LANG):
+async def get_current_mood(lang: str | None = DEFAULT_LANG):
     """Returns a real-time 'National Mood' based on today's coverage, filtered by language."""
     cache_key = f"api:stats:mood:v2:{lang}"
     cached = cached_response(cache_key, ttl=600)

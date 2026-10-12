@@ -20,15 +20,15 @@ from .subscribers import _cluster_delivery_match, _normalize_synced_profile_for_
 def _load_recent_breaking_clusters(hours=4, limit=24):
     from .briefing import _load_daily_brief_clusters
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     ranked = []
     for cluster in _load_daily_brief_clusters(limit=limit):
         created_at = _parse_row_datetime(cluster.get("created_at"))
         if created_at is None:
             continue
         if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=datetime.timezone.utc)
-        age_hours = (now - created_at.astimezone(datetime.timezone.utc)).total_seconds() / 3600.0
+            created_at = created_at.replace(tzinfo=datetime.UTC)
+        age_hours = (now - created_at.astimezone(datetime.UTC)).total_seconds() / 3600.0
         if age_hours > hours:
             continue
         if float(cluster.get("score") or 0) < BREAKING_SCORE_THRESHOLD:
@@ -184,11 +184,11 @@ def _classify_alert_candidate(
 
 def _alert_throttled(last_breaking_sent_at, alert_context, candidate):
     last_global = _parse_row_datetime(last_breaking_sent_at)
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     if last_global:
         if last_global.tzinfo is None:
-            last_global = last_global.replace(tzinfo=datetime.timezone.utc)
-        if (now - last_global.astimezone(datetime.timezone.utc)).total_seconds() / 60.0 < candidate["min_gap_minutes"]:
+            last_global = last_global.replace(tzinfo=datetime.UTC)
+        if (now - last_global.astimezone(datetime.UTC)).total_seconds() / 60.0 < candidate["min_gap_minutes"]:
             return True
     context = _normalize_alert_context(alert_context)
     for key in candidate["throttle_keys"]:
@@ -196,8 +196,8 @@ def _alert_throttled(last_breaking_sent_at, alert_context, candidate):
         if not last_value:
             continue
         if last_value.tzinfo is None:
-            last_value = last_value.replace(tzinfo=datetime.timezone.utc)
-        age_minutes = (now - last_value.astimezone(datetime.timezone.utc)).total_seconds() / 60.0
+            last_value = last_value.replace(tzinfo=datetime.UTC)
+        age_minutes = (now - last_value.astimezone(datetime.UTC)).total_seconds() / 60.0
         if key.startswith("cluster:") and age_minutes < max(180, candidate["min_gap_minutes"] * 2):
             return True
         if key.startswith("topic:") and age_minutes < candidate["topic_gap_minutes"]:

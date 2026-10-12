@@ -8,7 +8,8 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, AsyncGenerator
+from typing import Any
+from collections.abc import AsyncGenerator
 
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram

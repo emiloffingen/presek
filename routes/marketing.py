@@ -7,7 +7,7 @@ import random
 import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from urllib.parse import urlparse
 
 import stripe
@@ -468,7 +468,7 @@ def _visitor_hash(request: Request) -> str:
             secret,
             _client_ip_for_request(request),
             request.headers.get("user-agent", ""),
-            datetime.now(timezone.utc).date().isoformat(),
+            datetime.now(UTC).date().isoformat(),
         )
     )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]

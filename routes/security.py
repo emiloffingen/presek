@@ -5,7 +5,7 @@ import os
 import re
 import secrets
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse

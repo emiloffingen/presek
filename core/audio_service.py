@@ -241,7 +241,7 @@ class AudioService:
         speech_text = _join_for_speech(text)
         safe_cluster = re.sub(r"[^A-Za-z0-9_-]", "_", str(cluster_id))[:64]
         digest = hashlib.sha1(
-            f"{voice}|{rate}|{pitch}|{volume}|{speech_text}".encode("utf-8"), usedforsecurity=False
+            f"{voice}|{rate}|{pitch}|{volume}|{speech_text}".encode(), usedforsecurity=False
         ).hexdigest()[:10]
         path, url = AudioService.get_cluster_audio_path_and_url(safe_cluster, lang, digest)
         if os.path.isfile(path) and os.path.getsize(path) > 1024:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 from core.database import db_manager as db
 from core.health import (
@@ -250,7 +250,7 @@ async def build_ops_snapshot() -> dict:
 
     return {
         "status": _derive_status(alerts),
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
         "alerts": alerts,
         "ingestion": {
             "freshness_status": freshness.get("status"),

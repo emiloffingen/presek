@@ -7,7 +7,7 @@ security over the previous admin token system.
 
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from typing import Any, Dict, Optional
 
 import jwt
@@ -52,9 +52,9 @@ class JWTBearer(HTTPBearer):
             return False
 
 
-def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] = None) -> str:
+def create_jwt_token(subject: str, additional_claims: dict[str, Any] | None = None) -> str:
     """Create a new JWT token."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "iat": now,
@@ -70,7 +70,7 @@ def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] =
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decode_jwt(token: str) -> Optional[Dict[str, Any]]:
+def decode_jwt(token: str) -> dict[str, Any] | None:
     """Decode and verify a JWT token."""
     try:
         payload = jwt.decode(

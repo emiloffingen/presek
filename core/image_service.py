@@ -75,7 +75,7 @@ class ImageService:
             return base
         return {**base, "Referer": origin + "/"}
 
-    async def process_and_save(self, url: str, article_id: int) -> Optional[str]:
+    async def process_and_save(self, url: str, article_id: int) -> str | None:
         """
         Downloads, validates, optimizes, and saves an image locally.
         Returns the relative path to the saved file.
