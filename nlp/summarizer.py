@@ -56,7 +56,7 @@ def _clean_text(text: str) -> str:
     return text
 
 
-def _parse_json_response(response: str) -> Optional[dict]:
+def _parse_json_response(response: str) -> dict | None:
     """Try to parse JSON from model response."""
     try:
         # Try to find JSON in the response

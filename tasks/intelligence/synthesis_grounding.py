@@ -280,7 +280,6 @@ def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
         "kumanovo",
         "gostivar",
         "skopj",
-        "beograd",
         "vinic",
         "veles",
         "stip",

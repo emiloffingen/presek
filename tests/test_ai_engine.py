@@ -377,8 +377,11 @@ def test_groq_provider_initialization(monkeypatch):
     assert _default_remote_provider() == "groq"
 
 
-def test_effective_max_tokens_enforces_groq_floor():
-    from core.ai_engine import _effective_max_tokens
+def test_effective_max_tokens_enforces_groq_floor(monkeypatch):
+    from core import ai_engine
+
+    monkeypatch.setitem(ai_engine.PROVIDER_MIN_MAX_TOKENS, "groq", 600)
+    _effective_max_tokens = ai_engine._effective_max_tokens
 
     assert _effective_max_tokens("groq", 100) == 600
     assert _effective_max_tokens("groq", 1200) == 1200

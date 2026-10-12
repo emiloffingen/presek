@@ -56,7 +56,6 @@ _SERBIAN_LATIN_LEAKS = frozenset(
         "takodje",
         "zbog",
         "između",
-        "izmedju",
     }
 )
 
