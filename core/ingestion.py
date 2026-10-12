@@ -377,8 +377,7 @@ def canonical_hostname(url: str) -> str:
             exc_info=True,
         )
         return ""
-    if host.startswith("www."):
-        host = host[4:]
+    host = host.removeprefix("www.")
     return host
 
 

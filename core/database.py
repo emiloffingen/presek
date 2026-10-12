@@ -868,7 +868,7 @@ class DatabaseManager:
         # syntax like "WHERE  AND country = $4 (...)".
         clauses = []
         if time_filter:
-            clauses.append(time_filter[4:] if time_filter.startswith("AND ") else time_filter)
+            clauses.append(time_filter.removeprefix("AND "))
         if country:
             clauses.append("country = %s")
             params.append(country)

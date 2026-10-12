@@ -47,7 +47,6 @@ URL_PATTERN = re.compile(
 class QueryParams(BaseModel):
     """Base model for query parameter validation."""
 
-    pass
 
 
 class PaginationParams(BaseModel):

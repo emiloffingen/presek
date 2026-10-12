@@ -632,7 +632,6 @@ async def get_cluster_share_card(cluster_id: str):
                     bg_img = Image.open(BytesIO(content))
         except Exception as e:
             log.debug(f"[system] Error loading background image: {e}")
-            pass
 
         if bg_img:
             # Resize and crop to fill

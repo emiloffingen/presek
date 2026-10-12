@@ -59,8 +59,7 @@ def detect_global_story_task(article_id):
             if not mk_norm or not g_norm or len(g_vec) != len(mk_vec):
                 continue
             sim = sum(a * b for a, b in zip(mk_vec, g_vec)) / (mk_norm * g_norm)
-            if sim > best_similarity:
-                best_similarity = sim
+            best_similarity = max(best_similarity, sim)
 
         # 4. Verdict (0.82 is a strong semantic match for cross-lingual pairs)
         if best_similarity > 0.82:

@@ -332,8 +332,7 @@ async def get_archive(
                             a_norm = sum(v * v for v in a_vec) ** 0.5
                             if q_norm and a_norm:
                                 sim = dot / (q_norm * a_norm)
-                                if sim > best_sim:
-                                    best_sim = sim
+                                best_sim = max(best_sim, sim)
                     arts[0]["match_score"] = best_sim
                 ranked.sort(key=lambda x: x[0].get("match_score", 0), reverse=True)
         else:

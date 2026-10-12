@@ -99,7 +99,7 @@ def _parse_retry_delay(text: str | None, default: int = 300) -> int:
     return default
 
 
-def _mark_provider_cooldown(provider_name: str, retry_after: str | int | float | None = None):
+def _mark_provider_cooldown(provider_name: str, retry_after: str | float | None = None):
     # Groq TPM bans need a longer floor: a 5s hint just re-triggers 429.
     floor = 120 if provider_name == "groq" else 1
     if isinstance(retry_after, (int, float)):
