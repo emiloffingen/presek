@@ -7,7 +7,7 @@ import random
 import re
 import time
 import uuid
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 import stripe
@@ -205,7 +205,7 @@ async def create_ad_checkout(
                 if session_ref and STRIPE_API_KEY and not session_ref.startswith("mock_"):
                     try:
                         prior = stripe.checkout.Session.retrieve(session_ref)
-                        if "url" in prior and prior["url"]:
+                        if prior.get("url"):
                             existing_url = prior["url"]
                     except Exception as retrieve_err:
                         log.warning(f"[marketing] idempotent session retrieve failed: {retrieve_err}")

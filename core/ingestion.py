@@ -6,7 +6,7 @@ import logging
 import random
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import feedparser
@@ -23,7 +23,7 @@ except ModuleNotFoundError:
 
 from prometheus_client import Counter
 
-import core.clustering as clustering
+from core import clustering
 from core.api_helpers import is_safe_url
 from core.config import CLUSTER_LOOKBACK, CLUSTER_WINDOW_HOURS, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
@@ -616,11 +616,11 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                             if re.search(
                                 r"<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
                                 temp_text,
-                                re.I,
+                                re.IGNORECASE,
                             ) or re.search(
                                 r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']",
                                 temp_text,
-                                re.I,
+                                re.IGNORECASE,
                             ):
                                 break
                         except Exception as e:

@@ -7,7 +7,6 @@ import urllib.parse
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
 
 import redis as _redis_lib
 from fastapi import APIRouter, HTTPException, Query, Request

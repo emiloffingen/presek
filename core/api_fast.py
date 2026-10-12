@@ -620,7 +620,7 @@ _HEALTH_SNAPSHOT: dict = {"t": 0.0, "data": None}
 @exempt_from_rate_limit
 async def health_check(request: Request):
     """Comprehensive health check for smoke tests and monitoring."""
-    import core.health as health
+    from core import health
     from core.health import _freshness_payload, _start_time
 
     now = time.time()

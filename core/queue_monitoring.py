@@ -10,7 +10,7 @@ Provides:
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 from core.celery_app import celery_app
 from core.logging_config import get_logger

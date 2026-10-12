@@ -11,6 +11,8 @@ from nlp.generation import synthesize_cluster_fallback
 from nlp.utils import (
     extract_clean_summary_text,
     looks_like_leaked_json_fragment,
+)
+from nlp.utils import (
     paragraph_fingerprint as _paragraph_fingerprint,
 )
 

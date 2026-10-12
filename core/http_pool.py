@@ -22,8 +22,8 @@ import asyncio
 import atexit
 import os
 import threading
-from contextlib import asynccontextmanager, contextmanager
 from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 
 import httpx
 

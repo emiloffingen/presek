@@ -7,9 +7,9 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 
-import core.database as database
+from core import database
 from utils import redis_client as _shared_redis_client
 
 log = logging.getLogger(__name__)

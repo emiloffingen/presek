@@ -9,7 +9,7 @@ import re
 from collections import Counter
 from datetime import datetime, timedelta
 
-import core.database as database
+from core import database
 
 log = logging.getLogger(__name__)
 

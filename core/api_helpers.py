@@ -13,7 +13,6 @@ import re
 import socket
 import time
 from threading import Lock
-from typing import Optional
 
 log = logging.getLogger("presek.api.helpers")
 

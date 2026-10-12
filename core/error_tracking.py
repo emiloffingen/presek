@@ -8,8 +8,8 @@ local error logging for development.
 import logging
 import os
 import traceback
-from datetime import datetime, timezone, UTC
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 # Configure logging
 log = logging.getLogger("presek.error_tracking")

@@ -16,7 +16,6 @@ from tasks.intelligence.synthesis_bundle import _fallback_key_facts
 from tasks.intelligence.synthesis_scheduling import _schedule_deep_analyst_work
 from tasks.utils import invalidate_cluster_caches, log
 
-
 _HISTORY_TABLE_EXISTS: bool | None = None
 _CLUSTER_METADATA_IMPACT: bool | None = None
 
@@ -311,9 +310,8 @@ def finalize_cluster_synthesis(
 
         all_titles = " ".join([a.get("title") or "" for a in article_rows])
         if detect_topic(all_titles) == "Sport":
-            from core.services.notifier import BreakingNewsNotifier
-
             from core.config import NTFY_TOPIC
+            from core.services.notifier import BreakingNewsNotifier
             from nlp.generation import _extract_sports_scores
 
             latest_scores = _extract_sports_scores(article_rows[0].get("title") or "") + _extract_sports_scores(

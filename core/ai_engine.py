@@ -8,8 +8,8 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 from prometheus_client import REGISTRY, Counter, Histogram
@@ -94,7 +94,7 @@ def _parse_retry_delay(text: str | None, default: int = 300) -> int:
         m = re.search(r"retry-?after[:\s]+([0-9]+)", text, re.IGNORECASE)
         if m:
             return max(1, int(m.group(1)))
-    except Exception:  # noqa: BLE001 - best-effort parse, fall back to default
+    except Exception:
         pass
     return default
 
@@ -293,7 +293,7 @@ class AIProvider(ABC):
         return None
 
     @abstractmethod
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str]:
         log.debug(f"Abstract method stream_call() not implemented for {self.__class__.__name__}")
         yield ""
 
@@ -393,7 +393,7 @@ class OpenAICompatibleProvider(AIProvider):
             code = e.response.status_code
             try:
                 body = e.response.text[:500]
-            except Exception:  # noqa: BLE001 - best-effort error body for logs
+            except Exception:
                 body = ""
             if code == 429:
                 hint = e.response.headers.get("Retry-After") or _parse_retry_delay(body, 300)
@@ -414,7 +414,7 @@ class OpenAICompatibleProvider(AIProvider):
             log.warning(f"[ai/{self.provider_name}] Call failed for model {self.model}: {e}")
         return None
 
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
             yield res
@@ -498,7 +498,7 @@ class LocalProvider(AIProvider):
             )
         return f"{instruction}\n\nKONTEKST:\n{prompt}"
 
-    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str, None]:
+    async def stream_call(self, prompt: str, system: str, max_tokens: int) -> AsyncGenerator[str]:
         res = self.call(prompt, system, max_tokens, False)
         if res:
             for word in res.split(" "):
@@ -683,8 +683,8 @@ PROVIDERS = {
 
 
 async def _stream_with_initial_chunk(
-    generator: AsyncGenerator[str, None], first_chunk: str
-) -> AsyncGenerator[str, None]:
+    generator: AsyncGenerator[str], first_chunk: str
+) -> AsyncGenerator[str]:
     yield first_chunk
     async for chunk in generator:
         yield chunk

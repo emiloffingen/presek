@@ -1,7 +1,7 @@
 import os
 import sys
 
-from tasks.intelligence._constants import *  # noqa: F403,F405
+from tasks.intelligence._constants import *
 from tasks.utils import (
     get_celery_queue_depth,
     log,

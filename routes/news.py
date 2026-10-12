@@ -1,11 +1,11 @@
 import asyncio
-import os
 import datetime
 import json
 import logging
+import os
 import re
 from collections import defaultdict
-from typing import Any, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -73,7 +73,7 @@ class NewsResponse(BaseModel):
 
 # Curation heuristics live in routes/curation.py (single owner shared with
 # routes/home.py); import the names used below.
-from .curation import (  # noqa: E402
+from .curation import (
     _HARD_NEWS_CATEGORIES,
     _HARD_NEWS_TOPICS,
     _SOFT_EXCLUDE_TOPICS,
@@ -1341,7 +1341,7 @@ async def get_cluster_detail(cluster_id: str, lang: str | None = DEFAULT_LANG):
                 and not synthetic_standfirst
             ):
                 synthetic_standfirst = leaked_data["synthetic_standfirst"]
-            if "generated_article" in leaked_data and leaked_data["generated_article"]:
+            if leaked_data.get("generated_article"):
                 generated_article = leaked_data["generated_article"]
             if "summary" in leaked_data:
                 if isinstance(leaked_data["summary"], list):

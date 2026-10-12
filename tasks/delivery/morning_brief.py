@@ -82,7 +82,7 @@ def extract_intro(brief_text: str, max_chars: int = 560) -> str:
     """Pull the 'Големата Слика' section (or first paragraphs) as plain text."""
     if not brief_text:
         return ""
-    match = re.search(r"##\s*Големата\s+Слика\s*(.*?)(?=\n##\s|\Z)", brief_text, flags=re.S)
+    match = re.search(r"##\s*Големата\s+Слика\s*(.*?)(?=\n##\s|\Z)", brief_text, flags=re.DOTALL)
     section = match.group(1) if match else brief_text
     paragraphs = []
     for para in section.split("\n\n"):

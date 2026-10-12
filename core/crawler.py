@@ -3,7 +3,7 @@ import logging
 import random
 import re
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -267,7 +267,7 @@ class CrawlerService:
                 except (ValueError, PermissionError) as e:
                     log.warning(f"SSRF blocked for {url}: {e}")
                     return {"url": url, "error": f"Security block: {e}"}
-                except Exception as e:  # noqa: BLE001 - network retry must catch all transient errors
+                except Exception as e:
                     last_err = str(e)
                     await asyncio.sleep(1.5 * (attempt + 1))
             if html_content is None:

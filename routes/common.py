@@ -3,7 +3,6 @@ import ipaddress
 import logging
 import os
 import re
-from typing import Optional
 
 from fastapi import HTTPException, Request
 

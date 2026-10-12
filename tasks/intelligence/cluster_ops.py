@@ -37,13 +37,13 @@ def _clusters_match(rep_title, rep_entities, rep, other, max_age_hours):
     Topic/category agreement alone is never enough.
     """
     from core.clustering import (
+        _TITLE_ANCHORED_MERGE,
+        _TITLE_BEST_MERGE,
+        _TITLE_INSTANT_MERGE,
         _age_hours,
         _cluster_title_overlap,
-        _extract_title_entities,
         _entity_token_overlap,
-        _TITLE_INSTANT_MERGE,
-        _TITLE_BEST_MERGE,
-        _TITLE_ANCHORED_MERGE,
+        _extract_title_entities,
     )
 
     other_title = str(other.get("title") or "")

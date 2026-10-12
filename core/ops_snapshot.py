@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 
 from core.database import db_manager as db
 from core.health import (
@@ -100,7 +100,7 @@ async def build_ops_snapshot() -> dict:
                 "history": build_report(7),
                 "fallback": True,
             }
-        except Exception as exc:  # noqa: BLE001 - DB fallback must never break ops snapshot
+        except Exception as exc:
             synthesis = {"status": "unknown", "error": str(exc)[:200]}
     primary = synthesis.get("primary") or {}
     history = synthesis.get("history") or {}

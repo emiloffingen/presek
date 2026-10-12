@@ -28,8 +28,10 @@ generate_embeddings_task = _task("tasks.intelligence.generate_embeddings_task")
 # Real implementations (see cluster_ops). These must NOT be no-op stubs: cluster
 # repair is what merges same-story clusters that ingestion split apart, and
 # without it those clusters stay single-source and never get a synthesis.
-from tasks.intelligence.cluster_ops import (  # noqa: E402
+from tasks.intelligence.cluster_ops import (
     recluster_recent_articles_task as recluster_recent_articles_task,
+)
+from tasks.intelligence.cluster_ops import (
     repair_split_clusters_task as repair_split_clusters_task,
 )
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime
 
 from core.database import db_manager as db
 from core.ops_snapshot import build_ops_snapshot

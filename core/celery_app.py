@@ -15,8 +15,8 @@ if _PROJECT_ROOT not in sys.path:
 # (RESP2) before the pool is constructed.  This must happen before the
 # `Celery(broker=...)` call below.
 # ---------------------------------------------------------------------------
-import redis as _redis
 import kombu.transport.redis as _kombu_redis
+import redis as _redis
 
 _orig_get_pool = _kombu_redis.Channel._get_pool
 

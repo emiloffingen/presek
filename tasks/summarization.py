@@ -7,6 +7,7 @@ using only the local Gemma model.
 import json
 
 from celery import shared_task
+
 from core.logging_config import get_logger
 
 log = get_logger("presek.tasks.summarization")

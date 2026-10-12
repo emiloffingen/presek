@@ -13,7 +13,6 @@ import hmac
 import os
 import secrets
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 import jwt
 
@@ -262,7 +261,7 @@ def verify_admin_token(token: str) -> AdminToken | None:
 
         # Ensure UUID structure maps cleanly to Dataclass string field
         db_data = dict(row[0])
-        if "token_id" in db_data and db_data["token_id"]:
+        if db_data.get("token_id"):
             db_data["token_id"] = _normalize_uuid_str(db_data["token_id"])
 
         admin_token = AdminToken(**db_data)
@@ -385,7 +384,7 @@ def list_active_admin_tokens() -> list[AdminToken]:
         tokens = []
         for row in rows:
             db_data = dict(row)
-            if "token_id" in db_data and db_data["token_id"]:
+            if db_data.get("token_id"):
                 db_data["token_id"] = _normalize_uuid_str(db_data["token_id"])
             tokens.append(AdminToken(**db_data))
         return tokens

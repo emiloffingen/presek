@@ -7,7 +7,6 @@ a single local Gemma model via llama-cpp-python.
 import json
 import os
 import re
-from typing import Optional
 
 from core.logging_config import get_logger
 

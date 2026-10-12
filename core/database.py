@@ -430,7 +430,7 @@ class AsyncDatabaseManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(AsyncDatabaseManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def _reset_pool(self):
@@ -554,7 +554,7 @@ class DatabaseManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(DatabaseManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._pool = None
             cls._instance._read_pool = None
             if os.environ.get("PRESEK_SKIP_DB_POOL_INIT") != "1":

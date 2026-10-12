@@ -31,7 +31,7 @@ class ResearchService:
         # This is a simplified semantic cache:
         # In a real impl we'd use Redis Search/Vector Indexing here.
         # For now, we store results indexed by query embedding in sorted sets/hashes.
-        return None
+        return
 
     @staticmethod
     async def _set_semantic_cache(cluster_id, query_embedding, mode, lang, response):

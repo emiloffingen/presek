@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import secrets
-from typing import List
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -23,7 +23,6 @@ from .common import (
     _validate_sync_token_value,
 )
 from .security import verify_csrf_token
-from datetime import UTC
 
 log = logging.getLogger("presek")
 router = APIRouter()
@@ -171,7 +170,7 @@ def _assert_sync_token_not_expired(row: dict) -> None:
     created_at = row.get("created_at")
     if not created_at:
         return
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     if getattr(created_at, "tzinfo", None) is None:
         created_at = created_at.replace(tzinfo=UTC)

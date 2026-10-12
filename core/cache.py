@@ -3,7 +3,6 @@ Redis Cache Utility for Presek
 """
 
 import json
-from typing import Optional
 from collections.abc import Callable
 
 import redis
