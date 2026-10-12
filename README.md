@@ -55,16 +55,16 @@ Presek runs as a **systemd target** (`presek.target`). See [deploy/MINIMUM_PROD.
 - `web/` is the only active frontend.
 - The older root Vite frontend and Jinja template frontend were removed.
 - `start.sh` is a local/manual runtime helper, not the production entrypoint.
-- Production serves from the release runtime root at `/home/emiloffingen/presek-runtime/current` behind nginx/systemd.
+- Production serves from the release runtime root at `$APP_ROOT/current` (e.g. `/home/emiloffingen/presek-runtime/current`) behind nginx/systemd.
 - `docker-compose.yml` is a **dev-only** backend stub (API + workers + Postgres + Redis). It does not run Astro SSR; use `cd web && npm run dev` for the frontend locally.
 
 ## Runtime Paths
 
 - Local/manual repo path: `./start.sh`
-- Supported production path:
-  1. `APP_ROOT=/home/emiloffingen/presek-runtime bash deploy/bootstrap_runtime_root.sh`
-  2. `sudo APP_ROOT=/home/emiloffingen/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh`
-  3. `APP_ROOT=/home/emiloffingen/presek-runtime DEPLOY_GIT_DIR=/home/emiloffingen/presek bash deploy/ci_deploy.sh`
+- Supported production path (`APP_ROOT` = runtime root, `DEPLOY_GIT_DIR` = repo checkout):
+  1. `APP_ROOT=/path/to/presek-runtime bash deploy/bootstrap_runtime_root.sh`
+  2. `sudo APP_ROOT=/path/to/presek-runtime INSTALL_NGINX=0 bash deploy/install_server.sh`
+  3. `APP_ROOT=/path/to/presek-runtime DEPLOY_GIT_DIR=/path/to/presek bash deploy/ci_deploy.sh`
 
 If a change touches `deploy/systemd/*` or `deploy/install_server.sh`, run step 2 before step 3 so the installed units match the release code.
 
@@ -95,7 +95,7 @@ cd web && npm run build
 
 ## Manual Provider Checks
 
-Ad hoc provider/key probes now live in [scripts](/home/emiloffingen/presek/scripts):
+Ad hoc provider/key probes now live in `scripts/`:
 
 - `scripts/manual_check_ai_cascade.py`
 - `scripts/manual_check_cloudflare.py`

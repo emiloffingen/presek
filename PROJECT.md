@@ -1,60 +1,33 @@
-# Project: Presek Operational Enhancements
+# Project: Presek v8.3.9
+
+Macedonian news aggregation with FastAPI + Astro + Celery.
 
 ## Architecture
-- **Web Frontend**: Astro-based page rendering (`web/src/pages/cluster/[slug].astro`). Extracts cluster payload keys `narrative_diversity` and `perspectives`, rendering them with Astro components and CSS.
-- **FastAPI Core**: `core/api_fast.py` exposing REST endpoints and Prometheus metrics.
-- **CSP API**: A new endpoint `/api/csp-report` that bypasses CSRF and Rate Limiting.
-- **Prometheus Metrics**: Exposes backup verification metrics (`presek_backup_verification_status` and `presek_backup_size_bytes`) on the `/metrics` endpoint.
-- **Operations Script**: `scripts/verify_backup.py` / `.sh` restoring snapshot to sandbox DB, checking key tables, and reporting metrics.
+- **Web Frontend**: Astro SSR in `web/` (`src/pages/index.astro`, `src/pages/mk/index.astro`, `src/pages/cluster/[slug].astro`, `src/components/home/HomePage.astro`). 117 components, bilingual SR/MK, Tailwind 4 + domain CSS (`web/CSS.md`).
+- **FastAPI Core**: `core/api_fast.py` exposing REST `/api/*` and Prometheus `/metrics` (`presek_articles_total`, queue depth, DB size, pool stats).
+- **Workers**: 8 Celery queues — `celery`, `ingestion`, `ingestion-crawl`, `fast-track`, `synthesis`, `intel-heavy`, `delivery`, `maintenance`. Beat schedules pruning/backfill.
+- **Data**: PostgreSQL pgvector (`articles`, `cluster_summaries`) + Redis broker/cache. Health: 23,398 articles, 339.5MB, freshness 0min, queues 0 depth.
+- **Synthesis**: AI cascade (gemini3/gemini2/gemini/groq/openrouter/nvidia + extractive fallback). 24h: 737 summaries, 0% fallback. 7d: 5,486 summaries, 0% fallback.
 
 ## Code Layout
-- `web/src/pages/cluster/[slug].astro` - Cluster detail UI page.
-- `core/api_fast.py` - Core API setup, metrics registration, telemetry endpoints.
-- `scripts/verify_backup.py` or `scripts/verify_backup.sh` - Database restoration and verification script.
-- `tests/` - Python integration tests for API endpoints and scripts.
+- `core/api_fast.py` - API setup, metrics, telemetry
+- `routes/` - `news.py` (cluster payload incl. `narrative_diversity`, `perspectives`), feeds, stats
+- `tasks/` - ingestion, synthesis pipeline/persist, maintenance, delivery
+- `nlp/` - local analyst, embeddings (fastembed), heuristics
+- `web/src/` - pages, components, layouts (`Layout.astro`), lib, styles
+- `web/scripts/` - `lighthouse-homepage.mjs` (budgets: perf ≥90, LCP ≤2500ms, CLS ≤0.10), `a11y-homepage.mjs`, `analyze-bundle.mjs`
+- `deploy/` - systemd units (`presek.target`), bootstrap/install/ci scripts
+- `tests/` - ~100 backend test modules, `web` uses node --test + Cypress
 
-## Milestones
-| # | Name | Scope | Dependencies | Status |
-|---|------|-------|-------------|--------|
-| M1 | E2E Testing Track | Define test infra, scenarios, and publish TEST_READY.md | None | PLANNED |
-| M2 | Interactive Stance UI | Extract narrative diversity and perspectives; render widgets in Astro | None | PLANNED |
-| M3 | CSP Telemetry API | Implement /api/csp-report in FastAPI; add integration tests | None | PLANNED |
-| M4 | Backup Verification | Implement backup verification script and Prometheus metrics | None | PLANNED |
-| M5 | E2E & Adversarial Hardening | Run all E2E tests, resolve failures, and perform adversarial coverage hardening | M1, M2, M3, M4 | PLANNED |
+## Status
+- Production: systemd (`presek-fastapi-unified`, `presek-astro`, workers, beat) behind nginx. See `deploy/MINIMUM_PROD.md`.
+- Frontend checks: `npm run build` clean, `npm run lint` 0 errors/0 warnings (298 files), bundle 1.70MB total / 176KB client.js within budget.
+- Backend: Python >=3.13, uv-managed (`pyproject.toml` + `uv.lock`).
 
-## Interface Contracts
+## Proposed (not implemented)
+- POST `/api/csp-report` telemetry endpoint + rate-limit/CSRF bypass
+- `scripts/verify_backup.py` sandbox restore + `presek_backup_verification_status` / `presek_backup_size_bytes` metrics
+- Interactive stance widgets for `narrative_diversity.score` / `perspectives` on cluster page
+- `TEST_READY.md` E2E track + adversarial hardening
 
-### Web Cluster API Interface
-- **Source**: `routes/news.py` / FastAPI DB Query
-- **Payload format**:
-  - `narrative_diversity`: `{"verdict": "string", "score": float}` (or similar)
-  - `perspectives`: `list[dict]` where dict has `{"angle": "string", "content": "string"}`
-
-### CSP Report Telemetry API
-- **Endpoint**: POST `/api/csp-report`
-- **Content-Type**: `application/csp-report` or `application/json`
-- **Request Body**:
-  ```json
-  {
-    "csp-report": {
-      "document-uri": "string",
-      "referrer": "string",
-      "violated-directive": "string",
-      "effective-directive": "string",
-      "original-policy": "string",
-      "disposition": "string",
-      "blocked-uri": "string",
-      "line-number": 123,
-      "column-number": 456,
-      "source-file": "string",
-      "status-code": 200,
-      "script-sample": "string"
-    }
-  }
-  ```
-- **Response**: HTTP 200/204, empty body or simple JSON acknowledgement. Rate limits and CSRF exempt.
-
-### Backup Verification Metrics API
-- **Metrics exported**:
-  - `presek_backup_verification_status` (Gauge, 1 for success, 0 for failure)
-  - `presek_backup_size_bytes` (Gauge, size of the backup file in bytes)
+Implement above before referencing them as architecture.
