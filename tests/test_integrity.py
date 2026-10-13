@@ -12,9 +12,8 @@ class TestAstroFrontendIntegrity:
         layout = _read("web/src/layouts/Layout.astro")
         head = _read("web/src/components/layout/LayoutHead.astro")
         boot = _read("web/public/js/presek-boot.js")
-        # MK-only edition: html lang is fixed to "mk" (was dynamic per-locale).
-        assert '<html lang="mk"' in layout
-        assert "lang={lang}" in layout
+        # html lang follows the page locale again (dynamic since the UI 10/10 pass).
+        assert "<html lang={lang}" in layout
         # Check for core SEO tags
         assert '<link rel="canonical"' in head
         assert '<link rel="alternate" hreflang=' in head

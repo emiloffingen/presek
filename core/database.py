@@ -510,7 +510,9 @@ class AsyncDatabaseManager:
                         if timeout_ms:
                             # Transaction-local, so it never leaks into the pooled connection;
                             # Postgres cancels the statement itself instead of leaving it running.
-                            await cur.execute("SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),))
+                            await cur.execute(
+                                "SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),)
+                            )
                         await cur.execute(sql, params)
                         if fetch:
                             rows = await cur.fetchall()
@@ -525,7 +527,8 @@ class AsyncDatabaseManager:
                     "couldn't get a connection" in msg
                     or "server closed the connection" in msg
                     or "consuming input failed" in msg
-                    or "connection" in msg.lower() and "timeout" in msg.lower()
+                    or "connection" in msg.lower()
+                    and "timeout" in msg.lower()
                 )
                 if transient and attempt == 0:
                     log.warning(f"Presek {APP_VERSION_LABEL} Async DB transient, retrying: {e}")

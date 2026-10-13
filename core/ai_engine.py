@@ -682,9 +682,7 @@ PROVIDERS = {
 # --- Service Methods ---
 
 
-async def _stream_with_initial_chunk(
-    generator: AsyncGenerator[str], first_chunk: str
-) -> AsyncGenerator[str]:
+async def _stream_with_initial_chunk(generator: AsyncGenerator[str], first_chunk: str) -> AsyncGenerator[str]:
     yield first_chunk
     async for chunk in generator:
         yield chunk
