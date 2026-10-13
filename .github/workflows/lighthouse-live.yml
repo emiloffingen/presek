@@ -1,0 +1,83 @@
+name: Lighthouse (live site)
+
+# Report-only audit of the public site. It never fails on a low score: the point is to
+# publish real mobile + desktop numbers (performance, accessibility, best practices, SEO)
+# and keep the JSON reports so scores can be compared over time.
+#
+# Cost: ~3 min of Actions time per run, weekly + on demand. Actions minutes are shared with
+# the other workflows, so do not trigger this on push.
+on:
+  schedule:
+    - cron: "17 5 * * 3"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL to audit"
+        default: "https://presek.mk/"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-live
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AUDIT_URL: ${{ github.event.inputs.url || 'https://presek.mk/' }}
+      LIGHTHOUSE_VERSION: "12.8.2"
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Audit mobile and desktop
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          export CHROME_PATH="$(command -v google-chrome-stable || command -v google-chrome)"
+          flags="--headless=new --no-sandbox --disable-gpu"
+          cats="--only-categories=performance,accessibility,best-practices,seo"
+          npx --yes "lighthouse@${LIGHTHOUSE_VERSION}" "$AUDIT_URL" $cats --quiet \
+            --output=json --output-path=reports/mobile.json \
+            --chrome-flags="$flags"
+          npx --yes "lighthouse@${LIGHTHOUSE_VERSION}" "$AUDIT_URL" $cats --quiet \
+            --preset=desktop --output=json --output-path=reports/desktop.json \
+            --chrome-flags="$flags"
+
+      - name: Summarize
+        run: |
+          node - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const pct = (s) => (s == null ? 'n/a' : Math.round(s * 100));
+          const row = (name, file) => {
+            const r = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const c = r.categories, a = r.audits;
+            const v = (id) => a[id]?.displayValue ?? 'n/a';
+            return `| ${name} | ${pct(c.performance?.score)} | ${pct(c.accessibility?.score)} | ${pct(c['best-practices']?.score)} | ${pct(c.seo?.score)} | ${v('largest-contentful-paint')} | ${v('total-blocking-time')} | ${v('cumulative-layout-shift')} |`;
+          };
+          console.log(`## Lighthouse: ${process.env.AUDIT_URL}\n`);
+          console.log('| Form factor | Perf | A11y | Best practices | SEO | LCP | TBT | CLS |');
+          console.log('|---|---|---|---|---|---|---|---|');
+          console.log(row('mobile', 'reports/mobile.json'));
+          console.log(row('desktop', 'reports/desktop.json'));
+          const failing = [];
+          for (const f of ['mobile', 'desktop']) {
+            const r = JSON.parse(fs.readFileSync(`reports/${f}.json`, 'utf8'));
+            for (const ref of r.categories.accessibility.auditRefs) {
+              const au = r.audits[ref.id];
+              if (au && au.score === 0 && au.scoreDisplayMode === 'binary') failing.push(`${f}: ${au.title}`);
+            }
+          }
+          if (failing.length) console.log(`\n### Failing accessibility audits\n\n${[...new Set(failing)].map((t) => `- ${t}`).join('\n')}`);
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: reports/*.json
+          retention-days: 90
