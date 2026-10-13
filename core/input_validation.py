@@ -48,7 +48,6 @@ class QueryParams(BaseModel):
     """Base model for query parameter validation."""
 
 
-
 class PaginationParams(BaseModel):
     """Validation model for pagination parameters."""
 
