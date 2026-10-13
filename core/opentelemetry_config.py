@@ -26,7 +26,6 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.trace import Status, StatusCode
 
 # Global tracer provider
 _tracer_provider: TracerProvider | None = None
@@ -172,50 +171,6 @@ def get_tracer(name: str) -> trace.Tracer:
     if _tracer_provider is None:
         setup_tracing()
     return trace.get_tracer(name)
-
-
-def create_span(
-    name: str,
-    tracer_name: str | None = None,
-    **attributes,
-):
-    """
-    Convenience function to create a span with attributes.
-
-    Args:
-        name: Span name
-        tracer_name: Tracer name (defaults to caller's module)
-        **attributes: Additional span attributes
-
-    Returns:
-        Context manager for the span
-    """
-    import inspect
-    from contextlib import contextmanager
-
-    if tracer_name is None:
-        # Get caller's module name
-        frame = inspect.currentframe()
-        try:
-            caller_frame = frame.f_back.f_back
-            tracer_name = inspect.getmodule(caller_frame).__name__
-        finally:
-            del frame
-
-    tracer = get_tracer(tracer_name)
-
-    @contextmanager
-    def span_context():
-        with tracer.start_as_current_span(name, attributes=attributes) as span:
-            try:
-                yield span
-                span.set_status(Status(StatusCode.OK))
-            except Exception as e:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, description=str(e)))
-                raise
-
-    return span_context()
 
 
 # Auto-setup on import if enabled

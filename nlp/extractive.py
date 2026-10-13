@@ -151,11 +151,3 @@ def build_extractive_synthesis(articles: list[dict[str, Any]], cluster_title: st
         "key_facts": key_facts,
         "source_count": len(sources),
     }
-
-
-def build_extractive_article_summary(title: str, content: str) -> str:
-    """Deterministic short article summary (no LLM)."""
-    lead = _first_sentences(content or "", max_sentences=2, limit=300)
-    if lead:
-        return lead
-    return _truncate(title or "", 200)

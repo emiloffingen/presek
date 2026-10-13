@@ -143,7 +143,6 @@ app = FastAPI(
     redoc_url="/api/redoc" if os.environ.get("ENV") != "production" else None,
     lifespan=lifespan,
 )
-from core.api_helpers import rank_cluster_citations as _rank_cluster_citations
 from core.health import _probe_database, _probe_redis
 
 # Middleware
@@ -584,14 +583,6 @@ from routes import (
     stats,
     system,
 )
-
-
-def _safe_rank_cluster_citations(question: str, answer: str, articles, citation_numbers) -> list[dict]:
-    try:
-        return _rank_cluster_citations(question, answer, articles, citation_numbers)
-    except Exception as e:
-        log.warning(f"[fastapi cluster_answer] citation ranking failed: {e}", exc_info=True)
-        return []
 
 
 async def _ai_quota_payload() -> dict:

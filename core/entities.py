@@ -84,10 +84,6 @@ def validate_person_names(text):
     return str(text)
 
 
-def determine_relationship_direction(*a, **kw) -> str:
-    return "related"
-
-
 def update_knowledge_graph(entities, context_text: str = "") -> None:
     """No-op: the knowledge-graph tables were removed in the MK-only simplify."""
     return

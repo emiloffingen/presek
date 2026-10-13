@@ -1,5 +1,4 @@
 import math
-import os
 import re
 
 # Irregular lemmas for Serbian
@@ -415,66 +414,3 @@ def synthesize_locally(articles, sentence_count=4, topic=None):
 
 # Lazy-loaded NER pipeline
 _ner_pipeline = None
-
-
-def extract_entities_semantic(text: str) -> set[str]:
-    """Extracts named entities using a multilingual BERT model."""
-    global _ner_pipeline
-    # Always normalize to Cyrillic to ensure consistent matching between scripts
-    from core.language import transliterate_lat_to_cyr
-
-    text = transliterate_lat_to_cyr(text)
-
-    if not text:
-        return set()
-
-    if os.environ.get("PRESEK_DISABLE_SEMANTIC_NER", "").lower() in {"1", "true", "yes"}:
-        from nlp.extraction import extract_title_entities_regex
-
-        return extract_title_entities_regex(text)
-
-    if _ner_pipeline is None:
-        try:
-            import logging
-
-            from transformers import pipeline
-
-            log = logging.getLogger("presek.nlp")
-            log.info("Loading semantic NER model in Bfloat16 (Babelscape/wikineural-multilingual-ner)...")
-            # Using bfloat16 to cut memory usage by ~50% on CPU while maintaining range
-            _ner_pipeline = pipeline(
-                "ner",
-                model="Babelscape/wikineural-multilingual-ner",
-                aggregation_strategy="simple",
-                device="cpu",
-            )
-        except Exception as e:
-            import logging
-
-            logging.getLogger("presek.nlp").error(f"Failed to load NER model: {e}")
-            _ner_pipeline = "failed"
-
-    if _ner_pipeline == "failed":
-        # Fallback to regex if model fails to load
-        from nlp.extraction import extract_title_entities_regex
-
-        return extract_title_entities_regex(text)
-
-    try:
-        # aggregation_strategy="simple" groups subwords into single entities
-        results = _ner_pipeline(text)
-        entities = set()
-        for res in results:
-            # We only care about PER (Person), ORG (Organization), LOC (Location), MISC
-            if res["entity_group"] in ("PER", "ORG", "LOC", "MISC"):
-                ent_text = res["word"].strip()
-                # Clean up ## subword artifacts just in case
-                ent_text = ent_text.replace(" ##", "").replace("##", "")
-                if len(ent_text) >= 3:
-                    entities.add(ent_text)
-        return entities
-    except Exception as e:
-        import logging
-
-        logging.getLogger("presek.nlp").error(f"NER extraction failed: {e}")
-        return set()

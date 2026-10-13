@@ -6,15 +6,11 @@ import datetime
 
 from core.config import BREAKING_SCORE_THRESHOLD
 from core.database import db_manager as db
-from utils import assess_cluster_synthesis_freshness
 
 from .core import (
-    _load_breaking_target_performance,
-    _load_delivery_kind_performance,
     _normalize_alert_context,
     _parse_row_datetime,
 )
-from .subscribers import _cluster_delivery_match, _normalize_synced_profile_for_delivery
 
 
 def _load_recent_breaking_clusters(hours=4, limit=24):
@@ -45,35 +41,6 @@ def _load_cluster_alert_material(cluster_id):
     )
     summary_row = db.execute_one("SELECT created_at FROM cluster_summaries WHERE cluster_id = %s", (cluster_id,))
     return articles, (summary_row or {}).get("created_at")
-
-
-def _batch_load_cluster_alert_materials(cluster_ids):
-    if not cluster_ids:
-        return {}
-    cluster_id_tuple = tuple(cluster_ids)
-    articles_by_cluster = {}
-    rows = db.execute(
-        "SELECT title, description, source, link, created_at, category, topic, cluster_id FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
-        (cluster_id_tuple,),
-    )
-    for row in rows or []:
-        cid = str(row.get("cluster_id") or "")
-        if cid not in articles_by_cluster:
-            articles_by_cluster[cid] = []
-        articles_by_cluster[cid].append(row)
-    for cid in articles_by_cluster:
-        articles_by_cluster[cid] = articles_by_cluster[cid][:8]
-    summary_rows = db.execute(
-        "SELECT cluster_id, created_at FROM cluster_summaries WHERE cluster_id = ANY(%s)", (cluster_id_tuple,)
-    )
-    summaries_by_cluster = {str(row.get("cluster_id") or ""): row.get("created_at") for row in summary_rows or []}
-    return {
-        str(cid): {
-            "articles": articles_by_cluster.get(str(cid), []),
-            "summary_date": summaries_by_cluster.get(str(cid)),
-        }
-        for cid in cluster_ids
-    }
 
 
 def _classify_alert_candidate(
@@ -205,65 +172,3 @@ def _alert_throttled(last_breaking_sent_at, alert_context, candidate):
         if key.startswith("source:") and age_minutes < candidate["source_gap_minutes"]:
             return True
     return False
-
-
-def _select_breaking_cluster_for_profile(
-    profile,
-    seen_cluster_ids,
-    alert_context=None,
-    last_breaking_sent_at=None,
-    *,
-    include_topics=True,
-    include_sources=True,
-    _cached_clusters=None,
-    _cached_materials=None,
-    _cached_delivery_perf=None,
-    _cached_target_perf=None,
-):
-    profile = _normalize_synced_profile_for_delivery(profile)
-    seen = {str(item or "").strip() for item in seen_cluster_ids or [] if str(item or "").strip()}
-    delivery_perf = _cached_delivery_perf if _cached_delivery_perf is not None else _load_delivery_kind_performance()
-    target_perf = _cached_target_perf if _cached_target_perf is not None else _load_breaking_target_performance()
-    candidates = []
-    clusters = _cached_clusters if _cached_clusters is not None else _load_recent_breaking_clusters()
-    for cluster in clusters:
-        cluster_id = str(cluster.get("cluster_id") or "").strip()
-        if not cluster_id:
-            continue
-        match_score, reasons, matched_topics, matched_sources = _cluster_delivery_match(
-            cluster, profile, include_topics=include_topics, include_sources=include_sources
-        )
-        if match_score < 2.0:
-            continue
-        if _cached_materials and cluster_id in _cached_materials:
-            articles = _cached_materials[cluster_id]["articles"]
-            synthesis_created_at = _cached_materials[cluster_id]["summary_date"]
-        else:
-            articles, synthesis_created_at = _load_cluster_alert_material(cluster_id)
-        freshness = assess_cluster_synthesis_freshness(articles, synthesis_created_at)
-        alert_meta = _classify_alert_candidate(
-            cluster, freshness, matched_topics, matched_sources, delivery_perf, target_perf
-        )
-        if cluster_id in seen and not freshness.get("refresh_needed"):
-            continue
-        candidates.append(
-            {
-                **cluster,
-                "match_score": (
-                    match_score
-                    + min(1.5, float(cluster.get("score") or 0) * 0.15)
-                    + min(1.2, float(freshness.get("freshness_score") or 0.0) * 0.4)
-                    + float(alert_meta.get("score_adjustment") or 0.0)
-                ),
-                "match_reason": "; ".join(reasons[:2]),
-                "matched_topics": matched_topics[:2],
-                "matched_sources": matched_sources[:2],
-                "freshness": freshness,
-                **alert_meta,
-            }
-        )
-    candidates.sort(key=lambda item: item["match_score"], reverse=True)
-    for candidate in candidates:
-        if not _alert_throttled(last_breaking_sent_at, alert_context, candidate):
-            return candidate
-    return None

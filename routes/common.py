@@ -9,7 +9,7 @@ from fastapi import HTTPException, Request
 from core.api_errors import api_error_response, rate_limit_payload
 from core.config import DEFAULT_LANG
 from core.database import db_manager as db
-from nlp.utils import cleanAndDecode
+from nlp.utils import cleanAndDecode  # noqa: F401  (re-exported: routes.home/news/curation import it from here)
 
 log = logging.getLogger("presek")
 
@@ -74,24 +74,6 @@ def _looks_cyrillic_headline(text: str) -> bool:
     if latin == 0:
         return True
     return cyrillic >= (latin * 2)
-
-
-def _preferred_cluster_headline(rows) -> str:
-    preferred_cyrillic = None
-    fallback = ""
-    for row in rows or []:
-        title = cleanAndDecode(row.get("title") or "")
-        if not title:
-            continue
-        if not fallback:
-            fallback = title
-        original_title = cleanAndDecode(row.get("original_title") or "")
-        is_translated = bool(row.get("is_translated")) or (original_title and title != original_title)
-        if is_translated and _looks_cyrillic_headline(title):
-            return title
-        if preferred_cyrillic is None and _looks_cyrillic_headline(title):
-            preferred_cyrillic = title
-    return preferred_cyrillic or fallback or "vest"
 
 
 def _parse_ip_literal(value: str) -> str:
@@ -227,12 +209,6 @@ def _source_admin_authorized(request: Request) -> bool:
 
 def _error_json(message: str, status_code: int, details=None):
     return api_error_response(message, status_code, detail=details)
-
-
-def _is_valid_focus_entity(name: str, entity_type: str | None) -> bool:
-    from nlp import is_valid_focus_entity
-
-    return is_valid_focus_entity(name, entity_type)
 
 
 def _extract_sync_token(request: Request) -> str:

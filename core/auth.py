@@ -11,8 +11,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
-from fastapi import HTTPException, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import HTTPException
 
 # Configuration
 JWT_SECRET = os.environ.get("JWT_SECRET")
@@ -24,32 +23,6 @@ JWT_ALGORITHM = "HS256"
 JWT_ISSUER = os.environ.get("JWT_ISSUER", "presek-api")
 JWT_AUDIENCE = os.environ.get("JWT_AUDIENCE", "presek-admin")
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
-
-
-class JWTBearer(HTTPBearer):
-    """Dependency for JWT token authentication."""
-
-    def __init__(self, auto_error: bool = True):
-        super().__init__(auto_error=auto_error)
-
-    async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
-        if credentials:
-            if not credentials.scheme == "Bearer":
-                raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
-            if not self.verify_jwt(credentials.credentials):
-                raise HTTPException(status_code=403, detail="Invalid token or expired token.")
-            return credentials.credentials
-        else:
-            raise HTTPException(status_code=403, detail="Invalid authorization code.")
-
-    def verify_jwt(self, jwt_token: str) -> bool:
-        """Verify JWT token validity."""
-        try:
-            payload = decode_jwt(jwt_token)
-            return payload is not None
-        except Exception:
-            return False
 
 
 def create_jwt_token(subject: str, additional_claims: dict[str, Any] | None = None) -> str:
@@ -87,20 +60,6 @@ def decode_jwt(token: str) -> dict[str, Any] | None:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
-def get_current_user(request: Request) -> str:
-    """Get the current user from JWT token."""
-    token = request.headers.get("Authorization")
-    if not token:
-        raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    try:
-        token = token.split("Bearer ")[1]
-        payload = decode_jwt(token)
-        return payload["sub"]
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid authentication: {e!s}")
-
-
 def create_admin_jwt() -> str:
     """Create a JWT token for admin access."""
     return create_jwt_token("admin", {"role": "admin", "scope": "full-access"})
@@ -113,8 +72,3 @@ def verify_admin_jwt(token: str) -> bool:
         return payload.get("role") == "admin" and payload.get("scope") == "full-access"
     except Exception:
         return False
-
-
-def generate_jwt_secret() -> str:
-    """Generate a secure JWT secret key."""
-    return secrets.token_urlsafe(32)

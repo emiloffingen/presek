@@ -14,10 +14,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
-from fastapi import HTTPException, Path, Query
-from pydantic import BaseModel, ValidationError, field_validator
-
-from core.api_errors import soft_error
+from fastapi import HTTPException
+from pydantic import BaseModel, ValidationError
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -42,124 +40,6 @@ URL_PATTERN = re.compile(
     r"(?:/?|[/?]\S+)$",
     re.IGNORECASE,
 )
-
-
-class QueryParams(BaseModel):
-    """Base model for query parameter validation."""
-
-
-class PaginationParams(BaseModel):
-    """Validation model for pagination parameters."""
-
-    page: int = Query(1, ge=1, le=1000, description="Page number")
-    limit: int = Query(20, ge=5, le=100, description="Items per page")
-
-    @field_validator("page")
-    @classmethod
-    def validate_page(cls, v):
-        if v < 1 or v > 1000:
-            raise ValueError("Page must be between 1 and 1000")
-        return v
-
-    @field_validator("limit")
-    @classmethod
-    def validate_limit(cls, v):
-        if v < 5 or v > 100:
-            raise ValueError("Limit must be between 5 and 100")
-        return v
-
-
-class SearchParams(BaseModel):
-    """Validation model for search parameters."""
-
-    q: str = Query("", max_length=500, description="Search query")
-    lang: str | None = Query(None, max_length=2, description="Language code")
-
-    @field_validator("q")
-    @classmethod
-    def validate_search_query(cls, v):
-        if len(v) > 500:
-            raise ValueError("Search query too long (max 500 characters)")
-        # Basic XSS prevention
-        if any(tag in v.lower() for tag in ["<script>", "</script>", "javascript:", "onerror="]):
-            raise ValueError("Invalid characters in search query")
-        return v
-
-
-class ClusterIDParam(BaseModel):
-    """Validation model for cluster ID parameters."""
-
-    cluster_id: str = Path(..., description="Cluster UUID")
-
-    @field_validator("cluster_id")
-    @classmethod
-    def validate_cluster_id(cls, v):
-        if not CLUSTER_ID_PATTERN.match(v):
-            raise ValueError("Invalid cluster ID format")
-        return v
-
-
-class ArticleIDParam(BaseModel):
-    """Validation model for article ID parameters."""
-
-    article_id: str = Path(..., description="Article UUID")
-
-    @field_validator("article_id")
-    @classmethod
-    def validate_article_id(cls, v):
-        if not ARTICLE_ID_PATTERN.match(v):
-            raise ValueError("Invalid article ID format")
-        return v
-
-
-class SourceNameParam(BaseModel):
-    """Validation model for source name parameters."""
-
-    source: str = Query(..., max_length=50, description="Source name")
-
-    @field_validator("source")
-    @classmethod
-    def validate_source_name(cls, v):
-        if not SOURCE_NAME_PATTERN.match(v):
-            raise ValueError("Invalid source name format")
-        return v
-
-
-class EmailParam(BaseModel):
-    """Validation model for email parameters."""
-
-    email: str = Query(..., max_length=254, description="Email address")
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v):
-        if not EMAIL_PATTERN.match(v):
-            raise ValueError("Invalid email format")
-        return v
-
-
-class URLParam(BaseModel):
-    """Validation model for URL parameters."""
-
-    url: str = Query(..., max_length=2048, description="URL")
-
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, v):
-        if len(v) > 2048:
-            raise ValueError("URL too long (max 2048 characters)")
-        if not URL_PATTERN.match(v):
-            raise ValueError("Invalid URL format")
-
-        # Additional URL validation
-        try:
-            parsed = urlparse(v)
-            if not parsed.scheme or not parsed.netloc:
-                raise ValueError("Invalid URL format")
-        except Exception:
-            raise ValueError("Invalid URL format")
-
-        return v
 
 
 def validate_cluster_id(cluster_id: str) -> str:
@@ -214,23 +94,6 @@ def validate_search_query(q: str, max_length: int = 500) -> str:
         raise HTTPException(status_code=400, detail="Invalid characters in search query")
 
     return q
-
-
-def validate_pagination(page: int = 1, limit: int = 20, max_page: int = 1000, max_limit: int = 100) -> tuple:
-    """Validate pagination parameters."""
-    try:
-        page = int(page)
-        limit = int(limit)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Invalid pagination parameters")
-
-    if page < 1 or page > max_page:
-        raise HTTPException(status_code=400, detail=f"Page must be between 1 and {max_page}")
-
-    if limit < 5 or limit > max_limit:
-        raise HTTPException(status_code=400, detail=f"Limit must be between 5 and {max_limit}")
-
-    return page, limit
 
 
 def validate_email(email: str) -> str:
@@ -291,83 +154,6 @@ def validate_language_code(lang: str, allowed_languages: list[str] = None) -> st
     return lang
 
 
-def validate_boolean_param(value: bool | str) -> bool:
-    """Validate a boolean parameter from various input types."""
-    if isinstance(value, bool):
-        return value
-
-    if isinstance(value, str):
-        value = value.lower().strip()
-        if value in ("true", "1", "yes", "on"):
-            return True
-        elif value in ("false", "0", "no", "off"):
-            return False
-
-    raise HTTPException(status_code=400, detail="Invalid boolean value")
-
-
-def validate_request_body(
-    body: dict[str, Any], required_fields: list[str] = None, max_size: int = 10000
-) -> dict[str, Any]:
-    """Validate a request body."""
-    if not body or not isinstance(body, dict):
-        raise HTTPException(status_code=400, detail="Invalid request body")
-
-    # Check size
-    try:
-        body_str = str(body)
-        if len(body_str) > max_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Request body too large (max {max_size} characters)",
-            )
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid request body")
-
-    # Check required fields
-    if required_fields:
-        missing_fields = [field for field in required_fields if field not in body]
-        if missing_fields:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Missing required fields: {', '.join(missing_fields)}",
-            )
-
-    return body
-
-
-def sanitize_html_input(text: str, max_length: int = 1000) -> str:
-    """Sanitize HTML input to prevent XSS attacks."""
-    if not text or not isinstance(text, str):
-        return text
-
-    if len(text) > max_length:
-        raise HTTPException(status_code=400, detail=f"Text too long (max {max_length} characters)")
-
-    # Basic HTML sanitization - remove script tags and dangerous attributes
-    sanitized = text
-    sanitized = re.sub(r"<script\b[^>]*>.*?</script\s*>", "", sanitized, flags=re.IGNORECASE | re.DOTALL)
-    sanitized = re.sub(r"on\w+\s*=", "", sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r"javascript:", "", sanitized, flags=re.IGNORECASE)
-
-    return sanitized
-
-
-def validate_api_key(api_key: str) -> str:
-    """Validate an API key format."""
-    if not api_key or not isinstance(api_key, str):
-        raise HTTPException(status_code=400, detail="Invalid API key")
-
-    if len(api_key) < 16 or len(api_key) > 128:
-        raise HTTPException(status_code=400, detail="Invalid API key length")
-
-    # Basic format validation
-    if not re.match(r"^[A-Za-z0-9_-]+$", api_key):
-        raise HTTPException(status_code=400, detail="Invalid API key format")
-
-    return api_key
-
-
 class ValidationErrorResponse(BaseModel):
     """Standard validation error response."""
 
@@ -391,48 +177,7 @@ def handle_validation_error(e: ValidationError) -> dict[str, Any]:
 # Request validation decorators
 
 
-def validate_request_params(func):
-    """Decorator to validate request parameters."""
-
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except ValidationError as e:
-            return handle_validation_error(e)
-        except HTTPException:
-            raise
-        except Exception as e:
-            log.error(f"Unexpected validation error: {e}")
-            return soft_error(message="Internal validation error")
-
-    return wrapper
-
-
 # Input sanitization functions
-
-
-def sanitize_search_query(query: str) -> str:
-    """Sanitize search query to prevent injection attacks."""
-    if not query:
-        return query
-
-    # Remove potential SQL injection patterns
-    dangerous_patterns = [
-        r"\b(DROP|DELETE|INSERT|UPDATE|SELECT)\b",
-        r"--",
-        r";",
-        r"/\*",
-        r"\*/",
-        r"\b(OR|AND)\b\s+\d+\s*=\s*\d+",
-        r"\b(UNION|JOIN)\b",
-        r"\b(EXEC|EXECUTE)\b",
-    ]
-
-    for pattern in dangerous_patterns:
-        if re.search(pattern, query, re.IGNORECASE):
-            raise HTTPException(status_code=400, detail="Invalid search query")
-
-    return query.strip()
 
 
 # Initialize validation system

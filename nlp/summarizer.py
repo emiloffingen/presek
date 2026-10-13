@@ -170,12 +170,3 @@ def synthesize_cluster(articles: list[dict]) -> dict:
             "summary": "",
             "key_facts": [],
         }
-
-
-def is_available() -> bool:
-    """Check if the model is available and loaded."""
-    try:
-        _get_model()
-        return True
-    except Exception:
-        return False

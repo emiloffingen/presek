@@ -6,7 +6,6 @@ import json
 from collections.abc import Callable
 
 import redis
-from fastapi import Request
 
 
 class RedisCache:
@@ -49,33 +48,6 @@ class RedisCache:
 
         return decorator
 
-    def cache_request(self, expires: int = 3600):
-        """Decorator to cache API responses"""
-
-        def decorator(func: Callable):
-            async def wrapper(request: Request, *args, **kwargs):
-                # Create cache key from request path and query params
-                cache_key = f"api:{request.url.path}:{hash(frozenset(request.query_params.items()))}"
-
-                # Try to get from cache
-                cached_result = self.get(cache_key)
-                if cached_result:
-                    return json.loads(cached_result)
-
-                # Execute function and cache result
-                result = await func(request, *args, **kwargs)
-                self.set(cache_key, json.dumps(result), expires)
-                return result
-
-            return wrapper
-
-        return decorator
-
 
 # Global cache instance
 cache = RedisCache()
-
-
-def get_cache() -> RedisCache:
-    """Get the global cache instance"""
-    return cache

@@ -55,13 +55,6 @@ class ArticleResponse(BaseModel):
     image_url: str | None = None
 
 
-class ClusterResponse(BaseModel):
-    cluster_id: str
-    title: str
-    summary: str | None = None
-    articles: list[ArticleResponse]
-
-
 class NewsResponse(BaseModel):
     status: str
     page: int

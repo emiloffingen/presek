@@ -808,11 +808,6 @@ class DatabaseManager:
 
     # --- High-Level DAL Methods ---
 
-    async def async_get_articles_by_ids(self, ids):
-        return await self.async_execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC", (ids,), read_only=True
-        )
-
     async def async_search_semantic(self, query_embedding: list[float], limit: int = 100):
         vec_str = "[" + ",".join(map(str, query_embedding)) + "]"
         return await self.async_execute(SQL_SEMANTIC_SEARCH, (vec_str, vec_str, limit), read_only=True)
@@ -895,12 +890,6 @@ class DatabaseManager:
         rows = await self.async_execute(sql, tuple(params), read_only=True)
         return [r["cluster_id"] for r in rows]
 
-    def get_articles_by_ids(self, ids):
-        return self.execute(
-            "SELECT * FROM articles WHERE cluster_id = ANY(%s) ORDER BY created_at DESC",
-            (ids,),
-        )
-
     def search_semantic(self, query_embedding: list[float], limit: int = 100):
         """
         Search for articles using vector similarity (cosine distance).
@@ -931,63 +920,6 @@ class DatabaseManager:
         # We use websearch_to_tsquery for more natural search behavior
         sql = _build_hybrid_search_sql(time_filter, validated_sort_by)
         return self.execute(sql, (query_text, query_text, vec_str, limit))
-
-    def get_articles_by_country(self, country, limit=200, sub=None, topic=None, sentiment=None, category=None):
-        sql = "SELECT * FROM articles WHERE 1=1"
-        params = []
-
-        if category:
-            sql += " AND category = %s"
-            params.append(category)
-        elif country and country != "RS":
-            sql += " AND country = %s"
-            params.append(country)
-        elif country == "RS":
-            sql += " AND (country = 'RS' OR country IS NULL OR country = '')"
-
-        if sub:
-            sql += " AND subcategory = %s"
-            params.append(sub)
-        if topic:
-            sql += " AND topic = %s"
-            params.append(topic)
-        if sentiment:
-            escaped_sentiment = sentiment.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            sql += " AND summary ILIKE %s ESCAPE '\\'"
-            params.append(f"%{escaped_sentiment}%")
-
-        # Ensure limit is an integer
-        try:
-            limit = int(limit)
-        except (ValueError, TypeError):
-            limit = 200
-
-        sql += " ORDER BY created_at DESC LIMIT %s"
-        params.append(limit)
-        return self.execute(sql, tuple(params))
-
-    def get_personalized_articles(self, follow_sources, follow_topics, limit=200):
-        sql = "SELECT * FROM articles WHERE 1=1"
-        clauses = []
-        params = []
-        if follow_sources:
-            clauses.append("source = ANY(%s)")
-            params.append(follow_sources)
-        if follow_topics:
-            clauses.append("topic = ANY(%s)")
-            params.append(follow_topics)
-        if clauses:
-            sql += " AND (" + " OR ".join(clauses) + ")"
-
-        # Ensure limit is an integer
-        try:
-            limit = int(limit)
-        except (ValueError, TypeError):
-            limit = 200
-
-        sql += " ORDER BY created_at DESC LIMIT %s"
-        params.append(limit)
-        return self.execute(sql, tuple(params))
 
     def search_articles(self, q, limit=100):
         if not q or len(q) > 500:
@@ -1029,10 +961,6 @@ class DatabaseManager:
         for r in rows:
             result[r["cluster_id"]].add(r["entity_name"])
         return result
-
-    def refresh_stats_view(self):
-        """Refreshes the article stats materialized view."""
-        self.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_article_stats", fetch=False)
 
     def get_stats(self):
         try:

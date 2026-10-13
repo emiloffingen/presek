@@ -4,29 +4,10 @@ from __future__ import annotations
 
 import re
 
-from core.api_helpers import normalize_citation_sources, normalize_perspectives, normalize_summary_text
+from core.api_helpers import normalize_citation_sources
 from core.text_extraction import clean_extracted_article_text
-from nlp import deShout, synthesize_cluster_fallback
+from nlp import deShout
 from nlp.categories import normalize_headline
-
-
-def _normalize_cluster_synthesis(summary, perspectives, article_rows, lang="mk"):
-    clean_summary = normalize_summary_text(summary)
-    clean_perspectives = normalize_perspectives(perspectives)
-
-    if clean_summary and clean_perspectives:
-        return clean_summary, clean_perspectives
-
-    fallback = synthesize_cluster_fallback(article_rows, lang=lang)
-    fallback_summary = normalize_summary_text(fallback.get("summary", ""))
-    fallback_perspectives = normalize_perspectives(fallback.get("perspectives", []))
-
-    if not clean_summary:
-        clean_summary = fallback_summary
-    if not clean_perspectives:
-        clean_perspectives = fallback_perspectives
-
-    return clean_summary, clean_perspectives
 
 
 def _ensure_dict(value):

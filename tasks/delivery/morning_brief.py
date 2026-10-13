@@ -281,7 +281,3 @@ def send_morning_brief_to(targets: list[str], brief_date: datetime.datetime | No
             delivered.append(target)
     log.info(f"[morning_brief] delivered {len(delivered)}/{len(targets)} briefings")
     return delivered
-
-
-def send_morning_brief(to_address: str, lang: str = "mk") -> bool:
-    return to_address in send_morning_brief_to([to_address])

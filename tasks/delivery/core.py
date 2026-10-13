@@ -44,14 +44,6 @@ _LOCALIZED_DELIVERY = {
 }
 
 
-def _site_url_for_locale(lang: str) -> str:
-    import os
-
-    if lang == "mk":
-        return str(os.environ.get("PUBLIC_MK_SITE_URL") or "https://presek.mk").rstrip("/")
-    return _PUBLIC_SITE_URL
-
-
 def _parse_row_datetime(value):
     if isinstance(value, datetime.datetime):
         return value
@@ -160,14 +152,6 @@ def _normalize_alert_context(context):
         if key_text and value_text:
             clean[key_text] = value_text
     return clean
-
-
-def _next_alert_context(existing_context, candidate):
-    context = _normalize_alert_context(existing_context)
-    now = datetime.datetime.now(datetime.UTC).isoformat()
-    for key in candidate["throttle_keys"]:
-        context[key] = now
-    return context
 
 
 def _load_delivery_kind_performance(days=30):

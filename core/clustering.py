@@ -568,11 +568,6 @@ def _cosine_of_vectors(a: list, b: list) -> float:
     return dot / ((norm_a**0.5) * (norm_b**0.5))
 
 
-def _cosine_similarity(left, right) -> float:
-    """Cosine similarity of two embeddings; accepts float lists or pgvector strings."""
-    return _cosine_of_vectors(_parse_vector(left), _parse_vector(right))
-
-
 def sr_stem(word: str) -> str:
     value = str(word or "")
     if len(value) < 4:

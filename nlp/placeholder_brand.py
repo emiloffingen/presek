@@ -65,10 +65,6 @@ def category_palette(category_key: str, *, light: bool) -> tuple[str, str, str]:
     return table.get(category_key, table["default"])
 
 
-def category_palette_pair(category_key: str) -> tuple[tuple[str, str, str], tuple[str, str, str]]:
-    return category_palette(category_key, light=False), category_palette(category_key, light=True)
-
-
 def minimal_fallback_svg(*, lang: str = "sr") -> str:
     """Ultra-minimal proxy fallback when the full generator fails."""
     label = "PRESEK.MK" if str(lang or "sr").lower().startswith("mk") else "PRESEK"

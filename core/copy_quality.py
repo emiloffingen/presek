@@ -229,21 +229,3 @@ def copy_bundle_passes_publish_gate(
 
 
 # Backwards-compatible aliases
-def mk_copy_passes_publish_gate(text):
-    return assess_mk_copy_purity(text).get("ok", False)
-
-
-def mk_bundle_passes_publish_gate(
-    *,
-    headline: str = "",
-    summary: str = "",
-    article: str = "",
-    key_facts: list | None = None,
-) -> tuple[bool, dict]:
-    return copy_bundle_passes_publish_gate(
-        lang="mk",
-        headline=headline,
-        summary=summary,
-        article=article,
-        key_facts=key_facts,
-    )
