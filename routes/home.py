@@ -658,6 +658,26 @@ def _decorate_clusters_display(clusters):
     return [_decorate_cluster_display(cluster) for cluster in (clusters or [])]
 
 
+_SOURCE_BREAKDOWN_TOP = 8
+
+
+def _source_breakdown(articles):
+    """Per-source article counts over *all* of a cluster's articles (top N + remainder).
+
+    The payload only carries a sample of each story's articles, so anything derived from
+    that sample (like the lead's coverage bar) misrepresents a story with many sources.
+    """
+    counts: dict[str, int] = {}
+    for article in articles or []:
+        source = str((article or {}).get("source") or "").strip() if isinstance(article, dict) else ""
+        if source:
+            counts[source] = counts.get(source, 0) + 1
+    ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    top = [{"source": source, "count": count} for source, count in ranked[:_SOURCE_BREAKDOWN_TOP]]
+    other = sum(count for _, count in ranked[_SOURCE_BREAKDOWN_TOP:])
+    return top, other
+
+
 def _compact_home_cluster(cluster, max_articles=4):
     if not isinstance(cluster, dict):
         return cluster
@@ -665,6 +685,7 @@ def _compact_home_cluster(cluster, max_articles=4):
     articles = list(cluster.get("articles") or [])
     compact["source_count"] = int(cluster.get("source_count") or len(articles))
     compact["sources_count"] = int(cluster.get("sources_count") or compact["source_count"])
+    compact["source_breakdown"], compact["source_breakdown_other"] = _source_breakdown(articles)
     compact["articles"] = articles[:max_articles]
     return compact
 

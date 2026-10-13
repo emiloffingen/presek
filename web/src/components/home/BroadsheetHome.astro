@@ -14,7 +14,7 @@ import type { HomepageViewModel } from '../../lib/homepageViewModel';
 import { chooseClusterImage } from '../../utils/imageSelection.ts';
 import { getStoryPreviewText, normalizeEntityOrTag } from '../../utils/textUtils.ts';
 import { localePath } from '../../lib/localePaths';
-import { buildSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
+import { clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
 
 interface Props {
     vm: HomepageViewModel;
@@ -79,7 +79,7 @@ const lead = leadCluster ? {
     caption: leadCluster.articles?.[0]?.image_caption || leadCluster.articles?.[0]?.source || '',
     articles: articleCount(leadCluster),
     sources: sourceCount(leadCluster),
-    breakdown: buildSourceBreakdown(leadCluster.articles || []),
+    breakdown: clusterSourceBreakdown(leadCluster),
 } : null;
 
 const quote = stats?.quote_of_the_day?.quote ? stats.quote_of_the_day : null;

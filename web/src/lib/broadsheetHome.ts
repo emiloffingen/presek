@@ -46,6 +46,21 @@ export function pickBroadsheetSections(pools: ClusterPools, limits = { developin
     return { developing, picks, live };
 }
 
+type SourcePart = { source: string; count: number };
+
+/**
+ * Top `maxSources` sources plus "Други" for the rest. `other` is the article count the
+ * caller already knows is outside `parts` (the API sends the top sources plus a remainder).
+ */
+export function foldSourceBreakdown(parts: SourcePart[], other = 0, maxSources = 3): SourcePart[] {
+    const ranked = [...parts]
+        .filter((part) => part?.source && part.count > 0)
+        .sort((a, b) => b.count - a.count || a.source.localeCompare(b.source));
+    if (other <= 0 && ranked.length <= maxSources + 1) return ranked;
+    const rest = ranked.slice(maxSources).reduce((sum, part) => sum + part.count, 0) + Math.max(0, other);
+    return [...ranked.slice(0, maxSources), { source: 'Други', count: rest }];
+}
+
 /** Per-source article counts for the lead's coverage bar: top three plus "Други". */
 export function buildSourceBreakdown(articles: Array<{ source?: string | null }>, maxSources = 3) {
     const counts = new Map<string, number>();
@@ -54,12 +69,23 @@ export function buildSourceBreakdown(articles: Array<{ source?: string | null }>
         if (!source) continue;
         counts.set(source, (counts.get(source) || 0) + 1);
     }
-    const ranked = [...counts.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([source, count]) => ({ source, count }));
-    if (ranked.length <= maxSources + 1) return ranked;
-    const rest = ranked.slice(maxSources).reduce((sum, part) => sum + part.count, 0);
-    return [...ranked.slice(0, maxSources), { source: 'Други', count: rest }];
+    return foldSourceBreakdown(
+        [...counts.entries()].map(([source, count]) => ({ source, count })),
+        0,
+        maxSources,
+    );
+}
+
+/**
+ * Prefer the API's breakdown (computed over every article in the story); the shipped
+ * `articles` are only a sample, so counting them under-reports big stories.
+ */
+export function clusterSourceBreakdown(cluster: any, maxSources = 3): SourcePart[] {
+    const declared = cluster?.source_breakdown;
+    if (Array.isArray(declared) && declared.length > 0) {
+        return foldSourceBreakdown(declared, Number(cluster?.source_breakdown_other) || 0, maxSources);
+    }
+    return buildSourceBreakdown(cluster?.articles || [], maxSources);
 }
 
 const SECTION_LABELS_MK: Record<string, string> = {
