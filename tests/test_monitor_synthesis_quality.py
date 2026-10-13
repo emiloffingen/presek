@@ -143,3 +143,26 @@ class TestMonitorSynthesisQuality:
         }
 
         assert evaluate_snapshot(snapshot, 0.35, 0.55) == 2
+
+
+class TestUnsummarizedCounts:
+    @patch("scripts.monitor_synthesis_quality.db.execute")
+    def test_counts_clusters_without_synthesis_not_articles(self, mock_execute):
+        from scripts.monitor_synthesis_quality import _unsummarized_counts
+
+        mock_execute.return_value = [{"total": 9, "last_24h": 4}]
+
+        assert _unsummarized_counts() == {"unsummarized_total": 9, "unsummarized_24h": 4}
+
+        sql, params = mock_execute.call_args.args[0], mock_execute.call_args.args[1]
+        # articles.summary is never populated; the metric must not depend on it
+        assert "summary IS NULL" not in sql
+        assert "cluster_summaries" in sql and "NOT EXISTS" in sql
+        assert "article_count >= 2" in sql
+        assert params == (7, 2)
+
+    @patch("scripts.monitor_synthesis_quality.db.execute", return_value=[])
+    def test_empty_result_is_zero(self, _mock_execute):
+        from scripts.monitor_synthesis_quality import _unsummarized_counts
+
+        assert _unsummarized_counts() == {"unsummarized_total": 0, "unsummarized_24h": 0}

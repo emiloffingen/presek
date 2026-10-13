@@ -61,6 +61,8 @@ SELECT
 # clusters on the homepage, so a long tail of older clusters is "stale" by design.
 # Only alert on that backlog when no synthesis at all has landed recently.
 STALE_CLUSTER_ALERT_MIN = 8
+# Clusters (2+ articles, past a 2 h grace period) still waiting for a synthesis.
+UNSUMMARIZED_CLUSTER_ALERT_MIN = 50
 SYNTHESIS_REFRESH_OVERDUE_MINUTES = 240
 
 
@@ -176,12 +178,12 @@ async def build_ops_snapshot() -> dict:
             )
         )
 
-    if unsummarized_24h >= 1500:
+    if unsummarized_24h >= UNSUMMARIZED_CLUSTER_ALERT_MIN:
         alerts.append(
             _alert(
                 "warn",
                 "synthesis_backlog",
-                f"High unsummarized volume in last 24h ({unsummarized_24h}).",
+                f"{unsummarized_24h} clusters from the last 24h are still waiting for a synthesis.",
                 str(unsummarized_24h),
             )
         )

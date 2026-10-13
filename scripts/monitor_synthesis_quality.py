@@ -132,17 +132,46 @@ def build_report(days: int):
     }
 
 
+# A cluster is only counted as "unsummarized" once it has had time to be picked up, and only
+# if it is worth synthesizing (2+ articles). Per-article ``articles.summary`` is not used by
+# the pipeline (synthesis is per cluster), so counting NULL there just counts every article.
+_UNSUMMARIZED_GRACE_HOURS = 2
+_UNSUMMARIZED_TOTAL_WINDOW_DAYS = 7
+
+
 def _unsummarized_counts():
+    """Clusters with 2+ articles and no generated ``mk`` synthesis, past the grace period.
+
+    ``unsummarized_24h`` looks at clusters from the last 24 hours, ``unsummarized_total`` at
+    the last 7 days (older clusters are stale by design and would only add noise).
+    """
     rows = db.execute(
         """
+        WITH recent AS (
+            SELECT cluster_id,
+                   COUNT(*) AS article_count,
+                   MAX(created_at) AS newest_article,
+                   MIN(created_at) AS first_article
+            FROM articles
+            WHERE cluster_id IS NOT NULL
+              AND created_at >= NOW() - make_interval(days => %s)
+            GROUP BY cluster_id
+        )
         SELECT
-            COUNT(*) FILTER (WHERE summary IS NULL) AS total,
-            COUNT(*) FILTER (
-                WHERE summary IS NULL
-                  AND created_at >= NOW() - interval '24 hours'
-            ) AS last_24h
-        FROM articles
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE r.first_article >= NOW() - interval '24 hours') AS last_24h
+        FROM recent r
+        WHERE r.article_count >= 2
+          AND r.newest_article < NOW() - make_interval(hours => %s)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM cluster_summaries s
+              WHERE s.cluster_id = r.cluster_id
+                AND s.lang = 'mk'
+                AND COALESCE(s.generated_article, '') != ''
+          )
         """,
+        (_UNSUMMARIZED_TOTAL_WINDOW_DAYS, _UNSUMMARIZED_GRACE_HOURS),
         read_only=True,
     )
     row = rows[0] if rows else {}
