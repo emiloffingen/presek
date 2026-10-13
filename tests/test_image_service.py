@@ -1,7 +1,7 @@
 import asyncio
 
-from core import image_service
-from utils import network
+import core.image_service as image_service
+import utils.network as network
 
 
 class _FakeResponse:

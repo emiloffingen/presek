@@ -6,7 +6,7 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from utils import network
+import utils.network as network
 from utils.network import UnsafeFetchError, fetch_public_bytes
 
 DNS = {

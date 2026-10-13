@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from routes import marketing
+import routes.marketing as marketing
 
 
 def _request(ip="203.0.113.7", ua="Mozilla/5.0"):

@@ -132,6 +132,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# `import pkg.mod as m` is deliberate in tests: fixtures swap sys.modules entries, and
+# `from pkg import m` would bind the stale package attribute instead (PLR0402 broke 3 tests).
+"tests/*.py" = ["PLR0402"]
 # These modules do sys.path.insert() or env setup before project imports — intentional pattern
 "core/*.py" = ["E402"]
 "routes/*.py" = ["E402"]
