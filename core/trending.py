@@ -438,6 +438,17 @@ DISPLAY_OVERRIDES = {
 }
 
 
+# Outlets spell the same surname both "Михаилова" and "Михајлова" (Latin: mihailova / mihajlova).
+# Fold the "ai"/"ei" + consonant + -ov/-ev spelling onto the Macedonian "j" form so the two
+# variants are counted as one trend. Deliberately narrow (surname-shaped words only) so
+# unrelated words are not merged.
+_SURNAME_I_FOR_J = re.compile(r"([ae])i([bcdfghklmnprstvz])(?=(?:ov|ev)(?:a|i|u|e|o|om|oj|ih|im|ima)?$)")
+
+
+def _fold_surname_spelling(word_latin: str) -> str:
+    return _SURNAME_I_FOR_J.sub(r"\1j\2", word_latin)
+
+
 def normalize_trend_word(word_latin: str, word_key: str, is_proper: bool) -> str:
     if word_latin in TREND_NORMALIZATION:
         return TREND_NORMALIZATION[word_latin]
@@ -447,7 +458,7 @@ def normalize_trend_word(word_latin: str, word_key: str, is_proper: bool) -> str
         return AMBIGUOUS_PROPER_NOUN_NORMALIZATION[word_latin]
     if is_proper and word_key in AMBIGUOUS_PROPER_NOUN_NORMALIZATION:
         return AMBIGUOUS_PROPER_NOUN_NORMALIZATION[word_key]
-    return word_latin
+    return _fold_surname_spelling(word_latin)
 
 
 def format_trend_word(word: str) -> str:
