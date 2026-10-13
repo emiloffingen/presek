@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 from core.config import DEFAULT_CREDIBILITY, SOURCE_CATEGORIES, SOURCE_CREDIBILITY
 
@@ -9,7 +9,7 @@ log = logging.getLogger("presek")
 _SOURCE_REGISTRY_CACHE = {"time": 0.0, "data": {}}
 
 
-def get_source_registry(ttl_seconds: int = 300) -> Dict[str, Dict[str, Any]]:
+def get_source_registry(ttl_seconds: int = 300) -> dict[str, dict[str, Any]]:
     """
     Returns a unified map of source metadata (credibility, category).
     Prefer database values, fall back to hardcoded config.

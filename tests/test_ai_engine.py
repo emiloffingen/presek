@@ -1,8 +1,8 @@
 import sys
 import types
+from unittest.mock import Mock
 
 import pytest
-from unittest.mock import Mock
 
 from core.ai_engine import (
     LocalProvider,
@@ -483,6 +483,7 @@ def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
 
 def test_ai_quota_async_path(monkeypatch):
     import asyncio
+
     from core import ai_quota
 
     store: dict[str, int] = {}

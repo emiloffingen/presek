@@ -6,13 +6,13 @@ This script scans for vulnerable dependencies and provides recommendations
 for updates. It should be run regularly as part of CI/CD or maintenance.
 """
 
-import subprocess
 import json
+import subprocess
 import sys
-from typing import List, Dict, Any
+from typing import Any
 
 
-def run_pip_audit() -> Dict[str, Any]:
+def run_pip_audit() -> dict[str, Any]:
     """Run pip-audit and return the results as a dictionary."""
     try:
         result = subprocess.run(["pip-audit"], capture_output=True, text=True, timeout=60)
@@ -51,7 +51,7 @@ def run_pip_audit() -> Dict[str, Any]:
         return {"success": False, "error": str(e), "vulnerabilities": []}
 
 
-def get_outdated_packages() -> List[Dict[str, str]]:
+def get_outdated_packages() -> list[dict[str, str]]:
     """Get a list of outdated packages."""
     try:
         result = subprocess.run(
@@ -66,7 +66,7 @@ def get_outdated_packages() -> List[Dict[str, str]]:
         return []
 
 
-def generate_update_script(vulnerabilities: List[Dict[str, Any]]) -> str:
+def generate_update_script(vulnerabilities: list[dict[str, Any]]) -> str:
     """Generate a shell script to update vulnerable packages."""
     script = "#!/bin/bash\n"
     script += "# Auto-generated dependency update script\n"

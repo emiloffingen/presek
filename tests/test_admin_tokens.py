@@ -268,8 +268,8 @@ def test_cleanup_expired_tokens():
 
     _, token_meta = create_admin_token(subject="expiring-soon")
 
-    past_created_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=10)
-    past_expiry_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
+    past_created_date = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=10)
+    past_expiry_date = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=5)
     with_fake_db_update(token_meta.token_id, past_created_date, past_expiry_date)
 
     cleaned = cleanup_expired_tokens()

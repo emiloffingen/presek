@@ -367,7 +367,7 @@ class TestClusterSummariesConstraint:
         # Both insert sites must assign lang so the (cluster_id, lang) PK is
         # always satisfied.
         assert src.count("INSERT INTO cluster_summaries") >= 2
-        inserts = re.findall(r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.S)
+        inserts = re.findall(r"INSERT INTO cluster_summaries\s*\(([^)]*)\)", src, re.DOTALL)
         assert inserts, "no cluster_summaries inserts found"
         for cols in inserts:
             normalized = " ".join(cols.split())

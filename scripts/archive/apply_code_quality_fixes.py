@@ -23,7 +23,7 @@ def run_command(cmd, description):
             print(f"Error: {result.stderr}")
             return False
     except Exception as e:
-        print(f"💥 {description} crashed: {str(e)}")
+        print(f"💥 {description} crashed: {e!s}")
         return False
 
 

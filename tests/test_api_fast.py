@@ -2,13 +2,12 @@ import asyncio
 import os
 import sys
 import types
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 # --- Robust Global FastAPI Mocks ---
-
-
 from fastapi import HTTPException as _FakeHTTPException
 
 
@@ -295,7 +294,6 @@ def test_fastapi_news_fast_flag_uses_its_own_cache_key(mock_all):
 
     def _cached(key, *a, **kw):
         seen.append(key)
-        return None
 
     with patch("routes.news.cached_response", side_effect=_cached):
         asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=8, fast=True))
@@ -1181,12 +1179,12 @@ def test_provider_fallback_order_env_parsing(monkeypatch):
 
 @pytest.mark.parametrize("age_days, expect_expired", [(1, False), (10_000, True)])
 def test_profile_delivery_read_enforces_token_expiry(mock_all, age_days, expect_expired):
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import routes.profile as profile_routes
 
     token = "a" * 32
-    created = datetime.now(timezone.utc) - timedelta(days=age_days)
+    created = datetime.now(UTC) - timedelta(days=age_days)
 
     async def execute_one_side_effect(query, params=None, **kwargs):
         if "synced_delivery_subscriptions" in query:

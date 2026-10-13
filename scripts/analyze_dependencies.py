@@ -4,14 +4,13 @@ Comprehensive Dependency Analysis for Presek
 Analyzes current dependencies, identifies vulnerabilities, and suggests updates.
 """
 
-import subprocess
 import json
+import subprocess
 import sys
-from typing import Dict, List, Tuple
 from pathlib import Path
 
 
-def run_command(cmd: str, description: str = "") -> Tuple[bool, str, str]:
+def run_command(cmd: str, description: str = "") -> tuple[bool, str, str]:
     """Run a command and return success status and output."""
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd="/home/emiloffingen/presek")
@@ -20,7 +19,7 @@ def run_command(cmd: str, description: str = "") -> Tuple[bool, str, str]:
         return False, "", str(e)
 
 
-def get_installed_packages() -> Dict[str, str]:
+def get_installed_packages() -> dict[str, str]:
     """Get currently installed packages and versions."""
     success, output, error = run_command(".venv/bin/python3 -m pip list --format=json")
     if not success:
@@ -35,7 +34,7 @@ def get_installed_packages() -> Dict[str, str]:
         return {}
 
 
-def get_outdated_packages() -> List[Dict]:
+def get_outdated_packages() -> list[dict]:
     """Get outdated packages with current and latest versions."""
     success, output, error = run_command(".venv/bin/python3 -m pip list --outdated --format=json")
     if not success:
@@ -49,7 +48,7 @@ def get_outdated_packages() -> List[Dict]:
         return []
 
 
-def get_vulnerable_packages() -> List[Dict]:
+def get_vulnerable_packages() -> list[dict]:
     """Get packages with known vulnerabilities."""
     success, output, error = run_command(".venv/bin/python3 -m pip-audit --desc --format=json")
     if not success:
@@ -79,7 +78,7 @@ def categorize_vulnerability(severity: str) -> str:
         return "🟡 MEDIUM"
 
 
-def analyze_dependency_usage() -> Dict[str, List[str]]:
+def analyze_dependency_usage() -> dict[str, list[str]]:
     """Analyze which files import each dependency."""
     usage = {}
 
@@ -107,7 +106,7 @@ def analyze_dependency_usage() -> Dict[str, List[str]]:
     return usage
 
 
-def generate_update_recommendations(outdated: List[Dict], vulnerable: List[Dict]) -> List[Dict]:
+def generate_update_recommendations(outdated: list[dict], vulnerable: list[dict]) -> list[dict]:
     """Generate prioritized update recommendations."""
     recommendations = []
 

@@ -29,7 +29,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -129,7 +129,7 @@ def main() -> int:
     if args.run_step:
         return _run_single_step(args.run_step)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     group = args.group if args.group is not None else (now.hour // SLOT_HOURS) % len(GROUPS)
     steps = plan(now, args.group)
     if args.only:

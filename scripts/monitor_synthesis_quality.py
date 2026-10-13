@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -157,7 +157,7 @@ def _runtime_fallback_reason_counts():
     try:
         from utils import redis_client
 
-        bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        bucket = datetime.now(UTC).strftime("%Y-%m-%d")
         data = redis_client.hgetall(f"presek:runtime_events:{bucket}") or {}
         reasons = {}
         for key, value in data.items():
@@ -244,7 +244,7 @@ def build_snapshot(primary_days: int = 1, history_days: int = 7):
         "persist_gap_24h": persist_metrics["persist_gap"],
         "synthesis_events_24h": persist_metrics["synthesis_events"],
         "db_persisted_events_24h": persist_metrics["db_persisted_events"],
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
     }
 
 

@@ -14,15 +14,14 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List
 
 
 class SecurityAudit:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
-        self.issues: List[Dict] = []
-        self.warnings: List[Dict] = []
-        self.info: List[Dict] = []
+        self.issues: list[dict] = []
+        self.warnings: list[dict] = []
+        self.info: list[dict] = []
         self.ignored_python_vulns = {
             # Transitive dependency of llama-cpp-python. No fixed diskcache release is
             # available; risk requires attacker write access to the app-owned cache dir.

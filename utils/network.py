@@ -3,7 +3,6 @@ import logging
 import socket
 import urllib.parse
 from io import BytesIO
-from typing import List, Optional
 
 from PIL import Image
 
@@ -24,7 +23,7 @@ def _is_public_ip(ip: str) -> bool:
     return addr.is_global and not addr.is_multicast
 
 
-def _resolve_public_ips(candidate_url: str) -> List[str]:
+def _resolve_public_ips(candidate_url: str) -> list[str]:
     parsed = urllib.parse.urlparse(candidate_url)
     hostname = (parsed.hostname or "").lower()
     if not hostname or hostname in {
@@ -66,7 +65,7 @@ def _peer_is_public(response) -> bool:
     return _is_public_ip(ip)
 
 
-def _peer_ip(response) -> Optional[str]:
+def _peer_ip(response) -> str | None:
     try:
         # httpx support
         extensions = getattr(response, "extensions", {})
@@ -116,7 +115,7 @@ async def fetch_public_bytes(
     url: str,
     *,
     max_bytes: int,
-    headers: Optional[dict] = None,
+    headers: dict | None = None,
     timeout: float = 8.0,
     max_redirects: int = 3,
     content_type_ok=None,

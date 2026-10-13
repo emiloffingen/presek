@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from utils.ranking import compute_cluster_pulse_pluralism
 
-_NOW = datetime.datetime.now(datetime.timezone.utc)
+_NOW = datetime.datetime.now(datetime.UTC)
 
 
 def _row(source, hours_ago=1.0):

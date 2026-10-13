@@ -4,7 +4,7 @@ import logging
 import math
 import re
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 from core.config import BALANCED_COVERAGE_THRESHOLD, DEFAULT_CREDIBILITY
 from utils.cache import redis_client
@@ -16,7 +16,7 @@ log = logging.getLogger("presek")
 _SOURCE_STATUS_CACHE = {"time": 0.0, "data": {}}
 
 
-def get_source_health_map(ttl: int = 60) -> Dict[str, Any]:
+def get_source_health_map(ttl: int = 60) -> dict[str, Any]:
     """Per-source ingestion health from Redis, cached in-process for ``ttl`` seconds.
 
     An EMPTY result is cached too. It used to be re-fetched on every call (``data`` was
@@ -77,7 +77,7 @@ def _cluster_title_overlap(left: str, right: str) -> float:
     return len(l_set & r_set) / union
 
 
-def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def build_cluster_source_signals(arts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ranked = rank_articles_in_cluster(arts)
     if not ranked:
         return []
@@ -169,7 +169,7 @@ def build_cluster_source_signals(arts: List[Dict[str, Any]]) -> List[Dict[str, A
     return signals
 
 
-def annotate_cluster_articles(arts: List[Dict[str, Any]], prefer_recent: bool = False) -> List[Dict[str, Any]]:
+def annotate_cluster_articles(arts: list[dict[str, Any]], prefer_recent: bool = False) -> list[dict[str, Any]]:
     ranked = rank_articles_in_cluster(arts, prefer_recent=prefer_recent)
     signals = build_cluster_source_signals(ranked)
 
@@ -210,7 +210,7 @@ def annotate_cluster_articles(arts: List[Dict[str, Any]], prefer_recent: bool = 
     return annotated
 
 
-def rank_articles_in_cluster(arts: List[Dict[str, Any]], prefer_recent: bool = False) -> List[Dict[str, Any]]:
+def rank_articles_in_cluster(arts: list[dict[str, Any]], prefer_recent: bool = False) -> list[dict[str, Any]]:
     if not arts:
         return []
 
@@ -241,11 +241,11 @@ def rank_articles_in_cluster(arts: List[Dict[str, Any]], prefer_recent: bool = F
 
 def build_read_next_clusters(
     cur_id: str,
-    cur_arts: List[Dict[str, Any]],
-    cur_tags: List[str],
-    candidates: List[Dict[str, Any]],
+    cur_arts: list[dict[str, Any]],
+    cur_tags: list[str],
+    candidates: list[dict[str, Any]],
     limit: int = 4,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     cur_ranked = annotate_cluster_articles(cur_arts or [])
     if not cur_ranked:
         return []
@@ -486,7 +486,7 @@ def build_editor_analytics_payload(
     }
 
 
-def score_cluster(arts: List[Dict[str, Any]]) -> float:
+def score_cluster(arts: list[dict[str, Any]]) -> float:
     if not arts:
         return 0.0
     u_sources = {a["source"] for a in arts}
@@ -502,7 +502,7 @@ def score_cluster(arts: List[Dict[str, Any]]) -> float:
     return cred * recency * math.log1p(len(arts)) * (1 + math.log1p(clicks) * 0.15)
 
 
-def score_cluster_for_synthesis(arts: List[Dict[str, Any]]) -> float:
+def score_cluster_for_synthesis(arts: list[dict[str, Any]]) -> float:
     if not arts:
         return 0.0
     ranked = rank_articles_in_cluster(arts)
@@ -512,7 +512,7 @@ def score_cluster_for_synthesis(arts: List[Dict[str, Any]]) -> float:
     return base * src_bonus * ctx_bonus
 
 
-def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
+def score_cluster_for_homepage(arts: list[dict[str, Any]]) -> float:
     if not arts:
         return 0.0
     ranked = rank_articles_in_cluster(arts)
@@ -529,7 +529,7 @@ def score_cluster_for_homepage(arts: List[Dict[str, Any]]) -> float:
     return base * t_bonus * source_bonus
 
 
-def assess_cluster_synthesis_freshness(arts: List[Dict[str, Any]], synth_at) -> Dict[str, Any]:
+def assess_cluster_synthesis_freshness(arts: list[dict[str, Any]], synth_at) -> dict[str, Any]:
     if not arts:
         return {
             "refresh_needed": False,
@@ -628,7 +628,7 @@ def assess_cluster_synthesis_freshness(arts: List[Dict[str, Any]], synth_at) -> 
     }
 
 
-def is_balanced(arts: List[Dict[str, Any]]) -> bool:
+def is_balanced(arts: list[dict[str, Any]]) -> bool:
     if len(arts) < BALANCED_COVERAGE_THRESHOLD:
         return False
     reg = get_source_registry()
@@ -647,7 +647,7 @@ _SOURCE_TIER_MAP = {
 }
 
 
-def compute_cluster_pulse_pluralism(article_rows: List[Dict[str, Any]]) -> Dict[str, float]:
+def compute_cluster_pulse_pluralism(article_rows: list[dict[str, Any]]) -> dict[str, float]:
     """Deterministic pulse/pluralism scores from cluster rows (0-100).
 
     These replace the hardcoded 50/50 defaults persisted by the synthesis
@@ -670,7 +670,7 @@ def compute_cluster_pulse_pluralism(article_rows: List[Dict[str, Any]]) -> Dict[
     tiers = {_SOURCE_TIER_MAP.get((reg.get(s, {}) or {}).get("category", "Lokalni"), "R") for s in sources}
     pluralism = 10.0 + 15.0 * min(len(sources), 4) + 10.0 * max(len(tiers) - 1, 0)
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     newest_age_h: float | None = None
     in_last_24h = 0
     for r in rows:
@@ -678,7 +678,7 @@ def compute_cluster_pulse_pluralism(article_rows: List[Dict[str, Any]]) -> Dict[
         if dt is None:
             continue
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=datetime.timezone.utc)
+            dt = dt.replace(tzinfo=datetime.UTC)
         age_h = (now - dt).total_seconds() / 3600.0
         if age_h < 0:
             age_h = 0.0

@@ -33,12 +33,10 @@ def _ensure_model_file() -> str | None:
         log.info(f"[language] Downloading fastText lid.176.ftz (~917 KB) to {_MODEL_PATH}")
         import httpx
 
-        with httpx.Client(timeout=30.0) as client:
-            with open(_MODEL_PATH, "wb") as f:
-                with client.stream("GET", _MODEL_URL, follow_redirects=True) as response:
-                    response.raise_for_status()
-                    for chunk in response.iter_bytes():
-                        f.write(chunk)
+        with httpx.Client(timeout=30.0) as client, open(_MODEL_PATH, "wb") as f:
+            with client.stream("GET", _MODEL_URL, follow_redirects=True) as response:
+                response.raise_for_status()
+                f.writelines(response.iter_bytes())
         return _MODEL_PATH
     except Exception as e:
         log.warning(f"[language] Failed to download fastText model: {e}")

@@ -99,8 +99,7 @@ def tool_health() -> dict:
         (u for u in (env.get("INTERNAL_API_URL"), env.get("PUBLIC_API_URL")) if u and u.startswith("http")),
         "http://127.0.0.1:5001/api",
     )
-    if api.endswith("/"):
-        api = api[:-1]
+    api = api.removesuffix("/")
     url = f"{api}/health"
     out: dict = {"url": url}
     try:
@@ -136,7 +135,7 @@ def tool_ops_snapshot() -> dict:
 def tool_queue_status() -> dict:
     _bootstrap()
     try:
-        import core.health as health  # type: ignore
+        from core import health  # type: ignore
 
         return health._probe_celery_queue()
     except Exception as exc:

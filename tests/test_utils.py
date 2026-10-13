@@ -88,7 +88,6 @@ def test_event_stream_stops_when_client_disconnects():
 
         def get_message(self, ignore_subscribe_messages=True, timeout=1.0):
             self.calls += 1
-            return None
 
         def unsubscribe(self, _channel):
             self.unsubscribed = True

@@ -7,10 +7,9 @@ Analyzes query patterns and suggests optimizations.
 import os
 import re
 from pathlib import Path
-from typing import Dict, List
 
 
-def analyze_query_patterns() -> Dict[str, List[str]]:
+def analyze_query_patterns() -> dict[str, list[str]]:
     """Analyze SQL query patterns in the codebase."""
     patterns = {
         "frequent_queries": [],
@@ -59,7 +58,7 @@ def analyze_query_patterns() -> Dict[str, List[str]]:
     return patterns
 
 
-def suggest_indexes() -> List[Dict]:
+def suggest_indexes() -> list[dict]:
     """Suggest database indexes based on query patterns."""
     suggestions = [
         {
@@ -103,7 +102,7 @@ def suggest_indexes() -> List[Dict]:
     return suggestions
 
 
-def analyze_caching_strategy() -> Dict[str, List[str]]:
+def analyze_caching_strategy() -> dict[str, list[str]]:
     """Analyze current caching strategy and suggest improvements."""
     analysis = {"current_cache_usage": [], "missing_cache_opportunities": [], "recommendations": []}
 

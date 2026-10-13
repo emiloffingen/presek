@@ -32,7 +32,7 @@ class TestCalibration:
 
     def test_monotonic_and_roundtrip(self):
         prev = -1.0
-        for i in range(0, 201):
+        for i in range(201):
             d = i / 100
             local = emb.local_distance(d)
             assert local >= prev
@@ -129,7 +129,7 @@ def test_real_model_ranks_paraphrases_above_unrelated():
             "Фудбалската репрезентација загуби во квалификациите со 2:0",
         ]
     )
-    dot = lambda x, y: sum(p * q for p, q in zip(x, y))  # noqa: E731
+    dot = lambda x, y: sum(p * q for p, q in zip(x, y))
     assert dot(a, b) > dot(a, c) + 0.2
     q = emb.generate_query_embedding("мерки за економијата")
     assert dot(q, a) > dot(q, c)
