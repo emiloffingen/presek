@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from core.trending import extract_words_with_flags
+from core.trending import extract_words_with_flags, normalize_trend_word
 
 
 class TestExtractWordsWithFlags:
@@ -236,3 +236,17 @@ def test_generic_quantity_and_time_words_are_not_trending_topics():
     }
     assert not words & {"милиони", "државна", "години"}
     assert {"матура", "охрид"} <= words
+
+
+def test_surname_spelling_variants_are_counted_as_one_trend():
+    # "Михаилова" and "Михајлова" are the same surname spelled by different outlets
+    variants = ["mihailova", "mihajlova", "mihailovi", "mihajlovi", "mihailovom"]
+    folded = {normalize_trend_word(w, w, True) for w in ["mihailova", "mihajlova"]}
+    assert folded == {"mihajlova"}
+    assert normalize_trend_word("mihailovi", "mihailovi", True) == normalize_trend_word("mihajlovi", "mihajlovi", True)
+    assert all(normalize_trend_word(w, w, False).startswith("mihajlov") for w in variants)
+
+
+def test_surname_spelling_fold_does_not_touch_unrelated_words():
+    for word in ["najdov", "ivanov", "petrova", "kairos", "bugarija", "vlada", "mihailo"]:
+        assert normalize_trend_word(word, word, True) == word
