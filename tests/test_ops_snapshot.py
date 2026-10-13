@@ -166,3 +166,60 @@ async def test_build_ops_snapshot_alerts_on_stuck_fast_synthesis():
     assert snapshot["status"] == "critical"
     assert any(alert["code"] == "stuck_fast_synthesis" for alert in snapshot["alerts"])
     assert snapshot["synthesis"]["provisional_count_24h"] == 5
+
+
+def _backlog_snapshot_patches(unsummarized_24h):
+    return (
+        patch(
+            "core.ops_snapshot._probe_celery_queue",
+            return_value={"total_depth": 0, "celery_depth": 0, "degraded": False},
+        ),
+        patch(
+            "core.ops_snapshot.queue_status_payload",
+            return_value={"intel_status": "ok", "intel_heavy_depth": 0, "depths": {}},
+        ),
+        patch(
+            "core.ops_snapshot.reader_pipeline_status",
+            return_value={"busy": False, "intel_status": "ok", "intel_heavy_depth": 0},
+        ),
+        patch(
+            "core.ops_snapshot.get_synthesis_quality_snapshot",
+            return_value={
+                "status": "ok",
+                "primary": {"fallback_ratio": 0.0},
+                "history": {"fallback_ratio": 0.0},
+                "unsummarized_total": unsummarized_24h,
+                "unsummarized_24h": unsummarized_24h,
+            },
+        ),
+        patch("core.ops_snapshot._load_last_refresh_time", return_value=None),
+        patch(
+            "core.ops_snapshot._freshness_payload",
+            return_value={"status": "fresh", "age_minutes": 5, "label": "Osvezeno skoro"},
+        ),
+        patch(
+            "core.ops_snapshot.db.async_execute_one",
+            new=AsyncMock(return_value={"stale_count": 0, "newest_synthesis_age_min": 1.0, "sample_ids": []}),
+        ),
+    )
+
+
+@pytest.mark.anyio
+async def test_synthesis_backlog_not_alerted_for_normal_article_volume():
+    # 1,700 articles/day used to trip the old article-count threshold (1500); a handful of
+    # clusters waiting for a synthesis is normal and must not alert.
+    p = _backlog_snapshot_patches(6)
+    with p[0], p[1], p[2], p[3], p[4], p[5], p[6]:
+        snapshot = await build_ops_snapshot()
+
+    assert not any(alert["code"] == "synthesis_backlog" for alert in snapshot["alerts"])
+
+
+@pytest.mark.anyio
+async def test_synthesis_backlog_alerts_when_many_clusters_wait_for_synthesis():
+    p = _backlog_snapshot_patches(60)
+    with p[0], p[1], p[2], p[3], p[4], p[5], p[6]:
+        snapshot = await build_ops_snapshot()
+
+    alert = next(a for a in snapshot["alerts"] if a["code"] == "synthesis_backlog")
+    assert "60 clusters" in alert["message"]
