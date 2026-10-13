@@ -2,13 +2,12 @@ import asyncio
 import os
 import sys
 import types
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 # --- Robust Global FastAPI Mocks ---
-
-
 from fastapi import HTTPException as _FakeHTTPException
 
 
@@ -295,7 +294,6 @@ def test_fastapi_news_fast_flag_uses_its_own_cache_key(mock_all):
 
     def _cached(key, *a, **kw):
         seen.append(key)
-        return None
 
     with patch("routes.news.cached_response", side_effect=_cached):
         asyncio.run(news_routes.get_news(q="Bugarija", page=0, page_size=8, fast=True))
@@ -322,9 +320,8 @@ def test_fastapi_news_search_uses_hybrid_results_without_fallback(mock_all):
 def test_fastapi_profile_sync_init_creates_token(mock_all):
     import routes.profile as profile_routes
 
-    with patch("secrets.token_urlsafe", return_value="token123"):
-        with pytest.raises(Exception) as exc:
-            asyncio.run(profile_routes.init_profile_sync())
+    with patch("secrets.token_urlsafe", return_value="token123"), pytest.raises(Exception) as exc:
+        asyncio.run(profile_routes.init_profile_sync())
     assert exc.value.status_code == 400
 
 
@@ -339,7 +336,7 @@ def test_fastapi_profile_sync_init_creates_strong_token(mock_all):
 
 
 def test_client_ip_only_trusts_configured_proxies(mock_all):
-    import routes.common as common
+    from routes import common
 
     spoofed = _FakeRequest(
         headers={"x-forwarded-for": "8.8.8.8"},
@@ -356,7 +353,7 @@ def test_client_ip_only_trusts_configured_proxies(mock_all):
 
 
 def test_client_ip_prefers_cloudflare_header_behind_tunnel(mock_all):
-    import routes.common as common
+    from routes import common
 
     # cloudflared connects from loopback; visitor-supplied X-Real-IP must lose
     # to the CF-Connecting-IP header that Cloudflare always overwrites.
@@ -375,7 +372,7 @@ def test_client_ip_prefers_cloudflare_header_behind_tunnel(mock_all):
 
 
 def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
-    import routes.common as common
+    from routes import common
 
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/research") is True
     assert common._is_rate_limited_path("/api/intelligence/cluster/abc123/analyst") is True
@@ -387,7 +384,7 @@ def test_rate_limited_paths_include_public_ai_endpoints(mock_all):
 
 
 def test_profile_sync_rejects_weak_token_headers(mock_all):
-    import routes.profile as profile
+    from routes import profile
 
     with pytest.raises(Exception) as exc:
         asyncio.run(profile.get_profile_sync(_FakeRequest(headers={"x-sync-token": "short-token"})))
@@ -395,7 +392,7 @@ def test_profile_sync_rejects_weak_token_headers(mock_all):
 
 
 def test_profile_sync_rejects_invalid_body_token(mock_all):
-    import routes.profile as profile
+    from routes import profile
 
     with pytest.raises(Exception) as exc:
         asyncio.run(profile.save_profile_sync(_FakeRequest(payload={"token": "bad token with spaces", "profile": {}})))
@@ -435,7 +432,7 @@ def _with_homepage_synthesis(cluster, *, homepage_score=5.0):
 
 
 def test_home_live_now_route_uses_backend_selection(mock_all):
-    import routes.home as home
+    from routes import home
 
     recent_payload = {
         "status": "success",
@@ -499,7 +496,7 @@ def test_home_live_now_route_uses_backend_selection(mock_all):
 
 
 def test_home_latest_wire_route_uses_backend_selection(mock_all):
-    import routes.home as home
+    from routes import home
 
     recent_payload = {
         "status": "success",
@@ -570,7 +567,7 @@ def test_home_latest_wire_route_uses_backend_selection(mock_all):
 
 
 def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
-    import routes.news as news
+    from routes import news
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "WITH topic_clusters AS" in query:
@@ -628,7 +625,7 @@ def test_news_topic_response_filters_mixed_cluster_articles(mock_all):
 
 
 def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
-    import routes.news as news
+    from routes import news
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "WITH entity_clusters AS" in query:
@@ -705,7 +702,7 @@ def test_news_entity_response_merges_metadata_and_article_matches(mock_all):
 
 
 def test_news_editorial_signals_classify_story_state(mock_all):
-    import routes.news as news
+    from routes import news
 
     arts = [
         {
@@ -972,7 +969,7 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
 
 
 def test_navigation_counts_use_article_level_classifications(mock_all):
-    import routes.system as system
+    from routes import system
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM cluster_metadata m" in query and "score_cluster" not in query:
@@ -1006,7 +1003,7 @@ def test_navigation_counts_use_article_level_classifications(mock_all):
 
 
 def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
-    import routes.news as news
+    from routes import news
 
     arts = [
         {
@@ -1034,7 +1031,7 @@ def test_editorial_signals_prefer_ingested_at_for_freshness(mock_all):
 
 
 def test_synthesis_homepage_boost(mock_all):
-    import routes.news as news
+    from routes import news
 
     async def execute_side_effect(query, params=None, fetch=True, **kwargs):
         if "FROM articles a" in query and "GROUP BY a.cluster_id ORDER BY last_article DESC" in query:
@@ -1100,7 +1097,7 @@ def test_synthesis_homepage_boost(mock_all):
 
 
 def test_news_subcategory_page_beyond_first_is_not_double_paged(mock_all):
-    import routes.news as news
+    from routes import news
 
     page_size = 2
 
@@ -1141,7 +1138,7 @@ def test_news_subcategory_page_beyond_first_is_not_double_paged(mock_all):
 
 
 def test_article_detail_missing_is_negative_cached_and_served_from_cache(mock_all):
-    import routes.news as news
+    from routes import news
 
     mock_all["db"].async_execute_one.return_value = None
 
@@ -1181,12 +1178,12 @@ def test_provider_fallback_order_env_parsing(monkeypatch):
 
 @pytest.mark.parametrize("age_days, expect_expired", [(1, False), (10_000, True)])
 def test_profile_delivery_read_enforces_token_expiry(mock_all, age_days, expect_expired):
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     import routes.profile as profile_routes
 
     token = "a" * 32
-    created = datetime.now(timezone.utc) - timedelta(days=age_days)
+    created = datetime.now(UTC) - timedelta(days=age_days)
 
     async def execute_one_side_effect(query, params=None, **kwargs):
         if "synced_delivery_subscriptions" in query:

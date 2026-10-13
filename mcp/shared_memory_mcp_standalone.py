@@ -128,13 +128,12 @@ class _DB:
         import psycopg
         from psycopg.rows import dict_row
 
-        with psycopg.connect(_dsn(), row_factory=dict_row) as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, params)
-                if fetch and cur.description:
-                    return cur.fetchall()
-                conn.commit()
-                return cur.rowcount
+        with psycopg.connect(_dsn(), row_factory=dict_row) as conn, conn.cursor() as cur:
+            cur.execute(sql, params)
+            if fetch and cur.description:
+                return cur.fetchall()
+            conn.commit()
+            return cur.rowcount
 
 
 _DB_INSTANCE = _DB()

@@ -2,7 +2,6 @@ import datetime
 import json
 import logging
 import re
-from typing import Optional
 
 log = logging.getLogger("presek")
 
@@ -18,17 +17,17 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def _coerce_datetime(value) -> Optional[datetime.datetime]:
+def _coerce_datetime(value) -> datetime.datetime | None:
     if isinstance(value, datetime.datetime):
         if value.tzinfo:
-            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            return value.astimezone(datetime.UTC).replace(tzinfo=None)
         return value
     if not value:
         return None
     try:
         dt = datetime.datetime.fromisoformat(str(value).replace(" ", "T"))
         if dt.tzinfo:
-            return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            return dt.astimezone(datetime.UTC).replace(tzinfo=None)
         return dt
     except Exception as e:
         log.debug(f"Failed to parse datetime: {e}")

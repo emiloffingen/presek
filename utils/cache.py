@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Optional
+from typing import Any
 
 import redis
 
@@ -33,7 +33,7 @@ except Exception as e:
     redis_client = redis.Redis.from_url("redis://localhost:6379/0", decode_responses=True, protocol=2)
 
 
-def cached_response(key: str, ttl: int = 60) -> Optional[Any]:
+def cached_response(key: str, ttl: int = 60) -> Any | None:
     """Read a cached JSON value from Redis."""
     try:
         val = redis_client.get(key)

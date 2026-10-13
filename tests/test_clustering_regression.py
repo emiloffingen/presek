@@ -22,7 +22,7 @@ def _load():
 
 
 def _time(value):
-    return datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc)
+    return datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.UTC)
 
 
 def _replay(articles):
@@ -103,7 +103,7 @@ def test_pairwise_quality_floor():
 
 
 def test_identical_headline_matches_any_member_not_only_the_seed():
-    now = datetime.datetime(2026, 10, 3, 13, 0, tzinfo=datetime.timezone.utc)
+    now = datetime.datetime(2026, 10, 3, 13, 0, tzinfo=datetime.UTC)
     recent = [
         {
             "cluster_id": "bridge",
@@ -134,7 +134,7 @@ def test_identical_headline_matches_any_member_not_only_the_seed():
 
 
 def test_cluster_stops_accepting_articles_after_max_age():
-    now = datetime.datetime(2026, 10, 4, 12, 0, tzinfo=datetime.timezone.utc)
+    now = datetime.datetime(2026, 10, 4, 12, 0, tzinfo=datetime.UTC)
     recent = [
         {
             "cluster_id": "old-story",
@@ -159,7 +159,7 @@ def test_cluster_stops_accepting_articles_after_max_age():
 
 
 def test_cluster_stats_centroid_gates_a_name_only_match():
-    now = datetime.datetime(2026, 10, 3, 13, 0, tzinfo=datetime.timezone.utc)
+    now = datetime.datetime(2026, 10, 3, 13, 0, tzinfo=datetime.UTC)
     recent = [
         {
             "cluster_id": "booing",

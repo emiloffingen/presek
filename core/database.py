@@ -505,21 +505,18 @@ class AsyncDatabaseManager:
                 _record_db_query(read_only=read_only, used_replica=used_replica)
                 if used_replica:
                     log.debug(f"Routing async query to read replica pool: {sql[:100]}")
-                async with pool.connection() as conn:
-                    async with conn.cursor() as cur:
-                        if timeout_ms:
-                            # Transaction-local, so it never leaks into the pooled connection;
-                            # Postgres cancels the statement itself instead of leaving it running.
-                            await cur.execute(
-                                "SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),)
-                            )
-                        await cur.execute(sql, params)
-                        if fetch:
-                            rows = await cur.fetchall()
-                            await conn.commit()
-                            return rows
+                async with pool.connection() as conn, conn.cursor() as cur:
+                    if timeout_ms:
+                        # Transaction-local, so it never leaks into the pooled connection;
+                        # Postgres cancels the statement itself instead of leaving it running.
+                        await cur.execute("SELECT set_config('statement_timeout', %s, true)", (str(int(timeout_ms)),))
+                    await cur.execute(sql, params)
+                    if fetch:
+                        rows = await cur.fetchall()
                         await conn.commit()
-                        return cur.rowcount
+                        return rows
+                    await conn.commit()
+                    return cur.rowcount
             except Exception as e:
                 last_exc = e
                 msg = str(e)

@@ -21,7 +21,6 @@ Usage:
 import argparse
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 # Root directory of the project
 ROOT = Path(__file__).parent.parent
@@ -31,7 +30,7 @@ ROOT = Path(__file__).parent.parent
 # ============================================================================
 
 # Macedonian to Serbian Latin word/phrase mappings
-MK_TO_SR: Dict[str, str] = {
+MK_TO_SR: dict[str, str] = {
     # News terms
     "vest": "vest",
     "vesti": "vesti",
@@ -231,14 +230,14 @@ MK_TO_SR: Dict[str, str] = {
 }
 
 # RS country code to RS
-MK_CODE_TO_RS: Dict[str, str] = {
+MK_CODE_TO_RS: dict[str, str] = {
     "RS": "RS",
     "rs": "rs",
     "Srbija": "Srbija",
 }
 
 # Cyrillic regex patterns
-CYRILLIC_PATTERNS: List[Tuple[str, str]] = [
+CYRILLIC_PATTERNS: list[tuple[str, str]] = [
     (r"\[A-Za-z\w\]", r"[A-Za-z\w]"),
     (r"\[A-Za-z\w\]\+", r"[A-Za-z\w]+"),
     (r"\[A-Za-z\w\]\{3,\}", r"[A-Za-z\w]{3,}"),
@@ -255,7 +254,7 @@ PROCESS_EXTENSIONS: set = {".py", ".js", ".ts", ".tsx", ".astro", ".json", ".md"
 # ============================================================================
 
 
-def find_files(root: Path, extensions: set, skip_dirs: set) -> List[Path]:
+def find_files(root: Path, extensions: set, skip_dirs: set) -> list[Path]:
     """Find all files with given extensions, skipping specified directories."""
     files = []
     for path in root.rglob("*"):
@@ -274,7 +273,7 @@ def contains_mk_code(text: str) -> bool:
     return bool(re.search(r"\bMK\b|\bmk\b|MK|rs", text))
 
 
-def translate_text(text: str, dry_run: bool = True) -> Tuple[str, List[str]]:
+def translate_text(text: str, dry_run: bool = True) -> tuple[str, list[str]]:
     changes = []
     translated = text
 
@@ -324,7 +323,7 @@ def translate_text(text: str, dry_run: bool = True) -> Tuple[str, List[str]]:
     return translated, changes
 
 
-def translate_file(filepath: Path, dry_run: bool = True) -> Tuple[bool, List[str]]:
+def translate_file(filepath: Path, dry_run: bool = True) -> tuple[bool, list[str]]:
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()

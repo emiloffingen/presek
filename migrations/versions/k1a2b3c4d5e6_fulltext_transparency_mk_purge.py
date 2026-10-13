@@ -7,16 +7,15 @@ Adds per-source full-text/attribution flags, deactivates non-MK feeds, and
 purges non-MK articles (backed up to ``articles_nonmk_backup`` first).
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision: str = "k1a2b3c4d5e6"
-down_revision: Union[str, Sequence[str], None] = "j0e1f2a3b4c5"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "j0e1f2a3b4c5"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 _ORPHAN_CLEANUP = (

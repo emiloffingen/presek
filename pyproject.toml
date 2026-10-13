@@ -69,7 +69,7 @@ dev = [
     "black>=26.3.1",
     "mypy>=1.11.2",
     "pip-audit>=2.9.0",
-    "ruff>=0.15.12,<0.16",
+    "ruff>=0.16.10,<0.17",
     "pytest>=9.0.3",
     "pytest-mock>=3.14.0",
     "pytest-timeout>=2.3.1",
@@ -96,7 +96,7 @@ dev = [
     "black>=26.3.1",
     "mypy>=1.11.2",
     "pip-audit>=2.9.0",
-    "ruff>=0.15.12,<0.16",
+    "ruff>=0.16.10,<0.17",
     "pytest>=9.0.3",
     "pytest-mock>=3.14.0",
     "pytest-timeout>=2.3.1",
@@ -112,6 +112,24 @@ default-groups = ["api"]
 
 [tool.ruff]
 line-length = 120
+# ruff 0.16 also formats Markdown; keep docs out of scope for this repo.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+# ruff 0.16 widened the default rule set. Safe autofixes were applied; the rules below
+# remain open because fixing them changes runtime behavior (broad `except Exception`
+# in the resilient worker pipeline, naive datetimes stored in the DB, logging style)
+# or needs per-site review. Burn the list down deliberately, rule by rule.
+ignore = [
+    "BLE001", "S110", "S112", "TRY002", "TRY004", "TRY201", "TRY401", "G201",
+    "DTZ001", "DTZ003", "DTZ005", "DTZ007", "DTZ011", "DTZ901",
+    "EXE001", "EXE002",
+    "SIM102", "SIM103", "SIM115", "SIM117",
+    "RUF012", "RUF013", "RUF015", "RUF046", "RUF059", "RUF007", "RUF034",
+    "PERF102", "PERF402", "PLC0206", "PLW1508", "PLW1510", "PIE810",
+    "B008", "B017", "B033", "ASYNC230", "FURB162", "UP022",
+    "C401", "C402", "C408", "C414",
+]
 
 [tool.ruff.lint.per-file-ignores]
 # These modules do sys.path.insert() or env setup before project imports — intentional pattern

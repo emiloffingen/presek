@@ -29,7 +29,7 @@ async def check_feed(client, name, url):
     except httpx.ConnectError:
         return name, url, "Connection Error"
     except Exception as e:
-        return name, url, f"Error: {str(e)}"
+        return name, url, f"Error: {e!s}"
 
 
 async def main():

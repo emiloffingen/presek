@@ -94,13 +94,13 @@ class AlertWebhookHandler(BaseHTTPRequestHandler):
 
             try:
                 _send_ntfy(topic, token, title, body, tags, priority)
-            except Exception as exc:  # noqa: BLE001 - bridge must stay up
+            except Exception as exc:
                 print(f"ntfy delivery failed: {exc}", file=sys.stderr)
 
         self.send_response(200)
         self.end_headers()
 
-    def log_message(self, format: str, *args) -> None:  # noqa: A003
+    def log_message(self, format: str, *args) -> None:
         return
 
 

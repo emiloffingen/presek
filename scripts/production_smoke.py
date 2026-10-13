@@ -9,7 +9,6 @@ from urllib.request import Request, urlopen
 
 from core.database import db_manager as db
 
-
 BASE_URL = os.environ.get("SMOKE_BASE_URL", "https://presek.mk").rstrip("/")
 
 
@@ -51,9 +50,7 @@ def main() -> int:
         failures.append("Macedonian news API is not healthy")
 
     status, body = get("/marketing")
-    if status not in (200, 302) or (
-        status == 200 and "Рекламирањето е привремено паузирано".encode("utf-8") not in body
-    ):
+    if status not in (200, 302) or (status == 200 and "Рекламирањето е привремено паузирано".encode() not in body):
         failures.append("Stripe-disabled marketing state is not visible")
 
     required_tables = {"feed_sources", "cluster_summaries", "advertising_campaigns"}

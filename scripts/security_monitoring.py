@@ -9,7 +9,6 @@ import logging
 import os
 import subprocess
 from datetime import datetime
-from typing import Dict, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -25,7 +24,7 @@ class SecurityMonitor:
         self.last_run = None
         self.status = "healthy"
 
-    def run_comprehensive_check(self) -> Dict:
+    def run_comprehensive_check(self) -> dict:
         """Run comprehensive security checks and return status."""
         logger.info("Starting comprehensive security monitoring check")
 
@@ -108,7 +107,7 @@ class SecurityMonitor:
                     )
         except Exception as e:
             self.security_warnings.append(
-                {"category": "Dependencies", "message": f"Dependency scan failed: {str(e)}", "severity": "warning"}
+                {"category": "Dependencies", "message": f"Dependency scan failed: {e!s}", "severity": "warning"}
             )
 
     def _check_security_headers(self):
@@ -164,7 +163,7 @@ class SecurityMonitor:
             self.security_warnings.append(
                 {
                     "category": "Security Headers",
-                    "message": f"Security header check failed: {str(e)}",
+                    "message": f"Security header check failed: {e!s}",
                     "severity": "warning",
                 }
             )
@@ -268,7 +267,7 @@ class SecurityMonitor:
                 self.security_warnings.append(
                     {
                         "category": "Database Security",
-                        "message": f"Database security check failed: {str(e)}",
+                        "message": f"Database security check failed: {e!s}",
                         "severity": "warning",
                     }
                 )
@@ -288,7 +287,7 @@ class SecurityMonitor:
                 }
             )
 
-    def _find_files(self, pattern: str) -> List:
+    def _find_files(self, pattern: str) -> list:
         """Find files matching a pattern."""
         matches = []
         for root, dirs, files in os.walk(self.project_root):
@@ -300,7 +299,7 @@ class SecurityMonitor:
                     matches.append(os.path.join(root, file))
         return matches
 
-    def get_security_status(self) -> Dict:
+    def get_security_status(self) -> dict:
         """Get current security status."""
         return {
             "status": self.status,
@@ -310,7 +309,7 @@ class SecurityMonitor:
             "info": len(self.security_info),
         }
 
-    def get_detailed_report(self) -> Dict:
+    def get_detailed_report(self) -> dict:
         """Get detailed security report."""
         return {
             "status": self.status,
@@ -342,10 +341,10 @@ class SecurityMonitor:
                 logger.info("Security monitoring stopped")
                 break
             except Exception as e:
-                logger.error(f"Security monitoring error: {str(e)}")
+                logger.error(f"Security monitoring error: {e!s}")
                 time.sleep(60)  # Wait before retry
 
-    def _send_alert(self, result: Dict):
+    def _send_alert(self, result: dict):
         """Send alert notification for non-healthy status to system logs and optional webhook."""
         status = result.get("status", "unknown")
         msg = f"SECURITY ALERT: Status is '{status}'! Issues: {result.get('issues', 0)}, Warnings: {result.get('warnings', 0)}"

@@ -98,7 +98,7 @@ def get_current_user(request: Request) -> str:
         payload = decode_jwt(token)
         return payload["sub"]
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid authentication: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Invalid authentication: {e!s}")
 
 
 def create_admin_jwt() -> str:

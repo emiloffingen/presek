@@ -4,8 +4,8 @@ Targeted Fix Script for Specific Code Quality Issues
 Handles issues that ruff can't auto-fix.
 """
 
-import re
 import os
+import re
 from pathlib import Path
 
 

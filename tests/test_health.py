@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from core.health import (
@@ -131,7 +131,7 @@ class TestFreshnessPayload:
     def test_freshness_payload_recent(self):
         recent = "2026-04-04T22:00:00+00:00"
         with patch("core.health.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=timezone.utc)
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 10, tzinfo=UTC)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(recent)
         assert result["status"] == "fresh"
@@ -139,7 +139,7 @@ class TestFreshnessPayload:
     def test_freshness_payload_stale(self):
         stale = "2026-04-04T20:00:00+00:00"
         with patch("core.health.datetime") as mock_datetime:
-            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=timezone.utc)
+            mock_datetime.now.return_value = datetime(2026, 4, 4, 22, 0, tzinfo=UTC)
             mock_datetime.fromisoformat.side_effect = datetime.fromisoformat
             result = _freshness_payload(stale)
         assert result["status"] == "stale"
@@ -162,7 +162,7 @@ class TestLoadLastRefreshTime:
             patch("core.health._get_redis", return_value=r),
             patch(
                 "core.health.database.db_manager.execute_one",
-                return_value={"latest_at": datetime(2026, 6, 13, 11, 30, tzinfo=timezone.utc)},
+                return_value={"latest_at": datetime(2026, 6, 13, 11, 30, tzinfo=UTC)},
             ),
         ):
             assert load_last_refresh_time() == "2026-06-13T11:30:00+00:00"

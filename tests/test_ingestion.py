@@ -283,7 +283,7 @@ def test_extract_image_url_rejects_non_http_candidates():
 
 
 def test_ingest_updates_last_fetched_even_when_all_entries_are_filtered_out():
-    import core.ingestion as ingestion
+    from core import ingestion
 
     recent_rows = [
         {"link": "https://example.com/story", "source": "N1 Info", "title": "vest"},

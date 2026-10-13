@@ -27,7 +27,7 @@ if ROOT not in sys.path:
 
 # Import the canonical tool implementation (repo-dependent flavour).
 sys.path.insert(0, os.path.join(ROOT, "mcp"))
-import shared_memory_mcp as mem  # noqa: E402
+import shared_memory_mcp as mem
 
 TOKEN = os.environ.get("SHARED_MEMORY_TOKEN", "").strip()
 HOST = os.environ.get("SHARED_MEMORY_RELAY_HOST", "127.0.0.1")
@@ -53,7 +53,7 @@ def main() -> None:
         raise SystemExit(2)
 
     # Minimal WSGI server; no third-party deps, runs in the presek venv.
-    from wsgiref.simple_server import make_server, WSGIRequestHandler
+    from wsgiref.simple_server import WSGIRequestHandler, make_server
 
     class Handler(WSGIRequestHandler):
         def log_message(self, *args):  # keep stdout/stderr clean
@@ -66,7 +66,7 @@ def main() -> None:
             return [_json_bytes({"error": "not found"})]
 
         auth = environ.get("HTTP_AUTHORIZATION", "")
-        if not hmac.compare_digest(auth.encode("utf-8"), f"Bearer {TOKEN}".encode("utf-8")):
+        if not hmac.compare_digest(auth.encode("utf-8"), f"Bearer {TOKEN}".encode()):
             start_response(
                 "401 Unauthorized",
                 [("Content-Type", "application/json"), ("WWW-Authenticate", "Bearer")],

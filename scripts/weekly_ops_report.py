@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,7 @@ async def main():
     app_root = Path(os.environ.get("APP_ROOT", Path.home() / "presek-runtime"))
     out_dir = app_root / "shared" / "logs" / "ops_reports"
     out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    stamp = datetime.now(UTC).strftime("%Y%m%d")
     out_path = out_dir / f"weekly_ops_{stamp}.json"
     out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     log.info("[weekly-ops] wrote %s", out_path)

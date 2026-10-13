@@ -75,7 +75,7 @@ def main() -> int:
     except smtplib.SMTPAuthenticationError as exc:
         print(f"\nFAIL: authentication rejected ({exc.smtp_code})", file=sys.stderr)
         return 1
-    except Exception as exc:  # noqa: BLE001 - surface any transport error
+    except Exception as exc:
         print(f"\nFAIL: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
     return 0

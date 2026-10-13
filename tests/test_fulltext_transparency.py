@@ -5,9 +5,8 @@ import importlib
 
 import pytest
 
-import core.crawler as crawler
-import core.http_pool as http_pool
-import utils.network as network
+from core import crawler, http_pool
+from utils import network
 
 
 def _article():
@@ -41,7 +40,7 @@ def test_config_defaults_fulltext_enabled(monkeypatch):
     monkeypatch.delenv("FULLTEXT_ENABLED", raising=False)
     monkeypatch.delenv("FULLTEXT_MAX_CHARS", raising=False)
     monkeypatch.delenv("MK_ONLY", raising=False)
-    import core.config as config
+    from core import config
 
     importlib.reload(config)
     assert config.FULLTEXT_ENABLED is True

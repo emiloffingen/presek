@@ -11,7 +11,7 @@ Provides validation functions for:
 
 import logging
 import re
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Path, Query
@@ -291,7 +291,7 @@ def validate_language_code(lang: str, allowed_languages: list[str] = None) -> st
     return lang
 
 
-def validate_boolean_param(value: Union[bool, str]) -> bool:
+def validate_boolean_param(value: bool | str) -> bool:
     """Validate a boolean parameter from various input types."""
     if isinstance(value, bool):
         return value

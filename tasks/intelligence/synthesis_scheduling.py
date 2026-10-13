@@ -44,29 +44,28 @@ def _schedule_deep_analyst_work(
 
                 entities = deep_metadata.get("entities", [])
                 for entity in entities:
-                    with db.connection() as conn:
-                        with conn.cursor() as cur:
-                            try:
-                                cur.execute(
-                                    """
+                    with db.connection() as conn, conn.cursor() as cur:
+                        try:
+                            cur.execute(
+                                """
                                     INSERT INTO knowledge_entities (name, type, last_seen, total_mentions)
                                     VALUES (%s, 'PERSON', NOW(), 1)
                                     ON CONFLICT (name) DO UPDATE SET last_seen = NOW()
                                     """,
-                                    (entity,),
-                                )
-                                cur.execute(
-                                    """
+                                (entity,),
+                            )
+                            cur.execute(
+                                """
                                     INSERT INTO entity_mentions_daily (entity_name, cluster_id, day)
                                     VALUES (%s, %s, CURRENT_DATE)
                                     ON CONFLICT (entity_name, cluster_id, day) DO NOTHING
                                     """,
-                                    (entity, cluster_id),
-                                )
-                                conn.commit()
-                            except Exception as entity_err:
-                                log.debug(f"Failed to update entity mentions: {entity_err}")
-                                conn.rollback()
+                                (entity, cluster_id),
+                            )
+                            conn.commit()
+                        except Exception as entity_err:
+                            log.debug(f"Failed to update entity mentions: {entity_err}")
+                            conn.rollback()
 
                 pulse_score = deep_metadata.get("pulse", shared_metrics.get("pulse_score", 50))
                 pluralism_score = pluralism_data.get("score", shared_metrics.get("pluralism_score", 50))

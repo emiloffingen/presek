@@ -4,17 +4,16 @@ Revision ID: d4e5f6a7b8c9
 Revises: c3d4e5f6a7b8
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
 
-
 revision: str = "d4e5f6a7b8c9"
-down_revision: Union[str, Sequence[str], None] = "c3d4e5f6a7b8"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "c3d4e5f6a7b8"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _add_missing_columns(table: str, columns: list[tuple[str, sa.Column]]) -> None:

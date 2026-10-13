@@ -47,7 +47,7 @@ def _parse_time(value) -> dt.datetime:
         moment = value
     else:
         moment = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    return moment if moment.tzinfo else moment.replace(tzinfo=dt.timezone.utc)
+    return moment if moment.tzinfo else moment.replace(tzinfo=dt.UTC)
 
 
 def _distance(a, b) -> float:

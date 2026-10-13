@@ -144,7 +144,7 @@ def fake_token_db(monkeypatch):
     Patching the attribute the module imported (``core.admin_tokens.db``) keeps
     the production code path intact while removing the Postgres dependency.
     """
-    import core.admin_tokens as admin_tokens
+    from core import admin_tokens
 
     fake = FakeTokenDB()
     monkeypatch.setattr(admin_tokens, "db", fake)
@@ -268,8 +268,8 @@ def test_cleanup_expired_tokens():
 
     _, token_meta = create_admin_token(subject="expiring-soon")
 
-    past_created_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=10)
-    past_expiry_date = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)
+    past_created_date = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=10)
+    past_expiry_date = datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=5)
     with_fake_db_update(token_meta.token_id, past_created_date, past_expiry_date)
 
     cleaned = cleanup_expired_tokens()
@@ -278,7 +278,7 @@ def test_cleanup_expired_tokens():
 
 def with_fake_db_update(token_id, created_at, expires_at):
     """Backdate a token through the in-memory fake table."""
-    import core.admin_tokens as admin_tokens
+    from core import admin_tokens
 
     fake = admin_tokens.db
     row = fake.rows.get(str(token_id))

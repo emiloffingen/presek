@@ -7,14 +7,14 @@ Revision ID: o5e6f7a8b9c0
 Revises: n4d5e6f7a8b9
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "o5e6f7a8b9c0"
-down_revision: Union[str, Sequence[str], None] = "n4d5e6f7a8b9"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "n4d5e6f7a8b9"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

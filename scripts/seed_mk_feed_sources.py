@@ -2,7 +2,6 @@
 
 from core.database import db_manager as db
 
-
 MK_FEEDS = [
     # Core national outlets.
     ("360 Stepeni", "https://360stepeni.mk/feed/"),

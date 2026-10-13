@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import core.clustering as clustering
+from core import clustering
 from nlp.categories import detect_category, detect_topic
 
 
@@ -58,7 +58,7 @@ def test_clustering_suite():
                     "category": category_a,
                     "topic": topic_a,
                     "source": "Source A",
-                    "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "created_at": datetime.datetime.now(datetime.UTC).isoformat(),
                 }
             ]
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 
-import core.clustering as clustering
+from core import clustering
 from core.config import CLUSTER_LOOKBACK
 from core.database import db_manager as db
 from core.embeddings import parse_embedding_value

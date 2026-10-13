@@ -6,16 +6,16 @@ Create Date: 2026-06-03 16:10:09.937960
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "28a9b85a5c90"
-down_revision: Union[str, Sequence[str], None] = "g7b8c9d0e1f2"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "g7b8c9d0e1f2"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _add_missing_columns(table: str, columns: list[tuple[str, sa.Column]]) -> None:
