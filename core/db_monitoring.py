@@ -183,11 +183,6 @@ class DatabaseMonitor:
 _db_monitor = DatabaseMonitor()
 
 
-def get_db_monitor() -> DatabaseMonitor:
-    """Get the global database monitor instance."""
-    return _db_monitor
-
-
 def get_current_pool_stats() -> ConnectionPoolStats | None:
     """Get current connection pool statistics."""
     return _db_monitor.get_pool_stats()
@@ -243,16 +238,6 @@ class QueryPerformanceMonitor:
 _query_monitor = QueryPerformanceMonitor()
 
 
-def get_query_monitor() -> QueryPerformanceMonitor:
-    """Get the global query performance monitor."""
-    return _query_monitor
-
-
-def record_db_query(query: str, execution_time: float):
-    """Record a database query execution."""
-    _query_monitor.record_query(query, execution_time)
-
-
 def get_query_performance_stats() -> dict[str, Any]:
     """Get query performance statistics."""
     return _query_monitor.get_performance_stats()
@@ -298,33 +283,3 @@ def init_db_monitoring():
 init_db_monitoring()
 
 # Database connection pool management utilities
-
-
-def get_connection_pool_utilization() -> float:
-    """Get current connection pool utilization percentage."""
-    stats = get_current_pool_stats()
-    if stats:
-        return stats.utilization
-    return 0.0
-
-
-def is_pool_under_stress() -> bool:
-    """Check if connection pool is under stress."""
-    stats = get_current_pool_stats()
-    if not stats:
-        return False
-    return stats.utilization > 0.85 or stats.waiting_requests > 3
-
-
-def get_pool_stress_level() -> str:
-    """Get connection pool stress level."""
-    stats = get_current_pool_stats()
-    if not stats:
-        return "unknown"
-
-    if stats.is_critical():
-        return "critical"
-    elif not stats.is_healthy():
-        return "warning"
-    else:
-        return "normal"

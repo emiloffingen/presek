@@ -226,38 +226,6 @@ def get_logger(name: str) -> PresekLogger:
 # =============================================================================
 
 
-def log_request(
-    logger: logging.Logger,
-    method: str,
-    path: str,
-    status_code: int,
-    duration_ms: float,
-    client_ip: str | None = None,
-    user_agent: str | None = None,
-    extra: dict[str, Any] | None = None,
-) -> None:
-    """Log an HTTP request with structured data."""
-    data = {
-        "http_method": method,
-        "http_path": path,
-        "http_status": status_code,
-        "duration_ms": round(duration_ms, 2),
-    }
-    if client_ip:
-        data["client_ip"] = client_ip
-    if user_agent:
-        data["user_agent"] = user_agent
-    if extra:
-        data.update(extra)
-
-    if status_code >= 500:
-        logger.error("Request failed", extra=data)
-    elif status_code >= 400:
-        logger.warning("Request warning", extra=data)
-    else:
-        logger.info("Request completed", extra=data)
-
-
 def log_error(logger: logging.Logger, error: Exception, context: dict[str, Any] | None = None) -> None:
     """Log an error with context."""
     data = {

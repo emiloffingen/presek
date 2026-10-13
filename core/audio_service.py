@@ -260,8 +260,3 @@ class AudioService:
             return None
         _prune_older_variants(os.path.dirname(path), safe_cluster, lang, os.path.basename(path))
         return url
-
-    async def generate_audio(self, text: str, lang: str = "mk", key: str = "misc"):
-        """Async variant: synthesize ad-hoc text, cached by content hash."""
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, AudioService.generate_cluster_audio, f"adhoc_{key}", text, lang)

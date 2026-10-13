@@ -227,15 +227,6 @@ def _cache_get(store, key):
     return _thaw_cache_value(frozen)
 
 
-def _cache_set(store, key, value):
-    with _local_cache_lock:
-        if key in store:
-            store.pop(key)
-        store[key] = _freeze_cache_value(value)
-        while len(store) > _LOCAL_CACHE_MAXSIZE:
-            store.popitem(last=False)
-
-
 def _normalize_articles_for_local_use(articles):
     normalized = []
     for article in articles or []:
@@ -251,15 +242,3 @@ def _normalize_articles_for_local_use(articles):
             }
         )
     return [article for article in normalized if article["title"]]
-
-
-def _articles_cache_key(articles):
-    normalized = _normalize_articles_for_local_use(articles)
-    return tuple(
-        (
-            str(article.get("source") or "").strip(),
-            str(article.get("title") or "").strip(),
-            str(article.get("description") or "").strip(),
-        )
-        for article in normalized
-    )

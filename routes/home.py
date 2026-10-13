@@ -329,21 +329,6 @@ def _schedule_cluster_synthesis(cluster_id: str) -> None:
         log.error("[home] Failed to queue synthesis for %s: %s", cluster_id, exc)
 
 
-async def _ensure_cluster_synthesis(cluster: dict[str, Any], *, enqueue: bool = False) -> dict[str, Any]:
-    """Ensure homepage hero clusters are queued for synthesis when missing."""
-    if not cluster or cluster.get("has_synthesis"):
-        return cluster
-
-    cluster_id = cluster.get("cluster_id")
-    if not cluster_id or not _cluster_can_synthesize(cluster):
-        return cluster
-
-    if enqueue:
-        _schedule_cluster_synthesis(cluster_id)
-        cluster["synthesis_pending"] = True
-    return cluster
-
-
 def _schedule_background_task(coro) -> asyncio.Task:
     task = asyncio.create_task(coro)
     _background_tasks.add(task)
@@ -370,11 +355,6 @@ class HomeResponse(BaseModel):
     analysis_pool: list[Any] = Field(default_factory=list)
     pipeline: dict[str, Any] | None = None
     briefing: dict[str, Any] | None = None
-    message: str | None = None
-
-
-class StatusOnlyResponse(BaseModel):
-    status: str
     message: str | None = None
 
 
@@ -840,11 +820,6 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> list[dict[str
 async def fetch_synthesis_hero_candidates(lang: str = DEFAULT_LANG, limit: int = 24) -> list[dict[str, Any]]:
     """Return the strongest recent synthesized clusters for homepage hero backfill."""
     return await _fetch_synthesized_clusters(lang, limit=limit)
-
-
-async def fetch_synthesis_picks(lang: str = DEFAULT_LANG) -> list[dict[str, Any]]:
-    """Fetches the latest clusters that have a generated synthesis for the given language."""
-    return await _fetch_synthesized_clusters(lang, limit=4)
 
 
 @router.get("/home", response_model=HomeResponse)

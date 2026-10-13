@@ -322,13 +322,6 @@ def validate_list_param(items, param_name: str, max_items: int = 20, max_item_le
 # =============================================================================
 
 
-def verify_sync_token(request: Request) -> str:
-    """Extract and validate sync token from request."""
-    from .common import _extract_sync_token, _validate_sync_token_value
-
-    return _validate_sync_token_value(_extract_sync_token(request))
-
-
 # =============================================================================
 # Security Headers Middleware
 # =============================================================================
@@ -420,13 +413,6 @@ def sanitize_html(text: str) -> str:
     # to match the current intent of removing all tags.
     clean = bleach.clean(text, tags=[], attributes={}, strip=True)
     return clean
-
-
-def safe_contains(haystack: str, needle: str) -> bool:
-    """Safely check if haystack contains needle (case-insensitive)."""
-    if not haystack or not needle:
-        return False
-    return needle.lower() in haystack.lower()
 
 
 # =============================================================================

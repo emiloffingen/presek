@@ -419,11 +419,6 @@ def cleanup_expired_tokens() -> int:
         return 0
 
 
-def generate_admin_token_secret() -> str:
-    """Generate a secure admin token secret key."""
-    return secrets.token_urlsafe(32)
-
-
 # Legacy compatibility functions for gradual migration
 def verify_legacy_admin_token(token: str) -> bool:
     """

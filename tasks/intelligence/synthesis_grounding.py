@@ -127,29 +127,6 @@ def _fact_grounding_diagnostics(
     }
 
 
-def _is_fact_grounded_synthesis(
-    synthesis_text: str, article_rows, lang: str = "sr", *, fast_mode: bool = False
-) -> bool:
-    diagnostics = _fact_grounding_diagnostics(
-        synthesis_text,
-        article_rows,
-        lang,
-        fast_mode=fast_mode,
-    )
-    if not diagnostics["ok"]:
-        if diagnostics["ungrounded_numbers"]:
-            log.warning(
-                "[ai/fact_gate] Ungrounded numbers in synthesis: %s",
-                ", ".join(diagnostics["ungrounded_numbers"][:4]),
-            )
-        if diagnostics["ungrounded_scores"]:
-            log.warning(
-                "[ai/fact_gate] Ungrounded sports scores in synthesis: %s",
-                ", ".join(diagnostics["ungrounded_scores"]),
-            )
-    return diagnostics["ok"]
-
-
 def _is_grounded_synthesis(synthesis_text: str, source_context: str) -> bool:
     if not synthesis_text or not source_context:
         return True

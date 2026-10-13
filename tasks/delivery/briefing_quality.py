@@ -234,18 +234,6 @@ def _has_public_interest_signal(title: str, description: str = "", cluster_summa
     return False
 
 
-def _is_low_signal_briefing_cluster(title: str, description: str = "", cluster_summary: str = "") -> bool:
-    haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
-    return any(marker in haystack for marker in _BRIEFING_LOW_SIGNAL_TITLE_MARKERS)
-
-
-def _is_routine_weather_cluster(title: str, description: str = "", cluster_summary: str = "") -> bool:
-    haystack = " ".join([str(title or ""), str(description or ""), str(cluster_summary or "")]).casefold()
-    if not any(marker in haystack for marker in _BRIEFING_WEATHER_MARKERS):
-        return False
-    return not any(marker in haystack for marker in _BRIEFING_SEVERE_WEATHER_MARKERS)
-
-
 def _has_routine_sports_marker(haystack: str, category: str = "", topic: str = "") -> bool:
     unambiguous_hits = any(marker in haystack for marker in _BRIEFING_UNAMBIGUOUS_SPORTS_MARKERS)
     if unambiguous_hits:
@@ -260,69 +248,6 @@ def _has_routine_sports_marker(haystack: str, category: str = "", topic: str = "
         "sports",
         "sportovi",
     }
-
-
-def _is_routine_sports_cluster(
-    title: str,
-    description: str = "",
-    cluster_summary: str = "",
-    category: str = "",
-    topic: str = "",
-    extra_context: str = "",
-) -> bool:
-    haystack = " ".join(
-        [
-            str(title or ""),
-            str(description or ""),
-            str(cluster_summary or ""),
-            str(category or ""),
-            str(topic or ""),
-            str(extra_context or ""),
-        ]
-    ).casefold()
-    if _has_public_interest_signal(title, description):
-        return False
-    if any(marker in haystack for marker in _BRIEFING_MAJOR_SPORTS_MARKERS):
-        return False
-    if str(category or "").casefold() in {"sport", "sports", "sportovi"}:
-        return True
-    if str(topic or "").casefold() in {"sport", "sports", "sportovi"}:
-        return True
-    if any(marker in haystack for marker in _BRIEFING_SPORTS_SOURCE_MARKERS):
-        return True
-    return _has_routine_sports_marker(haystack, category=category, topic=topic)
-
-
-def _allow_partisan_briefing_cluster(
-    title: str,
-    source_count: int,
-    has_editorial_depth: bool,
-    has_synthesis: bool,
-    has_public_interest: bool,
-) -> bool:
-    if not _is_party_press_release_title(title):
-        return True
-    if has_editorial_depth and has_public_interest:
-        return True
-    return source_count >= 10 and has_synthesis and has_public_interest
-
-
-def _briefing_title_penalty(title: str, source_count: int = 1, has_editorial_depth: bool = False) -> float:
-    clean = str(title or "").strip()
-    lowered = clean.casefold()
-    penalty = 0.0
-
-    if re.match(r"^[A-Za-z0-9\-]{2,}:\s", clean):
-        penalty += 1.8
-    if any(marker in lowered for marker in _BRIEFING_PARTISAN_MARKERS):
-        penalty += 1.8
-    if clean.count("!") >= 1 or clean.count("?") >= 2:
-        penalty += 0.35
-    if source_count >= 6:
-        penalty *= 0.8
-    if has_editorial_depth:
-        penalty *= 0.75
-    return penalty
 
 
 _GROUNDING_DEFINITE_SUFFIXES = (

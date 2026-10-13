@@ -158,11 +158,6 @@ class QueueMonitor:
             "healthy": health_status == "healthy",
         }
 
-    def should_scale_workers(self) -> bool:
-        """Determine if workers should be scaled based on queue depth."""
-        health = self.check_queue_health()
-        return health["status"] in ["warning", "critical"]
-
     def get_scaling_recommendation(self) -> dict[str, Any]:
         """Get worker scaling recommendation."""
         health = self.check_queue_health()
@@ -236,11 +231,6 @@ class QueueMonitor:
 
 # Global queue monitor instance
 _queue_monitor = QueueMonitor()
-
-
-def get_queue_monitor() -> QueueMonitor:
-    """Get the global queue monitor instance."""
-    return _queue_monitor
 
 
 def get_current_queue_stats() -> list[QueueStats]:
@@ -320,11 +310,6 @@ class QueuePerformanceMonitor:
 _queue_perf_monitor = QueuePerformanceMonitor()
 
 
-def get_queue_perf_monitor() -> QueuePerformanceMonitor:
-    """Get the global queue performance monitor."""
-    return _queue_perf_monitor
-
-
 def record_task_execution(task_name: str, queue: str, execution_time: float):
     """Record a task execution."""
     _queue_perf_monitor.record_task_execution(task_name, queue, execution_time)
@@ -358,12 +343,6 @@ def get_queue_depth_by_name(queue_name: str) -> int:
     return 0
 
 
-def is_queue_backlogged(queue_name: str, threshold: int = 50) -> bool:
-    """Check if a specific queue is backlogged."""
-    depth = get_queue_depth_by_name(queue_name)
-    return depth > threshold
-
-
 # Initialize queue monitoring system
 def init_queue_monitoring():
     """Initialize queue monitoring system."""
@@ -391,44 +370,6 @@ init_queue_monitoring()
 
 
 # Queue monitoring utilities for admin interface
-def get_queue_monitoring_summary() -> dict[str, Any]:
-    """Get a summary of queue monitoring status."""
-    health = check_queue_health()
-
-    return {
-        "status": health["status"],
-        "total_depth": health["total_depth"],
-        "critical_queues": health["critical_queues"],
-        "backlogged_queues": health["backlogged_queues"],
-        "worker_count": _queue_monitor._get_worker_count(),
-        "scaling_recommendation": get_scaling_recommendation(),
-    }
 
 
 # Alerting system for queue monitoring
-def check_queue_alerts() -> list[dict[str, Any]]:
-    """Check for queue alerts that need attention."""
-    alerts = []
-    health = check_queue_health()
-
-    if health["status"] == "critical":
-        alerts.append(
-            {
-                "level": "critical",
-                "message": f"Celery queues in critical state: {health['total_depth']} tasks queued",
-                "queues": health["critical_queues"],
-                "timestamp": time.time(),
-            }
-        )
-
-    if health["status"] == "warning":
-        alerts.append(
-            {
-                "level": "warning",
-                "message": f"Celery queues backlogged: {health['total_depth']} tasks queued",
-                "queues": health["backlogged_queues"],
-                "timestamp": time.time(),
-            }
-        )
-
-    return alerts

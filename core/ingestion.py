@@ -842,25 +842,6 @@ def get_active_sources():
     return [dict(r) for r in rows]
 
 
-def get_problematic_feeds():
-    """Returns information about feeds with known persistent issues."""
-    return _PROBLEMATIC_FEEDS.copy()
-
-
-def get_ingestion_health():
-    """Returns overall ingestion system health metrics."""
-    total_sources = len(get_active_sources())
-    problematic_count = len(_PROBLEMATIC_FEEDS)
-
-    return {
-        "total_sources": total_sources,
-        "problematic_feeds": problematic_count,
-        "healthy_feeds": total_sources - problematic_count,
-        "problematic_feed_percentage": round((problematic_count / total_sources * 100) if total_sources > 0 else 0, 1),
-        "known_issues": list(_PROBLEMATIC_FEEDS.items()),
-    }
-
-
 def _update_cluster_stats(cluster_stats, cluster_id, embedding, created_at):
     """Fold a newly assigned article into its cluster's running centroid."""
     stats = cluster_stats.setdefault(cluster_id, {"centroid": [], "vectors": 0, "started_at": created_at})
