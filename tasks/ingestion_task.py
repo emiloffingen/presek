@@ -288,6 +288,15 @@ def repair_single_source_task(name):
                                 (feed_url, name),
                                 fetch=False,
                             )
+                            # Ingestion reads the fetch URL from feed_sources
+                            # (get_active_sources joins feed_sources), so the
+                            # repaired URL must land there too — otherwise the
+                            # next cycle refetches the stale URL and re-pauses.
+                            db.execute(
+                                "UPDATE feed_sources SET url = %s WHERE name = %s",
+                                (feed_url, name),
+                                fetch=False,
+                            )
                             from core.health import reset_source_policy
 
                             reset_source_policy(name)

@@ -17,7 +17,6 @@ Usage:
 """
 
 import os
-from typing import Optional
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -30,14 +29,14 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 from opentelemetry.trace import Status, StatusCode
 
 # Global tracer provider
-_tracer_provider: Optional[TracerProvider] = None
+_tracer_provider: TracerProvider | None = None
 
 
 def setup_tracing(
     service_name: str = "presek",
-    service_version: Optional[str] = None,
+    service_version: str | None = None,
     environment: str = "development",
-    otlp_endpoint: Optional[str] = None,
+    otlp_endpoint: str | None = None,
     otlp_insecure: bool = False,
 ) -> TracerProvider:
     """
@@ -177,7 +176,7 @@ def get_tracer(name: str) -> trace.Tracer:
 
 def create_span(
     name: str,
-    tracer_name: Optional[str] = None,
+    tracer_name: str | None = None,
     **attributes,
 ):
     """

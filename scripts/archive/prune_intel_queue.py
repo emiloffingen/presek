@@ -15,7 +15,9 @@ from tasks.utils import reprioritize_intel_queue
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--threshold", type=int, default=int(os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150")))
+    parser.add_argument(
+        "--threshold", type=int, default=int(os.environ.get("INTEL_QUEUE_SECONDARY_DEFER_LIMIT", "150"))
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 

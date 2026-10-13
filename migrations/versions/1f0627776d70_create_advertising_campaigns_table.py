@@ -5,13 +5,14 @@ Revises: c4e8f1a2b3d0
 Create Date: 2026-06-23 13:52:31.389375
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '1f0627776d70'
-down_revision: Union[str, Sequence[str], None] = 'c4e8f1a2b3d0'
+revision: str = "1f0627776d70"
+down_revision: Union[str, Sequence[str], None] = "c4e8f1a2b3d0"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

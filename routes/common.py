@@ -3,7 +3,6 @@ import ipaddress
 import logging
 import os
 import re
-from typing import Optional
 
 from fastapi import HTTPException, Request
 
@@ -230,7 +229,7 @@ def _error_json(message: str, status_code: int, details=None):
     return api_error_response(message, status_code, detail=details)
 
 
-def _is_valid_focus_entity(name: str, entity_type: Optional[str]) -> bool:
+def _is_valid_focus_entity(name: str, entity_type: str | None) -> bool:
     from nlp import is_valid_focus_entity
 
     return is_valid_focus_entity(name, entity_type)
@@ -340,9 +339,9 @@ def _rate_limit_error_payload() -> dict:
 
 async def build_intelligence_summary_payload(
     last_24h: int,
-    category: Optional[str] = None,
-    runtime_events: Optional[dict] = None,
-    lang: Optional[str] = DEFAULT_LANG,
+    category: str | None = None,
+    runtime_events: dict | None = None,
+    lang: str | None = DEFAULT_LANG,
 ) -> dict:
     """Calculates synthesis transparency, pluralism and international share metrics with optional category and language filter."""
     import asyncio

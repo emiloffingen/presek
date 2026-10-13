@@ -7,6 +7,7 @@ from playwright.async_api import async_playwright
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("inspect_ui")
 
+
 async def capture(browser, url, name):
     context = await browser.new_context(viewport={"width": 1280, "height": 3000})
     page = await context.new_page()
@@ -22,6 +23,7 @@ async def capture(browser, url, name):
     finally:
         await context.close()
 
+
 async def main():
     os.makedirs("screenshots", exist_ok=True)
     async with async_playwright() as p:
@@ -29,6 +31,7 @@ async def main():
         await capture(browser, "http://localhost:3000", "local_desktop")
         await capture(browser, "http://localhost:3000/mk", "local_mk_desktop")
         await browser.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

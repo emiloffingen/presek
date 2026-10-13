@@ -49,10 +49,12 @@ def main() -> int:
         sr_diag = assess_copy_purity("Vlada Srbije je usvojila izmene.", lang="sr")
         mk_diag = assess_copy_purity("Холандија и Јапонија го поделија поенот.", lang="mk")
         report["copy_gates"] = {"sr_ok": sr_diag.get("ok"), "mk_ok": mk_diag.get("ok")}
-        report["checks"].append({
-            "name": "copy_quality_gates",
-            "ok": bool(sr_diag.get("ok")) and bool(mk_diag.get("ok")),
-        })
+        report["checks"].append(
+            {
+                "name": "copy_quality_gates",
+                "ok": bool(sr_diag.get("ok")) and bool(mk_diag.get("ok")),
+            }
+        )
     except Exception as exc:
         report["status"] = "fail"
         report["checks"].append({"name": "copy_quality_gates", "ok": False, "error": str(exc)})

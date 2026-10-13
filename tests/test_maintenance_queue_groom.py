@@ -20,16 +20,29 @@ class TestMaintenanceQueueGroom:
     def test_dedupes_periodic_and_metadata_tasks(self):
         messages = (
             [_message("tasks.maintenance.prune_intel_queue_task")] * 5
-            + [_message("tasks.intelligence.generate_cluster_metadata_task", kwargsrepr="{'target_clusters': ['abc123']}")] * 3
-            + [_message("tasks.intelligence.generate_cluster_metadata_task", kwargsrepr="{'target_clusters': ['def456']}")] * 2
+            + [
+                _message(
+                    "tasks.intelligence.generate_cluster_metadata_task", kwargsrepr="{'target_clusters': ['abc123']}"
+                )
+            ]
+            * 3
+            + [
+                _message(
+                    "tasks.intelligence.generate_cluster_metadata_task", kwargsrepr="{'target_clusters': ['def456']}"
+                )
+            ]
+            * 2
             + [_message("tasks.intelligence.upgrade_fast_synthesis_task", argsrepr="('abc123',)")] * 2
         )
         fake_redis = MagicMock()
         fake_redis.lrange.return_value = messages
 
-        with patch("tasks.utils.redis_client", fake_redis), patch(
-            "tasks.utils.get_celery_queue_depth",
-            side_effect=[200, 3],
+        with (
+            patch("tasks.utils.redis_client", fake_redis),
+            patch(
+                "tasks.utils.get_celery_queue_depth",
+                side_effect=[200, 3],
+            ),
         ):
             result = reprioritize_maintenance_queue()
 
@@ -47,9 +60,12 @@ class TestMaintenanceQueueGroom:
         fake_redis.lrange.return_value = messages
         fake_redis.pipeline.return_value = fake_pipe
 
-        with patch("tasks.utils.redis_client", fake_redis), patch(
-            "tasks.utils.get_celery_queue_depth",
-            side_effect=[200, 2],
+        with (
+            patch("tasks.utils.redis_client", fake_redis),
+            patch(
+                "tasks.utils.get_celery_queue_depth",
+                side_effect=[200, 2],
+            ),
         ):
             result = reprioritize_maintenance_queue()
 
@@ -69,9 +85,12 @@ class TestMaintenanceQueueGroom:
         fake_redis.lrange.return_value = messages
         fake_redis.pipeline.return_value = fake_pipe
 
-        with patch("tasks.utils.redis_client", fake_redis), patch(
-            "tasks.utils.get_celery_queue_depth",
-            side_effect=[200, 2],
+        with (
+            patch("tasks.utils.redis_client", fake_redis),
+            patch(
+                "tasks.utils.get_celery_queue_depth",
+                side_effect=[200, 2],
+            ),
         ):
             result = reprioritize_maintenance_queue()
 
@@ -92,9 +111,12 @@ class TestMaintenanceQueueGroom:
         fake_redis = MagicMock()
         fake_redis.lrange.return_value = messages
 
-        with patch("tasks.utils.redis_client", fake_redis), patch(
-            "tasks.utils.get_celery_queue_depth",
-            side_effect=[200, 41],
+        with (
+            patch("tasks.utils.redis_client", fake_redis),
+            patch(
+                "tasks.utils.get_celery_queue_depth",
+                side_effect=[200, 41],
+            ),
         ):
             result = reprioritize_maintenance_queue()
 

@@ -7,9 +7,9 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import core.database as database
+from core import database
 from utils import redis_client as _shared_redis_client
 
 log = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ def update_source_policy(source_name: str, status: str, fetched: int = 0, accept
     fetched = max(0, int(fetched or 0))
     accepted = max(0, int(accepted or 0))
     acceptance_ratio = (accepted / fetched) if fetched else 0.0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     state = {
         "source": source_name,
@@ -202,7 +202,7 @@ def reset_source_policy(source_name: str):
 def record_refresh(article_count: int, errors: list[str] | None = None):
     """Call this after each RSS refresh cycle. Writes to Redis so all workers see it."""
     payload = {
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(UTC).isoformat(),
         "count": article_count,
         "errors": errors or [],
     }
@@ -230,7 +230,7 @@ def record_source_fetch(
         "fetched": int(fetched or 0),
         "accepted": int(accepted or 0),
         "error": (error or "")[:300],
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(UTC).isoformat(),
     }
     payload.update(_source_quality_payload(status, fetched, accepted, error=error))
     payload.update(update_source_policy(source_name, status, fetched, accepted))
@@ -276,7 +276,7 @@ def load_last_refresh_time() -> str | None:
             return None
         if isinstance(latest_at, datetime):
             if latest_at.tzinfo is None:
-                latest_at = latest_at.replace(tzinfo=timezone.utc)
+                latest_at = latest_at.replace(tzinfo=UTC)
             return latest_at.isoformat()
         return str(latest_at)
     except Exception as e:
@@ -294,7 +294,7 @@ def _freshness_payload(last_refresh_time: str | None):
 
     try:
         refresh_dt = datetime.fromisoformat(last_refresh_time.replace("Z", "+00:00"))
-        age_minutes = max(0, int((datetime.now(timezone.utc) - refresh_dt).total_seconds() // 60))
+        age_minutes = max(0, int((datetime.now(UTC) - refresh_dt).total_seconds() // 60))
     except Exception as e:
         log.debug(f"Failed to parse refresh time {last_refresh_time}: {e}")
         return {
@@ -385,7 +385,7 @@ def record_task_event(task_name: str, status: str, detail: str | None = None):
         "task": task_name,
         "status": status,
         "detail": detail or "",
-        "time": datetime.now(timezone.utc).isoformat(),
+        "time": datetime.now(UTC).isoformat(),
     }
     try:
         _get_redis().hset(_TASK_REDIS_KEY, task_name, json.dumps(payload))

@@ -126,19 +126,13 @@ def test_route_cluster_high_complexity_sports_conflict():
 
 
 def test_route_cluster_free_api_mode():
-    articles = [
-        {"title": f"Vest {i}", "description": "Detalji dogadjaja."}
-        for i in range(3)
-    ]
+    articles = [{"title": f"Vest {i}", "description": "Detalji dogadjaja."} for i in range(3)]
     with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true"):
         assert SmartModelRouter.route_cluster(articles) == "nvidia"
 
 
 def test_route_cluster_gemini_provider():
-    articles = [
-        {"title": f"Vest {i}", "description": "Detalji dogadjaja."}
-        for i in range(3)
-    ]
+    articles = [{"title": f"Vest {i}", "description": "Detalji dogadjaja."} for i in range(3)]
     with _router_env(local_available=True, FREE_API_KEYS_ENABLED="true", GEMINI_API_KEY="some_key"):
         assert SmartModelRouter.route_cluster(articles) == "gemini"
 
@@ -157,10 +151,7 @@ def test_route_cluster_avoids_local_when_quality_is_low():
         {"title": "Jos jedna vest o vremenu", "description": "Toplo leto."},
     ]
     SmartModelRouter._provider_quality = {
-        "local": [
-            {"cluster_id": f"c{i}", "score": 0.72, "timestamp": datetime.datetime.now()}
-            for i in range(6)
-        ]
+        "local": [{"cluster_id": f"c{i}", "score": 0.72, "timestamp": datetime.datetime.now()} for i in range(6)]
     }
     with _router_env(
         local_available=True,
@@ -175,10 +166,7 @@ def test_route_cluster_upgrades_small_when_quality_is_low_on_weighted_story():
         {"title": "Vlada donela odluku", "description": "Novi detalji o sednici vlade."},
     ]
     SmartModelRouter._provider_quality = {
-        "nvidia": [
-            {"cluster_id": f"c{i}", "score": 0.78, "timestamp": datetime.datetime.now()}
-            for i in range(6)
-        ]
+        "nvidia": [{"cluster_id": f"c{i}", "score": 0.78, "timestamp": datetime.datetime.now()} for i in range(6)]
     }
     with _router_env(local_available=False):
         assert SmartModelRouter.route_cluster(articles) == "nvidia"

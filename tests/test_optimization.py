@@ -7,9 +7,7 @@ class TestCacheInvalidation:
     @patch("tasks.utils.delete_cache_prefix")
     @patch("tasks.utils.delete_cache")
     @patch("tasks.utils.invalidate_public_data_caches")
-    def test_invalidate_cluster_caches_uses_current_detail_prefix(
-        self, mock_public, mock_delete, mock_delete_prefix
-    ):
+    def test_invalidate_cluster_caches_uses_current_detail_prefix(self, mock_public, mock_delete, mock_delete_prefix):
         invalidate_cluster_caches("cluster-123")
 
         mock_delete.assert_called_once_with("cluster:detail:cluster-123")

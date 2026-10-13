@@ -8,7 +8,7 @@ from nlp import (
     generate_local_placeholder,
 )
 from nlp.categories import detect_category, detect_topic
-from tasks.intelligence._constants import *  # noqa: F403,F405
+from tasks.intelligence._constants import *
 from tasks.intelligence._queue import _queue_backlog_high, _skip_when_intel_backlog
 from tasks.intelligence.synthesis_merge import _compute_centroid_from_values
 from tasks.utils import (

@@ -11,7 +11,7 @@ Provides:
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.database import db_manager as db
 from core.logging_config import get_logger
@@ -48,7 +48,7 @@ class DatabaseMonitor:
         self.warning_threshold = 0.8  # 80% utilization
         self.critical_threshold = 0.95  # 95% utilization
 
-    def get_pool_stats(self) -> Optional[ConnectionPoolStats]:
+    def get_pool_stats(self) -> ConnectionPoolStats | None:
         """Get current connection pool statistics."""
         try:
             # Get pool statistics from the database connection
@@ -90,7 +90,7 @@ class DatabaseMonitor:
             log.error(f"Failed to get pool stats: {e}")
             return None
 
-    def check_pool_health(self) -> Dict[str, Any]:
+    def check_pool_health(self) -> dict[str, Any]:
         """Check connection pool health and return status."""
         stats = self.get_pool_stats()
         if not stats:
@@ -188,12 +188,12 @@ def get_db_monitor() -> DatabaseMonitor:
     return _db_monitor
 
 
-def get_current_pool_stats() -> Optional[ConnectionPoolStats]:
+def get_current_pool_stats() -> ConnectionPoolStats | None:
     """Get current connection pool statistics."""
     return _db_monitor.get_pool_stats()
 
 
-def check_db_pool_health() -> Dict[str, Any]:
+def check_db_pool_health() -> dict[str, Any]:
     """Check database pool health."""
     return _db_monitor.check_pool_health()
 
@@ -223,7 +223,7 @@ class QueryPerformanceMonitor:
         if len(self.query_history) > self.max_history:
             self.query_history = self.query_history[-self.max_history :]
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get query performance statistics."""
         if not self.query_history:
             return {"average_time": 0, "slow_queries": 0, "total_queries": 0}
@@ -253,13 +253,13 @@ def record_db_query(query: str, execution_time: float):
     _query_monitor.record_query(query, execution_time)
 
 
-def get_query_performance_stats() -> Dict[str, Any]:
+def get_query_performance_stats() -> dict[str, Any]:
     """Get query performance statistics."""
     return _query_monitor.get_performance_stats()
 
 
 # Database health check endpoint
-def get_database_health() -> Dict[str, Any]:
+def get_database_health() -> dict[str, Any]:
     """Get comprehensive database health information."""
     pool_health = check_db_pool_health()
     query_stats = get_query_performance_stats()

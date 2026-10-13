@@ -6,7 +6,7 @@ from __future__ import annotations
 def build_trust_summary(
     *,
     sources_count: int,
-    pluralism_score: int | float | None = None,
+    pluralism_score: float | None = None,
     is_stale: bool = False,
     has_verification: bool = False,
     is_provisional: bool = False,

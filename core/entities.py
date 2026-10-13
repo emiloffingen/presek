@@ -90,4 +90,4 @@ def determine_relationship_direction(*a, **kw) -> str:
 
 def update_knowledge_graph(entities, context_text: str = "") -> None:
     """No-op: the knowledge-graph tables were removed in the MK-only simplify."""
-    return None
+    return

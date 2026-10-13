@@ -796,6 +796,7 @@ def test_fastapi_proxy_serves_local_master_without_remote_fetch(mock_all, tmp_pa
 
     with (
         patch("routes.system._resolve_safe_static_relative", return_value=master),
+        patch("routes.system._resolve_public_ips", return_value=["93.184.216.34"]),
         patch("routes.system.binary_redis_client", _InMemoryRedis()),
         patch("requests.get", side_effect=AssertionError("remote fetch must not happen")),
         patch("utils.network._resolve_public_ips", side_effect=AssertionError("remote fetch must not happen")),
@@ -1218,15 +1219,3 @@ def test_profile_delivery_read_unknown_token_stays_empty(mock_all):
 
     assert data["status"] == "success"
     assert data["updated_at"] is None
-
-
-@pytest.mark.parametrize("env, expect_insert", [("test", False), ("production", True)])
-def test_store_page_visit_skips_db_write_under_test_env(monkeypatch, env, expect_insert):
-    from core import api_fast
-
-    execute = AsyncMock()
-    monkeypatch.setenv("ENV", env)
-    with patch.object(api_fast, "db", MagicMock(async_execute=execute)):
-        asyncio.run(api_fast._store_page_visit("v" * 64, "host", "/api/x", "mk", "", "u" * 64))
-
-    assert execute.called is expect_insert

@@ -14,9 +14,9 @@ import { join } from 'node:path';
 import { startDetachedPreview, stopDetachedPreview } from './preview-server.mjs';
 
 const THRESHOLDS = {
-  performance: 0.72,
-  lcpMs: 4200,
-  cls: 0.12,
+  performance: 0.9,
+  lcpMs: 2500,
+  cls: 0.1,
 };
 
 const args = process.argv.slice(2);

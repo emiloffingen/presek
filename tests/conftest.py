@@ -273,18 +273,18 @@ def _restore_runtime_modules(request):
 
     # Self-healing check: clean up fake fastapi modules if we are not in a mocking test module
     is_mocking_module = (
-        module_name.endswith("test_api_fast") or
-        module_name.endswith("test_personalized_news") or
-        module_name.endswith("test_home")
+        module_name.endswith("test_api_fast")
+        or module_name.endswith("test_personalized_news")
+        or module_name.endswith("test_home")
     )
     if not is_mocking_module:
         fastapi_mod = sys.modules.get("fastapi")
         if fastapi_mod is not None:
             is_fake = (
-                not hasattr(fastapi_mod, "__file__") or
-                getattr(fastapi_mod, "FastAPI", None) is None or
-                getattr(fastapi_mod, "FastAPI", None).__name__ == "_FakeFastAPI" or
-                fastapi_mod.__class__.__name__ == "MagicMock"
+                not hasattr(fastapi_mod, "__file__")
+                or getattr(fastapi_mod, "FastAPI", None) is None
+                or getattr(fastapi_mod, "FastAPI", None).__name__ == "_FakeFastAPI"
+                or fastapi_mod.__class__.__name__ == "MagicMock"
             )
             if is_fake:
                 for name in list(sys.modules):

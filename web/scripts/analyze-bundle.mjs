@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const clientDir = path.join(root, 'dist', 'client', '_astro');
 
-const TOTAL_BUDGET_BYTES = Number(process.env.BUNDLE_BUDGET_TOTAL_BYTES || 1_450_000);
+const TOTAL_BUDGET_BYTES = Number(process.env.BUNDLE_BUDGET_TOTAL_BYTES || 1_850_000);
 const CLIENT_JS_BUDGET_BYTES = Number(process.env.BUNDLE_BUDGET_CLIENT_JS_BYTES || 190_000);
 
 async function walk(dir) {

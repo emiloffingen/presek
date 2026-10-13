@@ -14,6 +14,9 @@ LOG="$APP_DIR/logs/celery_supervisor.log"
 LOCK="$APP_DIR/logs/.celery_supervisor.lock"
 INTERVAL="${CELERY_SUPERVISOR_INTERVAL:-60}"
 CONCURRENCY="${CELERY_WORKER_CONCURRENCY:-2}"
+# Must stay in sync with core/celery_app.py task_queues (and presek_watchdog.sh
+# CELERY_QUEUES). Explicit so a respawned worker can never silently drop a queue.
+QUEUES="${CELERY_QUEUES:-celery,ingestion,ingestion-crawl,fast-track,synthesis,intel-heavy,delivery,maintenance}"
 REDIS_PASS="$(sed -n 's%^REDIS_URL=redis://:\([^@]*\)@.*%\1%p' "$APP_DIR/.env" 2>/dev/null | head -1)"
 mkdir -p "$(dirname "$LOG")"
 
@@ -22,7 +25,7 @@ flock -n 9 || exit 0
 
 log() { echo "[$(date '+%F %T')] $*" >> "$LOG"; }
 
-cmd_worker="exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=$CONCURRENCY --logfile=$APP_DIR/logs/worker.log"
+cmd_worker="exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=$CONCURRENCY --queues=$QUEUES --logfile=$APP_DIR/logs/worker.log"
 cmd_beat="exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$APP_DIR/logs/beat.log"
 
 spawn() {
@@ -49,8 +52,25 @@ ensure_pgbouncer() {
 }
 
 log "celery supervisor started (interval ${INTERVAL}s, concurrency ${CONCURRENCY})"
+rotate_if_big() {
+  # Size-based rotation: copytruncate equivalent without logrotate/cron.
+  # Keeps last ~2000 lines so a runaway warning loop (e.g. Groq 429) can't
+  # fill the disk between deploys. 20MB threshold, .1 backup kept.
+  local f="$1" max_bytes=20971520
+  [ -f "$f" ] || return 0
+  local size
+  size=$(wc -c < "$f" 2>/dev/null) || return 0
+  if [ "$size" -gt "$max_bytes" ]; then
+    log "rotating $f (${size} bytes)"
+    tail -n 2000 "$f" > "$f.tmp" 2>/dev/null && cat "$f.tmp" > "$f" && rm -f "$f.tmp"
+  fi
+}
 while true; do
   ensure_pgbouncer
+  rotate_if_big "$APP_DIR/logs/fastapi.out"
+  rotate_if_big "$APP_DIR/logs/worker.log"
+  rotate_if_big "$APP_DIR/logs/cloudflared.log"
+  rotate_if_big "$APP_DIR/logs/fastapi.log"
   if ! redis-cli -a "$REDIS_PASS" --no-auth-warning ping >/dev/null 2>&1; then
     log "redis down -> starting"
     ( exec 9>&-; redis-server --daemonize yes --bind "127.0.0.1 -::1" --dir /root --requirepass "$REDIS_PASS" --logfile "$APP_DIR/logs/redis.log" )

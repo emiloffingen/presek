@@ -112,7 +112,7 @@ def send_profile_breaking_alerts_task(*a, **kw):
     if not clusters:
         return 0
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
     sent = 0
@@ -127,8 +127,8 @@ def send_profile_breaking_alerts_task(*a, **kw):
         last = _parse_row_datetime(row.get("last_breaking_sent_at"))
         if last:
             if last.tzinfo is None:
-                last = last.replace(tzinfo=datetime.timezone.utc)
-            if (now - last.astimezone(datetime.timezone.utc)).total_seconds() < 3 * 3600:
+                last = last.replace(tzinfo=datetime.UTC)
+            if (now - last.astimezone(datetime.UTC)).total_seconds() < 3 * 3600:
                 continue
         seen = set(row.get("last_alert_cluster_ids") or [])
         fresh = [c for c in clusters if str(c.get("cluster_id")) not in seen]
@@ -160,7 +160,7 @@ def send_profile_briefings_task(*a, **kw):
     from .morning_brief import send_morning_brief_to
     from .subscribers import _load_active_delivery_rows
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     try:
         rows = _load_active_delivery_rows()
     except Exception as e:
@@ -179,8 +179,8 @@ def send_profile_briefings_task(*a, **kw):
         last_sent = _parse_row_datetime(row.get("last_morning_sent_at"))
         if last_sent:
             if last_sent.tzinfo is None:
-                last_sent = last_sent.replace(tzinfo=datetime.timezone.utc)
-            if (now - last_sent.astimezone(datetime.timezone.utc)).total_seconds() < 20 * 3600:
+                last_sent = last_sent.replace(tzinfo=datetime.UTC)
+            if (now - last_sent.astimezone(datetime.UTC)).total_seconds() < 20 * 3600:
                 continue
         targets[target] = row["sync_token"]
     if not targets:

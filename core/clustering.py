@@ -286,7 +286,6 @@ _GENERIC_ENTITY_TOKENS = {
     "grcki",
     "grchkata",
     "kitajski",
-    "kitajska",
     "indiski",
     "indiska",
     "iranski",
@@ -322,7 +321,6 @@ _GENERIC_ENTITY_TOKENS = {
     "parlamentot",
     "sobranie",
     "sobranieto",
-    "vladata",
     "opstina",
     "opstinata",
     "opstinite",
@@ -513,10 +511,10 @@ def _age_hours(value, now=None) -> float:
         except ValueError:
             return 999.0
     if value.tzinfo is None:
-        value = value.replace(tzinfo=datetime.timezone.utc)
-    now = now or datetime.datetime.now(datetime.timezone.utc)
+        value = value.replace(tzinfo=datetime.UTC)
+    now = now or datetime.datetime.now(datetime.UTC)
     if now.tzinfo is None:
-        now = now.replace(tzinfo=datetime.timezone.utc)
+        now = now.replace(tzinfo=datetime.UTC)
     return max(0.0, (now - value).total_seconds() / 3600)
 
 

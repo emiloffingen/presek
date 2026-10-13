@@ -10,7 +10,7 @@ from nlp import (
     generate_local_placeholder,
     synthesize_cluster_fallback,
 )
-from tasks.intelligence._constants import *  # noqa: F403,F405
+from tasks.intelligence._constants import *
 from tasks.intelligence._queue import (
     _dispatch_batched,
     _historical_summary_dispatch_limit,
@@ -20,8 +20,8 @@ from tasks.intelligence._queue import (
 )
 from tasks.intelligence.synthesis_pipeline import _generate_synthesis_via_cascade
 from tasks.intelligence.synthesis_prompt import (
-    _build_source_comparison_prompt_block,
     _build_cluster_synthesis_prompt,
+    _build_source_comparison_prompt_block,
     _fetch_synthesis_history_context,
 )
 from tasks.utils import (

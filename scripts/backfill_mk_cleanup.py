@@ -6,6 +6,7 @@ repo root with PYTHONPATH set and DATABASE_URL in the environment:
     set -a; . ./.env; set +a
     PYTHONPATH=. .venv/bin/python scripts/backfill_mk_cleanup.py [--apply]
 """
+
 import os
 import sys
 
@@ -29,9 +30,7 @@ changed_rows = 0
 examples = []
 
 with psycopg.connect(url, connect_timeout=15) as c:
-    rows = c.execute(
-        "SELECT cluster_id, " + ", ".join(FIELDS) + " FROM cluster_summaries"
-    ).fetchall()
+    rows = c.execute("SELECT cluster_id, " + ", ".join(FIELDS) + " FROM cluster_summaries").fetchall()
     for row in rows:
         cid = row[0]
         vals = row[1:]

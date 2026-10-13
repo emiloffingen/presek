@@ -42,9 +42,7 @@ def upgrade() -> None:
             sa.Column("ua_hash", sa.Text(), nullable=True),
             sa.PrimaryKeyConstraint("id"),
         )
-        op.create_index(
-            "ix_page_visits_visited_at", "page_visits", ["visited_at"]
-        )
+        op.create_index("ix_page_visits_visited_at", "page_visits", ["visited_at"])
         op.create_index(
             "ix_page_visits_visitor_visited",
             "page_visits",

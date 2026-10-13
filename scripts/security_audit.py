@@ -72,11 +72,7 @@ class SecurityAudit:
                     "--desc",
                     "--format",
                     "json",
-                    *[
-                        item
-                        for vuln_id in self.ignored_python_vulns
-                        for item in ("--ignore-vuln", vuln_id)
-                    ],
+                    *[item for vuln_id in self.ignored_python_vulns for item in ("--ignore-vuln", vuln_id)],
                 ],
                 capture_output=True,
                 text=True,

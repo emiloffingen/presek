@@ -11,7 +11,8 @@ Output shape mirrors the model-based synthesizer: {headline, summary, key_facts}
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 _WS_RE = re.compile(r"\s+")
 _SENT_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")

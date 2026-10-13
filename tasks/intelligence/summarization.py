@@ -9,7 +9,7 @@ from nlp import (
     summarize_article_fallback,
 )
 from nlp.utils import extract_clean_summary_text
-from tasks.intelligence._constants import *  # noqa: F403,F405
+from tasks.intelligence._constants import *
 from tasks.intelligence._queue import _skip_when_intel_backlog
 from tasks.utils import (
     invalidate_public_data_caches,

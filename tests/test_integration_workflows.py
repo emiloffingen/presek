@@ -35,7 +35,7 @@ class TestSecurityMetricsIntegration:
 
         token = create_admin_jwt()
         headers = {"Authorization": f"Bearer {token}"}
-        
+
         # Mock run_comprehensive_check to return a simulated response to avoid executing actual sub processes
         mock_result = {
             "status": "healthy",
@@ -46,10 +46,10 @@ class TestSecurityMetricsIntegration:
             "details": {
                 "issues": [],
                 "warnings": [{"category": "Dependencies", "message": "Test warning", "severity": "warning"}],
-                "info": []
-            }
+                "info": [],
+            },
         }
-        
+
         with patch("scripts.security_monitoring.SecurityMonitor.run_comprehensive_check", return_value=mock_result):
             response = client.get("/api/security/status", headers=headers)
             assert response.status_code == 200
@@ -65,7 +65,7 @@ class TestSecurityMetricsIntegration:
 
         token = create_admin_jwt()
         headers = {"Authorization": f"Bearer {token}"}
-        
+
         mock_result = {"status": "healthy", "issues": 0}
         with patch("scripts.security_monitoring.SecurityMonitor.run_comprehensive_check", return_value=mock_result):
             response = client.get("/api/v1/security/status", headers=headers)

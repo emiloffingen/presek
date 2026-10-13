@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import secrets
-from typing import List
+from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -42,15 +42,15 @@ class RecentCluster(BaseModel):
     category: str
     topic: str
     primarySource: str
-    sources: List[str]
-    tags: List[str]
+    sources: list[str]
+    tags: list[str]
     viewedAt: str
 
 
 class SyncedProfile(BaseModel):
-    followedTopics: List[str]
-    followedSources: List[str]
-    recentClusters: List[RecentCluster]
+    followedTopics: list[str]
+    followedSources: list[str]
+    recentClusters: list[RecentCluster]
     deliveryPreferences: DeliveryPreferences
 
 
@@ -170,11 +170,11 @@ def _assert_sync_token_not_expired(row: dict) -> None:
     created_at = row.get("created_at")
     if not created_at:
         return
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     if getattr(created_at, "tzinfo", None) is None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
-    age_days = (datetime.now(timezone.utc) - created_at).days
+        created_at = created_at.replace(tzinfo=UTC)
+    age_days = (datetime.now(UTC) - created_at).days
     if age_days > SYNC_TOKEN_MAX_AGE_DAYS:
         raise HTTPException(status_code=401, detail="Sync token expired")
 
@@ -301,7 +301,7 @@ async def save_profile_delivery(request: Request, csrf_valid: bool = Depends(ver
     return {"status": "success", "subscription": sub}
 
 
-async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = DEFAULT_LANG) -> List[dict]:
+async def get_personalized_news_by_profile(profile: dict, limit: int = 6, lang: str = DEFAULT_LANG) -> list[dict]:
     """
     Core personalization search using pgvector. Computes dynamic interest vectors
     from recently read articles or followed topics, and returns semantically matching clusters.

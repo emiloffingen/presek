@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import threading
-from typing import Any, Dict, Set
+from typing import Any
 
 log = logging.getLogger("presek.localization")
 
@@ -10,12 +10,12 @@ log = logging.getLogger("presek.localization")
 RULES_FILE_PATH = os.path.join(os.path.dirname(__file__), "localization_rules.json")
 
 # Thread-safe global references that keep identity for backward-compatible hot-reloads
-ENTITY_NOISE_WORDS: Set[str] = set()
-TAG_NOISE_WORDS: Set[str] = set()
-SOURCE_NOISE_WORDS: Set[str] = set()
-TAG_GENERIC_STARTERS: Set[str] = set()
-TAG_MAPPINGS: Dict[str, str] = {}
-PROTECTED_NAMES: Set[str] = set()
+ENTITY_NOISE_WORDS: set[str] = set()
+TAG_NOISE_WORDS: set[str] = set()
+SOURCE_NOISE_WORDS: set[str] = set()
+TAG_GENERIC_STARTERS: set[str] = set()
+TAG_MAPPINGS: dict[str, str] = {}
+PROTECTED_NAMES: set[str] = set()
 
 
 class LocalizationEngine:
@@ -28,7 +28,7 @@ class LocalizationEngine:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(LocalizationEngine, cls).__new__(cls)
+                    cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
 
@@ -58,7 +58,7 @@ class LocalizationEngine:
                 self._load_fallback_defaults()
                 return False
 
-    def update_rules(self, rules: Dict[str, Any]) -> bool:
+    def update_rules(self, rules: dict[str, Any]) -> bool:
         """Saves new rules to the JSON file and hot-reloads them dynamically."""
         with self._lock:
             try:
@@ -103,7 +103,7 @@ class LocalizationEngine:
                 log.error(f"Failed to update localization rules: {e}", exc_info=True)
                 return False
 
-    def get_rules_dict(self) -> Dict[str, Any]:
+    def get_rules_dict(self) -> dict[str, Any]:
         """Returns the active rules as a dictionary."""
         with self._lock:
             return {
@@ -115,7 +115,7 @@ class LocalizationEngine:
                 "protected_names": sorted(list(PROTECTED_NAMES)),
             }
 
-    def _apply_rules_dict(self, rules: Dict[str, Any]):
+    def _apply_rules_dict(self, rules: dict[str, Any]):
         """Helper to clear and populate references in-place."""
         ENTITY_NOISE_WORDS.clear()
         ENTITY_NOISE_WORDS.update(w.strip().lower() for w in rules.get("entity_noise_words", []))

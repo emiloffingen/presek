@@ -2,14 +2,13 @@ import logging
 import os
 import time
 from io import BytesIO
-from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
 from PIL import Image
 
 try:
-    import pillow_avif  # noqa: F401
+    import pillow_avif
 
     _ = pillow_avif  # Reference to suppress unused import warning
     HAS_AVIF = True
@@ -75,7 +74,7 @@ class ImageService:
             return base
         return {**base, "Referer": origin + "/"}
 
-    async def process_and_save(self, url: str, article_id: int) -> Optional[str]:
+    async def process_and_save(self, url: str, article_id: int) -> str | None:
         """
         Downloads, validates, optimizes, and saves an image locally.
         Returns the relative path to the saved file.

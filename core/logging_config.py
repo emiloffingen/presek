@@ -19,7 +19,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 # =============================================================================
 # Configuration
@@ -53,7 +53,7 @@ class StructuredFormatter(logging.Formatter):
         self.include_extra = include_extra
 
     def format(self, record: logging.LogRecord) -> str:
-        log_data: Dict[str, Any] = {
+        log_data: dict[str, Any] = {
             "timestamp": self.formatTime(record),
             "level": record.levelname,
             "logger": record.name,
@@ -111,7 +111,7 @@ class PresekLogger(logging.Logger):
 
     def __init__(self, name: str, level: int = logging.NOTSET):
         super().__init__(name, level)
-        self.extra_data: Optional[Dict[str, Any]] = None
+        self.extra_data: dict[str, Any] | None = None
 
     def _log(self, level: int, msg: str, args: tuple, **kwargs) -> None:
         # Extract extra data from kwargs
@@ -232,9 +232,9 @@ def log_request(
     path: str,
     status_code: int,
     duration_ms: float,
-    client_ip: Optional[str] = None,
-    user_agent: Optional[str] = None,
-    extra: Optional[Dict[str, Any]] = None,
+    client_ip: str | None = None,
+    user_agent: str | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> None:
     """Log an HTTP request with structured data."""
     data = {
@@ -258,7 +258,7 @@ def log_request(
         logger.info("Request completed", extra=data)
 
 
-def log_error(logger: logging.Logger, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
+def log_error(logger: logging.Logger, error: Exception, context: dict[str, Any] | None = None) -> None:
     """Log an error with context."""
     data = {
         "error_type": type(error).__name__,

@@ -54,15 +54,16 @@ NEW_FEEDS = [
         "category": "Biznis",
         "language": "mk",
         "credibility": 0.80,
-    }
+    },
 ]
+
 
 def add_feeds():
     print("Seeding upgraded category feeds into DB...")
-    
+
     added_sources = 0
     added_feeds = 0
-    
+
     for f in NEW_FEEDS:
         name = f["name"]
         url = f["url"]
@@ -70,7 +71,7 @@ def add_feeds():
         category = f["category"]
         language = f["language"]
         credibility = f["credibility"]
-        
+
         # 1. Handle 'sources' table
         source_exists = db.execute_one("SELECT name FROM sources WHERE name = %s", (name,))
         if not source_exists:
@@ -80,7 +81,7 @@ def add_feeds():
                 VALUES (%s, %s, %s, %s, %s, %s, TRUE)
                 """,
                 (name, url, country, category, language, credibility),
-                fetch=False
+                fetch=False,
             )
             print(f"  + Added source metadata: {name} (Country: {country}, Cat: {category})")
             added_sources += 1
@@ -92,10 +93,10 @@ def add_feeds():
                 WHERE name = %s
                 """,
                 (url, country, category, language, credibility, name),
-                fetch=False
+                fetch=False,
             )
             print(f"  . Updated source metadata: {name}")
-            
+
         # 2. Handle 'feed_sources' table
         feed_exists = db.execute_one("SELECT name FROM feed_sources WHERE name = %s", (name,))
         if not feed_exists:
@@ -105,7 +106,7 @@ def add_feeds():
                 VALUES (%s, %s, %s, TRUE)
                 """,
                 (name, url, category),
-                fetch=False
+                fetch=False,
             )
             print(f"  + Added feed source: {name} ({url})")
             added_feeds += 1
@@ -117,11 +118,12 @@ def add_feeds():
                 WHERE name = %s
                 """,
                 (url, category, name),
-                fetch=False
+                fetch=False,
             )
             print(f"  . Updated feed source URL: {name}")
 
     print(f"Done! Seeded {added_sources} sources and {added_feeds} active feeds.")
+
 
 if __name__ == "__main__":
     add_feeds()

@@ -13,7 +13,6 @@ import re
 import socket
 import time
 from threading import Lock
-from typing import Optional
 
 log = logging.getLogger("presek.api.helpers")
 
@@ -394,7 +393,7 @@ def normalize_server_delivery_subscription(payload) -> dict:
     }
 
 
-def default_related_questions(question: str, category: Optional[str] = None, lang: str = "sr") -> list[str]:
+def default_related_questions(question: str, category: str | None = None, lang: str = "sr") -> list[str]:
     L = _BACKEND_I18N.get(lang, _BACKEND_I18N["sr"])
     fallback = [
         L["q.development"],
@@ -408,7 +407,7 @@ def default_related_questions(question: str, category: Optional[str] = None, lan
 
 def related_questions_from_context(
     question: str,
-    category: Optional[str] = None,
+    category: str | None = None,
     *,
     has_perspectives: bool = False,
     has_multiple_sources: bool = False,

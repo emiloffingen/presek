@@ -389,18 +389,18 @@ def main():
             pass
 
     if args.stats:
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"Files with Macedonian Cyrillic/RS references: {len(files_with_issues)}")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
         for fp in sorted(files_with_issues):
             print(f"  {fp.relative_to(ROOT)}")
         return
 
     # Process files
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print("TRANSLATION: Macedonian → Serbian Latin")
     print(f"Mode: {'DRY RUN' if dry_run else 'APPLY CHANGES'}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")
 
     for filepath in sorted(files_with_issues):
         was_modified, changes = translate_file(filepath, dry_run)
@@ -410,12 +410,12 @@ def main():
             for change in changes:
                 print(change)
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     if dry_run:
         print(f"DRY RUN: Would modify {len(files_with_issues)} files")
     else:
         print("Done!")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
 
 if __name__ == "__main__":

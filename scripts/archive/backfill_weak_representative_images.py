@@ -50,11 +50,7 @@ def main() -> int:
         log.info("No clusters found in the requested window.")
         return 0
 
-    weak_rows = [
-        row
-        for row in rows
-        if classify_image_url(row.get("representative_image"))[0] != "ok"
-    ]
+    weak_rows = [row for row in rows if classify_image_url(row.get("representative_image"))[0] != "ok"]
     log.info("Scanned %s clusters, found %s with weak representative images", len(rows), len(weak_rows))
 
     if not weak_rows:

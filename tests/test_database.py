@@ -236,7 +236,10 @@ class TestAsyncSearchArticles:
         await manager.async_search_articles("test", limit=10, timespan="7d", country="MK")
 
         assert captured["params"] == ("test", "test", "MK", 10)
-        assert "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND a.search_vector @@ query.ts_query" in captured["sql"]
+        assert (
+            "created_at >= NOW() - INTERVAL '7 days' AND country = %s AND a.search_vector @@ query.ts_query"
+            in captured["sql"]
+        )
         assert "WHERE  AND" not in captured["sql"]
 
     async def test_async_search_articles_no_filters_generates_valid_sql(self):

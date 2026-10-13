@@ -14,7 +14,7 @@ from routes.stats import get_archive
 async def test_archive_invalid_date_returns_400_not_500():
     with pytest.raises(HTTPException) as exc:
         await get_archive(
-            date="2026-06-08\" AND 1=1 --",
+            date='2026-06-08" AND 1=1 --',
             q="",
             source="",
             topic="",
@@ -123,7 +123,12 @@ async def test_archive_nonempty_result_has_no_nearest():
         "created_at": "2026-06-08T10:00:00",
         "description": "d",
     }
-    with _patched(_mock_db(execute_rows=[row], one_row={"total": 1, "source_count": 1}), rank_articles_in_cluster=lambda arts: arts, score_cluster=lambda c: 1.0, is_balanced=lambda c: False):
+    with _patched(
+        _mock_db(execute_rows=[row], one_row={"total": 1, "source_count": 1}),
+        rank_articles_in_cluster=lambda arts: arts,
+        score_cluster=lambda c: 1.0,
+        is_balanced=lambda c: False,
+    ):
         result = await get_archive(date="2026-06-08", q="", source="", topic="", lang="mk", page=0, page_size=15)
 
     assert result["nearest"] is None

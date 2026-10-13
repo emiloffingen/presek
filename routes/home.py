@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
@@ -45,7 +45,7 @@ _HOMEPAGE_FOR_YOU_BACKFILL_MIN = 4
 _HOMEPAGE_LIVE_NOW_BACKFILL_MIN = 2
 
 
-def _cluster_source_count(cluster: Dict[str, Any]) -> int:
+def _cluster_source_count(cluster: dict[str, Any]) -> int:
     declared = cluster.get("source_count")
     if declared is not None:
         try:
@@ -56,7 +56,7 @@ def _cluster_source_count(cluster: Dict[str, Any]) -> int:
     return len({a.get("source") for a in articles if a.get("source")})
 
 
-def _is_primary_developing_cluster(cluster: Dict[str, Any]) -> bool:
+def _is_primary_developing_cluster(cluster: dict[str, Any]) -> bool:
     source_count = _cluster_source_count(cluster)
     story_state = str(cluster.get("story_state") or "")
     articles = cluster.get("articles") or []
@@ -64,12 +64,12 @@ def _is_primary_developing_cluster(cluster: Dict[str, Any]) -> bool:
 
 
 def _fill_developing_clusters(
-    feed_clusters: List[Dict[str, Any]],
+    feed_clusters: list[dict[str, Any]],
     *,
     exclude_ids: set[str],
     limit: int,
     backfill_min: int = _HOMEPAGE_DEVELOPING_BACKFILL_MIN,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     developing = [
         cluster
         for cluster in feed_clusters
@@ -112,13 +112,13 @@ def _fill_developing_clusters(
 
 
 def _fill_for_you_pool(
-    clusters: List[Dict[str, Any]],
+    clusters: list[dict[str, Any]],
     *,
     start: int,
     exclude_ids: set[str],
     limit: int = 6,
     backfill_min: int = _HOMEPAGE_FOR_YOU_BACKFILL_MIN,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     pool = [
         cluster
         for cluster in clusters[start : start + limit]
@@ -148,12 +148,12 @@ def _fill_for_you_pool(
 
 
 def _fill_live_now_clusters(
-    items: List[Dict[str, Any]],
+    items: list[dict[str, Any]],
     *,
     exclude_ids: set[str],
     limit: int = 4,
     backfill_min: int = _HOMEPAGE_LIVE_NOW_BACKFILL_MIN,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     selected = _rank_live_now_clusters(items, exclude_cluster_ids=exclude_ids, limit=limit)
     if len(selected) >= backfill_min:
         return selected
@@ -178,7 +178,7 @@ def _fill_live_now_clusters(
     return selected[:limit]
 
 
-def _homepage_developing_sort_key(cluster: Dict[str, Any]) -> tuple:
+def _homepage_developing_sort_key(cluster: dict[str, Any]) -> tuple:
     source_count = int(cluster.get("source_count") or len(cluster.get("articles") or []))
     return (
         1 if cluster.get("has_synthesis") else 0,
@@ -187,14 +187,14 @@ def _homepage_developing_sort_key(cluster: Dict[str, Any]) -> tuple:
     )
 
 
-def _homepage_cluster_score(cluster: Dict[str, Any]) -> float:
+def _homepage_cluster_score(cluster: dict[str, Any]) -> float:
     return float(cluster.get("homepage_score") or 0.0)
 
 
 def _apply_synthesis_lead_tiebreak(
-    clusters: List[Dict[str, Any]],
+    clusters: list[dict[str, Any]],
     window: float = _LEAD_TIEBREAK_WINDOW,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Prefer a synthesis-backed lead when top homepage candidates score within `window`."""
     if len(clusters) < 2:
         return clusters
@@ -215,7 +215,7 @@ def _apply_synthesis_lead_tiebreak(
     return [synth_pick] + [cluster for cluster in clusters if cluster.get("cluster_id") != synth_pick.get("cluster_id")]
 
 
-def _cluster_has_full_synthesis(cluster: Dict[str, Any]) -> bool:
+def _cluster_has_full_synthesis(cluster: dict[str, Any]) -> bool:
     if not cluster or not cluster.get("has_synthesis"):
         return False
     if str(cluster.get("generated_article") or "").strip():
@@ -225,8 +225,8 @@ def _cluster_has_full_synthesis(cluster: Dict[str, Any]) -> bool:
     return False
 
 
-def _merge_clusters_by_id(*groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    merged: dict[str, Dict[str, Any]] = {}
+def _merge_clusters_by_id(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
     order: list[str] = []
     for group in groups:
         for cluster in group or []:
@@ -246,13 +246,13 @@ def _merge_clusters_by_id(*groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 def _select_homepage_hero_clusters(
-    clusters: List[Dict[str, Any]],
+    clusters: list[dict[str, Any]],
     *,
     hero_count: int = _HOMEPAGE_HERO_COUNT,
     candidate_pool: int = _HOMEPAGE_HERO_CANDIDATE_POOL,
-    synthesis_backfill: List[Dict[str, Any]] | None = None,
+    synthesis_backfill: list[dict[str, Any]] | None = None,
     force_synthesis: bool = True,
-) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Pick lead + supporting clusters. When forced, only full synthesis clusters qualify."""
     pool = _merge_clusters_by_id(clusters[:candidate_pool], synthesis_backfill or [])
     if not pool:
@@ -274,7 +274,7 @@ def _select_homepage_hero_clusters(
 
     top_score = _homepage_cluster_score(pool[0])
     score_floor = top_score * _HOMEPAGE_HERO_SYNTHESIS_BAND if top_score > 0 else 0.0
-    hero: List[Dict[str, Any]] = []
+    hero: list[dict[str, Any]] = []
     used_ids: set[str] = set()
 
     lead_candidates = _apply_synthesis_lead_tiebreak(pool[: min(4, len(pool))])
@@ -307,7 +307,7 @@ def _select_homepage_hero_clusters(
     return hero, remainder
 
 
-def _cluster_can_synthesize(cluster: Dict[str, Any]) -> bool:
+def _cluster_can_synthesize(cluster: dict[str, Any]) -> bool:
     return _cluster_source_count(cluster) >= 2
 
 
@@ -329,7 +329,7 @@ def _schedule_cluster_synthesis(cluster_id: str) -> None:
         log.error("[home] Failed to queue synthesis for %s: %s", cluster_id, exc)
 
 
-async def _ensure_cluster_synthesis(cluster: Dict[str, Any], *, enqueue: bool = False) -> Dict[str, Any]:
+async def _ensure_cluster_synthesis(cluster: dict[str, Any], *, enqueue: bool = False) -> dict[str, Any]:
     """Ensure homepage hero clusters are queued for synthesis when missing."""
     if not cluster or cluster.get("has_synthesis"):
         return cluster
@@ -353,35 +353,35 @@ def _schedule_background_task(coro) -> asyncio.Task:
 
 class HomeResponse(BaseModel):
     status: str
-    lead: Optional[Any] = None
-    lead_display: Optional[Dict[str, Any]] = None
-    supporting: List[Any] = Field(default_factory=list)
-    synthesis_picks: List[Any] = Field(default_factory=list)
-    live_now: List[Any] = Field(default_factory=list)
-    for_you_pool: List[Any] = Field(default_factory=list)
-    developing: List[Any] = Field(default_factory=list)
-    wire: List[Any] = Field(default_factory=list)
-    latest_wire: List[Any] = Field(default_factory=list)
-    global_: List[Any] = Field(default_factory=list, alias="global")
-    trending: List[Any] = Field(default_factory=list)
-    stats: Dict[str, Any] = Field(default_factory=dict)
-    focus_entities: List[Any] = Field(default_factory=list)
-    excluded_cluster_ids: List[str] = Field(default_factory=list)
-    analysis_pool: List[Any] = Field(default_factory=list)
-    pipeline: Optional[Dict[str, Any]] = None
-    briefing: Optional[Dict[str, Any]] = None
-    message: Optional[str] = None
+    lead: Any | None = None
+    lead_display: dict[str, Any] | None = None
+    supporting: list[Any] = Field(default_factory=list)
+    synthesis_picks: list[Any] = Field(default_factory=list)
+    live_now: list[Any] = Field(default_factory=list)
+    for_you_pool: list[Any] = Field(default_factory=list)
+    developing: list[Any] = Field(default_factory=list)
+    wire: list[Any] = Field(default_factory=list)
+    latest_wire: list[Any] = Field(default_factory=list)
+    global_: list[Any] = Field(default_factory=list, alias="global")
+    trending: list[Any] = Field(default_factory=list)
+    stats: dict[str, Any] = Field(default_factory=dict)
+    focus_entities: list[Any] = Field(default_factory=list)
+    excluded_cluster_ids: list[str] = Field(default_factory=list)
+    analysis_pool: list[Any] = Field(default_factory=list)
+    pipeline: dict[str, Any] | None = None
+    briefing: dict[str, Any] | None = None
+    message: str | None = None
 
 
 class StatusOnlyResponse(BaseModel):
     status: str
-    message: Optional[str] = None
+    message: str | None = None
 
 
 _AUDIO_PRIORITY_GENERATION_LIMIT = max(0, int(os.environ.get("AUDIO_PRIORITY_GENERATION_LIMIT", "2")))
 
 
-async def _ensure_cluster_audio(cluster: Dict[str, Any], generate: bool = False) -> Dict[str, Any]:
+async def _ensure_cluster_audio(cluster: dict[str, Any], generate: bool = False) -> dict[str, Any]:
     """
     Check if cluster has synthesis and ensure audio is generated.
     Adds audio_url to cluster if available.
@@ -623,7 +623,7 @@ def _rank_latest_wire_articles(items, limit=15):
     return selected
 
 
-def _build_lead_display(cluster, lang: Optional[str] = DEFAULT_LANG):
+def _build_lead_display(cluster, lang: str | None = DEFAULT_LANG):
     article = _primary_article(cluster)
     if not article:
         return {}
@@ -709,7 +709,7 @@ def _is_usable_focus_entity(name):
     return True
 
 
-async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str, Any]]:
+async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> list[dict[str, Any]]:
     """Load recent clusters that have full generated synthesis for the target language.
 
     This is the slowest part of a cold ``/home`` payload (three joined queries plus
@@ -837,18 +837,18 @@ async def _fetch_synthesized_clusters(lang: str, *, limit: int) -> List[Dict[str
     return formatted_clusters
 
 
-async def fetch_synthesis_hero_candidates(lang: str = DEFAULT_LANG, limit: int = 24) -> List[Dict[str, Any]]:
+async def fetch_synthesis_hero_candidates(lang: str = DEFAULT_LANG, limit: int = 24) -> list[dict[str, Any]]:
     """Return the strongest recent synthesized clusters for homepage hero backfill."""
     return await _fetch_synthesized_clusters(lang, limit=limit)
 
 
-async def fetch_synthesis_picks(lang: str = DEFAULT_LANG) -> List[Dict[str, Any]]:
+async def fetch_synthesis_picks(lang: str = DEFAULT_LANG) -> list[dict[str, Any]]:
     """Fetches the latest clusters that have a generated synthesis for the given language."""
     return await _fetch_synthesized_clusters(lang, limit=4)
 
 
 @router.get("/home", response_model=HomeResponse)
-async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
+async def get_home(request: Request = None, lang: str | None = DEFAULT_LANG):
     # Support legacy tests passing lang as a positional argument
     if isinstance(request, str):
         lang = request
@@ -947,7 +947,7 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
         priority_audio_ids = set()
         priority_audio_budget = _AUDIO_PRIORITY_GENERATION_LIMIT
 
-        def should_generate_priority_audio(cluster: Dict[str, Any]) -> bool:
+        def should_generate_priority_audio(cluster: dict[str, Any]) -> bool:
             nonlocal priority_audio_budget
             if priority_audio_budget <= 0 or not cluster or not cluster.get("cluster_id"):
                 return False
@@ -1113,7 +1113,7 @@ async def get_home(request: Request = None, lang: Optional[str] = DEFAULT_LANG):
 
 
 @router.get("/home/live-now")
-async def get_home_live_now(exclude: str = "", lang: Optional[str] = DEFAULT_LANG):
+async def get_home_live_now(exclude: str = "", lang: str | None = DEFAULT_LANG):
     cache_key = f"api:home:live-now:v3:{exclude}:{lang}"
     cached = cached_response(cache_key, ttl=60)
     if cached:
@@ -1136,7 +1136,7 @@ async def get_home_live_now(exclude: str = "", lang: Optional[str] = DEFAULT_LAN
 
 
 @router.get("/home/latest-wire")
-async def get_home_latest_wire(limit: int = 15, lang: Optional[str] = DEFAULT_LANG):
+async def get_home_latest_wire(limit: int = 15, lang: str | None = DEFAULT_LANG):
     bounded_limit = max(1, min(int(limit or 15), 30))
     cache_key = f"api:home:latest-wire:v3:{bounded_limit}:{lang}"
     cached = cached_response(cache_key, ttl=120)

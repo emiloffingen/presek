@@ -114,7 +114,7 @@ def _schedule_fast_synthesis_upgrade(cluster_id: str, content=None) -> bool:
     scheduled = schedule_task_once(
         lock_key,
         _FAST_SYNTHESIS_UPGRADE_LOCK_TTL_SECONDS,
-        upgrade_fast_synthesis_task,  # noqa: F821
+        upgrade_fast_synthesis_task,
         args=(cluster_id,),
         kwargs={"content": content, "defer_attempt": 0},
         countdown=_FAST_SYNTHESIS_UPGRADE_DELAY_SECONDS,

@@ -202,12 +202,6 @@ def test_decorate_cluster_display_adds_display_fields_to_articles():
     assert decorated["articles"][0]["display_summary"] == "Opis"
 
 
-
-
-
-
-
-
 def test_api_default_language_is_mk():
     """MK-only deployment: endpoints must default to 'mk', not 'sr'.
 

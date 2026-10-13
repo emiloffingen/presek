@@ -41,7 +41,7 @@ const sourceCount = (cluster: NewsCluster) => Number(
 const articleCount = (cluster: NewsCluster) => Math.max(cluster.articles?.length || 0, sourceCount(cluster));
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const clusterMeta = (cluster: NewsCluster) =>
-    `${plural(articleCount(cluster), 'напис', 'написи')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
+    `${plural(articleCount(cluster), 'вест', 'вести')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
 const sectionLabel = (raw: unknown) => {
     const value = String(raw || '').trim();
     if (!value) return '';
@@ -110,7 +110,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                     <figure class="bs-figure">
                         <a href={lead.href} class="bs-photo bs-photo-16x9" tabindex="-1" aria-hidden="true">
                             {lead.image && (
-                                <img src={lead.image} data-fallback-url={lead.fallback} alt="" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
+                                <img src={lead.image} data-fallback-url={lead.fallback} alt={lead.title} width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
                             )}
                         </a>
                         {lead.caption && <figcaption>Фото: {lead.caption}</figcaption>}
@@ -122,7 +122,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         <div class="bs-breakdown">
                             <div class="bs-breakdown-head">
                                 <strong>Пресек на изворите</strong>
-                                <span><span class="bs-num">{lead.articles}</span> {lead.articles === 1 ? 'напис' : 'написи'} · <span class="bs-num">{lead.sources}</span> {lead.sources === 1 ? 'извор' : 'извори'}</span>
+                                <span><span class="bs-num">{lead.articles}</span> {lead.articles === 1 ? 'вест' : 'вести'} · <span class="bs-num">{lead.sources}</span> {lead.sources === 1 ? 'извор' : 'извори'}</span>
                             </div>
                             <div class="bs-bar" aria-hidden="true">
                                 {lead.breakdown.map((part, i) => <span class={`bs-bar-${i}`} style={`flex:${part.count}`}></span>)}
@@ -136,7 +136,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                     )}
                     <div class="bs-actions">
                         <a href={lead.href} class="bs-btn">Прочитај ја синтезата</a>
-                        {lead.articles > 1 && <a href={`${lead.href}#cluster-sources`} class="bs-btn bs-btn-outline">Сите {lead.articles} написи</a>}
+                        {lead.articles > 1 && <a href={`${lead.href}#cluster-sources`} class="bs-btn bs-btn-outline">Сите {lead.articles} вести</a>}
                     </div>
                 </article>
 
@@ -149,7 +149,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                                 return (
                                     <a href={clusterHref(cluster)} class="bs-dev-item">
                                         <span class="bs-photo bs-thumb">
-                                            {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="84" height="84" loading="lazy" decoding="async" />}
+                                            {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="84" height="84" loading="lazy" decoding="async" />}
                                         </span>
                                         <span class="bs-dev-copy">
                                             <span class="bs-dev-title">{clusterTitle(cluster)}</span>
@@ -178,7 +178,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         return (
                             <article class="bs-card">
                                 <a href={clusterHref(cluster)} class="bs-photo bs-photo-16x10" tabindex="-1" aria-hidden="true">
-                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="720" height="450" loading="lazy" decoding="async" />}
+                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="720" height="450" loading="lazy" decoding="async" />}
                                 </a>
                                 <div class="bs-card-body">
                                     {clusterSection(cluster) && <span class="bs-kicker">{clusterSection(cluster)}</span>}
@@ -203,7 +203,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         <>
                             <article class="bs-live-item">
                                 <a href={clusterHref(cluster)} class="bs-photo bs-live-photo" tabindex="-1" aria-hidden="true">
-                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt="" width="128" height="96" loading="lazy" decoding="async" />}
+                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="128" height="96" loading="lazy" decoding="async" />}
                                 </a>
                                 <div class="bs-live-copy">
                                     <h3 class="bs-live-headline"><a href={clusterHref(cluster)}>{clusterTitle(cluster)}</a></h3>

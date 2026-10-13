@@ -75,7 +75,7 @@ def classify_image_url(url: str | None) -> tuple[str, str]:
             if pattern in target:
                 return "weak", f"matches {pattern}"
         return "weak", "url too short"
-    if not re.match(r"^https?://|^/static/", value, re.I):
+    if not re.match(r"^https?://|^/static/", value, re.IGNORECASE):
         return "weak", "unsupported scheme"
     return "ok", "usable candidate"
 

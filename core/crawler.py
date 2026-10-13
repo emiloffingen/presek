@@ -3,7 +3,7 @@ import logging
 import random
 import re
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -17,7 +17,7 @@ from utils import _peer_is_public, _resolve_public_ips
 log = logging.getLogger("presek.crawler")
 
 # robots.txt cache: origin -> (fetched_at, RobotFileParser | None)
-_ROBOTS_CACHE: Dict[str, tuple] = {}
+_ROBOTS_CACHE: dict[str, tuple] = {}
 _ROBOTS_TTL_SECONDS = 3600.0
 
 
@@ -34,7 +34,7 @@ async def _robots_allows(url: str) -> bool:
     now = time.time()
     cached = _ROBOTS_CACHE.get(origin)
     if cached and (now - cached[0]) < _ROBOTS_TTL_SECONDS:
-        rp: Optional[RobotFileParser] = cached[1]
+        rp: RobotFileParser | None = cached[1]
     else:
         rp = None
         try:
@@ -218,7 +218,7 @@ class CrawlerService:
             "Cache-Control": "max-age=0",
         }
 
-    async def extract_all(self, url: str) -> Dict[str, Any]:
+    async def extract_all(self, url: str) -> dict[str, Any]:
         """
         Main entry point: Try fast extraction first, fall back to headless browser if needed.
         """
@@ -267,7 +267,7 @@ class CrawlerService:
                 except (ValueError, PermissionError) as e:
                     log.warning(f"SSRF blocked for {url}: {e}")
                     return {"url": url, "error": f"Security block: {e}"}
-                except Exception as e:  # noqa: BLE001 - network retry must catch all transient errors
+                except Exception as e:
                     last_err = str(e)
                     await asyncio.sleep(1.5 * (attempt + 1))
             if html_content is None:
@@ -298,7 +298,7 @@ class CrawlerService:
             log.info(f"Low quality content for {url} ({len(content)} chars); returning as-is")
         return result
 
-    def _parse_with_trafilatura(self, html: str, url: str) -> Dict[str, Any]:
+    def _parse_with_trafilatura(self, html: str, url: str) -> dict[str, Any]:
         """Extracts content and metadata using trafilatura."""
         cleaned_html = prune_boilerplate_html(html)
 

@@ -150,7 +150,9 @@ class TestDeadCrawls:
 
 class TestPruneCrawlQueueTask:
     def test_task_wraps_helper(self):
-        with patch("tasks.maintenance.prune_crawl_queue", return_value={"removed": 2, "depth_before": 5, "depth_after": 3}) as mock_prune:
+        with patch(
+            "tasks.maintenance.prune_crawl_queue", return_value={"removed": 2, "depth_before": 5, "depth_after": 3}
+        ) as mock_prune:
             result = prune_crawl_queue_task()
         assert result == {"removed": 2, "depth_before": 5, "depth_after": 3}
         mock_prune.assert_called_once_with(dry_run=False)

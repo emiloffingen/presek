@@ -26,13 +26,9 @@ def upgrade() -> None:
 
     existing = {c["name"] for c in inspector.get_columns("advertising_campaigns")}
     if "stripe_payment_intent" not in existing:
-        op.add_column(
-            "advertising_campaigns", sa.Column("stripe_payment_intent", sa.Text())
-        )
+        op.add_column("advertising_campaigns", sa.Column("stripe_payment_intent", sa.Text()))
     if "idempotency_key" not in existing:
-        op.add_column(
-            "advertising_campaigns", sa.Column("idempotency_key", sa.Text())
-        )
+        op.add_column("advertising_campaigns", sa.Column("idempotency_key", sa.Text()))
 
     indexes = {i["name"] for i in inspector.get_indexes("advertising_campaigns")}
     if "ix_advertising_campaigns_stripe_payment_intent" not in indexes:

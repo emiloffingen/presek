@@ -24,7 +24,7 @@ _GENERIC_CLUSTER_TOPICS = {"vesti", "news", ""}
 
 
 def _cluster_text_similarity(left_titles, right_titles, lang="mk"):
-    import core.clustering as clustering
+    from core import clustering
 
     left_text = " ".join(str(title or "") for title in (left_titles or [])[:3])
     right_text = " ".join(str(title or "") for title in (right_titles or [])[:3])

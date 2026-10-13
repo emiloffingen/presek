@@ -6,7 +6,7 @@ import logging
 import random
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 import feedparser
@@ -23,7 +23,7 @@ except ModuleNotFoundError:
 
 from prometheus_client import Counter
 
-import core.clustering as clustering
+from core import clustering
 from core.api_helpers import is_safe_url
 from core.config import CLUSTER_LOOKBACK, CLUSTER_WINDOW_HOURS, HARDCODED_FEED_CATEGORIES, JUNK_KEYWORDS, MK_ONLY
 from core.database import db_manager as db
@@ -377,8 +377,7 @@ def canonical_hostname(url: str) -> str:
             exc_info=True,
         )
         return ""
-    if host.startswith("www."):
-        host = host[4:]
+    host = host.removeprefix("www.")
     return host
 
 
@@ -616,11 +615,11 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
                             if re.search(
                                 r"<meta[^>]+property=[\"']og:image[\"'][^>]+content=[\"']([^\"']+)[\"']",
                                 temp_text,
-                                re.I,
+                                re.IGNORECASE,
                             ) or re.search(
                                 r"<meta[^>]+content=[\"']([^\"']+)[\"'][^>]+property=[\"']og:image[\"']",
                                 temp_text,
-                                re.I,
+                                re.IGNORECASE,
                             ):
                                 break
                         except Exception as e:
@@ -672,7 +671,7 @@ async def fetch_og_image(client: httpx.AsyncClient, url: str) -> str | None:
     return None
 
 
-async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dict[str, Any]]) -> int:
+async def fill_missing_og_images(client: httpx.AsyncClient, candidates: list[dict[str, Any]]) -> int:
     """Backfill missing article images using og:image with bounded concurrency."""
     no_image = []
     skipped_domains = 0
@@ -701,7 +700,7 @@ async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dic
     log.info(f"[ingest] Fetching og:image for {len(no_image)} articles without images")
     semaphore = asyncio.Semaphore(_OG_IMAGE_CONCURRENCY)
 
-    async def _fetch(candidate: Dict[str, Any]) -> str | None:
+    async def _fetch(candidate: dict[str, Any]) -> str | None:
         async with semaphore:
             return await fetch_og_image(client, candidate["link"])
 
@@ -716,7 +715,7 @@ async def fill_missing_og_images(client: httpx.AsyncClient, candidates: List[Dic
     return filled
 
 
-async def fetch_feed_async(client: httpx.AsyncClient, source: Dict[str, Any]) -> Tuple[str, List[Any], str | None]:
+async def fetch_feed_async(client: httpx.AsyncClient, source: dict[str, Any]) -> tuple[str, list[Any], str | None]:
     """Asynchronously fetch and parse a single RSS feed with retry logic."""
     name = source["name"]
     url = source["url"]

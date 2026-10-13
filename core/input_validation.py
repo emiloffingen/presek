@@ -11,7 +11,7 @@ Provides validation functions for:
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Path, Query
@@ -47,8 +47,6 @@ URL_PATTERN = re.compile(
 class QueryParams(BaseModel):
     """Base model for query parameter validation."""
 
-    pass
-
 
 class PaginationParams(BaseModel):
     """Validation model for pagination parameters."""
@@ -75,7 +73,7 @@ class SearchParams(BaseModel):
     """Validation model for search parameters."""
 
     q: str = Query("", max_length=500, description="Search query")
-    lang: Optional[str] = Query(None, max_length=2, description="Language code")
+    lang: str | None = Query(None, max_length=2, description="Language code")
 
     @field_validator("q")
     @classmethod
@@ -271,7 +269,7 @@ def validate_url(url: str, max_length: int = 2048) -> str:
     return url
 
 
-def validate_language_code(lang: str, allowed_languages: List[str] = None) -> str:
+def validate_language_code(lang: str, allowed_languages: list[str] = None) -> str:
     """Validate a language code parameter."""
     if allowed_languages is None:
         allowed_languages = ["sr", "mk", "en"]
@@ -309,8 +307,8 @@ def validate_boolean_param(value: Union[bool, str]) -> bool:
 
 
 def validate_request_body(
-    body: Dict[str, Any], required_fields: List[str] = None, max_size: int = 10000
-) -> Dict[str, Any]:
+    body: dict[str, Any], required_fields: list[str] = None, max_size: int = 10000
+) -> dict[str, Any]:
     """Validate a request body."""
     if not body or not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="Invalid request body")
@@ -376,10 +374,10 @@ class ValidationErrorResponse(BaseModel):
     status: str = "error"
     error: str = "validation_error"
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
 
 
-def handle_validation_error(e: ValidationError) -> Dict[str, Any]:
+def handle_validation_error(e: ValidationError) -> dict[str, Any]:
     """Handle Pydantic validation errors and return a standard response."""
     errors = []
     for error in e.errors():

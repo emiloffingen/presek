@@ -131,7 +131,9 @@ def handle_request(msg: dict) -> dict | None:
 
 
 def main() -> None:
-    log(f"start (relay={os.environ.get('SHARED_MEMORY_RELAY_URL', 'UNSET')}, agent={os.environ.get('PRESEK_AGENT_ID', 'unknown')})")
+    log(
+        f"start (relay={os.environ.get('SHARED_MEMORY_RELAY_URL', 'UNSET')}, agent={os.environ.get('PRESEK_AGENT_ID', 'unknown')})"
+    )
     for raw in sys.stdin:
         raw = raw.strip()
         if not raw:

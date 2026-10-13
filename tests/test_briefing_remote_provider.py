@@ -30,9 +30,7 @@ def test_briefing_remote_provider(monkeypatch, env_value, expected):
         ("nvidia", "gemini", "gemini", ["local"]),
     ],
 )
-def test_resolve_briefing_ai_providers(
-    monkeypatch, env_value, task_override, expected_provider, expected_exclusions
-):
+def test_resolve_briefing_ai_providers(monkeypatch, env_value, task_override, expected_provider, expected_exclusions):
     monkeypatch.setenv("BRIEFING_REMOTE_PROVIDER", env_value)
     provider, exclusions = resolve_briefing_ai_providers(task_override)
     assert provider == expected_provider

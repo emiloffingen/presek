@@ -19,10 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS idx_articles_unsummarized_id "
-        "ON articles (id) WHERE summary IS NULL"
-    )
+    op.execute("CREATE INDEX IF NOT EXISTS idx_articles_unsummarized_id ON articles (id) WHERE summary IS NULL")
 
 
 def downgrade() -> None:

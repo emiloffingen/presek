@@ -13,9 +13,9 @@ def paragraph_fingerprint(text: str) -> str:
 
 
 _CLEAN_ARTIFACTS = [
-    re.compile(r"Read\s+More\s*[»\>\-]*\s*$", re.I),
-    re.compile(r"Procitaj\s+povece\s*$", re.I),
-    re.compile(r"Continue\s+reading\s*$", re.I),
+    re.compile(r"Read\s+More\s*[»\>\-]*\s*$", re.IGNORECASE),
+    re.compile(r"Procitaj\s+povece\s*$", re.IGNORECASE),
+    re.compile(r"Continue\s+reading\s*$", re.IGNORECASE),
     re.compile(r"\[\s*&#\d+;\s*\]"),
     re.compile(r"\[\s*\.\.\.\s*\]"),
     re.compile(r"\s*&#8230;\s*$"),
@@ -86,7 +86,7 @@ def extract_clean_summary_text(text: str) -> str:
 
     for _ in range(3):
         trimmed = current.strip()
-        trimmed = re.sub(r"^```json\s*", "", trimmed, flags=re.I)
+        trimmed = re.sub(r"^```json\s*", "", trimmed, flags=re.IGNORECASE)
         trimmed = re.sub(r"```\s*$", "", trimmed).strip()
 
         if not (

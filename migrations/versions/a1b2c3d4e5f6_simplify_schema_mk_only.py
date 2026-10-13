@@ -27,9 +27,7 @@ def _safe_execute(sql: str) -> None:
     exist yet on this branch.
     """
     op.execute(
-        f"DO $$ BEGIN {sql}; "
-        "EXCEPTION WHEN undefined_column OR undefined_table "
-        "OR undefined_object THEN NULL; END $$"
+        f"DO $$ BEGIN {sql}; EXCEPTION WHEN undefined_column OR undefined_table OR undefined_object THEN NULL; END $$"
     )
 
 

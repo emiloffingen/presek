@@ -8,13 +8,13 @@ it was dropped. Ingestion-time headline cleanup is still done by the rule-based
 
 import json
 
-from tasks.intelligence._constants import *  # noqa: F403,F405
+from tasks.intelligence._constants import *
 from tasks.utils import (
     log,
 )
 
 
-@celery_app.task(  # noqa: F405
+@celery_app.task(
     name="tasks.intelligence.detect_global_story_task",
     rate_limit="15/m",
     autoretry_for=(Exception,),
@@ -28,7 +28,7 @@ def detect_global_story_task(article_id):
     if not LOCAL_TRANSLATION_ENABLED:
         return
 
-    row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))  # noqa: F405
+    row = db.execute_one("SELECT title FROM articles WHERE id = %s", (article_id,))
     if not row or not row.get("title"):
         return
 
@@ -59,12 +59,11 @@ def detect_global_story_task(article_id):
             if not mk_norm or not g_norm or len(g_vec) != len(mk_vec):
                 continue
             sim = sum(a * b for a, b in zip(mk_vec, g_vec)) / (mk_norm * g_norm)
-            if sim > best_similarity:
-                best_similarity = sim
+            best_similarity = max(best_similarity, sim)
 
         # 4. Verdict (0.82 is a strong semantic match for cross-lingual pairs)
         if best_similarity > 0.82:
-            db.execute(  # noqa: F405
+            db.execute(
                 "UPDATE articles SET is_global = TRUE WHERE id = %s",
                 (article_id,),
                 fetch=False,

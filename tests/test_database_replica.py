@@ -183,72 +183,75 @@ def test_error_handling_in_replica_queries():
 async def test_async_read_only_query_routing():
     """Test that async read-only queries are routed to the replica pool in AsyncDatabaseManager."""
     from core.database import async_db
-    
+
     # Mock pools for AsyncDatabaseManager
     mock_read_pool = MagicMock()
     mock_primary_pool = MagicMock()
-    
+
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
-    
+
     # Set up mock cursor for async context managers
     async def mock_execute(sql, params=None):
         return None
+
     async def mock_fetchall():
         return [{"id": 1, "title": "Async Test"}]
-        
+
     async def mock_commit():
         return None
-        
+
     mock_cursor.execute = mock_execute
     mock_cursor.fetchall = mock_fetchall
     mock_conn.commit = mock_commit
-    
+
     # Async connection context managers
     class AsyncConnCM:
         async def __aenter__(self):
             return mock_conn
+
         async def __aexit__(self, exc_type, exc, tb):
             pass
-            
+
     class AsyncCursorCM:
         async def __aenter__(self):
             return mock_cursor
+
         async def __aexit__(self, exc_type, exc, tb):
             pass
-            
+
     mock_conn.cursor.return_value = AsyncCursorCM()
     mock_read_pool.connection.return_value = AsyncConnCM()
     mock_primary_pool.connection.return_value = AsyncConnCM()
-    
+
     # Temporarily override AsyncDatabaseManager pools
     original_read_pool = async_db._read_pool
     original_pool = async_db._pool
-    
+
     async_db._read_pool = mock_read_pool
     async_db._pool = mock_primary_pool
-    
+
     try:
         # 1. Execute an explicit read-only query
         results = await async_db.execute("SELECT * FROM articles LIMIT 1", read_only=True)
         assert results == [{"id": 1, "title": "Async Test"}]
         mock_read_pool.connection.assert_called_once()
         mock_primary_pool.connection.assert_not_called()
-        
+
         # Reset mocks
         mock_read_pool.reset_mock()
         mock_primary_pool.reset_mock()
-        
+
         # 2. Execute an auto-detected read-only SELECT query
         results = await async_db.execute("SELECT * FROM articles LIMIT 1")
         assert results == [{"id": 1, "title": "Async Test"}]
         mock_read_pool.connection.assert_called_once()
         mock_primary_pool.connection.assert_not_called()
-        
+
         # Reset mocks
         mock_read_pool.reset_mock()
         mock_primary_pool.reset_mock()
-        
+
         # 3. Execute a write query (e.g. INSERT) which should route to primary
         await async_db.execute("INSERT INTO articles (title) VALUES ('New')", fetch=False)
         mock_read_pool.connection.assert_not_called()

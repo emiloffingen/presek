@@ -15,8 +15,8 @@ if _PROJECT_ROOT not in sys.path:
 # (RESP2) before the pool is constructed.  This must happen before the
 # `Celery(broker=...)` call below.
 # ---------------------------------------------------------------------------
-import redis as _redis
 import kombu.transport.redis as _kombu_redis
+import redis as _redis
 
 _orig_get_pool = _kombu_redis.Channel._get_pool
 
@@ -412,8 +412,9 @@ if os.environ.get("ENABLE_AI_SCHEDULES", "false").lower() != "true":
         "backfill-cover-art",
         "discover-storylines",
         # Synthesis-quality / homepage-synthesis maintenance: all no-ops or
-        # crashing stubs on the MK-only (minimal-AI) deployment.
-        "refresh-synthesis-quality",
+        # crashing stubs on the MK-only (minimal-AI) deployment. NOTE:
+        # refresh-synthesis-quality was restored (helpers fixed) and runs here
+        # because /api/health + ops snapshot read its Redis key.
         "upgrade-stuck-fast-syntheses",
         "refresh-fallback-syntheses",
         "refresh-low-score-syntheses",

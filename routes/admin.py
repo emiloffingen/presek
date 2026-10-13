@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -350,7 +349,7 @@ async def get_cluster_synthesis_trace(
 async def create_admin_token_endpoint(
     subject: str = "admin",
     scope: str = "full-access",
-    expiry_hours: Optional[int] = None,
+    expiry_hours: int | None = None,
     authorized: bool = Depends(verify_admin),
     csrf_valid: bool = Depends(verify_csrf_token),
 ):

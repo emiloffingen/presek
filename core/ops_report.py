@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from core.database import db_manager as db
 from core.ops_snapshot import build_ops_snapshot
@@ -69,7 +69,7 @@ async def build_weekly_ops_report() -> dict:
     )
 
     return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "window_days": 7,
         "ops": ops,
         "synthesis": {

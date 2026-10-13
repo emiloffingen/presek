@@ -7,6 +7,7 @@ Usage (CI / production API venv):
 Static-only (fast, no venv required):
   python scripts/check_api_venv_imports.py --static-only
 """
+
 from __future__ import annotations
 
 import argparse
@@ -76,9 +77,7 @@ def scan_forbidden_top_level_imports(contract: dict) -> list[str]:
                 for alias in node.names:
                     root = _module_root(alias.name)
                     if root in forbidden:
-                        violations.append(
-                            f"{path.relative_to(ROOT)}:{node.lineno}: forbidden import `{alias.name}`"
-                        )
+                        violations.append(f"{path.relative_to(ROOT)}:{node.lineno}: forbidden import `{alias.name}`")
             elif isinstance(node, ast.ImportFrom):
                 if node.module:
                     root = _module_root(node.module)
@@ -106,9 +105,7 @@ def check_runtime_imports(contract: dict) -> list[str]:
 
         loaded = {name for name in sys.modules if name in forbidden or name.split(".", 1)[0] in forbidden}
         if loaded:
-            errors.append(
-                f"importing {module_name} loaded forbidden modules: {', '.join(sorted(loaded))}"
-            )
+            errors.append(f"importing {module_name} loaded forbidden modules: {', '.join(sorted(loaded))}")
 
     return errors
 

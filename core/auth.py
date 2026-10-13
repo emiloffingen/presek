@@ -7,8 +7,8 @@ security over the previous admin token system.
 
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 from fastapi import HTTPException, Request
@@ -30,10 +30,10 @@ class JWTBearer(HTTPBearer):
     """Dependency for JWT token authentication."""
 
     def __init__(self, auto_error: bool = True):
-        super(JWTBearer, self).__init__(auto_error=auto_error)
+        super().__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
+        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
         if credentials:
             if not credentials.scheme == "Bearer":
                 raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
@@ -52,9 +52,9 @@ class JWTBearer(HTTPBearer):
             return False
 
 
-def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] = None) -> str:
+def create_jwt_token(subject: str, additional_claims: dict[str, Any] | None = None) -> str:
     """Create a new JWT token."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "iat": now,
@@ -70,7 +70,7 @@ def create_jwt_token(subject: str, additional_claims: Optional[Dict[str, Any]] =
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-def decode_jwt(token: str) -> Optional[Dict[str, Any]]:
+def decode_jwt(token: str) -> dict[str, Any] | None:
     """Decode and verify a JWT token."""
     try:
         payload = jwt.decode(

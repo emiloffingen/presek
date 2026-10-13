@@ -7,7 +7,6 @@ a single local Gemma model via llama-cpp-python.
 import json
 import os
 import re
-from typing import Optional
 
 from core.logging_config import get_logger
 
@@ -56,7 +55,7 @@ def _clean_text(text: str) -> str:
     return text
 
 
-def _parse_json_response(response: str) -> Optional[dict]:
+def _parse_json_response(response: str) -> dict | None:
     """Try to parse JSON from model response."""
     try:
         # Try to find JSON in the response

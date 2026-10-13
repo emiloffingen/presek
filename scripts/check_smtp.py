@@ -6,6 +6,7 @@ test message. Prints no secret values.
     .venv/bin/python scripts/check_smtp.py                 # login check only
     .venv/bin/python scripts/check_smtp.py --send-to you@example.com
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,9 +43,7 @@ def main() -> int:
         return 2
     user = os.environ.get("SMTP_USER", "").strip()
     password = os.environ.get("SMTP_PASS", "").strip()
-    sender = os.environ.get("EMAIL_FROM", "").strip() or (
-        user if "@" in user else "Presek <briefing@presek.mk>"
-    )
+    sender = os.environ.get("EMAIL_FROM", "").strip() or (user if "@" in user else "Presek <briefing@presek.mk>")
 
     print("SMTP config:")
     print(f"  host: {host or '<missing>'}")

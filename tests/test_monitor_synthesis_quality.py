@@ -34,7 +34,10 @@ class TestMonitorSynthesisQuality:
         assert report["fallback_ratio"] == 0.2
         assert report["providers"]["nvidia"] == 70
 
-    @patch("scripts.monitor_synthesis_quality._persist_gap_metrics", return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0})
+    @patch(
+        "scripts.monitor_synthesis_quality._persist_gap_metrics",
+        return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0},
+    )
     @patch("scripts.monitor_synthesis_quality._runtime_fallback_reason_counts", return_value={})
     @patch("core.synthesis_quality.count_low_score_syntheses", return_value=0)
     @patch(
@@ -42,7 +45,10 @@ class TestMonitorSynthesisQuality:
         return_value={"provisional_count": 0, "fallback_count": 0},
     )
     @patch("core.synthesis_quality.count_stuck_fast_syntheses", return_value=0)
-    @patch("scripts.monitor_synthesis_quality._unsummarized_counts", return_value={"unsummarized_total": 60100, "unsummarized_24h": 847})
+    @patch(
+        "scripts.monitor_synthesis_quality._unsummarized_counts",
+        return_value={"unsummarized_total": 60100, "unsummarized_24h": 847},
+    )
     @patch("scripts.monitor_synthesis_quality._synthesis_ops_queue_depth", return_value=160)
     @patch("scripts.monitor_synthesis_quality.build_report")
     def test_build_snapshot_marks_warn_on_queue(
@@ -69,7 +75,10 @@ class TestMonitorSynthesisQuality:
         assert snapshot["unsummarized_24h"] == 847
         assert snapshot["primary"]["fallback_ratio"] == 0.1
 
-    @patch("scripts.monitor_synthesis_quality._persist_gap_metrics", return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0})
+    @patch(
+        "scripts.monitor_synthesis_quality._persist_gap_metrics",
+        return_value={"synthesis_events": 0, "db_persisted_events": 0, "persist_gap": 0},
+    )
     @patch("scripts.monitor_synthesis_quality._runtime_fallback_reason_counts", return_value={})
     @patch("core.synthesis_quality.count_low_score_syntheses", return_value=0)
     @patch(
@@ -77,7 +86,10 @@ class TestMonitorSynthesisQuality:
         return_value={"provisional_count": 0, "fallback_count": 0},
     )
     @patch("core.synthesis_quality.count_stuck_fast_syntheses", return_value=14)
-    @patch("scripts.monitor_synthesis_quality._unsummarized_counts", return_value={"unsummarized_total": 0, "unsummarized_24h": 0})
+    @patch(
+        "scripts.monitor_synthesis_quality._unsummarized_counts",
+        return_value={"unsummarized_total": 0, "unsummarized_24h": 0},
+    )
     @patch("scripts.monitor_synthesis_quality._synthesis_ops_queue_depth", return_value=0)
     @patch("scripts.monitor_synthesis_quality.build_report")
     def test_build_snapshot_warns_on_small_stuck_fast_backlog(

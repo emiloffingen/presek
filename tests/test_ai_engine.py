@@ -377,8 +377,11 @@ def test_groq_provider_initialization(monkeypatch):
     assert _default_remote_provider() == "groq"
 
 
-def test_effective_max_tokens_enforces_groq_floor():
-    from core.ai_engine import _effective_max_tokens
+def test_effective_max_tokens_enforces_groq_floor(monkeypatch):
+    from core import ai_engine
+
+    monkeypatch.setitem(ai_engine.PROVIDER_MIN_MAX_TOKENS, "groq", 600)
+    _effective_max_tokens = ai_engine._effective_max_tokens
 
     assert _effective_max_tokens("groq", 100) == 600
     assert _effective_max_tokens("groq", 1200) == 1200
@@ -457,7 +460,9 @@ def test_ai_quota_limits_usage_and_exhaustion(monkeypatch):
 
     store: dict[str, int] = {}
     monkeypatch.setattr(
-        ai_quota, "_db_add_usage", lambda provider, amount: store.__setitem__(provider, store.get(provider, 0) + amount) or store[provider]
+        ai_quota,
+        "_db_add_usage",
+        lambda provider, amount: store.__setitem__(provider, store.get(provider, 0) + amount) or store[provider],
     )
     monkeypatch.setattr(ai_quota, "_db_get_usage", lambda provider: store.get(provider, 0))
     ai_quota.reset_cache()
@@ -543,8 +548,6 @@ def test_call_ai_skips_quota_exhausted_provider(monkeypatch):
     assert raw == '{"summary":["ok"],"article":"ok"}'
     exhausted.call.assert_not_called()
     healthy.call.assert_called_once()
-
-
 
 
 def test_ai_disabled_by_default_short_circuits(monkeypatch):

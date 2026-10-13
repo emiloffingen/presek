@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from core.logging_config import get_logger
-from utils import delete_cache, delete_cache_prefix, redis_client  # noqa: F401
+from utils import delete_cache, delete_cache_prefix, redis_client
 
 log = get_logger("presek_celery")
 

@@ -8,8 +8,8 @@ local error logging for development.
 import logging
 import os
 import traceback
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 # Configure logging
 log = logging.getLogger("presek.error_tracking")
@@ -58,7 +58,7 @@ def _initialize_sentry():
         log.error(f"Failed to initialize Sentry: {e}")
 
 
-def capture_exception(error: Exception, context: Optional[Dict[str, Any]] = None):
+def capture_exception(error: Exception, context: dict[str, Any] | None = None):
     """Capture an exception with optional context."""
     _initialize_sentry()
 
@@ -82,7 +82,7 @@ def capture_exception(error: Exception, context: Optional[Dict[str, Any]] = None
         log_error(error, context)
 
 
-def capture_message(message: str, level: str = "error", context: Optional[Dict[str, Any]] = None):
+def capture_message(message: str, level: str = "error", context: dict[str, Any] | None = None):
     """Capture a custom message with optional context."""
     _initialize_sentry()
 
@@ -107,12 +107,12 @@ def capture_message(message: str, level: str = "error", context: Optional[Dict[s
         log.log(log_level, message, extra=context or {})
 
 
-def log_error(error: Exception, context: Optional[Dict[str, Any]] = None):
+def log_error(error: Exception, context: dict[str, Any] | None = None):
     """Log an error with context to local logs."""
     error_data = {
         "error_type": type(error).__name__,
         "error_message": str(error),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
     if context:
@@ -125,7 +125,7 @@ def log_error(error: Exception, context: Optional[Dict[str, Any]] = None):
     log.error(f"Error occurred: {error_data}")
 
 
-def set_user_context(user_id: str, email: Optional[str] = None, **kwargs):
+def set_user_context(user_id: str, email: str | None = None, **kwargs):
     """Set user context for error tracking."""
     _initialize_sentry()
 
@@ -140,7 +140,7 @@ def set_user_context(user_id: str, email: Optional[str] = None, **kwargs):
         log.error(f"Failed to set user context in Sentry: {e}")
 
 
-def add_breadcrumb(message: str, category: str = "default", data: Optional[Dict[str, Any]] = None):
+def add_breadcrumb(message: str, category: str = "default", data: dict[str, Any] | None = None):
     """Add a breadcrumb for diagnostic context."""
     _initialize_sentry()
 

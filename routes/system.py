@@ -7,7 +7,6 @@ import urllib.parse
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
 
 import redis as _redis_lib
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -127,7 +126,7 @@ async def health(request: Request):
 
 
 @router.get("/system/media-quality")
-async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: Optional[str] = "mk"):
+async def media_quality_report(limit: int = Query(30, ge=1, le=200), lang: str | None = "mk"):
     """Report recent clusters with missing or weak representative imagery."""
     cache_key = f"system:media-quality:v1:{lang}:{limit}"
     cached = cached_response(cache_key, ttl=300)
@@ -222,7 +221,7 @@ async def get_categories():
 
 
 @router.get("/weather")
-async def get_weather(lang: Optional[str] = DEFAULT_LANG):
+async def get_weather(lang: str | None = DEFAULT_LANG):
     city = "skopje" if lang == "mk" else "beograd"
     cache_key = f"weather:{city}"
     cached = cached_response(cache_key, ttl=900)
@@ -259,7 +258,7 @@ async def get_weather(lang: Optional[str] = DEFAULT_LANG):
 
 
 @router.get("/trending")
-async def get_trending_route(lang: Optional[str] = DEFAULT_LANG):
+async def get_trending_route(lang: str | None = DEFAULT_LANG):
     cache_key = f"api:trending:v5:{lang}"
     cached = cached_response(cache_key)
     if cached:
@@ -297,7 +296,7 @@ async def get_trending_route(lang: Optional[str] = DEFAULT_LANG):
 
 
 @router.get("/navigation")
-async def get_navigation(lang: Optional[str] = DEFAULT_LANG):
+async def get_navigation(lang: str | None = DEFAULT_LANG):
     """Returns high-intelligence dynamic navigation with activity thresholds."""
     cache_key = f"api:navigation:v6:{lang}"
     cached = cached_response(cache_key)
@@ -633,7 +632,6 @@ async def get_cluster_share_card(cluster_id: str):
                     bg_img = Image.open(BytesIO(content))
         except Exception as e:
             log.debug(f"[system] Error loading background image: {e}")
-            pass
 
         if bg_img:
             # Resize and crop to fill
@@ -658,7 +656,7 @@ async def get_cluster_share_card(cluster_id: str):
             f_title = ImageFont.truetype(font_path_serif, 72)
             f_kicker = ImageFont.truetype(font_path_sans, 32)
             f_footer = ImageFont.truetype(font_path_sans, 24)
-        except (IOError, OSError) as e:
+        except OSError as e:
             log.debug(f"[system] Font loading error: {e}, using default")
             f_title = f_kicker = f_footer = ImageFont.load_default()
 
@@ -762,12 +760,12 @@ def _resolve_safe_static_relative(relative: str) -> Path | None:
 @router.get("/proxy")
 async def proxy_image(
     url: str = Query(""),
-    w: Optional[str] = None,
-    cid: Optional[str] = None,
-    t: Optional[str] = None,
-    cat: Optional[str] = None,
-    theme: Optional[str] = None,
-    lang: Optional[str] = None,
+    w: str | None = None,
+    cid: str | None = None,
+    t: str | None = None,
+    cat: str | None = None,
+    theme: str | None = None,
+    lang: str | None = None,
 ):
     """
     Proxy images to avoid CORS and mixed content issues.

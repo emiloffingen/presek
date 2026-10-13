@@ -111,17 +111,30 @@ def _iter_homepage_payload_clusters_for_sections(payload: dict, sections: tuple[
 
 def _fetch_homepage_payload(lang: str) -> dict:
     import json
+    import time
     import urllib.request
+
+    # 60s in-process cache: collectors call this 3-4x per lang per run.
+    # Without cache a slow /api/home (DB blip) times out 6x sequentially.
+    cache = getattr(_fetch_homepage_payload, "_cache", None)
+    if cache is None:
+        cache = {}
+        _fetch_homepage_payload._cache = cache
+    now = time.time()
+    hit = cache.get(lang)
+    if hit and now - hit[0] < 60:
+        return hit[1]
 
     url = f"http://127.0.0.1:5001/api/home?lang={lang}"
     try:
-        with urllib.request.urlopen(url, timeout=30) as response:  # nosec B310 - fixed localhost URL, lang is internal sr/mk
+        with urllib.request.urlopen(url, timeout=10) as response:  # nosec B310 - fixed localhost URL, lang is internal sr/mk
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         log.warning("[maintenance] Failed to fetch homepage payload for %s: %s", lang, exc)
-        return {}
+        return hit[1] if hit else {}
     if payload.get("status") != "success":
-        return {}
+        return hit[1] if hit else {}
+    cache[lang] = (now, payload)
     return payload
 
 

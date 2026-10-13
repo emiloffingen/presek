@@ -14,13 +14,15 @@
 
 | File | Purpose |
 |------|---------|
-| `home-page.css` | Homepage layout, analysis bands, consensus carousel, mobile feed order |
+| `home-page.css` | Homepage layout, analysis bands, consensus carousel, mobile feed order, dense v4 grid + UX refresh (consolidated) |
 | `home-feed.css` | News feed grid, for-you cards, stagger animations |
+| `next-level-home.css` | Pregled nav, evidence chips, edition-mode gating |
+| `home-broadsheet.css` | Broadsheet redesign variant (loaded by `BroadsheetHome.astro` only) |
 | `home-live-strip.css` | Live wire `<details>` strip |
 | `trending-preview.css` | Trending preview rail |
 | `lead-hero.css` | Lead hero imagery and overlay |
 
-Imported from `HomePage.astro` / band components — not via `global.css`.
+Imported from `HomePage.astro` / `BroadsheetHome.astro` — not via `global.css`. `home-v4.css` / `home-ux.css` merged into `home-page.css` to cut imports.
 
 ## Reading & cluster
 
@@ -69,4 +71,4 @@ npm run perf:lighthouse:live   # production SR URL
 npm run perf:lighthouse:live:mk # production MK URL
 ```
 
-Budgets (see `scripts/lighthouse-homepage.mjs`): performance ≥ 72, LCP ≤ 4200 ms, CLS ≤ 0.12.
+Budgets (see `scripts/lighthouse-homepage.mjs`): performance ≥ 90, LCP ≤ 2500 ms, CLS ≤ 0.10.

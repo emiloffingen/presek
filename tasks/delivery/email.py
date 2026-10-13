@@ -525,7 +525,7 @@ def send_daily_digest_task():
 
 @celery_app.task
 def send_profile_weekly_digests_task():
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     sent = 0
     try:
         rows = _load_active_delivery_rows()
@@ -540,8 +540,8 @@ def send_profile_weekly_digests_task():
             last_sent = _parse_row_datetime(row.get("last_weekly_sent_at"))
             if last_sent:
                 if last_sent.tzinfo is None:
-                    last_sent = last_sent.replace(tzinfo=datetime.timezone.utc)
-                if (now - last_sent.astimezone(datetime.timezone.utc)).total_seconds() < 6.5 * 24 * 3600:
+                    last_sent = last_sent.replace(tzinfo=datetime.UTC)
+                if (now - last_sent.astimezone(datetime.UTC)).total_seconds() < 6.5 * 24 * 3600:
                     continue
 
             target = str(row.get("target") or NTFY_TOPIC).strip()

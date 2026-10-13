@@ -59,9 +59,7 @@ def upgrade() -> None:
           AND a.lang = b.lang
         """
     )
-    op.create_primary_key(
-        "cluster_summaries_pkey", "cluster_summaries", ["cluster_id", "lang"]
-    )
+    op.create_primary_key("cluster_summaries_pkey", "cluster_summaries", ["cluster_id", "lang"])
 
 
 def downgrade() -> None:

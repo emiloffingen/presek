@@ -1,11 +1,11 @@
 import asyncio
-import os
 import datetime
 import json
 import logging
+import os
 import re
 from collections import defaultdict
-from typing import Any, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -50,30 +50,30 @@ class ArticleResponse(BaseModel):
     link: str
     source: str
     created_at: str
-    category: Optional[str] = None
-    topic: Optional[str] = None
-    image_url: Optional[str] = None
+    category: str | None = None
+    topic: str | None = None
+    image_url: str | None = None
 
 
 class ClusterResponse(BaseModel):
     cluster_id: str
     title: str
-    summary: Optional[str] = None
-    articles: List[ArticleResponse]
+    summary: str | None = None
+    articles: list[ArticleResponse]
 
 
 class NewsResponse(BaseModel):
     status: str
     page: int
     page_size: int
-    clusters: List[Any]
-    global_clusters: Optional[List[Any]] = None
-    entity: Optional[Any] = None
+    clusters: list[Any]
+    global_clusters: list[Any] | None = None
+    entity: Any | None = None
 
 
 # Curation heuristics live in routes/curation.py (single owner shared with
 # routes/home.py); import the names used below.
-from .curation import (  # noqa: E402
+from .curation import (
     _HARD_NEWS_CATEGORIES,
     _HARD_NEWS_TOPICS,
     _SOFT_EXCLUDE_TOPICS,
@@ -232,7 +232,7 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
         (_coerce_datetime(a.get("ingested_at") or a.get("created_at")) for a in ranked),
         default=None,
     )
-    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
     hours_since_latest = max(0.0, ((now - latest_dt).total_seconds() / 3600.0)) if latest_dt else 999.0
     recent_cutoff = now - datetime.timedelta(hours=6)
     recent_developments = sum(
@@ -327,15 +327,15 @@ def _compute_editorial_signals(arts, cluster_score, homepage_score):
 
 @router.get("/news", response_model=NewsResponse)
 async def get_news(
-    q: Optional[str] = None,
-    category: Optional[str] = None,
-    topic: Optional[str] = None,
-    entity: Optional[str] = None,
-    subcategory: Optional[str] = None,
-    country: Optional[str] = None,
-    lang: Optional[str] = "mk",
+    q: str | None = None,
+    category: str | None = None,
+    topic: str | None = None,
+    entity: str | None = None,
+    subcategory: str | None = None,
+    country: str | None = None,
+    lang: str | None = "mk",
     sort: str = "recent",
-    timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
+    timespan: str | None = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
     fast: bool = False,
@@ -364,15 +364,15 @@ async def get_news(
 
 
 async def fetch_news_data(
-    q: Optional[str] = None,
-    category: Optional[str] = None,
-    topic: Optional[str] = None,
-    entity: Optional[str] = None,
-    subcategory: Optional[str] = None,
-    country: Optional[str] = None,
-    lang: Optional[str] = DEFAULT_LANG,
+    q: str | None = None,
+    category: str | None = None,
+    topic: str | None = None,
+    entity: str | None = None,
+    subcategory: str | None = None,
+    country: str | None = None,
+    lang: str | None = DEFAULT_LANG,
     sort: str = "recent",
-    timespan: Optional[str] = None,  # '24h', '7d', '30d', 'all'
+    timespan: str | None = None,  # '24h', '7d', '30d', 'all'
     page: int = 0,
     page_size: int = 24,
     fast: bool = False,
@@ -1065,7 +1065,7 @@ def _maybe_enqueue_missing_synthesis_from_cache(cluster_id: str, cached: dict) -
 
 
 @router.get("/entity-graph/{entity_name}")
-async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
+async def get_entity_graph(entity_name: str, lang: str | None = "mk"):
     """Entity context card: bio, importance, recency, mentions and relations.
 
     Backed by entity_knowledge, knowledge_entities, cluster_entities and
@@ -1139,7 +1139,7 @@ async def get_entity_graph(entity_name: str, lang: Optional[str] = "mk"):
 
 @router.get("/sitemap-clusters")
 async def get_sitemap_clusters(
-    lang: Optional[str] = DEFAULT_LANG,
+    lang: str | None = DEFAULT_LANG,
     limit: int = Query(default=1000, ge=1, le=2000),
 ):
     """Lightweight sitemap feed: synthesized clusters only (id + headline + image + timestamp).
@@ -1187,7 +1187,7 @@ async def get_sitemap_clusters(
 
 
 @router.get("/article/{article_id}")
-async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG):
+async def get_article_detail(article_id: int, lang: str | None = DEFAULT_LANG):
     """Full original text for a single article, with source attribution.
 
     The body is only returned when the source allows full-text display
@@ -1242,7 +1242,7 @@ async def get_article_detail(article_id: int, lang: Optional[str] = DEFAULT_LANG
 
 
 @router.get("/cluster/{cluster_id}")
-async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
+async def get_cluster_detail(cluster_id: str, lang: str | None = DEFAULT_LANG):
     # Validate cluster_id using comprehensive validation
     validate_cluster_id_input(cluster_id)
     # Validate language code
@@ -1341,7 +1341,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG
                 and not synthetic_standfirst
             ):
                 synthetic_standfirst = leaked_data["synthetic_standfirst"]
-            if "generated_article" in leaked_data and leaked_data["generated_article"]:
+            if leaked_data.get("generated_article"):
                 generated_article = leaked_data["generated_article"]
             if "summary" in leaked_data:
                 if isinstance(leaked_data["summary"], list):
@@ -1764,7 +1764,7 @@ async def get_cluster_detail(cluster_id: str, lang: Optional[str] = DEFAULT_LANG
 
 
 @router.get("/cluster/{cluster_id}/history")
-async def get_cluster_history(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
+async def get_cluster_history(cluster_id: str, lang: str | None = DEFAULT_LANG):
     """
     Returns the historical versions of a cluster synthesis.
     """
@@ -1889,7 +1889,7 @@ async def get_live_route(request: Request):
 
 
 @router.get("/cluster/{cluster_id}/audio")
-async def get_cluster_audio(cluster_id: str, lang: Optional[str] = DEFAULT_LANG):
+async def get_cluster_audio(cluster_id: str, lang: str | None = DEFAULT_LANG):
     """Generates or fetches the cluster synthesis TTS audio and returns its public URL."""
     validate_cluster_id(cluster_id)
 

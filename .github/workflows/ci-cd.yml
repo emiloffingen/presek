@@ -79,6 +79,10 @@ jobs:
         working-directory: web
         run: node --test 'src/**/*.test.mjs'
 
+      - name: Build and enforce bundle budget
+        working-directory: web
+        run: npm run analyze:ci
+
       - name: Audit dependencies (fail on high+)
         working-directory: web
         run: npm audit --audit-level=high
@@ -112,9 +116,9 @@ jobs:
       - name: Install deps
         run: uv sync --group dev
       - name: Ruff check
-        run: uv run ruff check core/ routes/ tasks/ nlp/ utils/ mcp/ migrations/ tests/ scripts/
+        run: uv run ruff check .
       - name: Ruff format check
-        run: uv run ruff format --check core/ routes/ tasks/ nlp/ utils/
+        run: uv run ruff format --check .
 
   secrets-scan:
     runs-on: ubuntu-latest
