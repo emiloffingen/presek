@@ -110,7 +110,11 @@ const editionDateLabel = editionDate.charAt(0).toUpperCase() + editionDate.slice
     <div class="bs-masthead">
         <div class="bs-wrap bs-masthead-row">
             <a href={l('/')} class="bs-brand" aria-label="Пресек — почетна">
-                <span class="bs-brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+                <svg class="bs-brand-mark" viewBox="11 7 82 82" aria-hidden="true" focusable="false">
+                    <polygon transform="translate(4 -4)" points="20,15 80,15 80,42.8 62,47.12 62,33 38,33 38,52.88 20,57.2" fill="currentColor" />
+                    <polygon points="20,57.2 38,52.88 38,85 20,85" fill="var(--bs-accent)" />
+                    <polygon points="62,47.12 80,42.8 80,85 62,85" fill="var(--bs-accent)" />
+                </svg>
                 <span class="bs-brand-name">Пресек</span>
             </a>
             <div class="bs-search bs-search--command">
