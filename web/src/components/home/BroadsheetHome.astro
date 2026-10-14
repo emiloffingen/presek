@@ -11,10 +11,10 @@ import SiteHeader from '../layout/SiteHeader.astro';
 import SiteFooter from '../layout/SiteFooter.astro';
 import type { NewsCluster } from '../../types';
 import type { HomepageViewModel } from '../../lib/homepageViewModel';
-import { chooseClusterImage } from '../../utils/imageSelection.ts';
+import { buildProxySrcSet, chooseClusterImage } from '../../utils/imageSelection.ts';
 import { getStoryPreviewText, normalizeEntityOrTag } from '../../utils/textUtils.ts';
 import { localePath } from '../../lib/localePaths';
-import { clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
+import { HERO_IMAGE_SIZES, HERO_IMAGE_WIDTHS, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
 
 interface Props {
     vm: HomepageViewModel;
@@ -53,9 +53,24 @@ const clusterSection = (cluster: NewsCluster) => {
     const a = cluster.articles?.[0] as any;
     return sectionLabel(a?.subcategory) || sectionLabel(a?.topic) || sectionLabel(a?.category);
 };
+// Widths the /proxy resizes to, and the slot each variant fills (see home-broadsheet.css:
+// the lead column tops out near 700px, picks are 260px+ flex items, thumbs are 84-128px).
+// Without srcset a phone downloads the 720/1200px master for a 380px slot.
+const IMAGE_WIDTHS = { hero: HERO_IMAGE_WIDTHS, card: [320, 480, 720], thumb: [128, 256] };
+const IMAGE_SIZES = {
+    hero: HERO_IMAGE_SIZES,
+    card: '(max-width: 759px) calc(100vw - 32px), 340px',
+    thumb: '128px',
+};
 const image = (cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb') => {
     const visual = chooseClusterImage(cluster, variant, lang);
-    return { src: visual.proxiedUrl || visual.fallbackUrl, fallback: visual.fallbackUrl };
+    return {
+        src: visual.proxiedUrl || visual.fallbackUrl,
+        fallback: visual.fallbackUrl,
+        // fallback art is an SVG placeholder: nothing to resize
+        srcset: visual.proxiedUrl ? buildProxySrcSet(visual.proxiedUrl, IMAGE_WIDTHS[variant]) : '',
+        sizes: IMAGE_SIZES[variant],
+    };
 };
 
 const trendingChips = (Array.isArray(trending) ? trending : [])
@@ -80,6 +95,7 @@ const lead = leadCluster ? {
     title: leadTitle || clusterTitle(leadCluster),
     summary: repeatsTitle(leadSummary, leadTitle || clusterTitle(leadCluster)) ? '' : leadSummary,
     image: leadVisual?.proxiedUrl || leadVisual?.fallbackUrl || '',
+    srcset: leadVisual?.proxiedUrl ? buildProxySrcSet(leadVisual.proxiedUrl, IMAGE_WIDTHS.hero) : '',
     fallback: leadVisual?.fallbackUrl || '',
     caption: leadCluster.articles?.[0]?.image_caption || leadCluster.articles?.[0]?.source || '',
     articles: articleCount(leadCluster),
@@ -112,7 +128,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                     <figure class="bs-figure">
                         <a href={lead.href} class="bs-photo bs-photo-16x9" tabindex="-1" aria-hidden="true">
                             {lead.image && (
-                                <img src={lead.image} data-fallback-url={lead.fallback} alt={lead.title} width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
+                                <img src={lead.image} srcset={lead.srcset || undefined} sizes={lead.srcset ? IMAGE_SIZES.hero : undefined} data-fallback-url={lead.fallback} alt={lead.title} width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" />
                             )}
                         </a>
                         {lead.caption && <figcaption>Фото: {lead.caption}</figcaption>}
@@ -151,7 +167,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                                 return (
                                     <a href={clusterHref(cluster)} class="bs-dev-item">
                                         <span class="bs-photo bs-thumb">
-                                            {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="84" height="84" loading="lazy" decoding="async" />}
+                                            {img.src && <img src={img.src} srcset={img.srcset || undefined} sizes={img.srcset ? img.sizes : undefined} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="84" height="84" loading="lazy" decoding="async" />}
                                         </span>
                                         <span class="bs-dev-copy">
                                             <span class="bs-dev-title">{clusterTitle(cluster)}</span>
@@ -185,7 +201,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         return (
                             <article class="bs-card">
                                 <a href={clusterHref(cluster)} class="bs-photo bs-photo-16x10" tabindex="-1" aria-hidden="true">
-                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="720" height="450" loading="lazy" decoding="async" />}
+                                    {img.src && <img src={img.src} srcset={img.srcset || undefined} sizes={img.srcset ? img.sizes : undefined} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="720" height="450" loading="lazy" decoding="async" />}
                                 </a>
                                 <div class="bs-card-body">
                                     {clusterSection(cluster) && <span class="bs-kicker">{clusterSection(cluster)}</span>}
@@ -210,7 +226,7 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                         <>
                             <article class="bs-live-item">
                                 <a href={clusterHref(cluster)} class="bs-photo bs-live-photo" tabindex="-1" aria-hidden="true">
-                                    {img.src && <img src={img.src} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="128" height="96" loading="lazy" decoding="async" />}
+                                    {img.src && <img src={img.src} srcset={img.srcset || undefined} sizes={img.srcset ? img.sizes : undefined} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="128" height="96" loading="lazy" decoding="async" />}
                                 </a>
                                 <div class="bs-live-copy">
                                     <h3 class="bs-live-headline"><a href={clusterHref(cluster)}>{clusterTitle(cluster)}</a></h3>

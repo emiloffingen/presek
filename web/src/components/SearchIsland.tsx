@@ -806,7 +806,6 @@ export default function SearchIsland({
           onClick={openSearch}
           data-testid="search-trigger"
           className="presek-search-trigger group"
-          aria-label={t('search.open_search')}
           aria-keyshortcuts="Meta+K /"
         >
           <span className="search-trigger-icon" aria-hidden="true">

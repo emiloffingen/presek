@@ -37,6 +37,8 @@ import type { NewsCluster } from '../../types';
 import { getLangFromUrl, useTranslations } from '../../i18n/utils';
 import { localePath, homePath } from '../../lib/localePaths';
 import { fetchJsonCached } from '../../lib/apiCache';
+import { buildProxySrcSet } from '../../utils/imageSelection.ts';
+import { HERO_IMAGE_SIZES, HERO_IMAGE_WIDTHS } from '../../lib/broadsheetHome';
 
 interface Props {
     variant?: 'feed' | 'pregled';
@@ -192,6 +194,8 @@ if (analizaNavItems.length > 0) {
 		? t('layout.filtered_description')
 		: t('layout.home_description')}
     image={!isPregled ? (leadVisual?.proxiedUrl || undefined) : undefined}
+    imageSrcset={!isPregled && useBroadsheet && leadVisual?.proxiedUrl ? buildProxySrcSet(leadVisual.proxiedUrl, HERO_IMAGE_WIDTHS) : undefined}
+    imageSizes={HERO_IMAGE_SIZES}
 >
     {useBroadsheet ? (
         <BroadsheetHome vm={homepageVm} stats={stats} trending={trending} lang={lang as 'sr' | 'mk'} />
