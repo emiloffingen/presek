@@ -11,8 +11,8 @@ const pub = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const INK = '#16140f';
 const INK_LIGHT = '#f4f1e8';
 const TILE = '#111110';
-const ACCENT = '#c45c26';
-const ACCENT_LIGHT = '#e07a3d';
+const ACCENT = '#b3261e'; // matches --bs-accent
+const ACCENT_LIGHT = '#f07167';
 
 // The mark: a П sliced along a diagonal, the upper half shifted up and right.
 // Drawn in a 100-unit box; BOX is the square window used everywhere so the
