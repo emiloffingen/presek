@@ -45,11 +45,9 @@ const ClientRouterAny = ClientRouter as any;
 
 {/* charset must be within the first 1024 bytes of the document (HTML spec); keep it first. */}
 <meta charset="UTF-8" />
-<link rel="preconnect" href="https://www.googletagmanager.com" />
 <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 <link rel="preload" as="font" type="font/woff2" href={sourceSerif400Url} crossorigin="anonymous" />
 <link rel="preload" as="font" type="font/woff2" href={notoSerif900Url} crossorigin="anonymous" />
-<script async src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`} nonce={cspNonce}></script>
 <script is:inline nonce={cspNonce} define:vars={{ gtagId }}>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -62,6 +60,32 @@ const ClientRouterAny = ClientRouter as any;
   });
   gtag('js', new Date());
   gtag('config', gtagId, { 'anonymize_ip': true });
+
+  // gtag.js is ~180 KB and ~350 ms of main-thread work, and it competes with the hero image and
+  // CSS for bandwidth. The calls above queue on dataLayer, so the library can arrive late
+  // without losing them: load it once the page is done, or on the first interaction.
+  (function () {
+    if (window.__gtagLoader) return; // view transitions re-run head scripts
+    window.__gtagLoader = true;
+    var started = false;
+    function load() {
+      if (started) return;
+      started = true;
+      var el = document.createElement('script');
+      el.async = true;
+      el.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gtagId);
+      document.head.appendChild(el);
+    }
+    function whenIdle() {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 4000 });
+      else setTimeout(load, 2500);
+    }
+    ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(function (type) {
+      window.addEventListener(type, load, { once: true, passive: true });
+    });
+    if (document.readyState === 'complete') whenIdle();
+    else window.addEventListener('load', whenIdle, { once: true });
+  })();
 </script>
 <script is:inline src="/js/presek-boot.js?v=2"></script>
 
