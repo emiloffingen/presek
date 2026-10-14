@@ -15,12 +15,10 @@ const t = useTranslations(lang);
 <div class:list={["presek-branding", mode, className]}>
     {(mode === 'full' || mode === 'emblem') && (
         <div class="emblem-container">
-            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-emblem-svg">
-                <rect x="4" y="4" width="92" height="92" stroke="currentColor" stroke-width="8" fill="none" />
-                <path d="M50 4 L50 96" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
-                <path d="M4 50 L96 50" stroke="currentColor" stroke-width="1.5" opacity="0.15" />
-                <rect x="26" y="26" width="48" height="48" fill="var(--presek-mark, var(--nyt-accent))" class="accent-block" />
-                <text x="50" y="70" font-family="var(--font-serif)" font-weight="950" font-size="58" text-anchor="middle" fill="white" style="letter-spacing: -0.02em;">{lang === 'mk' ? 'П' : 'P'}</text>
+            <svg viewBox="11 7 82 82" fill="none" xmlns="http://www.w3.org/2000/svg" class="presek-emblem-svg" aria-hidden="true">
+                <polygon transform="translate(4 -4)" points="20,15 80,15 80,42.8 62,47.12 62,33 38,33 38,52.88 20,57.2" fill="currentColor" />
+                <polygon points="20,57.2 38,52.88 38,85 20,85" fill="var(--presek-mark, #c45c26)" />
+                <polygon points="62,47.12 80,42.8 80,85 62,85" fill="var(--presek-mark, #c45c26)" />
             </svg>
             <div class="pulse-ring"></div>
         </div>
@@ -69,7 +67,7 @@ const t = useTranslations(lang);
         width: 2rem;
         height: 2rem;
         display: block;
-        color: var(--nyt-accent);
+        color: var(--foreground);
     }
 
     .logo-text-group {
@@ -96,9 +94,6 @@ const t = useTranslations(lang);
         opacity: 0.8;
     }
 
-    .accent-block {
-        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
 
     .pulse-ring {
         display: none;
@@ -115,10 +110,6 @@ const t = useTranslations(lang);
         opacity: 1;
     }
 
-    .presek-branding:hover .accent-block {
-        transform: rotate(12deg) scale(1.06);
-        transform-origin: 50px 50px;
-    }
 
     /* --- DARK MODE ADJUSTMENTS --- */
     :global(.dark) .presek-branding {
