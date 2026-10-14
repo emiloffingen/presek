@@ -133,7 +133,7 @@ export default function PresekAdRailSlot({ lang = 'mk', className = '' }: Props)
             <span className="fallback-price flex flex-wrap items-baseline gap-1 font-mono">
               <span className="text-sm font-extrabold text-[var(--foreground)]">€{cpm.toFixed(2)}</span>
               <span className="text-[10px] text-[var(--muted-foreground)] line-through opacity-70">€{cpmBase.toFixed(2)}</span>
-              <span className="text-[9px] font-extrabold px-1 text-white bg-[var(--presek-mark,#b91c1c)]">−{PROMO_PERCENT}%</span>
+              <span className="text-[9px] font-extrabold px-1 text-white bg-[var(--presek-mark,#0f6b5e)]">−{PROMO_PERCENT}%</span>
               <span className="text-[10px] text-[var(--muted-foreground)] w-full">~{local.amount} {local.currency} / 1000</span>
             </span>
             <a 
