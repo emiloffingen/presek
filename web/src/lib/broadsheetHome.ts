@@ -117,3 +117,9 @@ export function sectionLabelMk(raw: string | null | undefined): string | null {
     if (!key) return null;
     return SECTION_LABELS_MK[key] || null;
 }
+
+// The lead photo is the page's LCP element. The <img> in BroadsheetHome and the <link rel=preload>
+// in LayoutHead must offer the same candidates and `sizes`, otherwise the browser preloads one
+// width and the <img> asks for another (two downloads of the same photo).
+export const HERO_IMAGE_WIDTHS = [480, 720, 960, 1200];
+export const HERO_IMAGE_SIZES = '(max-width: 759px) calc(100vw - 32px), 700px';

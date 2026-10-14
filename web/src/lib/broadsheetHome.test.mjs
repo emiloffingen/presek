@@ -89,3 +89,10 @@ test('clusterSourceBreakdown falls back to the article sample when the API sends
     { source: 'B', count: 1 },
   ]);
 });
+
+test('hero image candidates are ascending and sizes names a slot for narrow and wide screens', async () => {
+    const { HERO_IMAGE_WIDTHS, HERO_IMAGE_SIZES } = await import('./broadsheetHome.ts');
+    assert.deepEqual([...HERO_IMAGE_WIDTHS], [...HERO_IMAGE_WIDTHS].sort((a, b) => a - b));
+    assert.ok(HERO_IMAGE_WIDTHS.every((w) => w >= 320 && w <= 1200)); // the proxy clamps to 20..1200
+    assert.match(HERO_IMAGE_SIZES, /max-width/);
+});

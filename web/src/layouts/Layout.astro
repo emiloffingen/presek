@@ -21,6 +21,9 @@ interface Props {
 	title: string;
 	description?: string;
 	image?: string;
+	/** srcset/sizes for the preloaded `image`, when the page's <img> uses them */
+	imageSrcset?: string;
+	imageSizes?: string;
 	canonical?: string;
 	type?: string;
 	schema?: object;
@@ -40,6 +43,8 @@ const {
 	title,
 	description = t('layout.default_description'),
 	image = '/img/presek_emblem.png',
+	imageSrcset,
+	imageSizes,
 	canonical,
 	type = 'website',
 	schema,
@@ -90,6 +95,8 @@ const isWarmTheme = stylePref === 'warm';
 			type={type}
 			robots={robots}
 			image={image}
+			imageSrcset={imageSrcset}
+			imageSizes={imageSizes}
 			schema={schema}
 			organizationSchema={organizationSchema}
 			cspNonce={cspNonce}
