@@ -33,8 +33,8 @@ export const GET: APIRoute = async ({ request }) => {
     "display": "standalone",
     "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
     "launch_handler": { "client_mode": "navigate-existing" },
-    "background_color": "#fdfdfa",
-    "theme_color": "#0a192f",
+    "background_color": "#f5f3ec",
+    "theme_color": "#14201e",
     "prefer_related_applications": false,
     "icons": [
       {

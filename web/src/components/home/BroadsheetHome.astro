@@ -14,7 +14,7 @@ import type { HomepageViewModel } from '../../lib/homepageViewModel';
 import { buildProxySrcSet, chooseClusterImage } from '../../utils/imageSelection.ts';
 import { getStoryPreviewText, normalizeEntityOrTag } from '../../utils/textUtils.ts';
 import { localePath } from '../../lib/localePaths';
-import { HERO_IMAGE_SIZES, HERO_IMAGE_WIDTHS, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from '../../lib/broadsheetHome';
+import { HERO_IMAGE_SIZES, HERO_IMAGE_WIDTHS, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk, sectionToneMk } from '../../lib/broadsheetHome';
 
 interface Props {
     vm: HomepageViewModel;
@@ -52,6 +52,10 @@ const sectionLabel = (raw: unknown) => {
 const clusterSection = (cluster: NewsCluster) => {
     const a = cluster.articles?.[0] as any;
     return sectionLabel(a?.subcategory) || sectionLabel(a?.topic) || sectionLabel(a?.category);
+};
+const clusterTone = (cluster: NewsCluster) => {
+    const a = cluster.articles?.[0] as any;
+    return sectionToneMk(a?.subcategory) || sectionToneMk(a?.topic) || sectionToneMk(a?.category);
 };
 // Widths the /proxy resizes to, and the slot each variant fills (see home-broadsheet.css:
 // the lead column tops out near 700px, picks are 260px+ flex items, thumbs are 84-128px).
@@ -205,7 +209,7 @@ const quoteText = quoteRaw;
                                     {img.src && <img src={img.src} srcset={img.srcset || undefined} sizes={img.srcset ? img.sizes : undefined} data-fallback-url={img.fallback} alt={clusterTitle(cluster)} width="720" height="450" loading="lazy" decoding="async" />}
                                 </a>
                                 <div class="bs-card-body">
-                                    {clusterSection(cluster) && <span class="bs-kicker">{clusterSection(cluster)}</span>}
+                                    {clusterSection(cluster) && <span class="bs-kicker" data-tone={clusterTone(cluster) || undefined}>{clusterSection(cluster)}</span>}
                                     <h3 class="bs-card-title"><a href={clusterHref(cluster)}>{clusterTitle(cluster)}</a></h3>
                                     <span class="bs-meta">{clusterMeta(cluster)}</span>
                                 </div>

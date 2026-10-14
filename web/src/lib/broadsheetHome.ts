@@ -118,6 +118,20 @@ export function sectionLabelMk(raw: string | null | undefined): string | null {
     return SECTION_LABELS_MK[key] || null;
 }
 
+const SECTION_TONES: Record<string, string> = {
+    politika: 'pol',
+    ekonomija: 'eco',
+    sport: 'spo',
+    svet: 'wor', evropa: 'wor', amerika: 'wor', azija: 'wor', bliski_istok: 'wor', balkan: 'wor', region: 'wor',
+    kultura: 'cul', zabava: 'cul', zivot: 'cul',
+};
+
+/** Colour family for a section kicker (pol, eco, spo, wor, cul); null for the neutral rest. */
+export function sectionToneMk(raw: string | null | undefined): string | null {
+    const key = String(raw || '').trim().toLowerCase().replace(/\s+/g, '_');
+    return SECTION_TONES[key] || null;
+}
+
 // The lead photo is the page's LCP element. The <img> in BroadsheetHome and the <link rel=preload>
 // in LayoutHead must offer the same candidates and `sizes`, otherwise the browser preloads one
 // width and the <img> asks for another (two downloads of the same photo).
