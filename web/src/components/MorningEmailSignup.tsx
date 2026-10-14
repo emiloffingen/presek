@@ -141,7 +141,7 @@ export default function MorningEmailSignup({
           </div>
 
           {status === 'error' && (
-            <p className="text-[10px] font-bold text-nyt-red uppercase tracking-tight">{message}</p>
+            <p className="text-[10px] font-bold text-destructive uppercase tracking-tight">{message}</p>
           )}
 
           <button

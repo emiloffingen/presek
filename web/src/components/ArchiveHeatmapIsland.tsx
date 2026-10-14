@@ -92,9 +92,9 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'mk', q = ''
     if (count === 0) return 'bg-muted/20 border border-border/10';
     const ratio = count / max;
     if (isBreaking) {
-      if (ratio > 0.6) return 'bg-nyt-red text-white shadow-[0_0_8px_rgba(185,28,28,0.3)]';
-      if (ratio > 0.2) return 'bg-nyt-red/70';
-      return 'bg-nyt-red/40';
+      if (ratio > 0.6) return 'bg-destructive text-white shadow-[0_0_8px_rgba(185,28,28,0.3)]';
+      if (ratio > 0.2) return 'bg-destructive/70';
+      return 'bg-destructive/40';
     } else {
       if (ratio > 0.6) return 'bg-presek-mark text-white shadow-[0_0_8px_color-mix(in_srgb,var(--presek-mark)_45%,transparent)]';
       if (ratio > 0.2) return 'bg-presek-mark/70';
@@ -120,7 +120,7 @@ export default function ArchiveHeatmapIsland({ selectedDate, lang = 'mk', q = ''
         </div>
         <div className="flex gap-[var(--grid-gap)] text-xs font-bold font-sans">
           <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-presek-mark/60 rounded-none"></span> {t('archive.heatmap_volume')}</div>
-          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-nyt-red/60 rounded-none"></span> {t('archive.heatmap_urgent')}</div>
+          <div className="flex items-center gap-[var(--grid-gap)]"><span className="w-3 h-3 bg-destructive/60 rounded-none"></span> {t('archive.heatmap_urgent')}</div>
         </div>
       </div>
 

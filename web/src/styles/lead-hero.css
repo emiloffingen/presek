@@ -136,7 +136,7 @@
 
     .significance-badge.is-breaking {
         color: white;
-        background: var(--nyt-red);
+        background: var(--destructive);
         opacity: 1;
     }
 

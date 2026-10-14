@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSourceBreakdown, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from './broadsheetHome.ts';
+import { buildSourceBreakdown, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk, sectionToneMk } from './broadsheetHome.ts';
 
 const c = (id) => ({ cluster_id: id, articles: [{ title: id, source: 'S' }] });
 
@@ -95,4 +95,12 @@ test('hero image candidates are ascending and sizes names a slot for narrow and 
     assert.deepEqual([...HERO_IMAGE_WIDTHS], [...HERO_IMAGE_WIDTHS].sort((a, b) => a - b));
     assert.ok(HERO_IMAGE_WIDTHS.every((w) => w >= 320 && w <= 1200)); // the proxy clamps to 20..1200
     assert.match(HERO_IMAGE_SIZES, /max-width/);
+});
+
+test('sectionToneMk groups sections into colour families', () => {
+  assert.equal(sectionToneMk('Politika'), 'pol');
+  assert.equal(sectionToneMk('bliski istok'), 'wor');
+  assert.equal(sectionToneMk('kultura'), 'cul');
+  assert.equal(sectionToneMk('Vesti'), null);
+  assert.equal(sectionToneMk(''), null);
 });

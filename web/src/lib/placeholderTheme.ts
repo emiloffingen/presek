@@ -1,6 +1,6 @@
 /** Presek editorial placeholder tints — aligned with presek-identity.css */
 
-export const PRESEK_MARK = '#c45c26';
+export const PRESEK_MARK = '#0f6b5e';
 
 const LEGACY_COLD_TINTS = new Set([
   '#1e40af',
