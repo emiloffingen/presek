@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-import re
+import time
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -21,6 +21,7 @@ from core.config import (
 from core.database import db_manager as db
 from core.health import get_source_statuses, reset_source_policy
 from core.limiter import custom_rate_limit
+from core.quotes import pick_quote_of_the_day
 from utils import (
     build_editor_analytics_payload,
     build_source_reputation_rows,
@@ -48,8 +49,8 @@ router = APIRouter()
 
 class QuoteOfTheDay(BaseModel):
     quote: str
-    summary: str | None = None
-    generated_article: str | None = None
+    speaker: str | None = None
+    sources: int | None = None
     cluster_id: str | None = None
     title: str | None = None
 
@@ -110,43 +111,49 @@ async def _nearest_archive_days(d_start, d_end, country, q, source, topic):
     return {"prev": _day(prev_row), "next": _day(next_row)}
 
 
-def _pick_quote_of_the_day(row) -> dict | None:
-    if not row:
-        return None
+_QUOTE_SQL = """
+WITH top AS (
+    SELECT cluster_id,
+           COUNT(DISTINCT source) AS n_sources
+    FROM articles
+    WHERE country = %s
+      AND cluster_id IS NOT NULL
+      AND created_at >= (NOW() AT TIME ZONE 'utc') - INTERVAL '36 hours'
+    GROUP BY cluster_id
+    HAVING COUNT(DISTINCT source) >= 3
+    ORDER BY COUNT(DISTINCT source) DESC, MAX(created_at) DESC
+    LIMIT 40
+)
+SELECT a.cluster_id, a.source, t.n_sources, a.title,
+       m[1] AS before_text, m[2] AS quote_text, m[3] AS after_text
+FROM articles a
+JOIN top t USING (cluster_id),
+     LATERAL regexp_matches(a.full_content, '(.{0,100})„([^“]{45,250})“(.{0,140})', 'g') AS m
+WHERE a.created_at >= (NOW() AT TIME ZONE 'utc') - INTERVAL '36 hours'
+LIMIT 1500
+"""
+_QUOTE_CACHE_TTL = 1800
+_quote_cache: dict[str, tuple[float, dict | None]] = {}
 
-    def _extract_text(value) -> str:
-        text = str(value or "").strip()
-        if not text:
-            return ""
-        for line in text.splitlines():
-            # Strip list markers and extra whitespace
-            clean = re.sub(r"^[-•*]\s*", "", line).strip()
-            if not clean:
-                continue
 
-            # Remove citation markers like [1], [12], [6]
-            clean = re.sub(r"\[\d+\]", "", clean).strip()
+async def _quote_of_the_day(country: str) -> dict | None:
+    """A real, attributed direct quote from the day's most widely covered stories.
 
-            # Remove redundant nested quotes at start/end
-            clean = clean.strip("„“\"'")
-
-            if clean:
-                return clean[:280]
-        return ""
-
-    quote = _extract_text(row.get("quote"))
-    if not quote:
-        quote = _extract_text(row.get("summary"))
-    if not quote:
-        quote = _extract_text(row.get("generated_article"))
-    if not quote:
-        return None
-
-    return {
-        "quote": quote,
-        "cluster_id": row.get("cluster_id"),
-        "title": row.get("title"),
-    }
+    Returns None when no quote is carried by two or more outlets, so the page
+    hides the block instead of showing summary text in quotation marks.
+    Cached per process so the quote does not change with every new article.
+    """
+    cached = _quote_cache.get(country)
+    if cached and time.monotonic() - cached[0] < _QUOTE_CACHE_TTL:
+        return cached[1]
+    try:
+        rows = await db.async_execute(_QUOTE_SQL, (country,))
+    except Exception as e:
+        log.warning(f"[stats] quote of the day query failed: {e}")
+        return cached[1] if cached else None
+    quote = pick_quote_of_the_day(rows or [])
+    _quote_cache[country] = (time.monotonic(), quote)
+    return quote
 
 
 # Removed get_briefing route
@@ -553,35 +560,7 @@ async def get_stats_summary(lang: str | None = DEFAULT_LANG):
         )
     )["count"] or 0
 
-    quote_row = await db.async_execute_one(
-        """
-        SELECT s.quote, s.summary, s.generated_article, s.cluster_id,
-               (SELECT title FROM articles WHERE cluster_id = s.cluster_id AND country = %s ORDER BY created_at DESC LIMIT 1) as title
-        FROM cluster_summaries s
-        JOIN articles a ON a.cluster_id = s.cluster_id
-        WHERE s.created_at >= NOW() - INTERVAL '72 hours'
-          AND a.country = %s
-          AND s.lang = %s
-          AND (
-              COALESCE(s.quote, '') != ''
-              OR COALESCE(s.summary, '') != ''
-              OR COALESCE(s.generated_article, '') != ''
-          )
-          -- Priority to objective content if sentiment data exists
-          AND (
-              s.sentiment->'tone_analysis'->>'objectivity' IS NULL
-              OR (CASE WHEN (s.sentiment->'tone_analysis'->>'objectivity') ~ '^[0-9.]+$' THEN (s.sentiment->'tone_analysis'->>'objectivity')::float ELSE 0.0 END) >= 0.4
-          )
-        GROUP BY s.quote, s.summary, s.generated_article, s.cluster_id, s.created_at, s.sentiment
-        ORDER BY
-            CASE WHEN COALESCE(s.quote, '') != '' THEN 0 ELSE 1 END,
-            COALESCE(CASE WHEN (s.sentiment->'tone_analysis'->>'objectivity') ~ '^[0-9.]+$' THEN (s.sentiment->'tone_analysis'->>'objectivity')::float ELSE NULL END, 0.5) DESC,
-            s.created_at DESC
-        LIMIT 1
-    """,
-        (target_country, target_country, lang),
-    )
-    quote = _pick_quote_of_the_day(quote_row)
+    quote = await _quote_of_the_day(target_country)
 
     runtime_events = {}
     try:
