@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from './broadsheetHome.ts';
+import { buildSourceBreakdown, clusterSourceBreakdown, pickBroadsheetSections, sectionLabelMk } from './broadsheetHome.ts';
 
 const c = (id) => ({ cluster_id: id, articles: [{ title: id, source: 'S' }] });
 
@@ -50,4 +50,42 @@ test('sectionLabelMk maps backend codes to Macedonian labels', () => {
   assert.equal(sectionLabelMk('Amerika'), 'Америка');
   assert.equal(sectionLabelMk(''), null);
   assert.equal(sectionLabelMk('Nepoznato'), null);
+});
+
+test('clusterSourceBreakdown uses the API breakdown, not the 4-article sample', () => {
+  const cluster = {
+    // the payload only ships a sample of the story's articles...
+    articles: [{ source: 'A' }, { source: 'B' }, { source: 'C' }, { source: 'D' }],
+    // ...while the API counts every article
+    source_breakdown: [
+      { source: 'A', count: 9 },
+      { source: 'B', count: 6 },
+      { source: 'C', count: 4 },
+      { source: 'D', count: 2 },
+      { source: 'E', count: 1 },
+    ],
+    source_breakdown_other: 3,
+  };
+  assert.deepEqual(clusterSourceBreakdown(cluster), [
+    { source: 'A', count: 9 },
+    { source: 'B', count: 6 },
+    { source: 'C', count: 4 },
+    { source: 'Други', count: 6 },
+  ]);
+});
+
+test('clusterSourceBreakdown folds the API remainder into Други even with few listed sources', () => {
+  const cluster = { source_breakdown: [{ source: 'A', count: 2 }, { source: 'B', count: 1 }], source_breakdown_other: 5 };
+  assert.deepEqual(clusterSourceBreakdown(cluster), [
+    { source: 'A', count: 2 },
+    { source: 'B', count: 1 },
+    { source: 'Други', count: 5 },
+  ]);
+});
+
+test('clusterSourceBreakdown falls back to the article sample when the API sends no breakdown', () => {
+  assert.deepEqual(clusterSourceBreakdown({ articles: [{ source: 'A' }, { source: 'B' }] }), [
+    { source: 'A', count: 1 },
+    { source: 'B', count: 1 },
+  ]);
 });
