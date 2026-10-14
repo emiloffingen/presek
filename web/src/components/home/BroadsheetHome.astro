@@ -61,7 +61,12 @@ const image = (cluster: NewsCluster, variant: 'hero' | 'card' | 'thumb') => {
 const trendingChips = (Array.isArray(trending) ? trending : [])
     .filter((item) => item?.word)
     .slice(0, 6)
-    .map((item) => ({ word: String(item.word), count: Number(item.count || 0), href: `${l('/')}?q=${encodeURIComponent(item.word)}` }));
+    .map((item) => {
+        const word = String(item.word);
+        const count = Number(item.count || 0);
+        // The count is how many article headlines mentioned the word in the trending window (12 h).
+        return { word, count, href: `${l('/')}?q=${encodeURIComponent(word)}`, label: `${word}: ${plural(count, 'вест', 'вести')} во последните 12 часа` };
+    });
 
 // Summaries/previews that merely repeat the headline add nothing; hide them.
 const norm = (value: string) => String(value || '').toLowerCase().replace(/[\s\p{P}]+/gu, ' ').trim();
@@ -94,8 +99,9 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
         <div class="bs-wrap bs-trending">
             <span class="bs-label">Се зборува за</span>
             {trendingChips.map((chip) => (
-                <a href={chip.href} class="bs-chip">{chip.word} <span class="bs-num">{chip.count}</span></a>
+                <a href={chip.href} class="bs-chip" title={chip.label} aria-label={chip.label}>{chip.word} <span class="bs-num" aria-hidden="true">{chip.count}</span></a>
             ))}
+            <span class="bs-trending-note">вести · последни 12 ч</span>
         </div>
     )}
 

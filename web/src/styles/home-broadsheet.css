@@ -30,6 +30,7 @@
 }
 .bs-home .bs-chip:hover { text-decoration: none; border-color: var(--bs-text); }
 .bs-chip .bs-num { font-size: 12px; font-weight: 500; color: var(--bs-muted); }
+.bs-trending-note { font-size: 12px; color: var(--bs-muted); white-space: nowrap; }
 
 /* ── Ads: slot spacing (styling lives in theme-broadsheet.css) ── */
 .bs-ad .native-ad { margin: 0 auto; }
