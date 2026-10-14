@@ -272,10 +272,7 @@ html:root body {
 }
 .bs-brand { display: flex; align-items: center; gap: 14px; }
 .bs-scope .bs-brand:hover { text-decoration: none; }
-.bs-brand-mark { display: flex; flex-direction: column; gap: 4px; width: 34px; }
-.bs-brand-mark span { height: 6px; background: var(--bs-text); }
-.bs-brand-mark span:nth-child(2) { background: var(--bs-accent); width: 70%; }
-.bs-brand-mark span:nth-child(3) { width: 45%; }
+.bs-brand-mark { display: block; flex: none; width: 46px; height: 46px; color: var(--bs-text); }
 .bs-brand-name {
     font-family: var(--bs-serif);
     font-weight: 700;
@@ -543,6 +540,7 @@ html:root nav[aria-label="Breadcrumb"] {
     html:root .editorial-masthead .masthead-main p,
     html:root .topic-intro { font-size: 18px; }
     .bs-brand-name { font-size: 36px; }
+    .bs-brand-mark { width: 38px; height: 38px; }
     .bs-search { flex: 1 1 100%; min-width: 0; }
 }
 
