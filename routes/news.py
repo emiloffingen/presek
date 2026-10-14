@@ -1234,6 +1234,25 @@ async def get_article_detail(article_id: int, lang: str | None = DEFAULT_LANG):
     return payload
 
 
+_CLUSTER_ENTITY_LIMIT = 8
+
+
+async def _cluster_entity_names(cluster_id: str, limit: int = _CLUSTER_ENTITY_LIMIT) -> list[str]:
+    """Key entities of a cluster from the extractor's own table, people and organisations
+    before places (a place name says little about what a story is about)."""
+    try:
+        rows = await db.async_execute(
+            "SELECT entity_name FROM cluster_entities WHERE cluster_id = %s "
+            "ORDER BY (entity_type = 'LOC'), mentions DESC, entity_name LIMIT %s",
+            (cluster_id, limit),
+            read_only=True,
+        )
+    except Exception as e:
+        log.debug("[cluster] entity lookup failed for %s: %s", cluster_id, e)
+        return []
+    return [r["entity_name"] for r in rows or [] if r.get("entity_name")]
+
+
 @router.get("/cluster/{cluster_id}")
 async def get_cluster_detail(cluster_id: str, lang: str | None = DEFAULT_LANG):
     # Validate cluster_id using comprehensive validation
@@ -1350,6 +1369,8 @@ async def get_cluster_detail(cluster_id: str, lang: str | None = DEFAULT_LANG):
         # Extra metadata from summary row
         key_facts = _as_list(s_row.get("key_facts")) if s_row else []
         analyst_entities = _as_list(s_row.get("analyst_entities")) if s_row else []
+        if not analyst_entities:
+            analyst_entities = await _cluster_entity_names(cluster_id)
         perspectives = _parse_maybe_json(s_row.get("perspectives")) if s_row else []
         verification_report = _parse_maybe_json(s_row.get("verification_report")) if s_row else None
         sentiment = _parse_maybe_json(s_row.get("sentiment")) if s_row else None

@@ -8,123 +8,63 @@ remain available with PRESEK_AI_ENABLED=0.
 
 from __future__ import annotations
 
-import re
-from collections import Counter
+import time
+from collections import defaultdict
 
 from core.celery_app import celery_app
 from core.database import db_manager as db
+from core.entities import NameStats, build_aliases, extract_cluster_entities
 from tasks.utils import log
 
-# --- entity extraction (regex, no model) ------------------------------------
+# --- entity extraction (regex + corpus statistics, no model) -----------------
+# The extraction logic lives in core.entities; this module owns the database I/O.
 
-_STOPWORDS = {
-    "и",
-    "во",
-    "на",
-    "за",
-    "од",
-    "со",
-    "не",
-    "се",
-    "го",
-    "ја",
-    "ги",
-    "е",
-    "што",
-    "кој",
-    "која",
-    "кое",
-    "како",
-    "или",
-    "ама",
-    "но",
-    "дека",
-    "по",
-    "the",
-    "and",
-    "for",
-    "with",
-    "from",
-    "that",
-    "this",
-    "are",
-    "was",
-}
+_STATS_WINDOW_DAYS = 7
+_STATS_MAX_TITLES = 20000
+_STATS_TTL_SECONDS = 3600
+_MAX_ARTICLES_PER_CLUSTER = 40
+_stats_cache: dict = {"at": 0.0, "stats": None}
 
 
-# Capitalised words that are not names: function words that headlines open with, bylines
-# and media tags, and generic role/institution nouns. Compared case-insensitively.
-_NOT_NAMES = {
-    "според", "тој", "таа", "тоа", "тие", "ова", "оваа", "овој", "овие", "она", "оној",
-    "при", "кон", "над", "под", "пред", "меѓу", "преку", "околу", "после", "само", "уште",
-    "дали", "зошто", "кога", "каде", "колку", "сите", "секој", "нема", "има", "ќе", "би",
-    "видео", "фото", "текстот", "текст", "изворот", "извор", "анализа", "интервју", "ексклузивно",
-    "општина", "општината", "република", "владата", "министерството", "министерот",
-    "фон", "претседателот", "премиерот", "градоначалникот", "европската", "северна", "лигата",
-}  # fmt: skip
-
-_WORD = re.compile(r"[^\W\d_][\w\-]*", re.UNICODE)
-_MAX_NAME_TOKENS = 3
-
-
-def _is_capitalised(word: str) -> bool:
-    return word[:1].isupper()
-
-
-def extract_entities_from_text(text: str) -> list[str]:
-    """Extract candidate named entities from a headline/lead via regex.
-
-    Adjacent capitalised words become one name ("Доналд Трамп"), and a lone word that
-    only looks capitalised because it opens a sentence ("Според", "Комедијата") is
-    dropped unless it is an acronym or introduces a quote ("Воркапиќ: ...").
-    """
-    text = str(text or "")
-    if not text or text == text.upper():
-        return []  # an all-caps headline carries no capitalisation signal
-    entities: list[str] = []
-    run: list[str] = []
-    run_initial = False
-    run_followed_by_pause = False
-    prev_end = 0
-
-    def flush() -> None:
-        nonlocal run, run_initial
-        if run:
-            alone = len(run) == 1
-            acronym = alone and run[0].isupper() and len(run[0]) >= 2
-            if not (alone and run_initial and not acronym and not run_followed_by_pause):
-                name = " ".join(run)
-                if name not in entities:
-                    entities.append(name)
-        run, run_initial = [], False
-
-    for m in _WORD.finditer(text):
-        word, gap = m.group(), text[prev_end : m.start()]
-        prev_end = m.end()
-        initial = m.start() == 0 or bool(re.search(r"[.!?:„“\"«()\n]\s*$", gap))
-        joined = bool(run) and gap == " " and len(run) < _MAX_NAME_TOKENS
-        usable = _is_capitalised(word) and (len(word) >= 3 or word.isupper() and len(word) >= 2)
-        if usable and word.casefold() in _NOT_NAMES:
-            usable = False
-        if usable and word.casefold() in _STOPWORDS:
-            usable = False
-        if usable and joined:
-            run.append(word)
-        else:
-            flush()
-            if usable:
-                run, run_initial = [word], initial
-                run_followed_by_pause = text[m.end() : m.end() + 1] in (":", ",")
-    flush()
-    return entities[:12]
+def _corpus_name_stats() -> NameStats:
+    """Capitalisation statistics over the last week of headlines, cached per process."""
+    now = time.monotonic()
+    cached = _stats_cache["stats"]
+    if cached is not None and now - _stats_cache["at"] < _STATS_TTL_SECONDS:
+        return cached
+    rows = db.execute(
+        """
+        SELECT title FROM articles
+        WHERE COALESCE(ingested_at, created_at) >= NOW() - make_interval(days => %s)
+        ORDER BY COALESCE(ingested_at, created_at) DESC
+        LIMIT %s
+        """,
+        (_STATS_WINDOW_DAYS, _STATS_MAX_TITLES),
+    )
+    stats = NameStats().add_texts(r.get("title") or "" for r in rows or [])
+    _stats_cache.update(at=now, stats=stats)
+    return stats
 
 
-def _classify_entity(name: str) -> str:
-    if re.fullmatch(r"[А-ШЃЌЅЉЊЏA-Z][\w\-]+(\s[А-ШЃЌЅЉЊЏA-Z][\w\-]+)+", name or ""):
-        return "PER"
-    if name and name[0].isupper():
-        return "ORG"
-    return "MISC"
+def _cluster_articles(cluster_ids: list[str]) -> dict[str, list[dict]]:
+    """Articles of whole clusters (newest first), so a cluster's entities never depend on
+    which of its articles happened to be ingested recently."""
+    rows = db.execute(
+        """
+        SELECT cluster_id, title, description FROM (
+            SELECT cluster_id, title, description,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY cluster_id ORDER BY COALESCE(ingested_at, created_at) DESC
+                   ) AS rn
+            FROM articles WHERE cluster_id = ANY(%s)
+        ) t WHERE rn <= %s
+        """,
+        (cluster_ids, _MAX_ARTICLES_PER_CLUSTER),
+    )
+    grouped: dict[str, list[dict]] = defaultdict(list)
+    for row in rows or []:
+        grouped[row["cluster_id"]].append(row)
+    return grouped
 
 
 # --- tasks -------------------------------------------------------------------
@@ -132,49 +72,71 @@ def _classify_entity(name: str) -> str:
 
 @celery_app.task(name="tasks.extractive.extract_entities_task")
 def extract_entities_task(hours: int = 48, limit: int = 200):
-    """Populate cluster_entities + knowledge_entities from recent articles."""
+    """Rebuild cluster_entities (and refresh knowledge_entities) for recently active clusters."""
     try:
-        articles = db.execute(
+        recent = db.execute(
             """
-            SELECT a.cluster_id, a.title, a.description
-            FROM articles a
-            WHERE a.cluster_id IS NOT NULL
-              AND COALESCE(a.ingested_at, a.created_at) >= NOW() - make_interval(hours => %s)
-            ORDER BY COALESCE(a.ingested_at, a.created_at) DESC
+            SELECT cluster_id FROM articles
+            WHERE cluster_id IS NOT NULL
+              AND COALESCE(ingested_at, created_at) >= NOW() - make_interval(hours => %s)
+            GROUP BY cluster_id
+            ORDER BY MAX(COALESCE(ingested_at, created_at)) DESC
             LIMIT %s
             """,
             (hours, limit),
         )
-        # Aggregate first, then write in two batched statements: one round trip
-        # per row is too slow over a high-latency link (CI runner -> Supabase).
-        # Sorted so concurrent writers take row locks in a stable order.
-        links, mentions = set(), Counter()
-        for art in articles or []:
-            cid = art.get("cluster_id")
-            text = f"{art.get('title') or ''}. {art.get('description') or ''}"
-            for name in extract_entities_from_text(text):
-                links.add((cid, name, _classify_entity(name)))
-                mentions[name] += 1
-        if links:
+        cluster_ids = [r["cluster_id"] for r in recent or []]
+        if not cluster_ids:
+            return {"status": "success", "links": 0}
+
+        stats = _corpus_name_stats()
+        articles_by_cluster = _cluster_articles(cluster_ids)
+        raw = {cid: extract_cluster_entities(arts, stats) for cid, arts in articles_by_cluster.items()}
+        # Surname -> full name folding needs the whole batch: «Трамп» and «Доналд Трамп» are
+        # usually in different clusters.
+        aliases = build_aliases(e["name"] for ents in raw.values() for e in ents)
+        final = {cid: extract_cluster_entities(arts, stats, aliases) for cid, arts in articles_by_cluster.items()}
+
+        rows = sorted((cid, e["name"], e["type"], e["mentions"]) for cid, ents in final.items() for e in ents)
+        if rows:
             db.executemany(
-                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type) "
-                "VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                sorted(links),
+                "INSERT INTO cluster_entities (cluster_id, entity_name, entity_type, mentions) "
+                "VALUES (%s, %s, %s, %s) ON CONFLICT (cluster_id, entity_name) DO UPDATE SET "
+                "entity_type = EXCLUDED.entity_type, mentions = EXCLUDED.mentions",
+                rows,
             )
-        if mentions:
+        # Drop what this cluster no longer yields (old junk included).
+        db.execute(
+            """
+            DELETE FROM cluster_entities ce
+            WHERE ce.cluster_id = ANY(%s)
+              AND NOT EXISTS (
+                SELECT 1 FROM unnest(%s::text[], %s::text[]) AS k(cid, nm)
+                WHERE k.cid = ce.cluster_id AND k.nm = ce.entity_name
+              )
+            """,
+            (list(final), [r[0] for r in rows], [r[1] for r in rows]),
+            fetch=False,
+        )
+        names = sorted({(r[1], r[2]) for r in rows})
+        if names:
+            # total_mentions is recomputed from cluster_entities rather than incremented, so
+            # re-running the task over the same clusters no longer inflates it.
             db.executemany(
                 """
                 INSERT INTO knowledge_entities (name, type, total_mentions, first_seen, last_seen)
-                VALUES (%s, %s, %s, NOW(), NOW())
+                VALUES (%s, %s,
+                        (SELECT COALESCE(SUM(mentions), 0) FROM cluster_entities WHERE entity_name = %s),
+                        NOW(), NOW())
                 ON CONFLICT (name) DO UPDATE SET
-                    total_mentions = knowledge_entities.total_mentions + EXCLUDED.total_mentions,
+                    type = EXCLUDED.type,
+                    total_mentions = EXCLUDED.total_mentions,
                     last_seen = NOW()
                 """,
-                [(n, _classify_entity(n), c) for n, c in sorted(mentions.items())],
+                [(n, t, n) for n, t in names],
             )
-        inserted = sum(mentions.values())
-        log.info("[extractive] extract_entities: %s entity links", inserted)
-        return {"status": "success", "links": inserted}
+        log.info("[extractive] extract_entities: %s links across %s clusters", len(rows), len(final))
+        return {"status": "success", "links": len(rows), "clusters": len(final)}
     except Exception as e:
         log.error("[extractive] extract_entities failed: %s", e)
         return {"status": "failed", "error": str(e)}
