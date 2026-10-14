@@ -41,12 +41,13 @@ const l = (path: string) => localePath(path, lang, hostHeader);
 
 	<NewsletterIsland lang={lang} client:visible />
 
-	{stats?.quote_of_the_day && (
+	{stats?.quote_of_the_day?.speaker && (
 		<section class="rail-block">
 			<h3 class="rail-section-title">{t('cluster.quote_of_day')}</h3>
 			<blockquote class="rail-quote-block">
 				<p>„{stats.quote_of_the_day.quote}“</p>
 				<cite>
+					{stats.quote_of_the_day.speaker && <strong>— {stats.quote_of_the_day.speaker}</strong>}
 					<span>{t('rail.related_story')}</span>
 					<a href={l(`/cluster/${stats.quote_of_the_day.cluster_id}`)}>
 						{stats.quote_of_the_day.title}

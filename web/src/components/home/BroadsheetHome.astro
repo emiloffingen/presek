@@ -103,9 +103,10 @@ const lead = leadCluster ? {
     breakdown: clusterSourceBreakdown(leadCluster),
 } : null;
 
-const quote = stats?.quote_of_the_day?.quote ? stats.quote_of_the_day : null;
+// Only a quote with a named speaker is shown; older API versions return summary text without one.
+const quote = stats?.quote_of_the_day?.quote && stats.quote_of_the_day.speaker ? stats.quote_of_the_day : null;
 const quoteRaw = quote ? String(quote.quote).trim() : '';
-const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+\S*$/, '')}…` : quoteRaw;
+const quoteText = quoteRaw;
 ---
 
 <SiteHeader stats={stats} showTopAd={false} />
@@ -260,9 +261,10 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                     <figure class="bs-quote">
                         <span class="bs-kicker bs-quote-muted">Цитат на денот</span>
                         <blockquote>„{quoteText}“</blockquote>
-                        {quote.title && (
-                            <figcaption><a href={l(`/cluster/${quote.cluster_id}`)}>— {quote.title}</a></figcaption>
-                        )}
+                        <figcaption>
+                            {quote.speaker && <span class="bs-quote-speaker">— {quote.speaker}</span>}
+                            {quote.title && <a href={l(`/cluster/${quote.cluster_id}`)}>{quote.title}</a>}
+                        </figcaption>
                     </figure>
                 )}
             </aside>

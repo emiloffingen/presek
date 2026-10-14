@@ -927,14 +927,6 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
             return {"count": 12}
         if "COUNT(*) FROM sources WHERE is_active = TRUE" in query:
             return {"count": 40}
-        if "FROM cluster_summaries s" in query:
-            return {
-                "quote": "",
-                "summary": "• Q\n• R",
-                "generated_article": "",
-                "cluster_id": "abc123",
-                "title": "T",
-            }
         if "SELECT COUNT(*) FROM articles" in query and "INTERVAL '24 hours'" in query:
             return {"count": 120}
         if "SELECT COUNT(*) FROM articles" in query:
@@ -944,6 +936,27 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
         raise AssertionError(f"Unexpected query: {query}")
 
     mock_all["db"].async_execute_one.side_effect = execute_one_side_effect
+
+    quote = "Ова е апсолутно неприфатливо – уште еден напад во непосредна близина на териториските води"
+
+    def execute_side_effect(query, *args, **kwargs):
+        if "regexp_matches" in query:
+            return [
+                {
+                    "cluster_id": "abc123",
+                    "source": source,
+                    "n_sources": 9,
+                    "title": "T",
+                    "before_text": "Претседателот ",
+                    "quote_text": quote,
+                    "after_text": ", рече Радев на пресконференција.",
+                }
+                for source in ("Alfa", "Kanal 5")
+            ]
+        return []
+
+    mock_all["db"].async_execute.side_effect = execute_side_effect
+    routes.stats._quote_cache.clear()
 
     with (
         patch("routes.stats.cached_response", return_value=None),
@@ -962,7 +975,8 @@ def test_stats_summary_includes_intelligence_payload(mock_all):
 
     assert data["last_24h"] == 120
     assert data["quote_of_the_day"]["cluster_id"] == "abc123"
-    assert data["quote_of_the_day"]["quote"] == "Q"
+    assert data["quote_of_the_day"]["quote"] == quote
+    assert data["quote_of_the_day"]["speaker"] == "Радев"
     assert data["intelligence"]["international_share_pct"] == 15.0
     assert data["intelligence"]["synthesis_transparency"]["systemic_ratio"] == 75.0
     assert data["intelligence"]["pluralism"]["pluralism_pct"] == 65.0
