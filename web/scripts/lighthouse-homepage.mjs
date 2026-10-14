@@ -2,7 +2,7 @@
 /**
  * Homepage performance audit via Lighthouse.
  * Usage:
- *   node scripts/lighthouse-homepage.mjs https://presek.live/
+ *   node scripts/lighthouse-homepage.mjs https://presek.mk/
  *   node scripts/lighthouse-homepage.mjs --preview   # build preview on :4321
  *   node scripts/lighthouse-homepage.mjs ./report.json
  */
@@ -149,7 +149,7 @@ async function main() {
       writeFileSync(savedReport, readFileSync(reportPath));
       console.log(`Saved ${savedReport}`);
     } else if (!reportPath || reportPath.startsWith('http')) {
-      const url = reportPath || 'https://presek.live/';
+      const url = reportPath || 'https://presek.mk/';
       const tmp = mkdtempSync(join(tmpdir(), 'presek-lh-'));
       reportPath = join(tmp, 'homepage.json');
       console.log(`Running Lighthouse against ${url}`);
