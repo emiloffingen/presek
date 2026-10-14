@@ -105,10 +105,6 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
         </div>
     )}
 
-    <div class="bs-wrap bs-ad bs-ad-top">
-        <NativeAdSlot slotId="top_banner" />
-    </div>
-
     <div class="bs-wrap bs-main">
         {lead && (
             <section class="bs-lead-row" aria-labelledby="bs-lead-h">
@@ -172,6 +168,11 @@ const quoteText = quoteRaw.length > 240 ? `${quoteRaw.slice(0, 240).replace(/\s+
                 </aside>
             </section>
         )}
+
+        {/* Banner sits under the lead story, not above it: the first screen is for the news. */}
+        <div class="bs-ad bs-ad-top">
+            <NativeAdSlot slotId="top_banner" />
+        </div>
 
         {sections.picks.length > 0 && (
             <section class="bs-picks" aria-labelledby="bs-picks-h">

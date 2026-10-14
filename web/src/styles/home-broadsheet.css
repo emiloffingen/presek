@@ -34,7 +34,7 @@
 
 /* ── Ads: slot spacing (styling lives in theme-broadsheet.css) ── */
 .bs-ad .native-ad { margin: 0 auto; }
-.bs-ad-top { max-width: 1038px; margin-top: 24px; }
+.bs-ad-top { max-width: 1038px; margin: 24px auto 0; }
 .bs-ad-side { margin-top: 24px; }
 .bs-ad-mobile { display: none; padding: 20px 0; border-bottom: 1px solid var(--bs-border); }
 
