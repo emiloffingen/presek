@@ -1076,8 +1076,11 @@ async def get_entity_graph(entity_name: str, lang: str | None = "mk"):
     try:
         ent = await db.async_execute_one(
             "SELECT name, type, total_mentions, first_seen, last_seen, sentiment_score "
-            "FROM knowledge_entities WHERE LOWER(name) = LOWER(%s)",
-            (name,),
+            "FROM knowledge_entities WHERE LOWER(name) = LOWER(%s) "
+            # case variants exist («Мицкоски» / legacy «МИЦКОСКИ»): the exact spelling first,
+            # then the one with the most mentions, never an arbitrary row
+            "ORDER BY (name = %s) DESC, total_mentions DESC NULLS LAST LIMIT 1",
+            (name, name),
         )
         mentions = await db.async_execute_one(
             "SELECT COUNT(DISTINCT cluster_id) AS n FROM cluster_entities WHERE LOWER(entity_name) = LOWER(%s)",
