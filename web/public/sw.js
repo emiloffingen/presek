@@ -3,7 +3,7 @@
 
 import { shouldCacheApiPath, shouldStoreApiResponse, offlinePageForPath } from './sw-cache-policy.js';
 
-const CACHE_NAME = 'presek-v32';
+const CACHE_NAME = 'presek-v33';
 const API_CACHE_NAME = 'presek-api-v32';
 const API_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
@@ -14,8 +14,8 @@ function offlinePageFor(url) {
 }
 
 const STATIC_ASSETS = [
-  '/logo.svg?v=3',
-  '/img/presek_emblem.svg?v=3',
+  '/logo.svg?v=4',
+  '/img/presek_emblem.svg?v=6',
   '/img/icons/presek-icon-192.png',
   '/img/icons/presek-icon-512.png',
   '/img/icons/presek-maskable-192.png',

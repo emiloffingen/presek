@@ -41,7 +41,7 @@ export function buildOrganizationSchema(lang: Locale) {
     url: siteUrl,
     logo: {
       '@type': 'ImageObject',
-      url: `${siteUrl}/img/presek_emblem.png`,
+      url: `${siteUrl}/img/icons/presek-icon-512.png`,
       width: 512,
       height: 512,
     },
