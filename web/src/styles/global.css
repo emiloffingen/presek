@@ -129,6 +129,89 @@
   }
 }
 
+/* Site-wide palette (green-teal on warm paper). Tailwind's neutral scales become teal-tinted neutrals and
+ * blue/indigo become the brand teal, so every page that uses palette classes (marketing, ads, admin, search,
+ * status) follows the theme. Status colours (emerald, amber, red) are deliberately left alone. */
+@theme {
+  --color-zinc-50: #f7f6f1;
+  --color-zinc-100: #eeece4;
+  --color-zinc-200: #dfddd2;
+  --color-zinc-300: #c5c8bf;
+  --color-zinc-400: #9aa6a1;
+  --color-zinc-500: #6f7d78;
+  --color-zinc-600: #55625f;
+  --color-zinc-700: #3e4b48;
+  --color-zinc-800: #2a3634;
+  --color-zinc-900: #1a2523;
+  --color-zinc-950: #0f1716;
+  --color-neutral-50: #f7f6f1;
+  --color-neutral-100: #eeece4;
+  --color-neutral-200: #dfddd2;
+  --color-neutral-300: #c5c8bf;
+  --color-neutral-400: #9aa6a1;
+  --color-neutral-500: #6f7d78;
+  --color-neutral-600: #55625f;
+  --color-neutral-700: #3e4b48;
+  --color-neutral-800: #2a3634;
+  --color-neutral-900: #1a2523;
+  --color-neutral-950: #0f1716;
+  --color-gray-50: #f7f6f1;
+  --color-gray-100: #eeece4;
+  --color-gray-200: #dfddd2;
+  --color-gray-300: #c5c8bf;
+  --color-gray-400: #9aa6a1;
+  --color-gray-500: #6f7d78;
+  --color-gray-600: #55625f;
+  --color-gray-700: #3e4b48;
+  --color-gray-800: #2a3634;
+  --color-gray-900: #1a2523;
+  --color-gray-950: #0f1716;
+  --color-slate-50: #f7f6f1;
+  --color-slate-100: #eeece4;
+  --color-slate-200: #dfddd2;
+  --color-slate-300: #c5c8bf;
+  --color-slate-400: #9aa6a1;
+  --color-slate-500: #6f7d78;
+  --color-slate-600: #55625f;
+  --color-slate-700: #3e4b48;
+  --color-slate-800: #2a3634;
+  --color-slate-900: #1a2523;
+  --color-slate-950: #0f1716;
+  --color-stone-50: #f7f6f1;
+  --color-stone-100: #eeece4;
+  --color-stone-200: #dfddd2;
+  --color-stone-300: #c5c8bf;
+  --color-stone-400: #9aa6a1;
+  --color-stone-500: #6f7d78;
+  --color-stone-600: #55625f;
+  --color-stone-700: #3e4b48;
+  --color-stone-800: #2a3634;
+  --color-stone-900: #1a2523;
+  --color-stone-950: #0f1716;
+  --color-blue-50: #e7f4f1;
+  --color-blue-100: #cfe9e3;
+  --color-blue-200: #a6d6cc;
+  --color-blue-300: #74bdb0;
+  --color-blue-400: #4fb8a5;
+  --color-blue-500: #2e9484;
+  --color-blue-600: #0f6b5e;
+  --color-blue-700: #0c574d;
+  --color-blue-800: #0a453d;
+  --color-blue-900: #08332d;
+  --color-blue-950: #04201c;
+  --color-indigo-50: #e7f4f1;
+  --color-indigo-100: #cfe9e3;
+  --color-indigo-200: #a6d6cc;
+  --color-indigo-300: #74bdb0;
+  --color-indigo-400: #4fb8a5;
+  --color-indigo-500: #2e9484;
+  --color-indigo-600: #0f6b5e;
+  --color-indigo-700: #0c574d;
+  --color-indigo-800: #0a453d;
+  --color-indigo-900: #08332d;
+  --color-indigo-950: #04201c;
+}
+
 @theme inline {
   --font-serif: "Noto Serif", "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-sans: "Manrope", "IBM Plex Sans", "DejaVu Sans", Arial, sans-serif;

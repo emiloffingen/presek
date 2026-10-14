@@ -66,15 +66,15 @@ export const GET: APIRoute = async ({ params }) => {
 		const [line1, line2] = splitHeadline(title);
 
 		const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#0f172a"/>
-  <rect x="0" y="0" width="1200" height="16" fill="#b91c1c"/>
-  <text x="84" y="112" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#fecaca" letter-spacing="3">${category}</text>
-  <text x="84" y="210" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f8fafc">${escapeXml(line1)}</text>
-  <text x="84" y="286" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f8fafc">${escapeXml(line2)}</text>
-  <text x="84" y="400" font-family="Arial, sans-serif" font-size="30" fill="#cbd5e1">${description}</text>
-  <text x="84" y="532" font-family="Arial, sans-serif" font-size="28" fill="#94a3b8">${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'} vo sporedba</text>
+  <rect width="1200" height="630" fill="#14201e"/>
+  <rect x="0" y="0" width="1200" height="16" fill="#4fb8a5"/>
+  <text x="84" y="112" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#a6d6cc" letter-spacing="3">${category}</text>
+  <text x="84" y="210" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f5f3ec">${escapeXml(line1)}</text>
+  <text x="84" y="286" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#f5f3ec">${escapeXml(line2)}</text>
+  <text x="84" y="400" font-family="Arial, sans-serif" font-size="30" fill="#c4d0cc">${description}</text>
+  <text x="84" y="532" font-family="Arial, sans-serif" font-size="28" fill="#9fb0ab">${sourceCount} ${sourceCount === 1 ? 'izvor' : 'izvori'} vo sporedba</text>
 
-  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f8fafc" text-anchor="end">PRESEK.mk</text>
+  <text x="1116" y="556" font-family="Georgia, serif" font-size="46" font-weight="700" fill="#f5f3ec" text-anchor="end">PRESEK.mk</text>
 </svg>`;
 
 		return new Response(svg, {
