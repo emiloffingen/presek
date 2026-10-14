@@ -52,19 +52,70 @@ _STOPWORDS = {
 }
 
 
+# Capitalised words that are not names: function words that headlines open with, bylines
+# and media tags, and generic role/institution nouns. Compared case-insensitively.
+_NOT_NAMES = {
+    "според", "тој", "таа", "тоа", "тие", "ова", "оваа", "овој", "овие", "она", "оној",
+    "при", "кон", "над", "под", "пред", "меѓу", "преку", "околу", "после", "само", "уште",
+    "дали", "зошто", "кога", "каде", "колку", "сите", "секој", "нема", "има", "ќе", "би",
+    "видео", "фото", "текстот", "текст", "изворот", "извор", "анализа", "интервју", "ексклузивно",
+    "општина", "општината", "република", "владата", "министерството", "министерот",
+    "фон", "претседателот", "премиерот", "градоначалникот", "европската", "северна", "лигата",
+}  # fmt: skip
+
+_WORD = re.compile(r"[^\W\d_][\w\-]*", re.UNICODE)
+_MAX_NAME_TOKENS = 3
+
+
+def _is_capitalised(word: str) -> bool:
+    return word[:1].isupper()
+
+
 def extract_entities_from_text(text: str) -> list[str]:
-    """Extract candidate named entities from a headline/lead via regex."""
+    """Extract candidate named entities from a headline/lead via regex.
+
+    Adjacent capitalised words become one name ("Доналд Трамп"), and a lone word that
+    only looks capitalised because it opens a sentence ("Според", "Комедијата") is
+    dropped unless it is an acronym or introduces a quote ("Воркапиќ: ...").
+    """
     text = str(text or "")
-    if not text:
-        return []
+    if not text or text == text.upper():
+        return []  # an all-caps headline carries no capitalisation signal
     entities: list[str] = []
-    # Capitalized Cyrillic/Latin words (>=3 chars), excluding stopwords.
-    for token in re.findall(r"\b[А-ШЃЌЅЉЊЏA-Z][\w\-]{2,}\b", text):
-        low = token.casefold()
-        if low in _STOPWORDS:
-            continue
-        if token not in entities:
-            entities.append(token)
+    run: list[str] = []
+    run_initial = False
+    run_followed_by_pause = False
+    prev_end = 0
+
+    def flush() -> None:
+        nonlocal run, run_initial
+        if run:
+            alone = len(run) == 1
+            acronym = alone and run[0].isupper() and len(run[0]) >= 2
+            if not (alone and run_initial and not acronym and not run_followed_by_pause):
+                name = " ".join(run)
+                if name not in entities:
+                    entities.append(name)
+        run, run_initial = [], False
+
+    for m in _WORD.finditer(text):
+        word, gap = m.group(), text[prev_end : m.start()]
+        prev_end = m.end()
+        initial = m.start() == 0 or bool(re.search(r"[.!?:„“\"«()\n]\s*$", gap))
+        joined = bool(run) and gap == " " and len(run) < _MAX_NAME_TOKENS
+        usable = _is_capitalised(word) and (len(word) >= 3 or word.isupper() and len(word) >= 2)
+        if usable and word.casefold() in _NOT_NAMES:
+            usable = False
+        if usable and word.casefold() in _STOPWORDS:
+            usable = False
+        if usable and joined:
+            run.append(word)
+        else:
+            flush()
+            if usable:
+                run, run_initial = [word], initial
+                run_followed_by_pause = text[m.end() : m.end() + 1] in (":", ",")
+    flush()
     return entities[:12]
 
 
