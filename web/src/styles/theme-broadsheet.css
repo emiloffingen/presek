@@ -560,6 +560,10 @@ html:root nav[aria-label="Breadcrumb"] {
     .bs-brand-name { font-size: 36px; }
     .bs-brand-mark { width: 38px; height: 38px; }
     .bs-search { flex: 1 1 100%; min-width: 0; }
+    /* Other pages show only the search icon: keep it on the logo's row and make it a full 44px target. */
+    html:not([data-page="home"]) .bs-search { flex: 0 0 auto; margin-left: auto; }
+    html:not([data-page="home"]) .bs-search--command > * { width: auto; }
+    html:not([data-page="home"]) .bs-search--command .presek-search-trigger { width: 44px; min-width: 44px; min-height: 44px; }
 }
 
 /* Static pages (about, methodology, legal…): section headings were italic. */
