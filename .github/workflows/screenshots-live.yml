@@ -61,7 +61,13 @@ jobs:
                 try {
                   await page.goto(base + p, { waitUntil: 'networkidle2', timeout: 60000 });
                   await new Promise((r) => setTimeout(r, 1500));
-                  await page.screenshot({ path: `../shots/${slug}__${view.name}__${scheme}.jpg`, type: 'jpeg', quality: 72, fullPage: true });
+                  // The layout scrolls inside the page, so fullPage only captures one screen. Measure the
+                  // content and re-shoot with a tall viewport instead.
+                  const full = await page.evaluate(() => Math.min(9000, Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, ...[...document.querySelectorAll('*')].filter((e) => e.scrollHeight > e.clientHeight + 50 && getComputedStyle(e).overflowY !== 'visible').map((e) => e.scrollHeight))));
+                  await page.setViewport({ ...view, height: Math.max(view.height, full) });
+                  await new Promise((r) => setTimeout(r, 800));
+                  await page.screenshot({ path: `../shots/${slug}__${view.name}__${scheme}.jpg`, type: 'jpeg', quality: 72 });
+                  await page.setViewport(view);
                   console.log('ok', slug, view.name, scheme);
                 } catch (e) { console.log('FAIL', p, view.name, scheme, e.message); }
               }
