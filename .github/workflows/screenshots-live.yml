@@ -4,6 +4,8 @@ name: Screenshots (live site)
 # and dark mode and uploads them as an artifact, so UI work can be reviewed without a local
 # browser. Costs about 3 minutes of Actions time per run.
 on:
+  push:
+    branches: [ui-screenshots]
   workflow_dispatch:
     inputs:
       base:
