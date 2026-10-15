@@ -88,8 +88,8 @@ const fallbackImageUrl = leadVisual?.fallbackUrl || leadVisual?.src || '';
 	}
 
 	.hero-visual-card.is-proxy-fallback .hero-main-image {
-		object-fit: contain;
-		background: #14201e;
+		object-fit: cover;
+		background: var(--bs-photo, #e0ddd0);
 	}
 
     .hero-caption {

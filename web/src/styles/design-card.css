@@ -258,3 +258,19 @@ a:hover .design-card-cta {
     0% { transform: translateX(-100%); }
     55%, 100% { transform: translateX(100%); }
 }
+
+/* Generated fallback art (/proxy with no photo) is full-bleed brand art: fill the frame instead of
+   letterboxing and dimming it like a logo, and never print alt text over a failed photo. */
+.article-image-fallback,
+.topic-fallback-card .article-image-fallback,
+.image-wrap[data-image-state="fallback"] .runtime-image-container .article-image-fallback {
+    object-fit: cover !important;
+    filter: none !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+}
+
+.article-image {
+    color: transparent;
+    font-size: 0;
+}

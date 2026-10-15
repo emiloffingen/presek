@@ -58,6 +58,13 @@ const readerMaxDepth = readerQueueDepths.length ? Math.max(...readerQueueDepths)
 const readerTotalDepth = readerQueueDepths.reduce((sum, depth) => sum + depth, 0);
 const pipelineBusy = Boolean(celeryQueue?.degraded) || readerMaxDepth >= Number(celeryQueue?.warn_depth || 150);
 const freshness = healthData.freshness || {};
+// The API labels are Latin-script; the page is Cyrillic, so label by status instead.
+const freshnessLabel = freshness.age_minutes == null && freshness.status === 'stale'
+    ? t('status.freshness_unknown')
+    : freshness.status === 'fresh' ? t('status.freshness_fresh')
+    : freshness.status === 'aging' ? t('status.freshness_aging')
+    : freshness.status === 'stale' ? t('status.freshness_stale')
+    : '—';
 const synthesisQuality = (healthData.synthesis_quality || {}) as any;
 const synthesisStatus = String(synthesisQuality?.status || 'unknown');
 const synthesisPrimary = (synthesisQuality?.primary || {}) as any;
@@ -115,8 +122,8 @@ const formattedUptime = (seconds: number) => {
                     <span class="status-title">{t('status.system_status')}</span>
                     <span class={`status-badge-pill ${statusClass}`}>
                         <span class="relative flex h-2.5 w-2.5 pulse-container">
-                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'bg-emerald-400' : isBusy ? 'bg-amber-400' : 'bg-red-400'}`}></span>
-                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'bg-emerald-500' : isBusy ? 'bg-amber-500' : 'bg-red-500'}`}></span>
+                            <span class={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isHealthy ? 'status-dot-ok' : isBusy ? 'status-dot-busy' : 'status-dot-bad'}`}></span>
+                            <span class={`relative inline-flex rounded-full h-2.5 w-2.5 ${isHealthy ? 'status-dot-ok' : isBusy ? 'status-dot-busy' : 'status-dot-bad'}`}></span>
                         </span>
                         {statusLabel}
                     </span>
@@ -164,7 +171,7 @@ const formattedUptime = (seconds: number) => {
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_freshness')}</div>
-                        <div class="metric-value">{freshness.label || freshness.status || '—'}</div>
+                        <div class="metric-value">{freshnessLabel}</div>
                         <div class="metric-sub">
                             {freshness.age_minutes != null
                                 ? `${freshness.age_minutes} min`
@@ -263,9 +270,9 @@ const formattedUptime = (seconds: number) => {
     }
 
     .status-badge-pill.ok {
-        background: color-mix(in srgb, #10b981 8%, transparent);
-        color: #059669;
-        border-color: color-mix(in srgb, #10b981 20%, transparent);
+        background: color-mix(in srgb, var(--bs-accent) 8%, transparent);
+        color: var(--bs-accent);
+        border-color: color-mix(in srgb, var(--bs-accent) 24%, transparent);
     }
 
     .status-badge-pill.degraded {
@@ -275,10 +282,14 @@ const formattedUptime = (seconds: number) => {
     }
 
     .status-badge-pill.busy {
-        background: color-mix(in srgb, #f59e0b 8%, transparent);
-        color: #b45309;
-        border-color: color-mix(in srgb, #f59e0b 20%, transparent);
+        background: color-mix(in srgb, var(--bs-tone-cul) 8%, transparent);
+        color: var(--bs-tone-cul);
+        border-color: color-mix(in srgb, var(--bs-tone-cul) 24%, transparent);
     }
+
+    .status-dot-ok { background: var(--bs-accent); }
+    .status-dot-busy { background: var(--bs-tone-cul); }
+    .status-dot-bad { background: var(--destructive); }
 
     .pipeline-status-card {
         margin-top: 1.5rem;
@@ -293,6 +304,7 @@ const formattedUptime = (seconds: number) => {
         align-items: flex-start;
         justify-content: space-between;
         gap: 1rem;
+        flex-wrap: wrap;
         border-bottom: 1px solid var(--border);
         padding-bottom: 1.25rem;
         margin-bottom: 1.5rem;
