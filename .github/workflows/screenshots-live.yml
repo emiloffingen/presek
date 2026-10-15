@@ -1,0 +1,77 @@
+name: Screenshots (live site)
+
+# Manual only. Photographs key pages of the public site at phone and desktop widths in light
+# and dark mode and uploads them as an artifact, so UI work can be reviewed without a local
+# browser. Costs about 3 minutes of Actions time per run.
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base URL"
+        default: "https://presek.mk"
+        required: false
+      paths:
+        description: "Comma-separated paths (the first /cluster/ link on the home page is added automatically)"
+        default: "/,/marketing,/support,/archive,/izvori,/about,/status"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE: ${{ github.event.inputs.base || 'https://presek.mk' }}
+      PATHS: ${{ github.event.inputs.paths || '/,/marketing,/support,/archive,/izvori,/about,/status' }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Capture
+        run: |
+          set -euo pipefail
+          mkdir -p shots tool && cd tool && npm init -y >/dev/null && npm i --silent puppeteer-core@25.12.0
+          export CHROME_PATH="$(command -v google-chrome-stable || command -v google-chrome)"
+          cat > run.mjs <<'EOF'
+          import puppeteer from 'puppeteer-core';
+          const base = process.env.BASE.replace(/\/$/, '');
+          const paths = process.env.PATHS.split(',').map((p) => p.trim()).filter(Boolean);
+          const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH, headless: true, args: ['--no-sandbox', '--disable-gpu'] });
+          const probe = await browser.newPage();
+          await probe.goto(base + '/', { waitUntil: 'networkidle2', timeout: 60000 });
+          const cluster = await probe.$eval('a[href^="/cluster/"]', (a) => a.getAttribute('href')).catch(() => null);
+          await probe.close();
+          if (cluster) paths.push(cluster);
+          const views = [
+            { name: 'mobile', width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+            { name: 'desktop', width: 1366, height: 900, deviceScaleFactor: 1 },
+          ];
+          for (const scheme of ['light', 'dark']) {
+            for (const view of views) {
+              const page = await browser.newPage();
+              await page.setViewport(view);
+              await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
+              for (const p of paths) {
+                const slug = (p === '/' ? 'home' : p.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-')).slice(0, 40);
+                try {
+                  await page.goto(base + p, { waitUntil: 'networkidle2', timeout: 60000 });
+                  await new Promise((r) => setTimeout(r, 1500));
+                  await page.screenshot({ path: `../shots/${slug}__${view.name}__${scheme}.jpg`, type: 'jpeg', quality: 72, fullPage: true });
+                  console.log('ok', slug, view.name, scheme);
+                } catch (e) { console.log('FAIL', p, view.name, scheme, e.message); }
+              }
+              await page.close();
+            }
+          }
+          await browser.close();
+          EOF
+          node run.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots
+          retention-days: 7
