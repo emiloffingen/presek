@@ -426,6 +426,26 @@ HEAD_FP_FILE="$LOG_DIR/.phone_head_fp"
 # until the Shield's sshd wedges (banner timeouts). Streak logic is unchanged,
 # just evaluated less often.
 _loop_n=0
+
+# spawn_* refuse to start a second instance, so a process that is alive but no longer answers was never
+# restarted (2026-10-15: the phone API sat wedged for about two hours while presek.mk was down). Count
+# consecutive failed health checks per service and kill the wedged process; the next pass respawns it.
+declare -A wedge_streak
+WEDGE_LIMIT="${WEDGE_LIMIT:-5}"   # consecutive failed checks, roughly 40 s apart
+wedge_check() {  # name url pgrep-pattern (use the [x] bracket trick so pkill never matches this shell)
+  local name="$1" url="$2" pat="$3"
+  if http_ok "$url"; then wedge_streak[$name]=0; return 0; fi
+  # Not running at all: the caller respawns it, and a fresh start gets a full grace period.
+  if ! pgrep -f "$pat" >/dev/null 2>&1; then wedge_streak[$name]=0; return 1; fi
+  wedge_streak[$name]=$(( ${wedge_streak[$name]:-0} + 1 ))
+  if [ "${wedge_streak[$name]}" -ge "$WEDGE_LIMIT" ]; then
+    log "$name alive but unhealthy for ${wedge_streak[$name]} checks -> kill -9 (respawn follows)"
+    pkill -9 -f "$pat" 2>/dev/null
+    wedge_streak[$name]=0
+  fi
+  return 1
+}
+
 while true; do
   _loop_n=$((_loop_n + 1))
   # Git auto-deploy poll. Non-blocking: the deploy script self-locks, so a slow
@@ -447,8 +467,8 @@ while true; do
     drop_window _init
   fi
 
-  http_ok "http://127.0.0.1:5001/api/health" || spawn_window fastapi "$cmd_fastapi"
-  http_ok "http://127.0.0.1:3000/" || spawn_window astro "$cmd_astro"
+  wedge_check fastapi "http://127.0.0.1:5001/api/health" 'uvicorn core.api_fa[s]t' || spawn_window fastapi "$cmd_fastapi"
+  wedge_check astro "http://127.0.0.1:3000/" 'dist/server/entry[.]mj[s]' || spawn_window astro "$cmd_astro"
   # Standby workers: while the Shield is confirmed healthy AND runs its own
   # workers, the phone's worker/beat stay down to save AI quota and
   # Supabase pool connections. Any single failed shield check re-enables
