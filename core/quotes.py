@@ -65,6 +65,14 @@ _NOT_SPEAKERS = {
 }
 
 _QUOTE_MARKS = '„“”"«»'
+
+# A quote addressed to someone ("you owe court costs") is an exchange between two people, not a statement
+# about the news. Second-person pronouns and plural "-ете/-ивте" verb forms mark it.
+_ADDRESSED = re.compile(
+    rf"(?<![{_LOWER}{_UPPER}])(?:ти|тебе|те|ви|вие|вас|вам|твој\w*|твоја|твоите|ваш\w*)(?![{_LOWER}{_UPPER}])"
+    rf"|\w+(?:ивте|овте|авте|ете)(?![{_LOWER}{_UPPER}])",
+    re.IGNORECASE,
+)
 MIN_CHARS = 45
 MAX_CHARS = 250
 MIN_WORDS = 8
@@ -83,6 +91,8 @@ def _clean_quote(text: str) -> str | None:
         return None  # starts mid-sentence
     words = q.split()
     if not (MIN_WORDS <= len(words) <= MAX_WORDS):
+        return None
+    if _ADDRESSED.search(q):
         return None
     letters = re.findall(r"[A-Za-zА-ЯЀЃЅЈЉЊЌЏа-яѐѓѕјљњќџ]", q)
     cyrillic = re.findall(rf"[{_UPPER}{_LOWER}]", q)
