@@ -1,14 +1,22 @@
-"""Presek editorial placeholder palette — warm paper/ink + brand mark accents."""
+"""Presek editorial placeholder palette — mirrors the broadsheet theme (web/src/styles/theme-broadsheet.css)."""
 
 from __future__ import annotations
 
-PRESEK_MARK_LIGHT = "#c45c26"
-PRESEK_MARK_DARK = "#e07a3d"
+# Site accent (--bs-accent) in light and dark.
+PRESEK_MARK_LIGHT = "#0f6b5e"
+PRESEK_MARK_DARK = "#4fb8a5"
 
-PAPER_LIGHT = "#fbfaf5"
-PAPER_LIGHT_END = "#ece8df"
-INK_DARK = "#141210"
-INK_DARK_END = "#0a0908"
+# --bs-bg / --bs-photo (light) and --bs-bg / --bs-photo (dark).
+PAPER_LIGHT = "#f5f3ec"
+PAPER_LIGHT_END = "#e0ddd0"
+INK_DARK = "#101615"
+INK_DARK_END = "#243230"
+
+# --bs-text for the mark's top bar and the labels.
+INK_LIGHT_TEXT = "#14201e"
+INK_DARK_TEXT = "#e8efed"
+MUTED_LIGHT = "#55625f"
+MUTED_DARK = "#9fb0ab"
 
 # Legacy cold tints stored on clusters before the rebrand — treat as unset on the frontend.
 LEGACY_COLD_TINTS = frozenset(
@@ -28,41 +36,38 @@ LEGACY_COLD_TINTS = frozenset(
     }
 )
 
-# (bg, spot, accent) — all hues stay in the warm editorial range.
-_PALETTES_DARK: dict[str, tuple[str, str, str]] = {
-    "Srbija": (INK_DARK, "#3a2218", PRESEK_MARK_DARK),
-    "Makedonija": ("#181008", "#452018", "#e07a3d"),
-    "Balkan": ("#101612", "#243528", "#6b8f71"),
-    "Evropa": ("#121418", "#2a3038", "#78716c"),
-    "Amerika": ("#101318", "#243040", "#64748b"),
-    "Svet": ("#141018", "#342a38", "#9a7d8c"),
-    "Sport": ("#181008", "#4a2810", "#ea580c"),
-    "Tehnologija": ("#141018", "#302040", "#a16207"),
-    "Ekonomija": ("#101418", "#243040", "#57534e"),
-    "Hronika": ("#121212", "#2a2a2a", "#78716c"),
-    "Zabava": ("#180810", "#3a1828", "#be185d"),
-    "default": (INK_DARK, "#2a2420", PRESEK_MARK_DARK),
+# Section tones from the broadsheet (--bs-tone-*): (light, dark).
+_TONES: dict[str, tuple[str, str]] = {
+    "pol": ("#7a3b5e", "#d79ac0"),
+    "eco": ("#5a6b1e", "#b5c96a"),
+    "spo": ("#b4540f", "#f0a060"),
+    "wor": ("#2f5f8a", "#86b4e0"),
+    "cul": ("#8a5a1c", "#e0b878"),
+    "brand": (PRESEK_MARK_LIGHT, PRESEK_MARK_DARK),
 }
 
-_PALETTES_LIGHT: dict[str, tuple[str, str, str]] = {
-    "Srbija": (PAPER_LIGHT, "#f5ddd0", PRESEK_MARK_LIGHT),
-    "Makedonija": ("#fdf9f6", "#f8e4d8", "#c2410c"),
-    "Balkan": ("#f7faf8", "#dceee0", "#3d6b52"),
-    "Evropa": ("#f8f7f5", "#e8e4de", "#57534e"),
-    "Amerika": ("#f8f7f5", "#e4e8ee", "#64748b"),
-    "Svet": ("#faf8fa", "#eee4ee", "#7c5c6b"),
-    "Sport": ("#fdfaf6", "#ffe8d2", "#c2410c"),
-    "Tehnologija": ("#faf8fc", "#ece4f4", "#92400e"),
-    "Ekonomija": ("#f8f9fa", "#e4e8ec", "#57534e"),
-    "Hronika": ("#f8f8f8", "#e8e8e8", "#57534e"),
-    "Zabava": ("#fdf8fa", "#f8e4ee", "#be185d"),
-    "default": (PAPER_LIGHT, "#f0e8e0", PRESEK_MARK_LIGHT),
+_KEY_TONE: dict[str, str] = {
+    "Srbija": "brand",
+    "Makedonija": "brand",
+    "Balkan": "wor",
+    "Evropa": "wor",
+    "Amerika": "wor",
+    "Svet": "wor",
+    "Sport": "spo",
+    "Tehnologija": "pol",
+    "Ekonomija": "eco",
+    "Hronika": "pol",
+    "Zabava": "cul",
+    "default": "brand",
 }
 
 
 def category_palette(category_key: str, *, light: bool) -> tuple[str, str, str]:
-    table = _PALETTES_LIGHT if light else _PALETTES_DARK
-    return table.get(category_key, table["default"])
+    """Return (background, background end, section accent) for a placeholder."""
+    tone_light, tone_dark = _TONES[_KEY_TONE.get(category_key, "brand")]
+    if light:
+        return PAPER_LIGHT, PAPER_LIGHT_END, tone_light
+    return INK_DARK, INK_DARK_END, tone_dark
 
 
 def minimal_fallback_svg(*, lang: str = "sr") -> str:
@@ -76,8 +81,6 @@ def minimal_fallback_svg(*, lang: str = "sr") -> str:
     </linearGradient>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <rect x="48" y="48" width="704" height="354" fill="rgba(255,255,255,0.35)" stroke="#d9d5c8"/>
   <rect x="48" y="48" width="5" height="354" fill="{PRESEK_MARK_LIGHT}"/>
-  <text x="80" y="96" font-family="system-ui,sans-serif" font-size="10" font-weight="800" letter-spacing="3" fill="#686257">PREGLED VESTI</text>
-  <text x="80" y="240" font-family="Georgia,serif" font-size="34" font-weight="900" fill="#101010">{label}</text>
+  <text x="80" y="240" font-family="Georgia,serif" font-size="34" font-weight="900" fill="{INK_LIGHT_TEXT}">{label}</text>
 </svg>'''
