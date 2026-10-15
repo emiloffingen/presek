@@ -103,3 +103,20 @@ def test_widely_covered_story_wins():
 
 def test_empty_input():
     assert pick_quote_of_the_day([]) is None
+
+
+def test_quote_addressed_to_someone_is_rejected():
+    q = "Должите уште судски трошоци од тужбата. На Апелација сега фатете некоја врска, инаку трошоци должите заради тоа што изгубивте спор"
+    assert extract_quote("", q, ", рече Апасиев.") is None
+    assert (
+        extract_quote(
+            "", "Вие сте одговорни за ова што се случува и мора да одговорите пред граѓаните", ", рече Рубио."
+        )
+        is None
+    )
+
+
+def test_statements_in_first_or_third_person_still_pass():
+    assert extract_quote("", Q, ", рече Радев.") is not None
+    q2 = "Министерството за внатрешни работи ги спроведе сите потребни мерки и најави дека истрагата ќе продолжи во следните денови"
+    assert extract_quote("", q2, ", изјави Тошковски.")["speaker"] == "Тошковски"

@@ -120,7 +120,7 @@ WITH top AS (
       AND cluster_id IS NOT NULL
       AND created_at >= (NOW() AT TIME ZONE 'utc') - INTERVAL '36 hours'
     GROUP BY cluster_id
-    HAVING COUNT(DISTINCT source) >= 3
+    HAVING COUNT(DISTINCT source) >= 6
     ORDER BY COUNT(DISTINCT source) DESC, MAX(created_at) DESC
     LIMIT 40
 )
