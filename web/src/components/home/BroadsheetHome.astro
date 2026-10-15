@@ -40,8 +40,13 @@ const sourceCount = (cluster: NewsCluster) => Number(
 // articles than distinct sources.
 const articleCount = (cluster: NewsCluster) => Math.max(cluster.articles?.length || 0, sourceCount(cluster));
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const clusterMeta = (cluster: NewsCluster) =>
-    `${plural(articleCount(cluster), 'вест', 'вести')} · ${plural(sourceCount(cluster), 'извор', 'извори')}`;
+// "27 вести · 27 извори" says the same thing twice; when each outlet ran one story, show the outlets only.
+const clusterMeta = (cluster: NewsCluster) => {
+    const articles = articleCount(cluster);
+    const sources = sourceCount(cluster);
+    const outlets = plural(sources, 'извор', 'извори');
+    return articles === sources ? outlets : `${plural(articles, 'вест', 'вести')} · ${outlets}`;
+};
 const sectionLabel = (raw: unknown) => {
     const value = String(raw || '').trim();
     if (!value) return '';

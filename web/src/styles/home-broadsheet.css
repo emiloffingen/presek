@@ -64,6 +64,14 @@
 /* Photos fill their frame. layout-shell.css sets `img { height: auto !important }`
    site-wide, so this needs !important too, or wide photos leave a gap below. */
 .bs-photo > img { position: absolute; inset: 0; display: block; width: 100%; height: 100% !important; max-width: none; object-fit: cover; }
+/* When a photo is missing or fails to load, show a faint brand mark instead of its alt text. */
+.bs-photo {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='11 7 82 82'%3E%3Cg fill='%23808080' fill-opacity='.22'%3E%3Cpolygon transform='translate(4 -4)' points='20,15 80,15 80,42.8 62,47.12 62,33 38,33 38,52.88 20,57.2'/%3E%3Cpolygon points='20,57.2 38,52.88 38,85 20,85'/%3E%3Cpolygon points='62,47.12 80,42.8 80,85 62,85'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: min(34%, 72px);
+}
+.bs-photo > img { color: transparent; font-size: 0; }
 .bs-photo-16x9 { aspect-ratio: 16 / 9; }
 .bs-photo-16x10 { aspect-ratio: 16 / 10; border-radius: 0; }
 
