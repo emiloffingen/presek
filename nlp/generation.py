@@ -136,8 +136,6 @@ def _placeholder_palette_key(category: str) -> str:
     return "default"
 
 
-
-
 def summarize_article_fallback(*a, **kw):
     return ""
 
