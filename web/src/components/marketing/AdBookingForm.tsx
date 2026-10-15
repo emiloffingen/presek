@@ -398,7 +398,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                       required
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
-                      placeholder="e.g. Petar Petrovski" 
+                      placeholder="пр. Петар Петровски" 
                       className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                     />
                   </div>
@@ -413,7 +413,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                       required
                       value={buyerEmail}
                       onChange={(e) => setBuyerEmail(e.target.value)}
-                      placeholder="e.g. petar@example.com" 
+                      placeholder="пр. petar@example.com" 
                       className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
                     />
                   </div>
@@ -644,7 +644,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                 required
                 value={lookupId}
                 onChange={(e) => setLookupId(e.target.value)}
-                placeholder="e.g. c39c948e-28af-45e3-82a1-..."
+                placeholder="пр. c39c948e-28af-45e3-82a1-..."
                 className="w-full bg-card border border-border rounded-none py-2.5 px-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40 font-mono"
               />
             </div>
@@ -694,7 +694,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                 required
                 value={requestEmail}
                 onChange={(e) => setRequestEmail(e.target.value)}
-                placeholder="e.g. petar@example.com"
+                placeholder="пр. petar@example.com"
                 className="w-full bg-card border border-border rounded-none py-2.5 px-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors placeholder:text-muted-foreground/40"
               />
             </div>
