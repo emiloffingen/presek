@@ -440,9 +440,10 @@ body.zen-mode .section-eyebrow {
 
 .cluster-header-actions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .cluster-reading-hint {

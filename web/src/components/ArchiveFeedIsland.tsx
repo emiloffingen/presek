@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { NewsCard } from './NewsCard';
+import { chooseClusterImage, buildProxySrcSet } from '../utils/imageSelection';
+import { getDisplayTitle, slugify } from '../utils/textUtils';
+import { dateLocaleForLang, localePathForLang } from '../lib/localePaths';
+import { buildPrimaryCardBadge, primaryCardBadgeTier } from '../lib/trustSignals';
+import { sectionLabelMk, sectionToneMk } from '../lib/broadsheetHome';
 import { useClientTranslations } from '../i18n/clientTranslations';
 import { archive } from '../i18n/namespaces/archive';
 import { news } from '../i18n/namespaces/news';
@@ -14,6 +18,86 @@ interface ArchiveFeedIslandProps {
   pageSize: number;
   lang?: string;
 }
+
+
+const articleTime = (article: any, locale: string) => {
+  const raw = article?.ingested_at || article?.created_at;
+  if (!raw) return '';
+  const date = new Date(String(raw).replace('Z', ''));
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString(dateLocaleForLang(locale as any), { hour: '2-digit', minute: '2-digit' });
+};
+
+const ArchiveRow: React.FC<{ cluster: any; index: number; lead: boolean; locale: 'mk' | 'sr' }> = ({ cluster, index, lead, locale }) => {
+  const main = cluster.articles?.[0];
+  if (!main) return null;
+
+  const title = String(cluster.synthetic_headline || getDisplayTitle(main) || '');
+  const href = `${localePathForLang('/cluster/', locale)}${cluster.cluster_id}-${slugify(title)}`;
+  const sources = Number(
+    cluster.sources_count || cluster.source_count
+    || new Set((cluster.articles || []).map((a: any) => a.source).filter(Boolean)).size,
+  );
+  const sectionRaw = main.subcategory || main.topic || main.category || '';
+  const section = sectionLabelMk(sectionRaw) || '';
+  const tone = sectionToneMk(sectionRaw) || undefined;
+
+  const visual = chooseClusterImage(cluster, lead ? 'hero' : 'card', locale);
+  const src = visual.proxiedUrl || visual.fallbackUrl;
+  const srcSet = !visual.isWeak && visual.proxiedUrl
+    ? buildProxySrcSet(visual.proxiedUrl, lead ? [480, 720, 960] : [160, 320])
+    : undefined;
+
+  const trustInput = {
+    sourcesCount: sources,
+    pluralismScore: cluster.pluralism_score,
+    isStale: false,
+    hasVerification: Boolean(cluster.has_fact_check),
+    quietFreshness: true,
+    isPendingSynthesis: false,
+    isProvisional: false,
+    needsUpgrade: false,
+  };
+  const badge = buildPrimaryCardBadge(trustInput, locale);
+  const time = articleTime(main, locale);
+
+  return (
+    <article className={`ar-row${lead ? ' ar-row--lead' : ''}`} data-testid="archive-row">
+      <span className="ar-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+      <div className="ar-body">
+        <div className="ar-kicker">
+          <span className="ar-index-inline" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+          <span className="ar-source">{main.source}</span>
+          {section && <span className="ar-section" data-tone={tone}>{section}</span>}
+        </div>
+        <h2 className="ar-title"><a href={href}>{title}</a></h2>
+        <div className="ar-meta">
+          {sources > 0 && <span>{sources} {sources === 1 ? 'извор' : 'извори'}</span>}
+          {time && <time dateTime={main.ingested_at || main.created_at}>{time}</time>}
+          {badge && <span className={`ar-badge ar-badge--${primaryCardBadgeTier(trustInput)}`}>{badge}</span>}
+        </div>
+      </div>
+      {src && (
+        <a href={href} className="ar-photo" tabIndex={-1} aria-hidden="true">
+          <img
+            src={src}
+            srcSet={srcSet}
+            sizes={lead ? '(max-width: 759px) calc(100vw - 32px), 640px' : '112px'}
+            alt=""
+            loading={lead ? 'eager' : 'lazy'}
+            decoding="async"
+            onError={(event) => {
+              const image = event.currentTarget;
+              image.onerror = null;
+              image.removeAttribute('srcset');
+              if (visual.fallbackUrl && image.src !== visual.fallbackUrl) image.src = visual.fallbackUrl;
+            }}
+          />
+        </a>
+      )}
+    </article>
+  );
+};
 
 const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
   initialClusters,
@@ -87,22 +171,15 @@ const ArchiveFeedIsland: React.FC<ArchiveFeedIslandProps> = ({
 
   return (
     <div className="archive-feed-container">
-      <div className="archive-clusters flex flex-col gap-6 md:gap-10">
+      <div className="archive-clusters ar-list">
         {clusters.map((cluster: any, index: number) => (
-          <div key={`${cluster.cluster_id}-${index}`} className="archive-cluster-row border-b border-foreground/5 pb-6 md:pb-10 last:border-0">
-            <div className="flex flex-col md:flex-row gap-3 md:gap-[var(--grid-gap)]">
-              <div className="archive-cluster-index-col w-full md:w-20 pt-1 md:pt-2 flex-shrink-0">
-                <div className="sticky top-24 flex md:block items-baseline gap-2 md:gap-[var(--grid-gap)]">
-                  <span className="font-sans text-[10px] font-black uppercase tracking-widest text-presek-mark block mb-1 hidden md:block">{t('archive.edition')}</span>
-                  <strong className="font-serif text-base md:text-3xl font-black block leading-none opacity-20 md:opacity-40">{String(index + 1).padStart(2, '0')}</strong>
-                  <span className="font-sans text-[9px] md:text-[10px] font-black uppercase tracking-[0.14em] md:tracking-widest text-muted-foreground md:hidden opacity-40">{t('archive.pos')}</span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <NewsCard cluster={cluster} variant={index === 0 && page === 0 ? 'featured' : 'compact'} lang={lang} />
-              </div>
-            </div>
-          </div>
+          <ArchiveRow
+            key={`${cluster.cluster_id}-${index}`}
+            cluster={cluster}
+            index={index}
+            lead={index === 0 && page === 0}
+            locale={activeLang}
+          />
         ))}
 
         {isLoading && (

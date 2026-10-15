@@ -67,8 +67,9 @@ const framing =
   }
   .cluster-trust-summary {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.4rem 0.55rem;
     cursor: pointer;
     list-style: none;
     font-family: var(--font-sans);
@@ -79,6 +80,11 @@ const framing =
     color: var(--foreground);
   }
   .cluster-trust-summary::-webkit-details-marker { display: none; }
+  .cluster-trust-pill,
+  .cluster-trust-score {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
   .cluster-trust-pill {
     margin-left: auto;
     padding: 0.15rem 0.45rem;

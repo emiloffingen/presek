@@ -67,6 +67,12 @@ const freshnessLabel = freshness.age_minutes == null && freshness.status === 'st
     : '—';
 const synthesisQuality = (healthData.synthesis_quality || {}) as any;
 const synthesisStatus = String(synthesisQuality?.status || 'unknown');
+const synthesisLabel = ({
+    ok: t('status.synthesis_ok'),
+    warn: t('status.synthesis_warn'),
+    critical: t('status.synthesis_critical'),
+    stale: t('status.synthesis_stale'),
+} as Record<string, string>)[synthesisStatus] || t('status.synthesis_unknown');
 const synthesisPrimary = (synthesisQuality?.primary || {}) as any;
 const stuckFastCount = Number(synthesisQuality?.stuck_fast_synthesis_count || 0);
 const fallbackRatio = Number(synthesisPrimary?.fallback_ratio || 0);
@@ -180,7 +186,7 @@ const formattedUptime = (seconds: number) => {
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">{t('status.pipeline_synthesis')}</div>
-                        <div class="metric-value">{synthesisStatus.toUpperCase()}</div>
+                        <div class="metric-value">{synthesisLabel}</div>
                         <div class="metric-sub">{synthesisDetail}</div>
                     </div>
                     <div class="metric-card">

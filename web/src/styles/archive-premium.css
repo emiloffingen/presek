@@ -33,22 +33,17 @@
 .archive-deck-stat {
     padding: 1.25rem;
     text-align: center;
-    background: color-mix(in srgb, var(--card) 45%, transparent);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    transition: all 0.3s ease;
+    background: var(--bs-surface, var(--card));
+    transition: background 0.2s ease;
 }
 
 .archive-deck-stat:hover {
-    background: color-mix(in srgb, var(--card) 65%, transparent);
+    background: color-mix(in srgb, var(--bs-accent, var(--presek-mark)) 5%, var(--bs-surface, var(--card)));
 }
 
-.archive-deck-stat.accent-total-themes {
-    background: color-mix(in srgb, var(--presek-mark) 4%, var(--card));
-}
-
-.archive-deck-stat.accent-total-themes:hover {
-    background: color-mix(in srgb, var(--presek-mark) 8%, var(--card));
+/* The third figure is the only one picked out, and only by its number. */
+.archive-deck-stat.accent-total-themes span.text-2xl {
+    color: var(--bs-accent, var(--presek-mark));
 }
 
 /* 2. Floating Sticky Navigation Bar */
@@ -436,4 +431,79 @@
 @media (max-width: 639.98px) {
   .archive-page-scope .archive-chip-label { width: 3.6rem; letter-spacing: .06em; font-size: .58rem; }
   .archive-page-scope .archive-facets { margin-bottom: 1rem; }
+}
+
+
+/* Archive story rows: same type, colours and photo frames as the home page. */
+.ar-list { display: block; }
+.ar-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    column-gap: 14px;
+    align-items: start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--bs-border);
+}
+.ar-row:last-child { border-bottom: 0; }
+.ar-index { display: none; }
+.ar-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ar-kicker {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    font-family: var(--bs-sans); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--bs-muted);
+}
+.ar-index-inline { font-variant-numeric: tabular-nums; opacity: 0.7; }
+.ar-source { color: var(--bs-accent); }
+.ar-section { color: var(--bs-muted); }
+.ar-section[data-tone="pol"] { color: var(--bs-tone-pol); }
+.ar-section[data-tone="eco"] { color: var(--bs-tone-eco); }
+.ar-section[data-tone="spo"] { color: var(--bs-tone-spo); }
+.ar-section[data-tone="wor"] { color: var(--bs-tone-wor); }
+.ar-section[data-tone="cul"] { color: var(--bs-tone-cul); }
+.ar-title {
+    margin: 0; font-family: var(--bs-serif); font-weight: 600;
+    font-size: 19px; line-height: 1.3; color: var(--bs-text); text-wrap: balance;
+}
+.ar-title a { color: inherit; text-decoration: none; }
+.ar-title a::after { content: ""; position: absolute; inset: 0; }
+.ar-row:hover .ar-title a { text-decoration: underline; text-underline-offset: 3px; }
+.ar-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+    font-family: var(--bs-sans); font-size: 13px; color: var(--bs-muted);
+}
+.ar-badge {
+    padding: 1px 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--bs-accent);
+    background: color-mix(in srgb, var(--bs-accent) 9%, transparent);
+    border-left: 2px solid var(--bs-accent);
+}
+.ar-photo {
+    position: relative; display: block; width: 96px; aspect-ratio: 1 / 1;
+    overflow: hidden; background: var(--bs-photo);
+}
+.ar-photo > img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; color: transparent; font-size: 0;
+}
+
+/* First row of the day: full-width photo above the headline. */
+.ar-row--lead { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding-top: 4px; }
+.ar-row--lead .ar-photo { order: -1; width: 100%; aspect-ratio: 16 / 9; }
+.ar-row--lead .ar-title { font-size: 26px; line-height: 1.2; }
+
+@media (min-width: 760px) {
+    .ar-row { grid-template-columns: 3rem minmax(0, 1fr) 128px; }
+    .ar-row--lead { grid-template-columns: 3rem minmax(0, 1fr); }
+    .ar-row--lead .ar-photo { grid-column: 2; }
+    .ar-row--lead .ar-body { grid-column: 2; }
+    .ar-index {
+        display: block; padding-top: 2px; font-family: var(--bs-serif);
+        font-size: 22px; font-weight: 600; color: var(--bs-bar3);
+        font-variant-numeric: tabular-nums;
+    }
+    .ar-index-inline { display: none; }
+    .ar-photo { width: 128px; }
+    .ar-title { font-size: 21px; }
+    .ar-row--lead .ar-title { font-size: 32px; }
 }
