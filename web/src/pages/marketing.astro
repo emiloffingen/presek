@@ -4,7 +4,7 @@ import NYTHeader from '../components/NYTHeader.astro';
 import Footer from '../components/Footer.astro';
 import AdBookingForm from '../components/marketing/AdBookingForm.tsx';
 import { getLangFromUrl, useTranslations } from '../i18n/utils';
-import { CPM_RATES_EUR, CPM_BASE_EUR, localCpm, PROMO_PERCENT } from '../lib/adPricing';
+import { CPM_RATES_EUR, CPM_BASE_EUR, localCpm, promoNote, slotName } from '../lib/adPricing';
 
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
@@ -14,10 +14,14 @@ const status = Astro.url.searchParams.get('status');
 const campaignId = Astro.url.searchParams.get('campaign_id');
 const checkoutEnabled = process.env.STRIPE_CHECKOUT_ENABLED === 'true';
 
+// Prices are charged in EUR (per 1,000 impressions); the local currency is shown as an approximation.
 function promo(slot: 'top_banner' | 'sidebar' | 'mobile_content') {
-  const now = localCpm(CPM_RATES_EUR[slot], lang);
-  const base = localCpm(CPM_BASE_EUR[slot], lang);
-  return { now: now.amount, base: base.amount, currency: now.currency };
+  const local = localCpm(CPM_RATES_EUR[slot], lang);
+  return {
+    now: CPM_RATES_EUR[slot].toFixed(2),
+    base: CPM_BASE_EUR[slot].toFixed(2),
+    local: `~${local.amount.toLocaleString('de-DE')} ${local.currency === 'MKD' ? 'ден.' : local.currency}`,
+  };
 }
 const pTop = promo('top_banner');
 const pSide = promo('sidebar');
@@ -83,22 +87,28 @@ const pMobile = promo('mobile_content');
         <div class="space-y-4 font-sans">
           <div class="flex justify-between items-center border-b border-border pb-3">
             <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{lang === 'mk' ? 'Позиција и димензии' : 'Pozicija i dimenzije'}</span>
-            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{lang === 'mk' ? 'Цена по импресија' : 'Cena po impresiji'}</span>
+            <span class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{lang === 'mk' ? 'Цена за 1.000 импресии (CPM)' : 'Cena za 1.000 impresija (CPM)'}</span>
           </div>
           <div class="flex justify-between items-center text-sm">
-            <span class="text-foreground font-bold">Top Billboard (990x80 / 990x150)</span>
-            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pTop.now} {pTop.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pTop.base}</span></span>
+            <span class="text-foreground font-bold">{slotName('top_banner', lang)} <span class="font-normal text-muted-foreground text-xs">(990x80 / 990x150)</span></span>
+            <span class="font-mono text-right"><span class="text-emerald-600 dark:text-emerald-400 font-bold">€{pTop.now}</span> <span class="text-muted-foreground/50 text-xs line-through">€{pTop.base}</span> <span class="text-muted-foreground text-xs">{pTop.local}</span></span>
           </div>
           <div class="flex justify-between items-center text-sm">
-            <span class="text-foreground font-bold">Companion Sidebar (300x250 / 300x600)</span>
-            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pSide.now} {pSide.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pSide.base}</span></span>
+            <span class="text-foreground font-bold">{slotName('sidebar', lang)} <span class="font-normal text-muted-foreground text-xs">(300x250 / 300x600)</span></span>
+            <span class="font-mono text-right"><span class="text-emerald-600 dark:text-emerald-400 font-bold">€{pSide.now}</span> <span class="text-muted-foreground/50 text-xs line-through">€{pSide.base}</span> <span class="text-muted-foreground text-xs">{pSide.local}</span></span>
           </div>
           <div class="flex justify-between items-center text-sm">
-            <span class="text-foreground font-bold">Inline Mobile Content (300x250)</span>
-            <span class="font-mono"><span class="text-emerald-600 dark:text-emerald-400 font-bold">{pMobile.now} {pMobile.currency}</span> <span class="text-muted-foreground/50 text-xs line-through">{pMobile.base}</span></span>
+            <span class="text-foreground font-bold">{slotName('mobile_content', lang)} <span class="font-normal text-muted-foreground text-xs">(300x250)</span></span>
+            <span class="font-mono text-right"><span class="text-emerald-600 dark:text-emerald-400 font-bold">€{pMobile.now}</span> <span class="text-muted-foreground/50 text-xs line-through">€{pMobile.base}</span> <span class="text-muted-foreground text-xs">{pMobile.local}</span></span>
           </div>
-          <p class="text-xs text-[var(--presek-mark)] font-bold pt-1">−{PROMO_PERCENT}% воведна понуда</p>
+          <p class="text-xs text-[var(--presek-mark)] font-bold pt-1">{promoNote(lang)}</p>
         </div>
+
+        <ol class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans text-muted-foreground" aria-label={lang === 'mk' ? 'Како функционира' : 'Kako funkcioniše'}>
+          <li class="border-t-2 border-[var(--presek-mark)] pt-3"><span class="block font-bold text-foreground mb-1">1. {lang === 'mk' ? 'Изберете позиција' : 'Izaberite poziciju'}</span>{lang === 'mk' ? 'Топ, страничен или мобилен банер, и колку импресии сакате.' : 'Gornji, bočni ili mobilni baner i koliko impresija želite.'}</li>
+          <li class="border-t-2 border-[var(--presek-mark)] pt-3"><span class="block font-bold text-foreground mb-1">2. {lang === 'mk' ? 'Поставете го банерот' : 'Postavite baner'}</span>{lang === 'mk' ? 'Слика до 150KB и линк. Прегледот трае најмногу 24 часа.' : 'Slika do 150KB i link. Pregled traje najviše 24 sata.'}</li>
+          <li class="border-t-2 border-[var(--presek-mark)] pt-3"><span class="block font-bold text-foreground mb-1">3. {lang === 'mk' ? 'Платете и следете' : 'Platite i pratite'}</span>{lang === 'mk' ? 'Кампањата стартува на избраниот датум; резултатите ги следите со идентификатор.' : 'Kampanja počinje na izabrani datum; rezultate pratite pomoću identifikatora.'}</li>
+        </ol>
       </div>
 
       <div class="bg-[var(--presek-mark-soft)] p-8 rounded-none border border-[var(--presek-mark-line)] text-center relative overflow-hidden">
