@@ -293,8 +293,19 @@ _shield_ssh() {
   done
   return "$rc"
 }
+# "Healthy" must mean the same here as in deploy/failover_guard.sh (shield_healthy):
+# astro and api answer AND the Shield's main tunnel reports ready connections. An
+# API-only check let this watchdog stop the phone connector while the guard (which
+# also checks the tunnel) raised it again, flapping every ~70 s and dropping
+# requests (2026-10-16: the Shield's cloudflared hung after SIGTERM, 530s for 1.5 h).
+# Port 20241 is the main tunnel's `metrics:` address; the SSH tunnel uses 20243, so a
+# healthy SSH tunnel cannot mask a dead main one.
+SHIELD_TUNNEL_METRICS="${SHIELD_TUNNEL_METRICS:-127.0.0.1:20241}"
 shield_origin_ok_ssh() {
-  _shield_ssh "proot-distro login debian -- curl -s -m 3 -o /dev/null http://127.0.0.1:5001/api/health"
+  _shield_ssh "curl -sf -m4 -o /dev/null http://127.0.0.1:3000/ && \
+               curl -sf -m4 -o /dev/null http://127.0.0.1:5001/api/health && \
+               curl -s  -m4 http://${SHIELD_TUNNEL_METRICS}/ready" |
+    grep -q '"readyConnections":[1-9]'
 }
 # Shield workers presence: the phone stands its workers down only when the
 # Shield actually runs its own (API-up alone is not enough — the Shield has

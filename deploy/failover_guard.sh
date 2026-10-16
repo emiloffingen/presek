@@ -50,6 +50,8 @@ ssh_shield() {
 }
 
 # Healthy = Shield astro + api answer AND its tunnel has ready connections.
+# Keep identical to shield_origin_ok_ssh in host/presek_watchdog.sh: when the two
+# disagree, one raises the phone connector and the other kills it (flap, 530s).
 shield_healthy() {
   ssh_shield 'curl -sf -m4 -o /dev/null http://127.0.0.1:3000/ && \
               curl -sf -m4 -o /dev/null http://127.0.0.1:5001/api/health && \
