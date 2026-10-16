@@ -587,6 +587,13 @@ body.zen-mode .cluster-reading-hint {
   }
 }
 
+/* Keyboard shortcuts mean nothing on touch screens. */
+@media (hover: none) {
+  .cluster-reading-keys {
+    display: none;
+  }
+}
+
 body.compare-mode .cluster-sidebar-details {
   border-color: color-mix(in srgb, var(--presek-mark) 28%, var(--border));
 }

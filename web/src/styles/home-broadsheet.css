@@ -309,7 +309,10 @@ html .bs-home .bs-rule-label {
 .bs-legend li { white-space: nowrap; }
 @media (max-width: 759px) {
     .bs-chip { min-height: 40px; }
-    .bs-trending { gap: 8px; }
+    /* One scrolling row instead of three wrapped rows, so the lead story starts higher. */
+    .bs-trending { gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .bs-trending::-webkit-scrollbar { display: none; }
+    .bs-trending > * { flex: 0 0 auto; }
     .bs-breakdown { padding: 16px; }
 }
 .bs-home :is(.bs-card-title, .bs-live-headline) a:focus-visible { outline: none; }
