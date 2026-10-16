@@ -114,12 +114,8 @@ def crawl_article_task(article_id, url):
             log.warning(f"Crawler retrieved no content for {article_id}")
 
     except Exception as e:
+        # Logged only: a per-article email floods the inbox and burns the SMTP quota.
         log.error(f"Error in crawl_article_task for {article_id}: {e}")
-        Notifier.send_alert(
-            "CRAWL_FAILURE",
-            f"Article {article_id} failed: {e}",
-            {"article_id": article_id},
-        )
         raise
 
 
