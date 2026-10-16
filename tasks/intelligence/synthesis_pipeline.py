@@ -215,6 +215,12 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
                 model = "enhanced_fallback"
                 fallback_reason = fallback_reason or "enhanced_fallback_after_cascade_exhausted"
                 fallback = synthesize_cluster_fallback(article_rows, lang=lang)
+                if not isinstance(fallback, dict) or not fallback:
+                    # nlp.synthesize_cluster_fallback is a stub (MK-only simplification) that returns "".
+                    # Fail with a clear reason instead of an AttributeError; the cluster keeps its old summary.
+                    raise RuntimeError(
+                        f"provider cascade exhausted for {cluster_id} ({lang}) and no deterministic fallback is available"
+                    )
                 summary = fallback.get("summary", "")
                 perspectives = fallback.get("perspectives", [])
                 synthetic_headline = fallback.get("synthetic_headline", "")
@@ -353,3 +359,7 @@ def run_cluster_synthesis(cluster_id, content, fast_mode=False, force_llm=False)
         synthesis_persisted=synthesis_persisted,
         shared_computed=shared_computed,
     )
+
+    # Callers (homepage script, self-heal) need to know whether anything was actually saved:
+    # per-language failures are caught above, so a False here is the only signal.
+    return bool(synthesis_persisted)
