@@ -105,6 +105,8 @@ cmd_astro="cd $APP_DIR/web && PORT=3000 HOST=127.0.0.1 NODE_ENV=production NODE_
 cmd_worker="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app worker --loglevel=info --concurrency=1 --logfile=$LOG_DIR/worker.log"
 cmd_beat="cd $APP_DIR && export PYTHONPATH=$APP_DIR && exec $APP_DIR/.venv/bin/celery -A core.celery_app beat --loglevel=info --logfile=$LOG_DIR/beat.log"
 cmd_tunnel="exec cloudflared tunnel --config /root/.cloudflared/config.yml run >> $LOG_DIR/cloudflared.log 2>&1"
+tunnel_noresp=0
+TUNNEL_NORESP_MAX="${TUNNEL_NORESP_MAX:-3}"
 
 # A cloudflared process can be alive yet have zero live connections, or be in a
 # data-plane stall (/ready shows ready connections but every stream is canceled
@@ -122,15 +124,35 @@ tunnel_healthy() {
   ready="$(curl -s -m 5 http://127.0.0.1:20241/ready 2>/dev/null)"
   case "$ready" in
     *'"readyConnections":0'*) return 1 ;;
-    *'"readyConnections"'*) return 0 ;;
-    *) return 0 ;;
+    *'"readyConnections"'*) tunnel_noresp=0; return 0 ;;
+    *)
+      # No answer at all: the connector is wedged (2026-10-16: it hung in shutdown and
+      # served nothing for 1.5 h while this treated it as healthy). Tolerate a blip,
+      # but recycle after TUNNEL_NORESP_MAX consecutive silent checks.
+      tunnel_noresp=$((tunnel_noresp + 1))
+      [ "$tunnel_noresp" -ge "$TUNNEL_NORESP_MAX" ] && return 1
+      return 0 ;;
   esac
 }
 
 restart_tunnel() {
-  # spawn() refuses to start a second instance, so kill first.
+  # spawn() refuses to start a second instance, so stop the old one first. A graceful
+  # cloudflared shutdown can take longer than a fixed sleep and can hang outright
+  # (2026-10-16 15:06): the spawn was skipped as "already running" and the age timer
+  # was reset anyway, leaving a dead connector for 1.5 h. Wait for the exit and
+  # escalate to SIGKILL before spawning.
+  local i
   pkill -f "$TUNNEL_MATCH" 2>/dev/null
-  sleep 2
+  for i in 1 2 3 4 5 6 7 8; do
+    pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1 || break
+    sleep 1
+  done
+  if pgrep -f "$TUNNEL_MATCH" >/dev/null 2>&1; then
+    log "cloudflared ignored SIGTERM; sending SIGKILL"
+    pkill -9 -f "$TUNNEL_MATCH" 2>/dev/null
+    sleep 1
+  fi
+  tunnel_noresp=0
   spawn tunnel "$cmd_tunnel" "$TUNNEL_MATCH"
   date +%s > "$TUNNEL_START_FILE"
 }
