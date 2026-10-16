@@ -995,7 +995,9 @@ def self_heal_low_score_syntheses_task(min_score=None, limit=None):
         if regenerated >= batch_limit or not _consume_selfheal_budget():
             break
         try:
-            run_cluster_synthesis(str(row["cluster_id"]), row.get("summary") or "")
+            if run_cluster_synthesis(str(row["cluster_id"]), row.get("summary") or "") is False:
+                log.warning("[maintenance] synthesis self-heal persisted nothing for %s", row["cluster_id"])
+                continue
             regenerated += 1
         except Exception as e:
             log.warning("[maintenance] synthesis self-heal failed for %s: %s", row["cluster_id"], e)

@@ -83,7 +83,13 @@ def _run(args):
         try:
             rows = _load_cluster_articles_for_synthesis(cid)
             content = _build_cluster_synthesis_content(rows)
-            run_cluster_synthesis(cid, content, fast_mode=args.fast, force_llm=force_llm)
+            persisted = run_cluster_synthesis(cid, content, fast_mode=args.fast, force_llm=force_llm)
+            if persisted is False:
+                # Every language failed inside the pipeline (errors are logged there); the cluster
+                # keeps its previous summary. Do not report it as upgraded.
+                failed += 1
+                print("    error: nothing was persisted (see the synthesis errors above)")
+                continue
             for row in _summarize(cid) or []:
                 print(f"    -> {row['lang']}: {row['generation_provider']} / {row['generation_model']}")
             upgraded += 1
