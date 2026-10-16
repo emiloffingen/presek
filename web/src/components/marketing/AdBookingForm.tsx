@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   User, 
   Mail, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { localePathForLang } from '../../lib/localePaths';
 import { buildCsrfHeadersAsync } from '../../lib/personalization';
-import { CPM_RATES_EUR, CPM_BASE_EUR, PROMO_PERCENT, localCpm } from '../../lib/adPricing';
+import { CPM_RATES_EUR, CPM_BASE_EUR, PROMO_PERCENT, localCpm, slotName, formatDateDmy } from '../../lib/adPricing';
 
 interface AdBookingFormProps {
   lang: 'sr' | 'mk';
@@ -32,12 +32,18 @@ const translations = {
     name: 'Име и презиме',
     email: 'Е-пошта',
     slot: 'Изберете тип на банер',
-    url: 'Линк за насочување (Target URL)',
+    url: 'Одредишен линк (URL)',
     startDate: 'Датум на почеток',
     endDate: 'Датум на крај',
     impressions: 'Вкупен број на импресии',
     file: 'Прикачете банер (Макс. 150KB)',
-    cpm: 'CPM цена',
+    cpm: 'Цена за 1.000 импресии',
+    period: 'Период',
+    startHint: 'Секоја реклама се прегледува до 24 часа. За старт на избраниот датум, резервирајте најмалку еден ден однапред.',
+    termsLead: 'Со продолжувањето ги прифаќате',
+    termsLink: 'Условите за користење',
+    termsAnd: 'и',
+    privacyLink: 'Политиката за приватност',
     dailyAverage: 'Просечен број импресии дневно',
     totalDays: 'Вкупно денови',
     totalPrice: 'Вкупна цена за плаќање',
@@ -62,12 +68,18 @@ const translations = {
     name: 'Ime i prezime',
     email: 'E-mail adresa',
     slot: 'Izaberite tip banera',
-    url: 'Link za usmeravanje (Target URL)',
+    url: 'Odredišni link (URL)',
     startDate: 'Datum početka',
     endDate: 'Datum kraja',
     impressions: 'Ukupan broj impresija',
     file: 'Priložite baner (Maks. 150KB)',
-    cpm: 'CPM cena',
+    cpm: 'Cena za 1.000 impresija',
+    period: 'Period',
+    startHint: 'Svaki oglas se pregleda do 24 sata. Za start na izabrani datum, rezervišite bar jedan dan unapred.',
+    termsLead: 'Nastavkom prihvatate',
+    termsLink: 'Uslove korišćenja',
+    termsAnd: 'i',
+    privacyLink: 'Politiku privatnosti',
     dailyAverage: 'Prosečno impresija dnevno',
     totalDays: 'Ukupno dana',
     totalPrice: 'Ukupna cena za plaćanje',
@@ -91,7 +103,16 @@ const translations = {
 export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const t = translations[lang];
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = ymd(today);
+  // Ads are reviewed before they go live (up to 24 h), so default to tomorrow instead of a date that cannot be met.
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const tomorrowStr = ymd(tomorrow);
+  // UTC arithmetic on the Y-M-D parts: immune to DST and the visitor's timezone.
+  const addDaysIso = (iso: string, days: number) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+  };
 
   const [activeTab, setActiveTab] = useState<'book' | 'track'>('book');
 
@@ -101,8 +122,8 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const [slotId, setSlotId] = useState<'top_banner' | 'sidebar' | 'mobile_content'>('top_banner');
   const [targetImpressions, setTargetImpressions] = useState(50000);
   const [targetUrl, setTargetUrl] = useState('');
-  const [startDate, setStartDate] = useState(todayStr);
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(tomorrowStr);
+  const [endDate, setEndDate] = useState(() => addDaysIso(tomorrowStr, 6));
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
 
@@ -113,9 +134,16 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
   const [isTrackSubmitting, setIsTrackSubmitting] = useState(false);
 
   // Validation / Calculation State
-  const [numDays, setNumDays] = useState(1);
-  const [dailyAvg, setDailyAvg] = useState(0);
-  const [totalCost, setTotalCost] = useState(0);
+  // Derived straight from the inputs (not state + effect), so the very first paint is already correct.
+  const numDays = useMemo(() => {
+    const [sy, sm, sd] = startDate.split('-').map(Number);
+    const [ey, em, ed] = endDate.split('-').map(Number);
+    if (![sy, sm, sd, ey, em, ed].every(Number.isFinite)) return 0;
+    const diff = Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd);
+    return diff >= 0 ? Math.round(diff / 86400000) + 1 : 0;
+  }, [startDate, endDate]);
+  const dailyAvg = numDays > 0 ? Math.round(targetImpressions / numDays) : 0;
+  const totalCost = numDays > 0 ? Math.round((targetImpressions / 1000) * CPM_RATES[slotId] * 100) / 100 : 0;
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -175,51 +203,11 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
     window.location.href = statusUrl;
   };
 
-  // Auto-set default end date (e.g. today + 6 days for 7 days total)
+  // Moving the start date moves the end date to a 7-day campaign by default (the visitor can still change it).
   useEffect(() => {
-    const start = new Date(startDate);
-    if (!isNaN(start.getTime())) {
-      const end = new Date(start);
-      end.setDate(end.getDate() + 6);
-      setEndDate(end.toISOString().split('T')[0]);
-    }
+    if (startDate) setEndDate(addDaysIso(startDate, 6));
   }, [startDate]);
 
-  // Recalculate metrics on input changes
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-
-    const startParts = startDate.split('-');
-    const endParts = endDate.split('-');
-    let days = 0;
-
-    if (startParts.length === 3 && endParts.length === 3) {
-      const startYear = parseInt(startParts[0], 10);
-      const startMonth = parseInt(startParts[1], 10) - 1;
-      const startDay = parseInt(startParts[2], 10);
-      
-      const endYear = parseInt(endParts[0], 10);
-      const endMonth = parseInt(endParts[1], 10) - 1;
-      const endDay = parseInt(endParts[2], 10);
-      
-      const startUTC = Date.UTC(startYear, startMonth, startDay);
-      const endUTC = Date.UTC(endYear, endMonth, endDay);
-      
-      const diffTime = endUTC - startUTC;
-      days = diffTime >= 0 ? Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1 : 0;
-    }
-    
-    setNumDays(days);
-
-    if (days > 0) {
-      setDailyAvg(Math.round(targetImpressions / days));
-      const cpm = CPM_RATES[slotId];
-      setTotalCost(Math.round((targetImpressions / 1000) * cpm * 100) / 100);
-    } else {
-      setDailyAvg(0);
-      setTotalCost(0);
-    }
-  }, [startDate, endDate, targetImpressions, slotId]);
 
   // Handle file select
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -445,11 +433,11 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                           : 'bg-card border-border hover:border-[var(--presek-mark-line)] hover:bg-[var(--presek-mark-soft)]/20'
                       }`}
                     >
-                      <div className="flex justify-between items-start w-full mb-1">
-                        <span className={`font-bold text-sm ${active ? 'text-[var(--presek-mark)]' : 'text-foreground'}`}>
-                          {type.replace('_', ' ').toUpperCase()}
+                      <div className="flex flex-col items-start gap-1.5 w-full mb-1">
+                        <span className={`font-bold text-sm leading-tight ${active ? 'text-[var(--presek-mark)]' : 'text-foreground'}`}>
+                          {slotName(type, lang)}
                         </span>
-                        <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-none">
+                        <span className="whitespace-nowrap text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-none">
                           €{price.toFixed(2)} CPM
                         </span>
                       </div>
@@ -499,6 +487,7 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                       className="w-full bg-card border border-border rounded-none py-2.5 pl-10 pr-4 text-foreground text-sm focus:outline-none focus:border-[var(--presek-mark)] focus:ring-1 focus:ring-[var(--presek-mark)] transition-colors text-foreground"
                     />
                   </div>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">{t.startHint}</p>
                 </div>
 
                 <div>
@@ -584,6 +573,10 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
                 <span>{t.totalDays}:</span>
                 <span className="text-foreground font-bold">{numDays}</span>
               </div>
+              <div className="flex justify-between gap-3 text-muted-foreground">
+                <span>{t.period}:</span>
+                <span className="text-foreground font-bold text-right">{formatDateDmy(startDate)} – {formatDateDmy(endDate)}</span>
+              </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{t.dailyAverage}:</span>
                 <span className={`font-bold ${dailyAvg < 2000 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
@@ -611,6 +604,11 @@ export default function AdBookingForm({ lang }: AdBookingFormProps) {
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">{t.reviewNote}</p>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              {t.termsLead} <a href="/terms" className="underline underline-offset-2 hover:text-foreground">{t.termsLink}</a> {t.termsAnd}{' '}
+              <a href="/privacy" className="underline underline-offset-2 hover:text-foreground">{t.privacyLink}</a>.
+            </p>
 
             <button
               type="button"

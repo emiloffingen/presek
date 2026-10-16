@@ -80,3 +80,41 @@ export function localCpm(rateEur: number, lang: SiteLang): { amount: number; cur
 
 /** Discount as a whole percentage, e.g. 25. */
 export const PROMO_PERCENT = Math.round(PROMO_DISCOUNT * 100);
+
+/**
+ * One name per placement, used by the price table, the booking form and the sales pitch
+ * (they used to say "Top Billboard" in one place and "TOP BANNER" in another).
+ */
+export const SLOT_NAMES: Record<SiteLang, Record<AdSlotId, string>> = {
+  mk: { top_banner: 'Топ банер', sidebar: 'Страничен банер', mobile_content: 'Банер во содржината (мобилен)' },
+  sr: { top_banner: 'Gornji baner', sidebar: 'Bočni baner', mobile_content: 'Baner u sadržaju (mobilni)' },
+};
+
+export function slotName(slot: AdSlotId, lang: SiteLang): string {
+  return SLOT_NAMES[lang][slot];
+}
+
+/** "2026-10-17" -> "17.10.2026" (the browser's date input shows the visitor's locale, often US order). */
+export function formatDateDmy(iso: string): string {
+  const parts = String(iso || '').split('-');
+  return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : '';
+}
+
+/**
+ * Optional end date of the introductory price, from PUBLIC_PROMO_ENDS_ON (YYYY-MM-DD, build time).
+ * Unset means the price is simply the current list discount, and the page must not imply a deadline.
+ */
+function resolvePromoEndsOn(): string | null {
+  const raw = (import.meta as { env?: Record<string, string | undefined> }).env?.PUBLIC_PROMO_ENDS_ON;
+  return raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+}
+
+export const PROMO_ENDS_ON = resolvePromoEndsOn();
+
+/** Short promo line for the price table, e.g. "−25% од редовната цена" (+ "· до 31.12.2026" when an end date is set). */
+export function promoNote(lang: SiteLang): string {
+  const base = lang === 'mk' ? `−${PROMO_PERCENT}% од редовната цена` : `−${PROMO_PERCENT}% od redovne cene`;
+  if (!PROMO_ENDS_ON) return base;
+  const until = lang === 'mk' ? 'до' : 'do';
+  return `${base} · ${until} ${formatDateDmy(PROMO_ENDS_ON)}`;
+}
