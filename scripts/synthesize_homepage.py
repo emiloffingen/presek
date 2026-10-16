@@ -11,6 +11,7 @@ Example (bounded trial):
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,21 @@ def _parse_args():
         "--no-force-llm", action="store_true", help="Allow deterministic fallback instead of forcing an LLM."
     )
     parser.add_argument("--dry-run", action="store_true", help="List targets without regenerating.")
+    parser.add_argument(
+        "--pause",
+        type=float,
+        default=3.0,
+        help="Seconds to wait between clusters so the free-tier providers' per-minute limits are not hit in a burst.",
+    )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=2,
+        help="Extra passes over clusters whose synthesis persisted nothing (0 disables).",
+    )
+    parser.add_argument(
+        "--retry-wait", type=float, default=90.0, help="Seconds to wait before each retry pass (rate limits recover)."
+    )
     return parser.parse_args()
 
 
@@ -76,29 +92,53 @@ def _run(args):
         print(f"forcing primary provider: {args.provider}")
 
     force_llm = not args.no_force_llm
-    upgraded = 0
-    failed = 0
-    for idx, cid in enumerate(targets, 1):
-        print(f"[{idx}/{len(targets)}] {cid} (force_llm={force_llm}) ...", flush=True)
-        try:
-            rows = _load_cluster_articles_for_synthesis(cid)
-            content = _build_cluster_synthesis_content(rows)
-            persisted = run_cluster_synthesis(cid, content, fast_mode=args.fast, force_llm=force_llm)
-            if persisted is False:
-                # Every language failed inside the pipeline (errors are logged there); the cluster
-                # keeps its previous summary. Do not report it as upgraded.
-                failed += 1
-                print("    error: nothing was persisted (see the synthesis errors above)")
-                continue
-            for row in _summarize(cid) or []:
-                print(f"    -> {row['lang']}: {row['generation_provider']} / {row['generation_model']}")
-            upgraded += 1
-        except Exception as exc:
-            failed += 1
-            print(f"    error: {exc}")
+    done, pending = _pass(targets, args, force_llm)
+    upgraded = len(done)
+    for attempt in range(1, max(0, args.retries) + 1):
+        if not pending:
+            break
+        print(
+            f"retrying {len(pending)} cluster(s) that persisted nothing in {args.retry_wait:g}s "
+            f"(attempt {attempt}/{args.retries})",
+            flush=True,
+        )
+        time.sleep(args.retry_wait)
+        done, pending = _pass(pending, args, force_llm)
+        upgraded += len(done)
+    failed = len(pending)
     print(f"done: upgraded {upgraded}, failed {failed}, of {len(targets)}")
     if failed and upgraded == 0:
         raise SystemExit(1)
+
+
+def _synthesize_one(cid, args, force_llm):
+    """True when the cluster's synthesis was persisted."""
+    try:
+        rows = _load_cluster_articles_for_synthesis(cid)
+        content = _build_cluster_synthesis_content(rows)
+        persisted = run_cluster_synthesis(cid, content, fast_mode=args.fast, force_llm=force_llm)
+        if persisted is False:
+            # Every language failed inside the pipeline (errors are logged there); the cluster
+            # keeps its previous summary. Do not report it as upgraded.
+            print("    error: nothing was persisted (see the synthesis errors above)")
+            return False
+        for row in _summarize(cid) or []:
+            print(f"    -> {row['lang']}: {row['generation_provider']} / {row['generation_model']}")
+        return True
+    except Exception as exc:
+        print(f"    error: {exc}")
+        return False
+
+
+def _pass(cluster_ids, args, force_llm):
+    """One pass over the clusters, pausing between them. Returns (persisted_ids, failed_ids)."""
+    persisted, failed = [], []
+    for idx, cid in enumerate(cluster_ids, 1):
+        if idx > 1 and args.pause > 0:
+            time.sleep(args.pause)
+        print(f"[{idx}/{len(cluster_ids)}] {cid} (force_llm={force_llm}) ...", flush=True)
+        (persisted if _synthesize_one(cid, args, force_llm) else failed).append(cid)
+    return persisted, failed
 
 
 def main():
