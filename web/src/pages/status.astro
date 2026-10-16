@@ -139,7 +139,7 @@ const formattedUptime = (seconds: number) => {
                     <div class="metric-card" id="metric-db">
                         <div class="metric-label">{t('status.database')}</div>
                         <div class="metric-value">{healthData.database.ok ? "OK" : "ERROR"}</div>
-                        <div class="metric-sub">{healthData.database.article_count.toLocaleString()} {t('status.articles')} | {healthData.database.size_mb.toFixed(1)} MB</div>
+                        <div class="metric-sub">{healthData.database.article_count.toLocaleString()} {t('status.articles')}</div>
                     </div>
                     <div class="metric-card" id="metric-redis">
                         <div class="metric-label">{t('status.redis')}</div>
