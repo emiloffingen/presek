@@ -28,6 +28,7 @@ from core.api_errors import normalize_http_exception_content, rate_limit_payload
 from core.limiter import (
     RateLimitExceeded,
     _rate_limiter_enabled,
+    custom_rate_limit,
     exempt_from_rate_limit,
     limiter,
 )
@@ -240,6 +241,13 @@ async def _store_page_visit(
         log.warning(f"page_visit insert skipped: {e}")
 
 
+def _visit_client_ip(request: Request) -> str:
+    # Same trusted-proxy rules as rate limiting: X-Forwarded-For is visitor-controlled behind the tunnel.
+    from routes.common import _client_ip_for_request
+
+    return _client_ip_for_request(request)
+
+
 class VisitorTrackingMiddleware:
     """Privacy-friendly local visitor logging (hashed visitor, no raw IP)."""
 
@@ -254,11 +262,7 @@ class VisitorTrackingMiddleware:
                     headers = dict(
                         (k.decode().lower(), v.decode("utf-8", "ignore")) for k, v in scope.get("headers", [])
                     )
-                    ip = (
-                        headers.get("cf-connecting-ip")
-                        or (headers.get("x-forwarded-for", "").split(",")[0].strip())
-                        or (scope.get("client", [None])[0] or "")
-                    )
+                    ip = _visit_client_ip(Request(scope))
                     ua = headers.get("user-agent", "")[:512]
                     if "bot" not in ua.lower() and "healthcheck" not in ua.lower():
                         day = datetime.datetime.utcnow().strftime("%Y-%m-%d")
@@ -720,7 +724,7 @@ async def visitor_stats(days: int = 7):
 
 
 @app.post("/api/stats/beacon")
-@exempt_from_rate_limit
+@custom_rate_limit("30/minute")
 async def visitor_beacon(request: Request):
     """Browser beacon: one row per real pageview (hashed visitor, no raw IP)."""
     try:
@@ -734,11 +738,7 @@ async def visitor_beacon(request: Request):
         lang = str(body.get("lang", "") or "")[:10]
         referrer = str(body.get("referrer", "") or "")[:512]
         headers = request.headers
-        ip = (
-            headers.get("cf-connecting-ip")
-            or (headers.get("x-forwarded-for", "").split(",")[0].strip())
-            or (request.client.host if request.client else "")
-        )
+        ip = _visit_client_ip(request)
         ua = (headers.get("user-agent", "") or "")[:512]
         if "bot" in ua.lower():
             return {"status": "success", "skipped": True}
