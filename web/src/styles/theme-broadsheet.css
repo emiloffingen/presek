@@ -364,6 +364,8 @@ html:root body {
 
 .bs-header-ad { max-width: 1038px; margin-top: 24px; }
 .bs-header-ad .native-ad { margin: 0 auto; }
+/* No campaign running: collapse the wrapper so it does not leave an empty band under the nav. */
+.bs-header-ad:not(:has(.native-ad)) { display: none; }
 
 /* NativeAdSlot restyled to the broadsheet tokens wherever it appears */
 .native-ad { border-radius: 6px; }

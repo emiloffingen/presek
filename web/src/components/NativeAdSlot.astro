@@ -7,9 +7,11 @@ import { SLOT_META, PROMO_PERCENT, localCpm, type AdSlotId } from '../lib/adPric
 interface Props {
   slotId: AdSlotId;
   class?: string;
+  /** Render the "free ad space" call to action when no campaign is active (top_banner only). */
+  showEmpty?: boolean;
 }
 
-const { slotId, class: className = '' } = Astro.props;
+const { slotId, class: className = '', showEmpty = true } = Astro.props;
 const hostHeader = Astro.request?.headers.get('host');
 const lang = getLangFromUrl(Astro.url, hostHeader);
 const t = useTranslations(lang);
@@ -61,7 +63,7 @@ const cta = isMk ? 'Рекламирај се' : 'Oglašavaj se';
       <img src={activeAd.image_url} alt={adLabel} class="native-ad__image" loading="lazy" decoding="async" />
     </a>
   </div>
-) : slotId === 'top_banner' ? (
+) : slotId === 'top_banner' && showEmpty ? (
   <aside
     class={`native-ad native-ad--empty native-ad--${slotId} ${className}`}
     style={`min-height:${meta.minHeight}`}

@@ -10,15 +10,22 @@ import { prepareSynthesisParagraph } from '../../utils/synthesisCopy';
 interface Props {
   standfirst?: string | null;
   lang: 'sr' | 'mk';
+  /** The page headline; a standfirst that only repeats it is dropped. */
+  headline?: string | null;
 }
 
-const { standfirst, lang } = Astro.props;
+const { standfirst, lang, headline } = Astro.props;
 
 const raw = extractCleanSummaryText(standfirst || '');
-const displayStandfirst =
+const candidate =
   raw && !isSyntheticStandfirstBoilerplate(raw)
     ? getPersonalizedText(prepareSynthesisParagraph(cleanAndDecode(raw), lang), lang)
     : null;
+
+// Compare letters and digits only, so case, spacing and punctuation differences do not hide a duplicate.
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+const displayStandfirst =
+  candidate && headline && norm(candidate) === norm(headline) ? null : candidate;
 ---
 
 {displayStandfirst && (

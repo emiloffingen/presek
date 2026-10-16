@@ -88,7 +88,7 @@ const {
       <h1 class:list={['headline is-visible font-serif text-4xl md:text-6xl font-black leading-[1.2] tracking-tight text-foreground mb-4', { 'headline-cyrillic': headlineIsCyrillic }]}>
         {displayHeadline}
       </h1>
-      <ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang} />
+      <ClusterStandfirst standfirst={cluster.synthetic_standfirst} lang={lang} headline={displayHeadline} />
       <div class="cluster-meta-compact">
         <span class="cluster-meta-chip">
           {cleanTopicLabel(cluster.articles?.[0]?.category) || t('home.feed_title')}
@@ -119,7 +119,7 @@ const {
           <ShareIsland client:idle title={displayHeadline} url={canonicalUrl} lang={lang} />
         </div>
       </div>
-      <p class="cluster-reading-hint">{t('reading.mode_hint')}</p>
+      <p class="cluster-reading-hint">{t('reading.mode_hint')}<span class="cluster-reading-keys"> · {t('reading.mode_hint_keys')}</span></p>
     </div>
   </div>
   <details class="cluster-source-details">

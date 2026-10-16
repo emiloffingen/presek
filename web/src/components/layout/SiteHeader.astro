@@ -131,7 +131,8 @@ const editionDateLabel = editionDate.charAt(0).toUpperCase() + editionDate.slice
 
     {showTopAd && (
         <div class="bs-wrap bs-header-ad">
-            <NativeAdSlot slotId="top_banner" />
+            {/* Inner pages only show a real campaign here; the "free space" sales pitch lives on the home page and /marketing. */}
+            <NativeAdSlot slotId="top_banner" showEmpty={false} />
         </div>
     )}
 </div>
