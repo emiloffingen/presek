@@ -10,14 +10,7 @@ export const TOPIC_QUERY_MAP: Record<string, { primary: 'topic' | 'category'; se
   Zabava: { primary: 'topic', secondary: 'category' },
 };
 
-export function parseTopicParam(raw: string | undefined) {
-  const value = raw || '';
-  try {
-    return decodeURIComponent(value).replace(/\s+/g, ' ').trim();
-  } catch {
-    return value.replace(/\s+/g, ' ').trim();
-  }
-}
+export { parseTopicParam } from './topicParam';
 
 export function parseSynthesisLines(text?: string) {
   if (!text) return [];

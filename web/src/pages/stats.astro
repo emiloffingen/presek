@@ -2,5 +2,6 @@
 import { apiBaseUrl } from "../lib/apiBase";
 
 apiBaseUrl();
-return Astro.redirect('/pulse');
+// /pulse is retired and itself redirects home; go there directly instead of a two-hop chain.
+return Astro.redirect('/');
 ---

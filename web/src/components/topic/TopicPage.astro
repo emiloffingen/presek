@@ -72,7 +72,9 @@ if (topicPage.status && topicPage.status !== 200) {
 }
 
 const topicLabels = buildTopicPageLabels(lang);
-const pageMeta = buildTopicPageMeta(lang, topic);
+// Show the Macedonian section name ("Политика") instead of the Latin slug in the title and headings.
+const topicDisplay = (lang === 'mk' ? sectionLabelMk(topic) : null) || topic;
+const pageMeta = buildTopicPageMeta(lang, topicDisplay);
 const topicFollowSuggestions = topicConnections.slice(0, 2).map((item: any) => ({
 	topic: item.topic,
 	reason: item.relationshipNote,
@@ -93,14 +95,14 @@ const homeHref = lang === 'mk' ? homePath('mk', hostHeader) : l('/');
 
 	<main class="site-layout page-content-top pb-[var(--page-py)] topic-page">
 		{(error || !clusters.length) && (
-			<Breadcrumbs items={[{ label: pageMeta.breadcrumbTopics, href: homeHref }, { label: topic || topicLabels.kicker }]} />
+			<Breadcrumbs items={[{ label: pageMeta.breadcrumbTopics, href: homeHref }, { label: topicDisplay || topicLabels.kicker }]} />
 		)}
 
 		{error && (
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
 					<span class="topic-kicker">{topicLabels.kicker}</span>
-					<h1 class="topic-empty-title">{topic || topicLabels.kicker}</h1>
+					<h1 class="topic-empty-title">{topicDisplay || topicLabels.kicker}</h1>
 					<p>{error}</p>
 					<div class="topic-empty-actions">
 						<a href={l('/')} class="topic-empty-link">{topicLabels.emptyBack}</a>
@@ -114,7 +116,7 @@ const homeHref = lang === 'mk' ? homePath('mk', hostHeader) : l('/');
 			<div class="topic-empty">
 				<div class="topic-empty-inner">
 					<span class="topic-kicker">{topicLabels.kicker}</span>
-					<h1 class="topic-empty-title">{topic}</h1>
+					<h1 class="topic-empty-title">{topicDisplay}</h1>
 					<p>{topicLabels.emptyNoClusters}</p>
 					<div class="topic-empty-actions">
 						<a href={l('/')} class="topic-empty-link">{topicLabels.emptyHome}</a>
