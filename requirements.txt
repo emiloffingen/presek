@@ -171,7 +171,7 @@ markupsafe==3.0.4
     # via mako
 mmh3==5.3.1
     # via fastembed
-multidict==6.9.1
+multidict==7.1.0
     # via
     #   aiohttp
     #   yarl
