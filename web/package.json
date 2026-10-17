@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.13.0",
-    "cypress": "^15.14.2",
+    "cypress": "^16.1.1",
     "puppeteer-core": "^25.12.0"
   },
   "overrides": {
