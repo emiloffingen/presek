@@ -302,7 +302,7 @@ sqlalchemy==2.1.4
     #   presek
 starlette==1.8.0
     # via fastapi
-stripe==15.6.1
+stripe==16.0.0
     # via presek
 tabulate==0.10.0
     # via edge-tts
