@@ -38,8 +38,10 @@ MOCK_PAYMENTS_ENABLED = os.environ.get("MOCK_PAYMENTS_ENABLED", "false").lower()
 STRIPE_CHECKOUT_ENABLED = os.environ.get("STRIPE_CHECKOUT_ENABLED", "false").lower() == "true"
 
 # Pin the Stripe API version so an SDK upgrade can never silently change the
-# payload shape we depend on. Defaults to the version bundled with stripe-python
-# 15.3.0; override with STRIPE_API_VERSION when intentionally upgrading.
+# payload shape we depend on. This is deliberately NOT the version bundled with
+# stripe-python (16.x bundles 2026-09-30.endive); move it with STRIPE_API_VERSION
+# only as a separate, tested change (the webhook endpoint's version is set in the
+# Stripe dashboard).
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-06-24.dahlia").strip()
 if STRIPE_API_VERSION:
     stripe.api_version = STRIPE_API_VERSION
@@ -205,8 +207,10 @@ async def create_ad_checkout(
                 if session_ref and STRIPE_API_KEY and not session_ref.startswith("mock_"):
                     try:
                         prior = stripe.checkout.Session.retrieve(session_ref)
-                        if prior.get("url"):
-                            existing_url = prior["url"]
+                        # A StripeObject is not a dict: it has no .get(), so use getattr.
+                        prior_url = getattr(prior, "url", None)
+                        if prior_url:
+                            existing_url = prior_url
                     except Exception as retrieve_err:
                         log.warning(f"[marketing] idempotent session retrieve failed: {retrieve_err}")
                 return {
